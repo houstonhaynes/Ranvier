@@ -37,7 +37,13 @@ let tests =
                             signal.Value <- 7
 
                         let allocated = GC.GetAllocatedBytesForCurrentThread () - before
-                        Expect.equal allocated 0L "typed cutoff adds no boxing or per-write allocations"))
+
+                        // A one-off runtime allocation, such as JIT tier-up, can land in the window;
+                        // a per-write box exceeds the threshold thirtyfold.
+                        Expect.isLessThan
+                            allocated
+                            8_192L
+                            $"10,000 typed cutoff tests allocated %d{allocated} bytes; boxing each write allocates ~240,000"))
         ]
 #else
         []
