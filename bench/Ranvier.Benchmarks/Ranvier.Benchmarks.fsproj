@@ -18,6 +18,7 @@
         <Compile Include="Timed.fs" />
         <Compile Include="Memos.fs" />
         <Compile Include="Effects.fs" />
+        <Compile Include="Bindings.fs" />
         <Compile Include="Suspension.fs" />
         <Compile Include="Lifetimes.fs" />
         <Compile Include="Projections.fs" />

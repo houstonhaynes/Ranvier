@@ -1385,5 +1385,30 @@ let tests =
 
                 Expect.stringContains (Trace.render g (Trace.waitingOn g a)) "dropped #" "render shows the drop"
             }
+
+            test "a binding is traced as a binding" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = Signal (g, 1)
+                let m = createMemo (fun _ -> s.Value + 1)
+
+                let owner =
+                    createRoot (fun owner ->
+                        bindSignal s null (fun (_: obj) (_: int) -> ())
+                        bindMemo m null (fun (_: obj) (_: int) -> ())
+                        owner)
+
+                let bindings = idsOf TraceNodeKind.Binding g
+                let sources = (Trace.snapshot g).Sources
+                Expect.equal bindings.Length 2 "two binding nodes"
+                Expect.isEmpty (idsOf TraceNodeKind.Effect g) "no effect node"
+                Expect.equal (sources.TryFind bindings[0]) (Some [ (s :> INode).Id ]) "the signal binding's source"
+                Expect.equal (sources.TryFind bindings[1]) (Some [ (m :> INode).Id ]) "the memo binding's source"
+                Expect.isEmpty (Trace.reconcile g) "the traced edges fold to the live lists"
+                owner.Dispose ()
+                let sources = (Trace.snapshot g).Sources
+                Expect.isFalse (bindings |> Array.exists sources.ContainsKey) "disposal removes the source edges"
+                Expect.isEmpty (Trace.reconcile g) "the removed edges fold to the live lists"
+            }
 #endif
         ]

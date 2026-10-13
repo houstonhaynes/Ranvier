@@ -1,6 +1,15 @@
 field Ranvier.FlightPolicy+Tags CancelPrevious : Int32
+field Ranvier.FlightPolicy+Tags FinishCurrent : Int32
 field Ranvier.FlightPolicy+Tags KeepLatest : Int32
 field Ranvier.FlightPolicy+Tags Queue : Int32
+field Ranvier.KeyChange Added : Ranvier.KeyChange
+field Ranvier.KeyChange Changed : Ranvier.KeyChange
+field Ranvier.KeyChange Removed : Ranvier.KeyChange
+field Ranvier.KeyChange Replaced : Ranvier.KeyChange
+field Ranvier.KeyChange value__ : Int32
+field Ranvier.PositionalChange`1+Tags InsertAt : Int32
+field Ranvier.PositionalChange`1+Tags Move : Int32
+field Ranvier.PositionalChange`1+Tags RemoveAt : Int32
 field Ranvier.Reading`1+Tags Failed : Int32
 field Ranvier.Reading`1+Tags Pending : Int32
 field Ranvier.Reading`1+Tags Ready : Int32
@@ -10,27 +19,40 @@ field Ranvier.Status Pending : Ranvier.Status
 field Ranvier.Status Uninitialized : Ranvier.Status
 field Ranvier.Status value__ : Byte
 field Ranvier.ThreadAffinity+Tags Guarded : Int32
+field Ranvier.ThreadAffinity+Tags Serialised : Int32
 field Ranvier.ThreadAffinity+Tags Unchecked : Int32
 member Ranvier.Api static batch<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : !!0
+member Ranvier.Api static bindMemo<2>(Ranvier.Memo`1<!!0>,!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>>) : Void
+member Ranvier.Api static bindSignal<2>(Ranvier.Signal`1<!!0>,!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>>) : Void
 member Ranvier.Api static createAsync<1>(Microsoft.FSharp.Core.FSharpFunc`2<Ranvier.Previous`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<System.Threading.CancellationToken,System.Threading.Tasks.Task`1<!!0>>>) : Ranvier.AsyncMemo`1<!!0>
 member Ranvier.Api static createAsyncSource<1>() : Ranvier.AsyncSource`1<!!0>
 member Ranvier.Api static createAsyncWith<1>(Microsoft.FSharp.Core.FSharpFunc`2<Ranvier.Previous`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<System.Threading.CancellationToken,System.Threading.Tasks.Task`1<!!0>>>) : Ranvier.AsyncMemo`1<!!0>
 member Ranvier.Api static createBoundary<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<System.Exception,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
+member Ranvier.Api static createBoundaryWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<System.Exception,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
+member Ranvier.Api static createDraft<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Editable`1<!!0>
+member Ranvier.Api static createEditable<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Editable`1<!!0>
 member Ranvier.Api static createEffect(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.Unit>) : Void
 member Ranvier.Api static createEffectOn<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>) : Void
+member Ranvier.Api static createEffectOnWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>) : Void
 member Ranvier.Api static createErrorBoundary<1>(Microsoft.FSharp.Core.FSharpFunc`2<System.Exception,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
+member Ranvier.Api static createErrorBoundaryWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<System.Exception,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
 member Ranvier.Api static createIndexProjection<2>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,System.Collections.Generic.IEnumerable`1<!!0>>) : Ranvier.Projection`2<Int32,!!1>
 member Ranvier.Api static createIndexProjectionWith<2>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!1>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,System.Collections.Generic.IEnumerable`1<!!0>>) : Ranvier.Projection`2<Int32,!!1>
+member Ranvier.Api static createKeyedCollection<2>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>) : Ranvier.KeyedCollection`2<!!1,!!0>
 member Ranvier.Api static createLookup<3>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.FSharpFunc`2<!!1,!!2>>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.FSharpFunc`2<!!0,System.Collections.Generic.IEnumerable`1<!!1>>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Lookup`2<!!1,!!2>
 member Ranvier.Api static createMemo<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Memo`1<!!0>
 member Ranvier.Api static createMemoWith<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Memo`1<!!0>
+member Ranvier.Api static createMemoWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Memo`1<!!0>
 member Ranvier.Api static createOptionMemo<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.FSharpOption`1<!!0>>) : Ranvier.Memo`1<Microsoft.FSharp.Core.FSharpOption`1<!!0>>
+member Ranvier.Api static createOwningMemoWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Memo`1<!!0>
 member Ranvier.Api static createProjection<3>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!2>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,System.Collections.Generic.IEnumerable`1<!!0>>) : Ranvier.Projection`2<!!1,!!2>
 member Ranvier.Api static createProjectionWith<3>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!2>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,System.Collections.Generic.IEnumerable`1<!!0>>) : Ranvier.Projection`2<!!1,!!2>
 member Ranvier.Api static createRoot<1>(Microsoft.FSharp.Core.FSharpFunc`2<Ranvier.Owner,!!0>) : !!0
 member Ranvier.Api static createSelector<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Lookup`2<!!0,Boolean>
 member Ranvier.Api static createSignal<1>(!!0) : Ranvier.Signal`1<!!0>
+member Ranvier.Api static createSignalWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,!!0) : Ranvier.Signal`1<!!0>
 member Ranvier.Api static createSuspense<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
+member Ranvier.Api static createSuspenseWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
 member Ranvier.Api static flush() : Void
 member Ranvier.Api static getOwner() : Ranvier.Owner
 member Ranvier.Api static onCleanup(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.Unit>) : Void
@@ -40,6 +62,7 @@ member Ranvier.ArrayModule static updateBy<2>(Microsoft.FSharp.Core.FSharpFunc`2
 member Ranvier.AsyncMemo`1 .ctor(Ranvier.Graph,System.Func`3<Ranvier.Previous`1<!0>,System.Threading.CancellationToken,System.Threading.Tasks.Task`1<!0>>) : Void
 member Ranvier.AsyncMemo`1 .ctor(Ranvier.Graph,System.Func`3<Ranvier.Previous`1<!0>,System.Threading.CancellationToken,System.Threading.Tasks.Task`1<!0>>,Boolean) : Void
 member Ranvier.AsyncMemo`1 Dispose() : Void
+member Ranvier.AsyncMemo`1 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.AsyncMemo`1 get_Peek() : !0
 member Ranvier.AsyncMemo`1 get_PendingSources() : System.Collections.Generic.IEnumerable`1<Ranvier.INode>
 member Ranvier.AsyncMemo`1 get_Runs() : Int32
@@ -49,11 +72,14 @@ member Ranvier.AsyncMemo`1 get_Value() : !0
 member Ranvier.AsyncSource`1 .ctor(Ranvier.Graph) : Void
 member Ranvier.AsyncSource`1 Fail(System.Exception) : Void
 member Ranvier.AsyncSource`1 Settle(!0) : Void
+member Ranvier.AsyncSource`1 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.AsyncSource`1 get_Status() : Ranvier.Status
 member Ranvier.AsyncSource`1 get_TryValue() : Ranvier.Reading`1<!0>
 member Ranvier.AsyncSource`1 get_Value() : !0
 member Ranvier.Boundary`1 Dispose() : Void
 member Ranvier.Boundary`1 get_Caught() : System.Exception
+member Ranvier.Boundary`1 get_CaughtFrom() : Ranvier.INode
+member Ranvier.Boundary`1 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.Boundary`1 get_IsWaiting() : Boolean
 member Ranvier.Boundary`1 get_Peek() : !0
 member Ranvier.Boundary`1 get_PendingSources() : System.Collections.Generic.IEnumerable`1<Ranvier.INode>
@@ -61,12 +87,25 @@ member Ranvier.Boundary`1 get_Runs() : Int32
 member Ranvier.Boundary`1 get_Status() : Ranvier.Status
 member Ranvier.Boundary`1 get_TryValue() : Ranvier.Reading`1<!0>
 member Ranvier.Boundary`1 get_Value() : !0
+member Ranvier.Boundary`1 static Catching(Ranvier.Graph,System.Func`1<!0>,!0,System.Func`2<!0,!0>,System.Func`3<System.Exception,!0,!0>) : Ranvier.Boundary`1<!0>
 member Ranvier.Boundary`1 static Catching(Ranvier.Graph,System.Func`1<!0>,System.Func`2<Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>,System.Func`3<System.Exception,Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>) : Ranvier.Boundary`1<!0>
+member Ranvier.Boundary`1 static Errors(Ranvier.Graph,System.Func`1<!0>,!0,System.Func`3<System.Exception,!0,!0>) : Ranvier.Boundary`1<!0>
 member Ranvier.Boundary`1 static Errors(Ranvier.Graph,System.Func`1<!0>,System.Func`3<System.Exception,Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>) : Ranvier.Boundary`1<!0>
+member Ranvier.Boundary`1 static Suspense(Ranvier.Graph,System.Func`1<!0>,!0,System.Func`2<!0,!0>) : Ranvier.Boundary`1<!0>
 member Ranvier.Boundary`1 static Suspense(Ranvier.Graph,System.Func`1<!0>,System.Func`2<Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>) : Ranvier.Boundary`1<!0>
+member Ranvier.Editable`1 Dispose() : Void
+member Ranvier.Editable`1 Reset() : Void
+member Ranvier.Editable`1 get_IsEdited() : Boolean
+member Ranvier.Editable`1 get_Peek() : !0
+member Ranvier.Editable`1 get_Status() : Ranvier.Status
+member Ranvier.Editable`1 get_TryValue() : Ranvier.Reading`1<!0>
+member Ranvier.Editable`1 get_Upstream() : !0
+member Ranvier.Editable`1 get_Value() : !0
+member Ranvier.Editable`1 set_Value(!0) : Void
 member Ranvier.Effect .ctor(Ranvier.Graph,System.Action) : Void
 member Ranvier.Effect Dispose() : Void
 member Ranvier.Effect get_Error() : System.Exception
+member Ranvier.Effect get_ErrorOrigin() : Ranvier.INode
 member Ranvier.Effect get_PendingSources() : System.Collections.Generic.IEnumerable`1<Ranvier.INode>
 member Ranvier.Effect get_Runs() : Int32
 member Ranvier.Effect get_Status() : Ranvier.Status
@@ -81,10 +120,12 @@ member Ranvier.FlightPolicy GetHashCode() : Int32
 member Ranvier.FlightPolicy GetHashCode(System.Collections.IEqualityComparer) : Int32
 member Ranvier.FlightPolicy ToString() : String
 member Ranvier.FlightPolicy get_IsCancelPrevious() : Boolean
+member Ranvier.FlightPolicy get_IsFinishCurrent() : Boolean
 member Ranvier.FlightPolicy get_IsKeepLatest() : Boolean
 member Ranvier.FlightPolicy get_IsQueue() : Boolean
 member Ranvier.FlightPolicy get_Tag() : Int32
 member Ranvier.FlightPolicy static get_CancelPrevious() : Ranvier.FlightPolicy
+member Ranvier.FlightPolicy static get_FinishCurrent() : Ranvier.FlightPolicy
 member Ranvier.FlightPolicy static get_KeepLatest() : Ranvier.FlightPolicy
 member Ranvier.FlightPolicy static get_Queue() : Ranvier.FlightPolicy
 member Ranvier.Graph .ctor() : Void
@@ -98,12 +139,14 @@ member Ranvier.Graph Dispose() : Void
 member Ranvier.Graph Flush() : Void
 member Ranvier.Graph OnCleanup(System.Action) : Void
 member Ranvier.Graph Pump() : Int32
+member Ranvier.Graph TrackStatus(Ranvier.INode) : Ranvier.Status
 member Ranvier.Graph Untrack<1>(System.Func`1<!!0>) : !!0
 member Ranvier.Graph get_Dispatcher() : Ranvier.IGraphDispatcher
 member Ranvier.Graph get_IsOnGraphThread() : Boolean
 member Ranvier.Graph get_Options() : Ranvier.GraphOptions
 member Ranvier.Graph get_PendingWork() : Int32
 member Ranvier.Graph get_Root() : Ranvier.Owner
+member Ranvier.Graph static TryGetCurrent(Ranvier.Graph&) : Boolean
 member Ranvier.Graph static get_Current() : Ranvier.Graph
 member Ranvier.Graph static get_TryCurrent() : Microsoft.FSharp.Core.FSharpValueOption`1<Ranvier.Graph>
 member Ranvier.GraphExtensions static Graph.Run<1>(Ranvier.Graph,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : !!0
@@ -132,6 +175,12 @@ member Ranvier.INode get_Id() : Int32
 member Ranvier.INode get_Status() : Ranvier.Status
 member Ranvier.ImmediateDispatcher .ctor() : Void
 member Ranvier.JsIdentityPolicy .ctor() : Void
+member Ranvier.KeyedCollection`2 AddOrUpdate(!1) : Void
+member Ranvier.KeyedCollection`2 Clear() : Void
+member Ranvier.KeyedCollection`2 Dispose() : Void
+member Ranvier.KeyedCollection`2 Edit(System.Action`1<Ranvier.KeyedCollection`2<!0,!1>>) : Void
+member Ranvier.KeyedCollection`2 Remove(!0) : Boolean
+member Ranvier.KeyedCollection`2 get_Rows() : Ranvier.Projection`2<!0,!1>
 member Ranvier.ListModule static updateBy<2>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!0>,Microsoft.FSharp.Collections.FSharpList`1<!!0>) : Microsoft.FSharp.Collections.FSharpList`1<!!0>
 member Ranvier.Lookup`2 Dispose() : Void
 member Ranvier.Lookup`2 Get(!0) : !1
@@ -139,9 +188,12 @@ member Ranvier.Lookup`2 TryGet(!0) : Microsoft.FSharp.Core.FSharpOption`1<!1>
 member Ranvier.Lookup`2 TryGetValue(!0,!1&) : Boolean
 member Ranvier.Lookup`2 get_CellCount() : Int32
 member Ranvier.ManualDispatcher .ctor() : Void
+member Ranvier.Memo`1 .ctor(Ranvier.Graph,!0,System.Func`2<!0,!0>) : Void
+member Ranvier.Memo`1 .ctor(Ranvier.Graph,!0,System.Func`2<!0,!0>,Boolean) : Void
 member Ranvier.Memo`1 .ctor(Ranvier.Graph,System.Func`2<Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>) : Void
 member Ranvier.Memo`1 .ctor(Ranvier.Graph,System.Func`2<Microsoft.FSharp.Core.FSharpValueOption`1<!0>,!0>,Boolean) : Void
 member Ranvier.Memo`1 Dispose() : Void
+member Ranvier.Memo`1 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.Memo`1 get_Peek() : !0
 member Ranvier.Memo`1 get_PendingSources() : System.Collections.Generic.IEnumerable`1<Ranvier.INode>
 member Ranvier.Memo`1 get_Runs() : Int32
@@ -165,7 +217,35 @@ member Ranvier.Owner Dispose() : Void
 member Ranvier.Owner OnCleanup(System.Action) : Void
 member Ranvier.Owner get_Errors() : System.Collections.Generic.IEnumerable`1<System.Exception>
 member Ranvier.Owner get_IsDisposed() : Boolean
+member Ranvier.PositionalChange`1 CompareTo(Object) : Int32
+member Ranvier.PositionalChange`1 CompareTo(Object,System.Collections.IComparer) : Int32
+member Ranvier.PositionalChange`1 CompareTo(Ranvier.PositionalChange`1<!0>) : Int32
+member Ranvier.PositionalChange`1 Equals(Object) : Boolean
+member Ranvier.PositionalChange`1 Equals(Object,System.Collections.IEqualityComparer) : Boolean
+member Ranvier.PositionalChange`1 Equals(Ranvier.PositionalChange`1<!0>) : Boolean
+member Ranvier.PositionalChange`1 Equals(Ranvier.PositionalChange`1<!0>,System.Collections.IEqualityComparer) : Boolean
+member Ranvier.PositionalChange`1 GetHashCode() : Int32
+member Ranvier.PositionalChange`1 GetHashCode(System.Collections.IEqualityComparer) : Int32
+member Ranvier.PositionalChange`1 get_IsInsertAt() : Boolean
+member Ranvier.PositionalChange`1 get_IsMove() : Boolean
+member Ranvier.PositionalChange`1 get_IsRemoveAt() : Boolean
+member Ranvier.PositionalChange`1 get_Tag() : Int32
+member Ranvier.PositionalChange`1 static NewInsertAt(Int32,!0) : Ranvier.PositionalChange`1<!0>
+member Ranvier.PositionalChange`1 static NewMove(Int32,Int32) : Ranvier.PositionalChange`1<!0>
+member Ranvier.PositionalChange`1 static NewRemoveAt(Int32) : Ranvier.PositionalChange`1<!0>
+member Ranvier.PositionalChange`1+InsertAt get_Index() : Int32
+member Ranvier.PositionalChange`1+InsertAt get_Key() : !0
+member Ranvier.PositionalChange`1+Move get_NewIndex() : Int32
+member Ranvier.PositionalChange`1+Move get_OldIndex() : Int32
+member Ranvier.PositionalChange`1+RemoveAt get_Index() : Int32
 member Ranvier.Previous`1 get_Settled() : System.Threading.Tasks.Task`1<Microsoft.FSharp.Core.FSharpValueOption`1<!0>>
+member Ranvier.ProjectionDelta`1 get_Changes() : System.Collections.Generic.IReadOnlyCollection`1<System.Collections.Generic.KeyValuePair`2<!0,Ranvier.KeyChange>>
+member Ranvier.ProjectionDelta`1 get_IsEmpty() : Boolean
+member Ranvier.ProjectionDelta`1 get_IsReset() : Boolean
+member Ranvier.ProjectionDelta`1 get_Keys() : !0[]
+member Ranvier.ProjectionDelta`1 get_OrderChanged() : Boolean
+member Ranvier.ProjectionDelta`1 get_Positional() : System.Collections.Generic.IReadOnlyList`1<Ranvier.PositionalChange`1<!0>>
+member Ranvier.ProjectionDelta`1 get_PreviousKeys() : !0[]
 member Ranvier.ProjectionModule static choose<3>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.FSharpOption`1<!!1>>,Ranvier.Projection`2<!!2,!!0>) : Ranvier.Projection`2<!!2,!!1>
 member Ranvier.ProjectionModule static countBy<2>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,Boolean>,Ranvier.Projection`2<!!1,!!0>) : Ranvier.Memo`1<Int32>
 member Ranvier.ProjectionModule static exists<2>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,Boolean>,Ranvier.Projection`2<!!1,!!0>) : Ranvier.Memo`1<Boolean>
@@ -182,14 +262,19 @@ member Ranvier.ProjectionModule static sub<2>(Microsoft.FSharp.Core.FSharpFunc`2
 member Ranvier.ProjectionModule static sumBy$W<3>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!1>,Microsoft.FSharp.Core.FSharpFunc`2<!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!1,!!1>>,Microsoft.FSharp.Core.FSharpFunc`2<!!1,Microsoft.FSharp.Core.FSharpFunc`2<!!1,!!1>>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,Ranvier.Projection`2<!!2,!!0>) : Ranvier.Memo`1<!!1>
 member Ranvier.ProjectionModule static sumBy<3>(Microsoft.FSharp.Core.FSharpFunc`2<!!0,!!1>,Ranvier.Projection`2<!!2,!!0>) : Ranvier.Memo`1<!!1>
 member Ranvier.ProjectionModule static take<2>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Int32>,Ranvier.Projection`2<!!0,!!1>) : Ranvier.Projection`2<!!0,!!1>
+member Ranvier.ProjectionReader`1 Dispose() : Void
+member Ranvier.ProjectionReader`1 Read() : Ranvier.ProjectionDelta`1<!0>
 member Ranvier.Projection`2 AsObservableCollection() : System.Collections.ObjectModel.ObservableCollection`1<!1>
 member Ranvier.Projection`2 Dispose() : Void
 member Ranvier.Projection`2 Get(!0) : !1
+member Ranvier.Projection`2 NewKeyReader() : Ranvier.ProjectionReader`1<!0>
+member Ranvier.Projection`2 NewValueReader() : Ranvier.ProjectionReader`1<!0>
 member Ranvier.Projection`2 TryGet(!0) : Microsoft.FSharp.Core.FSharpOption`1<!1>
 member Ranvier.Projection`2 TryGetValue(!0,!1&) : Boolean
 member Ranvier.Projection`2 get_AnyPending() : Boolean
 member Ranvier.Projection`2 get_Count() : Int32
 member Ranvier.Projection`2 get_Error() : System.Exception
+member Ranvier.Projection`2 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.Projection`2 get_Keys() : !0[]
 member Ranvier.Projection`2 get_PendingKeys() : !0[]
 member Ranvier.Projection`2 get_Runs() : Int32
@@ -233,10 +318,47 @@ member Ranvier.ThreadAffinity GetHashCode() : Int32
 member Ranvier.ThreadAffinity GetHashCode(System.Collections.IEqualityComparer) : Int32
 member Ranvier.ThreadAffinity ToString() : String
 member Ranvier.ThreadAffinity get_IsGuarded() : Boolean
+member Ranvier.ThreadAffinity get_IsSerialised() : Boolean
 member Ranvier.ThreadAffinity get_IsUnchecked() : Boolean
 member Ranvier.ThreadAffinity get_Tag() : Int32
 member Ranvier.ThreadAffinity static get_Guarded() : Ranvier.ThreadAffinity
+member Ranvier.ThreadAffinity static get_Serialised() : Ranvier.ThreadAffinity
 member Ranvier.ThreadAffinity static get_Unchecked() : Ranvier.ThreadAffinity
+member Ranvier.TimedClock .ctor() : Void
+member Ranvier.TimedClock CreateTimer(System.Action) : Ranvier.TimedTimer
+member Ranvier.TimedClock get_NowMilliseconds() : Double
+member Ranvier.TimedClockModule static get_system() : Ranvier.TimedClock
+member Ranvier.TimedClockModule static ofTimeProvider(System.TimeProvider) : Ranvier.TimedClock
+member Ranvier.TimedCombinators static debounce<1>(System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static debounceWith<1>(Ranvier.TimedOptions`1<!!0>,System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttle<1>(System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttleFirst<1>(System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttleFirstWith<1>(Ranvier.TimedOptions`1<!!0>,System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttleLast<1>(System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttleLastWith<1>(Ranvier.TimedOptions`1<!!0>,System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedCombinators static throttleWith<1>(Ranvier.TimedOptions`1<!!0>,System.TimeSpan,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Ranvier.Graph) : Ranvier.Timed`1<!!0>
+member Ranvier.TimedOptions static defaults<1>() : Ranvier.TimedOptions`1<!!0>
+member Ranvier.TimedOptions`1 .ctor(Ranvier.TimedClock,Microsoft.FSharp.Core.FSharpOption`1<System.Collections.Generic.IEqualityComparer`1<!0>>) : Void
+member Ranvier.TimedOptions`1 Equals(Object) : Boolean
+member Ranvier.TimedOptions`1 Equals(Object,System.Collections.IEqualityComparer) : Boolean
+member Ranvier.TimedOptions`1 Equals(Ranvier.TimedOptions`1<!0>) : Boolean
+member Ranvier.TimedOptions`1 Equals(Ranvier.TimedOptions`1<!0>,System.Collections.IEqualityComparer) : Boolean
+member Ranvier.TimedOptions`1 GetHashCode() : Int32
+member Ranvier.TimedOptions`1 GetHashCode(System.Collections.IEqualityComparer) : Int32
+member Ranvier.TimedOptions`1 get_Clock() : Ranvier.TimedClock
+member Ranvier.TimedOptions`1 get_Comparer() : Microsoft.FSharp.Core.FSharpOption`1<System.Collections.Generic.IEqualityComparer`1<!0>>
+member Ranvier.TimedTimer .ctor() : Void
+member Ranvier.TimedTimer Arm(System.TimeSpan) : Void
+member Ranvier.TimedTimer Disarm() : Void
+member Ranvier.TimedTimer Dispose() : Void
+member Ranvier.Timed`1 Dispose() : Void
+member Ranvier.Timed`1 get_ErrorOrigin() : Ranvier.INode
+member Ranvier.Timed`1 get_Graph() : Ranvier.Graph
+member Ranvier.Timed`1 get_Peek() : !0
+member Ranvier.Timed`1 get_Runs() : Int32
+member Ranvier.Timed`1 get_Status() : Ranvier.Status
+member Ranvier.Timed`1 get_TryValue() : Ranvier.Reading`1<!0>
+member Ranvier.Timed`1 get_Value() : !0
 member Ranvier.Trace static label(Ranvier.Graph,Ranvier.INode,String) : Void
 member Ranvier.TraceModule static named<1>(String,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : !!0
 type Ranvier.Api : System.Object
@@ -258,6 +380,7 @@ type Ranvier.Boundary`1 implements Ranvier.INode
 type Ranvier.Boundary`1 implements Ranvier.IOwned
 type Ranvier.Boundary`1 implements Ranvier.IScopeHost
 type Ranvier.Boundary`1 implements Ranvier.ISource
+type Ranvier.Editable`1 : System.Object
 type Ranvier.Effect : System.Object
 type Ranvier.Effect implements Ranvier.IComputation
 type Ranvier.Effect implements Ranvier.INode
@@ -288,6 +411,9 @@ type Ranvier.ImmediateDispatcher : System.Object
 type Ranvier.ImmediateDispatcher implements Ranvier.IGraphDispatcher
 type Ranvier.JsIdentityPolicy : System.Object
 type Ranvier.JsIdentityPolicy implements Ranvier.IEqualityPolicy
+type Ranvier.KeyChange : System.Enum
+type Ranvier.KeyedCollection`2 : System.Object
+type Ranvier.KeyedCollection`2 implements System.IDisposable
 type Ranvier.ListModule : System.Object
 type Ranvier.Lookup`2 : System.Object
 type Ranvier.Lookup`2 implements Ranvier.IOwned
@@ -306,11 +432,26 @@ type Ranvier.NotReadyException implements System.Collections.IStructuralEquatabl
 type Ranvier.Owner : System.Object
 type Ranvier.Owner implements Ranvier.IOwned
 type Ranvier.Owner implements System.IDisposable
+type Ranvier.PositionalChange`1 : System.Object
+type Ranvier.PositionalChange`1 implements System.Collections.IStructuralComparable
+type Ranvier.PositionalChange`1 implements System.Collections.IStructuralEquatable
+type Ranvier.PositionalChange`1 implements System.IComparable
+type Ranvier.PositionalChange`1 implements System.IComparable`1<Ranvier.PositionalChange`1<!0>>
+type Ranvier.PositionalChange`1 implements System.IEquatable`1<Ranvier.PositionalChange`1<!0>>
+type Ranvier.PositionalChange`1+InsertAt : Ranvier.PositionalChange`1<!0>
+type Ranvier.PositionalChange`1+Move : Ranvier.PositionalChange`1<!0>
+type Ranvier.PositionalChange`1+RemoveAt : Ranvier.PositionalChange`1<!0>
+type Ranvier.PositionalChange`1+Tags : System.Object
 type Ranvier.Previous`1 : System.ValueType
+type Ranvier.ProjectionDelta`1 : System.Object
 type Ranvier.ProjectionModule : System.Object
+type Ranvier.ProjectionReader`1 : System.Object
+type Ranvier.ProjectionReader`1 implements Ranvier.IOwned
+type Ranvier.ProjectionReader`1 implements System.IDisposable
 type Ranvier.Projection`2 : System.Object
 type Ranvier.Projection`2 implements Ranvier.IBeaconHost
 type Ranvier.Projection`2 implements Ranvier.IComputation
+type Ranvier.Projection`2 implements Ranvier.IKeyLogHost`1<!0>
 type Ranvier.Projection`2 implements Ranvier.INode
 type Ranvier.Projection`2 implements Ranvier.IOwned
 type Ranvier.Projection`2 implements Ranvier.IScheduled
@@ -336,5 +477,22 @@ type Ranvier.ThreadAffinity implements System.IComparable
 type Ranvier.ThreadAffinity implements System.IComparable`1<Ranvier.ThreadAffinity>
 type Ranvier.ThreadAffinity implements System.IEquatable`1<Ranvier.ThreadAffinity>
 type Ranvier.ThreadAffinity+Tags : System.Object
+type Ranvier.TimedClock : System.Object
+type Ranvier.TimedClockModule : System.Object
+type Ranvier.TimedCombinators : System.Object
+type Ranvier.TimedOptions : System.Object
+type Ranvier.TimedOptions`1 : System.Object
+type Ranvier.TimedOptions`1 implements System.Collections.IStructuralEquatable
+type Ranvier.TimedOptions`1 implements System.IEquatable`1<Ranvier.TimedOptions`1<!0>>
+type Ranvier.TimedTimer : System.Object
+type Ranvier.TimedTimer implements System.IDisposable
+type Ranvier.Timed`1 : System.Object
+type Ranvier.Timed`1 implements Ranvier.IComputation
+type Ranvier.Timed`1 implements Ranvier.INode
+type Ranvier.Timed`1 implements Ranvier.IOwned
+type Ranvier.Timed`1 implements Ranvier.IScheduled
+type Ranvier.Timed`1 implements Ranvier.IScopeHost
+type Ranvier.Timed`1 implements Ranvier.ISource
+type Ranvier.Timed`1 implements System.IDisposable
 type Ranvier.Trace : System.Object
 type Ranvier.TraceModule : System.Object

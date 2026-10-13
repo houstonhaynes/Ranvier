@@ -21,6 +21,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Tests.fs | 7 | 7 | 7 | 7 | 7 | 7 | 0 | 0 |
 | Effects.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
+| Bindings.fs | 17 | 17 | 17 | 17 | 17 | 17 | 0 | 0 |
 | EffectSplit.fs | 26 | 26 | 21 | 26 | 26 | 21 | 0 | 0 |
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Owners.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
@@ -32,7 +33,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 10 | 0 |
-| Tracing.fs | 2 | 2 | 2 | 66 | 62 | 57 | 1 | 0 |
+| Tracing.fs | 2 | 2 | 2 | 67 | 63 | 58 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 24 | 24 | 24 | 24 | 24 | 24 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
@@ -67,7 +68,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 859 | 841 | 797 | 942 | 920 | 871 | 87 | 1 |
+| **Total** | 876 | 858 | 814 | 960 | 938 | 889 | 87 | 1 |
 
 ## Tests.fs
 
@@ -101,6 +102,30 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - effectOn does not track reads in the action
 - effectOn runs the action's cleanups before the next action
 - effectOn raises when compute creates a node
+
+</details>
+
+## Bindings.fs
+
+<details><summary>17 passed in every build and delivery that runs them</summary>
+
+- a signal binding writes the current value on creation
+- a signal write writes again
+- writes in one batch write once with the final value
+- a memo binding writes when the memo moves
+- a memo recomputing to an equal value does not write
+- a pending memo leaves the target and writes once settled
+- a failed memo leaves the target and recovers
+- a throwing write is recorded and does not strand other work
+- a binding is disposed with its owner
+- disposing a binding stops it
+- a binding disposed while queued does not write
+- a binding under a disposed owner never writes
+- a binding created in a pure memo body never writes and leaves no observer
+- a binding created in createEffectOn's compute never writes and leaves no observer
+- a binding created in an effect body is disposed when the effect re-runs
+- the target is passed to the write
+- bindSignal and bindMemo bind under the current graph and owner
 
 </details>
 
@@ -454,7 +479,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | --- | --- |
 | an Unchecked graph creating nodes from two threads records every NodeNew | JavaScript has one thread. |
 
-<details><summary>57 passed in every build and delivery that runs them</summary>
+<details><summary>58 passed in every build and delivery that runs them</summary>
 
 - the assembly is traced exactly when RANVIER_TRACE is defined
 - named returns the thunk's result
@@ -513,6 +538,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - history lists each run with its status, movement, root and flush (traced only)
 - waitingOn names the pending source the last run read (traced only)
 - why through an async source ends at its settle (traced only)
+- a binding is traced as a binding (traced only)
 
 </details>
 

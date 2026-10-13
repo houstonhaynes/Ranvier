@@ -3103,6 +3103,16 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
         else Ready value
 
     /// <summary>
+    /// Non-throwing read that brings the memo up to date without recording a dependency.
+    /// </summary>
+    member internal this.ReadUntracked() : Reading<'T> =
+        this.EnsureCurrent ()
+
+        if status.HasFlag Status.Pending then Pending
+        elif status.HasFlag Status.Error then Failed failure.Error
+        else Ready value
+
+    /// <summary>
     /// The node the current failure originated in while <c>Status</c> has <c>Error</c>, otherwise null. Untracked.
     /// </summary>
     /// <remarks>

@@ -57,6 +57,7 @@
         <Compile Include="TraceSite.fs" Condition="'$(RanvierTrace)' == 'true'" />
         <Compile Include="Trace.fs" />
         <Compile Include="Core.fs" />
+        <Compile Include="Bindings.fs" />
         <Compile Include="Timed.fs" />
         <Compile Include="Deltas.fs" />
         <Compile Include="ValueReaders.fs" />

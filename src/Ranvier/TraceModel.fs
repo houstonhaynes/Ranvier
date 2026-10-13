@@ -1133,6 +1133,7 @@ module TraceModel =
         | TraceNodeKind.ProjectionBeacon -> "beacons"
         | TraceNodeKind.RowWatch -> "row watches"
         | TraceNodeKind.LookupCell -> "lookup cells"
+        | TraceNodeKind.Binding -> "bindings"
         | _ -> "nodes"
 
     let private eventLine (snapshot: TraceSnapshot) (e: TraceEvent) =

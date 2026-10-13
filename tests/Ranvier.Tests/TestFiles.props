@@ -5,6 +5,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)Readings.fs" Link="Readings.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Tests.fs" Link="Tests.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Effects.fs" Link="Effects.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Bindings.fs" Link="Bindings.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)EffectSplit.fs" Link="EffectSplit.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)AmbientGraph.fs" Link="AmbientGraph.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Owners.fs" Link="Owners.fs" />

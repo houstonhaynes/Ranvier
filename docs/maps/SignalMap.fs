@@ -105,12 +105,14 @@ module private Look =
         | TraceNodeKind.Boundary -> "boundary"
         | TraceNodeKind.Projection -> "projection"
         | TraceNodeKind.Timed -> "timed"
+        | TraceNodeKind.Binding -> "binding"
         | _ -> "node"
 
     let shapeOf (kind: TraceNodeKind) =
         match kind with
         | TraceNodeKind.Signal -> "signal"
-        | TraceNodeKind.Effect -> "effect"
+        | TraceNodeKind.Effect
+        | TraceNodeKind.Binding -> "effect"
         | TraceNodeKind.Timed -> "timed"
         | TraceNodeKind.AsyncMemo
         | TraceNodeKind.AsyncSource -> "async"

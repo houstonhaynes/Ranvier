@@ -196,6 +196,7 @@ module MapModel =
             | TraceNodeKind.Boundary -> "boundary"
             | TraceNodeKind.Projection -> "projection"
             | TraceNodeKind.Timed -> "timed"
+            | TraceNodeKind.Binding -> "binding"
             | _ -> "#" + string node
         | None -> "#" + string node
 

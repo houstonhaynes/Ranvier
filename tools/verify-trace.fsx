@@ -807,8 +807,8 @@ let packGate () =
     check "gate 1: packed public surface equals the baseline plus Trace.named and Trace.label" (List.ofSeq (Seq.append added removed)) ""
 
     let mergeSurface = publicSurface(Path.Combine(work, "il-base-out", "Ranvier.dll")) |> set
-    check "gate 1: timed public API is exactly additive against merge-base"
-        ([ for l in mergeSurface - surface -> "removed: " + l ] @ [ for l in surface - mergeSurface - timedAdditions -> "unexpected: " + l ] @ [ for l in timedAdditions - (surface - mergeSurface) -> "missing addition: " + l ]) ""
+    check "gate 1: public API is additive against merge-base and every addition is in the baseline"
+        ([ for l in mergeSurface - surface -> "removed: " + l ] @ [ for l in surface - mergeSurface - baseline -> "unlisted addition: " + l ]) ""
 
     let (debugCode, _) =
         run root [] "dotnet" [ "pack"; "src/Ranvier"; "-c"; "Debug"; "-o"; Path.Combine (work, "pack-debug") ]

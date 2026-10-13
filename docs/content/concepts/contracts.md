@@ -219,6 +219,7 @@ run: an owning memo first read by an effect keeps its nodes when the effect re-r
 | `createSignal`, `createAsyncSource` | Unowned | Collected like any object once unreferenced. A reader drops its edge when it is disposed, or re-runs without reading the source. |
 | `createMemo`, `createMemoWith`, `createAsync`, `createAsyncWith`, `createOptionMemo` | Current owner | With the owner, or by `Dispose`. |
 | `createEffect`, `createEffectOn` | Current owner | With the owner. Construct `Effect` directly for a handle. |
+| `bindSignal`, `bindMemo` | Current owner | With the owner. The source is the only dependency; `write` runs untracked in the flush and must not create reactive nodes. |
 | `createSuspense`, `createErrorBoundary`, `createBoundary` | Current owner | With the owner, or by `Dispose`. |
 | `createProjection`, `createProjectionWith`, the index forms, and the views built on a projection | Current owner | With the owner, or by `Dispose`. Each key's scope is disposed when the key leaves. |
 | `createKeyedCollection` | Current owner | With the owner, or by `Dispose`. Its row nodes are retired when their key leaves. |

@@ -125,6 +125,7 @@ type TraceNodeKind =
     | RowWatch = 9
     | LookupCell = 10
     | Timed = 11
+    | Binding = 12
 
 /// <summary>The captured and published state of a timed node at the query or recorded event.</summary>
 type TraceTiming =
@@ -243,6 +244,7 @@ module internal TraceNames =
         | TraceNodeKind.RowWatch -> "RowWatch"
         | TraceNodeKind.LookupCell -> "LookupCell"
         | TraceNodeKind.Timed -> "Timed"
+        | TraceNodeKind.Binding -> "Binding"
         | other -> string (int other)
 #else
         string value

@@ -727,6 +727,15 @@ type internal Tracer =
         ()
 #endif
 
+    /// <summary>Records <c>NodeNew</c> for a binding attached to <c>owner</c>.</summary>
+    [<Conditional("RANVIER_TRACE")>]
+    static member BindingNew(graph: obj, id: int, owner: obj) =
+#if RANVIER_TRACE
+        Tracer.Node (graph, id, TraceNodeKind.Binding, owner)
+#else
+        ()
+#endif
+
     /// <summary>Records <c>NodeNew</c> for an async memo attached to <c>owner</c>.</summary>
     [<Conditional("RANVIER_TRACE")>]
     static member AsyncMemoNew(graph: obj, id: int, owner: obj) =

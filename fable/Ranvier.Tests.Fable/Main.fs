@@ -23,6 +23,7 @@ let all =
         [
             testList "Tests.fs" [ Ranvier.Tests.Diamond.tests ]
             testList "Effects.fs" [ Ranvier.Tests.Effects.tests ]
+            testList "Bindings.fs" [ Ranvier.Tests.Bindings.tests ]
             testList "EffectSplit.fs" [ Ranvier.Tests.EffectSplit.tests ]
             testList "AmbientGraph.fs" [ Ranvier.Tests.AmbientGraph.tests ]
             testList "Owners.fs" [ Ranvier.Tests.Owners.tests ]

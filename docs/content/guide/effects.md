@@ -144,6 +144,42 @@ converged at 3 after 4 runs
 
 :::
 
+## Binding a source to a target
+
+`bindSignal source target write` and `bindMemo source target write` connect one signal or memo to
+one target. `write` receives the target and the source's value. Use a binding instead of an effect
+when the only job is to copy a single source into a target, such as a node property in a view.
+Use an effect when the work reads several sources or depends on what it reads.
+
+View renderers need this primitive to bind a node property directly to a signal or memo without
+an effect per binding.
+
+```fsharp
+type Label () =
+    member val Text = "" with get, set
+
+let label = Label ()
+let name = createSignal "Ada"
+bindSignal name label (fun target value -> target.Text <- value)
+```
+
+The binding writes `"Ada"` on the next flush and again after every change to `name`. The contract:
+
+- The source is the only dependency. Reads inside `write` are untracked.
+- The first write happens on the next flush. Every later change to the source writes again.
+- `write` must not create reactive nodes.
+- While a memo is pending or failed, the target keeps its last value. A recomputation to an equal
+  value writes nothing.
+- A throwing `write` leaves other queued work running, and the next change writes again.
+- The binding belongs to the current owner and is disposed with it; see
+  [Scopes and disposal](roots.md).
+
+Against an effect that does the same copy, a binding creates and disposes in 0.69x to 0.77x
+the time and 0.54x the allocation at 64 and 1024 consumers, and a write observed by those
+consumers flushes in 0.69x to 0.76x the time. These figures come from a single run; see
+[the effect benchmarks](../benchmarks/effects.md#bindingbenchmarks) for the method, provenance and
+caveats.
+
 ## Failures
 
 :::warning Missing effect errors
