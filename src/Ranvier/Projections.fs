@@ -1952,10 +1952,10 @@ type Lookup<'K, 'V when 'K: equality> internal (graph: Graph) as this =
     member internal _.IsDisposed = disposed
 
 #if RANVIER_TRACE
-    /// <summary>The node id the lookup's cells are recorded as parts of.</summary>
-    member internal _.TraceHost
-        with get () = traceHost
-        and set value = traceHost <- value
+    interface ITracedHost with
+        member _.TraceHost
+            with get () = traceHost
+            and set value = traceHost <- value
 #endif
 
     member private _.NewCell(key: 'K) =
@@ -1968,9 +1968,7 @@ type Lookup<'K, 'V when 'K: equality> internal (graph: Graph) as this =
                         orphans.Add key |> ignore)
             )
 
-#if RANVIER_TRACE
-        Tracer.Part (graph, (cell :> INode).Id, traceHost, box key)
-#endif
+        Tracer.LookupPart (graph, this, (cell :> INode).Id, box key)
         cell
 
     /// <summary>
@@ -2271,9 +2269,7 @@ type internal LookupOf<'S, 'K, 'V when 'K: equality>(graph: Graph, f: 'S -> 'K -
 
         Tracer.Part (graph, (refresh :> INode).Id, (state :> INode).Id, null)
 
-#if RANVIER_TRACE
-    do this.TraceHost <- (state :> INode).Id
-#endif
+    do Tracer.Host (this, (state :> INode).Id)
 
     interface ILookupSource<'K, 'V> with
         member this.Compute key =

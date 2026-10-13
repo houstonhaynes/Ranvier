@@ -73,7 +73,8 @@ requires `unit`-returning methods; the walker stack is a push hook and a pop hoo
   `Tracer.GraphNew(root, guarded)` hook in the `Graph` constructor and stored on the root owner.
 - `ITraced` exposes `TraceLog` (get/set) and `TraceId` (get/set). `Graph`, `Owner`, `ObserverSet` and `SourceList`
   implement it. A node's `ObserverSet` and `SourceList` are bound to the graph's log and the node's id by a
-  `Tracer.Bind(set, graph, id)` hook in the node constructor.
+  `Tracer.Bind(set, graph, id)` hook in the node constructor. A `Binding` implements `ITraced` and `ITracedEdges`
+  itself, as its own one-slot source list, and is bound by `Tracer.Bind(this, graph, id)` when it attaches its source.
 - A computation's run scope receives the log from `Tracer.ScopeNew(scope, graph, host)` when the scope is created, and
   emits `OwnerNew` then. Any other owner (`new Owner()`, `RootScope`, a key scope) adopts its parent's log through
   `Tracer.OwnerAdopt` in `Owner.SetParent`, `Owner.Attach` or the scope's constructor, and emits `OwnerNew` at adoption.
@@ -446,7 +447,10 @@ Declaration blocks only; the lint matches this list. Line numbers are the `#if R
 
 | File | Type | Contents | Lines |
 | --- | --- | --- | --- |
-| `Core.fs` | `Graph` | `interface ITraced`, reading and writing the root owner's `TraceLog`. | 1049 |
-| `Core.fs` | `Owner` | `TraceLog` and `TraceId` fields; `interface ITraced`. | 547, 753 |
-| `Core.fs` | `ObserverSet` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 126, 296 |
-| `Core.fs` | `SourceList` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 366, 465 |
+| `Core.fs` | `Graph` | `interface ITraced`, reading and writing the root owner's `TraceLog`. | 1654 |
+| `Core.fs` | `Owner` | `TraceLog` and `TraceId` fields; `interface ITraced`. | 656, 919 |
+| `Core.fs` | `ObserverSet` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 149, 332 |
+| `Core.fs` | `SourceList` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 419, 537 |
+| `Bindings.fs` | `Binding` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`, the source id while undisposed. | 24, 161 |
+| `Projections.fs` | `Lookup` | Host-id field; `interface ITracedHost`, set by `Tracer.Host` and read by `Tracer.LookupPart`. | 1941, 1954 |
+| `Timed.fs` | `Timed` | `interface ITimedTrace`. | 397 |

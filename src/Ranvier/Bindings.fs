@@ -2,34 +2,6 @@ namespace Ranvier
 
 open System
 
-#if RANVIER_TRACE
-/// <summary>A binding's single source edge, as a traced source list.</summary>
-[<Sealed>]
-type internal BindingEdge(source: ISource) =
-    let mutable live = false
-    let mutable traceLog: TraceLog = null
-    let mutable traceId = 0
-
-    /// <summary>Whether the binding observes the source.</summary>
-    member _.Live
-        with get () = live
-        and set value = live <- value
-
-    interface ITraced with
-        member _.TraceLog
-            with get () = traceLog
-            and set log = traceLog <- log
-
-        member _.TraceId
-            with get () = traceId
-            and set id = traceId <- id
-
-    interface ITracedEdges with
-        member _.Owner = traceId
-        member _.IsSources = true
-        member _.Ids = if live then [| source.Id |] else [||]
-#endif
-
 /// <summary>
 /// Writes a source's value to a target on the next flush and after every change of the source.
 /// </summary>
@@ -50,8 +22,8 @@ type internal Binding<'Target, 'T>
     let mutable link: OwnerLink = null
     let mutable runs = 0
 #if RANVIER_TRACE
-    let edge = BindingEdge source
-    do Tracer.Bind (edge, graph, id)
+    let mutable traceLog: TraceLog = null
+    let mutable traceId = 0
 #endif
 
     static member internal OfSignal(graph: Graph, source: Signal<'T>, target: 'Target, write: 'Target -> 'T -> unit) =
@@ -73,10 +45,8 @@ type internal Binding<'Target, 'T>
         Tracer.BindingNew (graph, id, link.Owner)
 
         if not disposed then
-#if RANVIER_TRACE
-            edge.Live <- true
-            Tracer.EdgeAdd (edge, source, 0)
-#endif
+            Tracer.Bind (this, graph, id)
+            Tracer.EdgeAdd (this, source, 0)
             source.AddObserver (this :> IComputation)
             (this :> IComputation).MarkDirty()
             graph.RequestFlush ()
@@ -123,17 +93,14 @@ type internal Binding<'Target, 'T>
             "Disposing a node",
             fun () ->
                 if not disposed then
-                    disposed <- true
                     Tracer.NodeDispose (graph, id)
+                    Tracer.EdgesRemove (this, 0)
+                    disposed <- true
 
                     if not (isNull link) then
                         link.Detach ()
                         link <- null
 
-#if RANVIER_TRACE
-                    Tracer.EdgesRemove (edge, 0)
-                    edge.Live <- false
-#endif
                     source.RemoveObserver (this :> IComputation)
         )
 
@@ -190,3 +157,19 @@ type internal Binding<'Target, 'T>
 
                 if shouldRun && not disposed then
                     this.Run ()
+
+#if RANVIER_TRACE
+    interface ITraced with
+        member _.TraceLog
+            with get () = traceLog
+            and set log = traceLog <- log
+
+        member _.TraceId
+            with get () = traceId
+            and set id = traceId <- id
+
+    interface ITracedEdges with
+        member _.Owner = traceId
+        member _.IsSources = true
+        member _.Ids = if disposed then [||] else [| source.Id |]
+#endif
