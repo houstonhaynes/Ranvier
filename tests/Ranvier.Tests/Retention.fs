@@ -209,7 +209,7 @@ let tests =
                         owner)
 
                 owner.Dispose ()
-                Expect.sequenceEqual log [ 3; 2; 1; 0 ] "cleanups first, in reverse, then children"
+                Expect.sequenceEqual log [ 0; 3; 2; 1 ] "reverse acquisition order across cleanups and children"
             }
 
 #if !FABLE_COMPILER

@@ -23,7 +23,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Effects.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | EffectSplit.fs | 26 | 26 | 21 | 26 | 26 | 21 | 0 | 0 |
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
-| Owners.fs | 12 | 12 | 12 | 12 | 12 | 12 | 0 | 0 |
+| Owners.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
 | Async.fs | 30 | 22 | 7 | 30 | 22 | 7 | 2 | 0 |
 | Boundaries.fs | 27 | 27 | 23 | 27 | 27 | 23 | 1 | 0 |
@@ -67,7 +67,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 857 | 839 | 795 | 940 | 918 | 869 | 87 | 1 |
+| **Total** | 859 | 841 | 797 | 942 | 920 | 871 | 87 | 1 |
 
 ## Tests.fs
 
@@ -160,11 +160,13 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Owners.fs
 
-<details><summary>12 passed in every build and delivery that runs them</summary>
+<details><summary>14 passed in every build and delivery that runs them</summary>
 
 - disposing a root disposes the effects created inside it
 - a cleanup runs before the next run of the same effect
 - a cleanup runs on disposal
+- a cleanup registered after a child runs while the child is live
+- a cleanup registered after an attached disposable runs before it is disposed
 - nested roots are torn down depth-first
 - teardown order is last-created-first
 - a throwing cleanup does not strand the rest of the scope

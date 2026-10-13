@@ -584,15 +584,17 @@ type internal OwnerLink(child: IOwned, owner: Owner) =
     member val Next: OwnerLink = null with get, set
 
     /// <summary>
-    /// Guards against a double unlink, which would otherwise null out the
-    /// owner's head when handed a link that had already left the list.
+    /// The owner's list generation the link joined, or -1 once the link has left the list.
     /// </summary>
-    member val Linked = true with get, set
+    /// <remarks>
+    /// A link at -1 is ignored by a later unlink, which would otherwise null out the owner's head.
+    /// </remarks>
+    member val Generation = 0 with get, set
 
     /// <summary>
-    /// The owner's list generation the link joined.
+    /// The owner's acquisition count when the link joined.
     /// </summary>
-    member val Generation = 0 with get, set
+    member val Acquired = 0 with get, set
 
 /// <summary>
 /// A disposal scope.
@@ -603,7 +605,7 @@ type internal OwnerLink(child: IOwned, owner: Owner) =
 /// reads, so nothing collects it and nothing stops it running. Disposing every
 /// effect by hand is the kind of bookkeeping that is wrong in one place and
 /// silently keeps a subtree running. An owner makes lifetime structural — a
-/// scope is torn down as a unit, last-created-first-destroyed.
+/// scope is torn down as a unit, in reverse acquisition order.
 /// </para>
 /// <para>
 /// Owners nest, and every computation with a body is itself an owner: nodes
@@ -624,6 +626,16 @@ and Owner internal (sink: Owner) =
     let mutable cleanups: ResizeArray<unit -> unit> = null
 
     /// <summary>
+    /// The acquisition count of each entry in <c>cleanups</c>.
+    /// </summary>
+    let mutable cleanupOrder: ResizeArray<int> = null
+
+    /// <summary>
+    /// Counts cleanups and children registered since the last teardown.
+    /// </summary>
+    let mutable acquisitions = 0
+
+    /// <summary>
     /// Allocated by the first error recorded without a sink.
     /// </summary>
     let mutable errors: ResizeArray<exn> = null
@@ -631,7 +643,7 @@ and Owner internal (sink: Owner) =
 
     /// <summary>
     /// Bumped each time a teardown detaches the child list. A link from an
-    /// earlier generation belongs to a detached list.
+    /// earlier generation belongs to a detached list. Always non-negative.
     /// </summary>
     let mutable generation = 0
 
@@ -695,7 +707,7 @@ and Owner internal (sink: Owner) =
     /// </summary>
     member private this.DisposeLate(child: IOwned) =
         this.RunLate child.Release
-        OwnerLink (child, this, Linked = false)
+        OwnerLink (child, this, Generation = -1)
 
     /// <summary>
     /// Runs <c>f</c> on behalf of the disposed scope: under the graph's teardown
@@ -712,7 +724,8 @@ and Owner internal (sink: Owner) =
                 this.RecordError ex
 
     member private this.Append(child: IOwned) =
-        let link = OwnerLink (child, this, Generation = generation)
+        let link = OwnerLink (child, this, Generation = generation, Acquired = acquisitions)
+        acquisitions <- acquisitions + 1
 
         if isNull tail then
             head <- link
@@ -730,12 +743,8 @@ and Owner internal (sink: Owner) =
     /// and discards the list when it finishes.
     /// </summary>
     member internal _.Unlink(link: OwnerLink) =
-        if
-            not (isNull link)
-            && link.Linked
-            && link.Generation = generation
-        then
-            link.Linked <- false
+        if not (isNull link) && link.Generation = generation then
+            link.Generation <- -1
 
             if isNull link.Prev then
                 head <- link.Next
@@ -785,8 +794,11 @@ and Owner internal (sink: Owner) =
         else
             if isNull cleanups then
                 cleanups <- ResizeArray<unit -> unit>()
+                cleanupOrder <- ResizeArray<int>()
 
             cleanups.Add f
+            cleanupOrder.Add acquisitions
+            acquisitions <- acquisitions + 1
 
     /// <summary>
     /// Tears the scope down without retiring it, so it can be filled again.
@@ -794,9 +806,9 @@ and Owner internal (sink: Owner) =
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Cleanups run before children are disposed: a cleanup is the body's own
-    /// undo and may still reference what that body created. Both run
-    /// last-registered-first, construction order in reverse.
+    /// Cleanups and children are torn down together in reverse acquisition
+    /// order, as <c>use</c> bindings are disposed. A cleanup runs while every
+    /// node created before its registration is still live.
     /// </para>
     /// <para>
     /// The cleanups and children are detached before the first one runs. A
@@ -808,38 +820,50 @@ and Owner internal (sink: Owner) =
     /// </remarks>
     member internal this.DisposeScope() =
         let detached = cleanups
+        let detachedOrder = cleanupOrder
         let mutable node = tail
         head <- null
         tail <- null
-        generation <- generation + 1
+        generation <- (generation + 1) &&& 0x7FFFFFFF
+        acquisitions <- 0
+        cleanups <- null
+        cleanupOrder <- null
 
-        if not (isNull detached) then
-            cleanups <- null
+        let mutable index = if isNull detached then -1 else detached.Count - 1
 
-            for i in detached.Count - 1 .. -1 .. 0 do
+        while index >= 0 || not (isNull node) do
+            if
+                not (isNull node)
+                && (index < 0
+                    || node.Acquired > Platform.entryAt index detachedOrder)
+            then
+                let prev = node.Prev
+
                 try
-                    (Platform.entryAt i detached) ()
+                    node.Child.Release ()
                 with ex ->
                     this.RecordError ex
 
+                node <- prev
+            else
+                try
+                    (Platform.entryAt index detached) ()
+                with ex ->
+                    this.RecordError ex
+
+                index <- index - 1
+
+        if not (isNull detached) then
             // Guarded because `Clear` is not free where it matters most. Fable
             // compiles it to `col.splice(0)`, which allocates the array of
             // removed elements whether or not there were any.
             if detached.Count > 0 then
                 detached.Clear ()
+                detachedOrder.Clear ()
 
             if isNull cleanups then
                 cleanups <- detached
-
-        while not (isNull node) do
-            let prev = node.Prev
-
-            try
-                node.Child.Release ()
-            with ex ->
-                this.RecordError ex
-
-            node <- prev
+                cleanupOrder <- detachedOrder
 
     /// <summary>
     /// Tears the scope down and retires it. Idempotent.

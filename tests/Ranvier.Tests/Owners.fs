@@ -64,6 +64,41 @@ let tests =
                 Expect.sequenceEqual log [ "closed" ] "disposal discharges the scope"
             }
 
+            test "a cleanup registered after a child runs while the child is live" {
+                let g = new Graph ()
+                let log = ResizeArray ()
+
+                let outer =
+                    g.CreateRoot (fun outer ->
+                        g.CreateRoot (fun _ -> g.OnCleanup (fun () -> log.Add "inner"))
+                        g.OnCleanup (fun () -> log.Add "outer")
+                        outer)
+
+                outer.Dispose ()
+                Expect.sequenceEqual log [ "outer"; "inner" ] "a cleanup may reference what its body created before it"
+            }
+
+            test "a cleanup registered after an attached disposable runs before it is disposed" {
+                let g = new Graph ()
+                let disposed = ref false
+                let seen = ref None
+
+                let owner =
+                    g.CreateRoot (fun owner ->
+                        owner.Attach
+                            { new IDisposable with
+                                member _.Dispose() =
+                                    disposed.Value <- true
+                            }
+
+                        g.OnCleanup (fun () -> seen.Value <- Some disposed.Value)
+                        owner)
+
+                owner.Dispose ()
+                Expect.equal seen.Value (Some false) "the cleanup ran while the disposable was live"
+                Expect.isTrue disposed.Value "the disposable is disposed with its owner"
+            }
+
             test "nested roots are torn down depth-first" {
                 let g = new Graph ()
                 let log = ResizeArray ()
@@ -77,7 +112,7 @@ let tests =
                         outer)
 
                 outer.Dispose ()
-                Expect.sequenceEqual log [ "outer"; "inner" ] "own cleanups first, then children"
+                Expect.sequenceEqual log [ "inner"; "outer" ] "a child created after a cleanup is torn down first"
             }
 
             test "teardown order is last-created-first" {

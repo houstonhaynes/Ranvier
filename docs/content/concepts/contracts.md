@@ -252,9 +252,10 @@ An async value created and read in the same owning body restarts its flight on e
 
 ### Teardown order
 
-Disposing a scope, or ending a computation's run, runs its cleanups last-registered-first, then disposes its
-children last-created-first. Each child scope does the same, so a scope's own cleanups run before its
-children's. Cleanups run untracked. Disposal is idempotent.
+Disposing a scope, or ending a computation's run, tears down its cleanups and children together in reverse
+acquisition order, as `use` bindings are disposed. A cleanup runs while every node created before its
+registration is still live. Each child scope is torn down the same way. Cleanups run untracked. Disposal is
+idempotent.
 
 - A disposed memo keeps its last value and stops recomputing.
 - Disposing an async value cancels its flight's token.
