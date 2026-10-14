@@ -22,6 +22,7 @@
         <Compile Include="Suspension.fs" />
         <Compile Include="Lifetimes.fs" />
         <Compile Include="Projections.fs" />
+        <Compile Include="Lists.fs" />
         <Compile Include="DeltaReaders.fs" />
         <Compile Include="Comparisons.fs" />
         <Compile Include="Commands.fs" />

@@ -162,6 +162,18 @@ controls [
 - Key by the whole item (`id`) to create a new row for an edited item. This follows Solid's
   unkeyed semantics.
 
+`keyOf` must return equal keys for equal items, where items compare under the graph's equality
+policy: by default, records and classes compare by reference. A pass may skip `keyOf` for an item
+equal to the one at the same position in the previous pass, counted from the start or from the end.
+
+:::warning Replace an item to change its key
+An item whose key field is mutated in place and republished may keep its old key and row. Publish a
+new item instead.
+:::
+
+The order in which a pass disposes the rows of removed keys is unspecified, and a duplicate-key
+failure reports one of the duplicated keys.
+
 :::warning Keys must be unique
 Records and unions used as keys compare by contents. Two equal items therefore produce the same
 key and fail the projection pass.

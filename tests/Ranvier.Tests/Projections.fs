@@ -2472,3 +2472,306 @@ let deltaReaderTests =
                 expectLaw "hidden key removed" removed
             }
         ]
+
+/// <summary>The message <c>action</c> raises; the test fails when it raises nothing.</summary>
+let private raisedMessage (action: unit -> unit) : string =
+    let message = ref ""
+    Expect.throwsC action (fun error -> message.Value <- error.Message)
+    message.Value
+
+/// <summary>The messages a projection pass over <c>items</c> and <c>ensureUniqueKeys</c> over them raise.</summary>
+let private duplicateMessages<'T when 'T: equality> (items: 'T list) : string * string =
+    let proj = createProjection id id (fun () -> items)
+    raisedMessage (fun () -> proj.Keys |> ignore), raisedMessage (fun () -> Projection.ensureUniqueKeys id items)
+
+[<Tests>]
+let rowOptionTests =
+    testList
+        "Projection row options"
+        [
+            test "create-first runs an added row's factory before a removed row's cleanup" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+                let log = ResizeArray<string>()
+
+                let proj =
+                    createProjectionWithOptions
+                        ProjectionOptions.CreateFirst
+                        id
+                        (fun item ->
+                            let key = item ()
+                            log.Add ("create " + string key)
+                            onCleanup (fun () -> log.Add ("retire " + string key))
+                            fun () -> item ())
+                        (fun () -> items.Value)
+
+                createEffect (fun () -> proj.Keys |> ignore)
+                items.Value <- [ 2 ]
+
+                Expect.sequenceEqual log [ "create 1"; "create 2"; "retire 1" ] "the new row exists before the old row retires"
+            }
+
+            test "without options a pass retires before it creates" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+                let log = ResizeArray<string>()
+
+                let proj =
+                    createProjectionWithOptions
+                        ProjectionOptions.None
+                        id
+                        (fun item ->
+                            let key = item ()
+                            log.Add ("create " + string key)
+                            onCleanup (fun () -> log.Add ("retire " + string key))
+                            fun () -> item ())
+                        (fun () -> items.Value)
+
+                createEffect (fun () -> proj.Keys |> ignore)
+                items.Value <- [ 2 ]
+
+                Expect.sequenceEqual log [ "create 1"; "retire 1"; "create 2" ] "the default order is unchanged"
+            }
+
+            test "a failing create-first factory leaves the previous rows, items and keys" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ (1, "a") ]
+                let created = ResizeArray<int>()
+                let retired = ResizeArray<int>()
+                let mutable failOn = 0
+
+                let proj =
+                    createProjectionWithOptions
+                        ProjectionOptions.CreateFirst
+                        fst
+                        (fun item ->
+                            let key = fst (item ())
+                            created.Add key
+                            onCleanup (fun () -> retired.Add key)
+
+                            if key = failOn then
+                                failwith "factory"
+
+                            fun () -> snd (item ()))
+                        (fun () -> items.Value)
+
+                let readKeys () =
+                    try
+                        proj.Keys |> ignore
+                    with _ ->
+                        ()
+
+                createEffect readKeys
+                failOn <- 3
+                items.Value <- [ (1, "b"); (2, "x"); (3, "y") ]
+                readKeys ()
+                readKeys ()
+
+                Expect.sequenceEqual created [ 1; 2; 3 ] "the pass created rows 2 and 3"
+                Expect.sequenceEqual retired [ 3; 2 ] "and disposed them, last first"
+                Expect.equal proj.Status Status.Error "the pass failed"
+
+                failOn <- 0
+                items.Value <- [ (1, "c"); (2, "z") ]
+
+                Expect.sequenceEqual created [ 1; 2; 3; 2 ] "row 1 survived the failed pass; row 2 is created again"
+                Expect.sequenceEqual proj.Keys [ 1; 2 ] "the next pass applies"
+                Expect.equal (proj.Get 1) "c" "with the survivor's latest item"
+            }
+
+            test "a source written by a rolled-back row's cleanup lets the next read retry the failed pass" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+                let poke = createSignal 0
+                let created = ResizeArray<int>()
+                let mutable failOn = 3
+
+                let proj =
+                    createProjectionWithOptions
+                        ProjectionOptions.CreateFirst
+                        id
+                        (fun item ->
+                            let key = item ()
+                            created.Add key
+
+                            onCleanup (fun () ->
+                                if key = 2 then
+                                    poke.Value <- poke.Value + 1)
+
+                            if key = failOn then
+                                failOn <- 0
+                                failwith "factory"
+
+                            fun () -> item ())
+                        (fun () ->
+                            poke.Value |> ignore
+                            items.Value)
+
+                let readKeys () =
+                    try
+                        proj.Keys |> ignore
+                    with _ ->
+                        ()
+
+                createEffect readKeys
+                items.Value <- [ 1; 2; 3 ]
+                readKeys ()
+
+                Expect.sequenceEqual proj.Keys [ 1; 2; 3 ] "the retry applied the pass"
+                Expect.equal proj.Status Status.None "and cleared the failure"
+            }
+
+            test "a removed row's cleanup that disposes the projection stops a create-first pass" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1; 2 ]
+                let retired = ResizeArray<int>()
+                let mutable proj = Unchecked.defaultof<Projection<int, int>>
+
+                proj <-
+                    createProjectionWithOptions
+                        ProjectionOptions.CreateFirst
+                        id
+                        (fun item ->
+                            let key = item ()
+
+                            onCleanup (fun () ->
+                                retired.Add key
+
+                                if key = 2 then
+                                    proj.Dispose ())
+
+                            fun () -> item () * 10)
+                        (fun () -> items.Value)
+
+                createEffect (fun () -> proj.Keys |> ignore)
+                items.Value <- [ 1; 3 ]
+
+                Expect.equal proj.Status Status.None "the pass did not fail"
+                Expect.isNull proj.Error "and recorded no error"
+                Expect.containsAll retired [ 1; 2; 3 ] "the disposal took the created row with it"
+            }
+
+            test "a memo-free row is its factory's result, built once per key" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ (1, "a"); (2, "b") ]
+                let mutable builds = 0
+
+                let proj =
+                    createProjectionOnce
+                        ProjectionOptions.None
+                        fst
+                        (fun item ->
+                            builds <- builds + 1
+                            ref (snd (item ())))
+                        (fun () -> items.Value)
+
+                let one = proj.Get 1
+                items.Value <- [ (1, "c"); (2, "b") ]
+
+                Expect.isTrue (obj.ReferenceEquals (one, proj.Get 1)) "the row value is stored, not recomputed"
+                Expect.equal builds 2 "one build per key"
+            }
+
+            test "a tracked read of a memo-free row wakes when its key leaves" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1; 2 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> item () * 10) (fun () -> items.Value)
+
+                let seen = ResizeArray<int option>()
+                createEffect (fun () -> seen.Add (proj.TryGet 2))
+                items.Value <- [ 1 ]
+
+                Expect.sequenceEqual seen [ Some 20; None ] "the reader re-ran when key 2 left"
+            }
+
+            test "a memo-free factory failure is raised by reads of its row" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> if item () = 1 then failwith "factory" else item ()) (fun () ->
+                        items.Value)
+
+                Expect.sequenceEqual proj.Keys [ 1 ] "the pass succeeds"
+                Expect.throwsC (fun () -> proj.Get 1 |> ignore) (fun error -> Expect.equal error.Message "factory" "the stored failure")
+            }
+
+            test "memo-free create-first rows keep the previous rows when a factory fails" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+                let retired = ResizeArray<int>()
+                let mutable failOn = 0
+
+                let proj =
+                    createProjectionOnce
+                        ProjectionOptions.CreateFirst
+                        id
+                        (fun item ->
+                            let key = item ()
+                            onCleanup (fun () -> retired.Add key)
+
+                            if key = failOn then
+                                failwith "factory"
+
+                            key * 10)
+                        (fun () -> items.Value)
+
+                createEffect (fun () ->
+                    try
+                        proj.Keys |> ignore
+                    with _ ->
+                        ())
+
+                failOn <- 3
+                items.Value <- [ 2; 3 ]
+
+                Expect.sequenceEqual retired [ 3; 2 ] "this pass's rows retire, last first"
+                Expect.equal proj.Status Status.Error "the pass failed"
+                failOn <- 0
+                items.Value <- [ 1; 4 ]
+                Expect.sequenceEqual proj.Keys [ 1; 4 ] "the next pass applies"
+                Expect.equal (proj.Get 1) 10 "row 1 survived"
+            }
+
+            test "value readers and combinators reject memo-free rows" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> item ()) (fun () -> items.Value)
+
+                Expect.throwsT<NotSupportedException> (fun () -> proj.NewValueReader () |> ignore) "NewValueReader"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.filter (fun _ -> true) proj |> ignore) "filter"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.map id proj |> ignore) "map"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.sortBy id proj |> ignore) "sortBy"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.fold (+) 0 proj |> ignore) "fold"
+            }
+
+            test "ensureUniqueKeys raises the pass's message for int, string, record and tuple keys" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+
+                for label, (fromPass, fromCheck) in
+                    [
+                        "int", duplicateMessages [ 1; 2; 1 ]
+                        "string", duplicateMessages [ "a"; "a" ]
+                        "record", duplicateMessages [ {| Id = 1 |}; {| Id = 1 |} ]
+                        "tuple", duplicateMessages [ (1, "a"); (1, "a") ]
+                    ] do
+                    Expect.equal fromCheck fromPass label
+            }
+
+            test "ensureUniqueKeys keeps boxed keys of different types apart, as = does" { Projection.ensureUniqueKeys id [ box 1; box 1L; box "1" ] }
+        ]

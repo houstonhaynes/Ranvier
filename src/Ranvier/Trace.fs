@@ -6,6 +6,17 @@ open System.Diagnostics
 open System
 open System.Collections.Generic
 
+/// <summary>The traced build's limits on reruns of a scheduled node within a flush.</summary>
+/// <remarks>The flush raises <c>InvalidOperationException</c> in place of the dequeue past a limit.</remarks>
+module internal RerunGuard =
+    /// <summary>The most times a node's own runs queue it again in a flush.</summary>
+    [<Literal>]
+    let Limit = 1000
+
+    /// <summary>The most times a node is dequeued in a flush.</summary>
+    [<Literal>]
+    let CycleLimit = 100000
+
 /// <summary>A node's live observer set or source list, or a binding's single source edge, read by edge reconciliation.</summary>
 type internal ITracedEdges =
     /// <summary>The owning node id.</summary>
@@ -88,6 +99,23 @@ type internal TraceLog(locked: bool) =
 
     // Flush number and running-stack depth of each open flush, innermost last.
     let flushFrames = ResizeArray<struct (int * int)>()
+
+    // Node id to its dequeues in the open flushes.
+    let mutable flushRuns = Dictionary<int, int>()
+
+    // Node id to the times its own run queued it again in the open flushes.
+    let mutable selfRequeues = Dictionary<int, int>()
+
+    // The node id of the item the open flush dequeued last, or 0.
+    let mutable executing = 0
+
+    // The table emptied; a table above 1,024 entries is replaced, so a large flush leaves no large buckets behind.
+    let reset (table: Dictionary<int, int>) =
+        if table.Count > 1024 then
+            Dictionary<int, int>()
+        else
+            table.Clear ()
+            table
 
     // Observer sets and source lists bound to the log. Fable holds them strongly.
 #if FABLE_COMPILER
@@ -353,8 +381,89 @@ type internal TraceLog(locked: bool) =
             else
                 let struct (number, depth) = flushFrames[flushFrames.Count - 1]
                 flushFrames.RemoveAt (flushFrames.Count - 1)
+
+                if flushFrames.Count = 0 then
+                    flushRuns <- reset flushRuns
+                    selfRequeues <- reset selfRequeues
+                    executing <- 0
+
                 let open' = [| for i in running.Count - 1 .. -1 .. depth -> running[i] |]
                 struct (number, open'))
+
+    /// <summary>
+    /// Counts a dequeue of node <c>id</c> in the open flush, and marks it the executing node. Returns 0, or, with
+    /// nothing counted, 1 when the node's own runs queued it again <c>RerunGuard.Limit</c> times in the flush and 2
+    /// when it was dequeued <c>RerunGuard.CycleLimit</c> times.
+    /// </summary>
+    member _.Admit(id: int) : int =
+        sync (fun () ->
+            if lookup selfRequeues id >= RerunGuard.Limit then
+                1
+            else
+                let runs = lookup flushRuns id
+
+                if runs >= RerunGuard.CycleLimit then
+                    2
+                else
+                    flushRuns[id] <- runs + 1
+                    executing <- id
+                    0)
+
+    /// <summary>Counts a queueing of node <c>id</c> while it is the executing node of the open flush.</summary>
+    member _.Requeued(id: int) =
+        sync (fun () ->
+            if id <> 0 && id = executing then
+                selfRequeues[id] <- lookup selfRequeues id + 1)
+
+    /// <summary>The node's kind, id, label and creation site.</summary>
+    member _.Describe(id: int) : string =
+        sync (fun () ->
+            let mutable kind = "node"
+            let mutable site: obj = null
+            let mutable label: obj = null
+            let mutable created = -2
+
+            for i in 0 .. events.Count - 1 do
+                let e = events[i]
+
+                if e.Node = id then
+                    if e.Kind = TraceEventKind.NodeNew then
+                        created <- i
+                        site <- e.Payload
+
+                        kind <-
+                            match enum<TraceNodeKind> e.Arg with
+                            | TraceNodeKind.Signal -> "signal"
+                            | TraceNodeKind.AsyncSource -> "async source"
+                            | TraceNodeKind.Memo -> "memo"
+                            | TraceNodeKind.Effect -> "effect"
+                            | TraceNodeKind.AsyncMemo -> "async memo"
+                            | TraceNodeKind.Boundary -> "boundary"
+                            | TraceNodeKind.Projection -> "projection"
+                            | TraceNodeKind.ProjectionBeacon -> "projection beacon"
+                            | TraceNodeKind.RowWatch -> "row watch"
+                            | TraceNodeKind.LookupCell -> "lookup cell"
+                            | TraceNodeKind.Timed -> "timed node"
+                            | TraceNodeKind.Binding -> "binding"
+                            | _ -> "node"
+                    elif
+                        e.Kind = TraceEventKind.Label
+                        && (e.Arg = 1 || i = created + 1)
+                    then
+                        label <- e.Payload
+
+            let named =
+                if isNull label then
+                    ""
+                else
+                    String.Concat (" \"", string label, "\"")
+
+            let at =
+                match site with
+                | :? string as site when site <> "?" -> String.Concat (" (created at ", site, ")")
+                | _ -> ""
+
+            String.Concat (kind, " ", string id, named, at))
 
     /// <summary>Counts a run-scope discharge in progress, or ends one when <c>entering</c> is false.</summary>
     member _.Discharging(entering: bool) =
@@ -1276,6 +1385,8 @@ type internal Tracer =
 
         log.Append (TraceEventKind.Schedule, id, 0, ahead, 0, log.MarkOf id, null)
         |> ignore
+
+        log.Requeued id
 #else
         ()
 #endif
@@ -1309,6 +1420,46 @@ type internal Tracer =
 
         log.Append (TraceEventKind.FlushStart, 0, 0, number, 0, 0, null)
         |> ignore
+#else
+        ()
+#endif
+
+    /// <summary>Counts a dequeue of <c>item</c>, a scheduled node, in <c>graph</c>'s open flush.</summary>
+    /// <exception cref="T:System.InvalidOperationException">
+    /// The node's own runs queued it again <c>RerunGuard.Limit</c> times in the flush, or the node was dequeued
+    /// <c>RerunGuard.CycleLimit</c> times in it.
+    /// </exception>
+    [<Conditional("RANVIER_TRACE")>]
+    static member Dequeue(graph: obj, item: obj) =
+#if RANVIER_TRACE
+        let id = Tracer.IdOf item
+        let log = Tracer.LogOf graph
+        let verdict = if id = 0 then 0 else log.Admit id
+
+        if verdict = 1 then
+            raise (
+                InvalidOperationException (
+                    String.Concat (
+                        "The ",
+                        log.Describe id,
+                        " was queued again by its own run ",
+                        string RerunGuard.Limit,
+                        " times in one flush. Its run writes a signal it depends on; make the write conditional, or move it out of the node."
+                    )
+                )
+            )
+        elif verdict = 2 then
+            raise (
+                InvalidOperationException (
+                    String.Concat (
+                        "The ",
+                        log.Describe id,
+                        " was dequeued ",
+                        string RerunGuard.CycleLimit,
+                        " times in one flush; nodes may be writing each other's dependencies in a cycle."
+                    )
+                )
+            )
 #else
         ()
 #endif

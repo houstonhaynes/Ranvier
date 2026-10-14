@@ -523,6 +523,18 @@ module Api =
     /// Solid's unkeyed semantics. Duplicate keys fail the pass.
     /// </para>
     /// <para>
+    /// <c>keyOf</c> must return equal keys for equal items, under the graph's equality policy (by default, the same
+    /// reference for records and classes). A pass may skip <c>keyOf</c> for an item equal to the item at the same index
+    /// of the previous pass, or at the same offset from its end. An item whose key field is mutated in place and
+    /// republished may keep its old key and row; replace the item instead. A <c>keyOf</c> that reads a tracked
+    /// source, creates a node or registers a cleanup runs for every item of every later pass. <c>source</c> is
+    /// enumerated in full before the first <c>keyOf</c> call of a pass.
+    /// </para>
+    /// <para>
+    /// The order in which a pass retires its removed keys is unspecified, and a duplicate-key failure reports one of the
+    /// duplicated keys.
+    /// </para>
+    /// <para>
     /// <c>factory</c> runs once per key, untracked, when the key enters, inside a
     /// scope that lives until the key is removed. It receives an accessor for
     /// the key's latest item and returns the row's reader. The row's value is
@@ -545,6 +557,56 @@ module Api =
     /// </remarks>
     let createProjectionWith (keyOf: 'T -> 'K) (factory: (unit -> 'T) -> (unit -> 'V)) (source: unit -> 'T seq) : Projection<'K, 'V> =
         new KeyedProjection<'T, 'K, 'V> (Graph.Current, keyOf, Unchecked.defaultof<'T -> 'V>, factory, source) :> Projection<'K, 'V>
+
+    /// <summary>
+    /// <c>createProjectionWith</c> with <c>options</c>.
+    /// </summary>
+    /// <remarks>
+    /// With <c>ProjectionOptions.CreateFirst</c> a pass creates its added rows, then retires its removed rows, then
+    /// writes survivors' items and publishes the key set. A factory that raises fails the pass: the rows the pass created
+    /// are disposed, last first, and every row, item and key stays as the previous pass applied it. The next change to a
+    /// source retries the pass, and until then every read raises the failure the pass held without running a factory. Without
+    /// the option, each read of a failed projection retries the pass.
+    /// </remarks>
+    let createProjectionWithOptions
+        (options: ProjectionOptions)
+        (keyOf: 'T -> 'K)
+        (factory: (unit -> 'T) -> (unit -> 'V))
+        (source: unit -> 'T seq)
+        : Projection<'K, 'V> =
+        let rows =
+            new KeyedProjection<'T, 'K, 'V> (Graph.Current, keyOf, Unchecked.defaultof<'T -> 'V>, factory, source)
+
+        rows.CreateFirst <- (options &&& ProjectionOptions.CreateFirst) = ProjectionOptions.CreateFirst
+        rows :> Projection<'K, 'V>
+
+    /// <summary>
+    /// A keyed projection whose row value is the factory's result, stored once per key and read without a row memo.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>factory</c> runs once per key, untracked, inside a scope that lives until the key is removed, and receives an
+    /// accessor for the key's latest item. A tracked read of a row tracks the key set, so the reader wakes when the key
+    /// leaves. Without <c>ProjectionOptions.CreateFirst</c> a factory failure is stored and raised by every read of the
+    /// row; with it, the failure fails the pass as <c>createProjectionWithOptions</c> describes.
+    /// </para>
+    /// <para>
+    /// <c>NewValueReader</c>, <c>AsObservableCollection</c> and the <c>Projection</c> combinators raise
+    /// <c>NotSupportedException</c> on the projection.
+    /// </para>
+    /// </remarks>
+    let createProjectionOnce
+        (options: ProjectionOptions)
+        (keyOf: 'T -> 'K)
+        (factory: (unit -> 'T) -> 'V)
+        (source: unit -> 'T seq)
+        : Projection<'K, 'V> =
+        let rows =
+            new KeyedProjection<'T, 'K, 'V> (Graph.Current, keyOf, Unchecked.defaultof<'T -> 'V>, Unchecked.defaultof<_>, source)
+
+        rows.CreateFirst <- (options &&& ProjectionOptions.CreateFirst) = ProjectionOptions.CreateFirst
+        rows.UseOnce factory
+        rows :> Projection<'K, 'V>
 
     /// <summary>
     /// <c>createProjectionWith keyOf (fun item -> fun () -> map (item ())) source</c>,

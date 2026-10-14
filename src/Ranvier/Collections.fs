@@ -94,8 +94,13 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
 
     override _.Enumerate() =
         revision.Value |> ignore
+        let mine = this.Runs
+        let keys = order.ToArray ()
+        let mutable i = 0
 
-        for key in order do
+        while this.Runs = mine && i < keys.Length do
+            let key = keys[i]
+            i <- i + 1
             let item = items.Find key
             let entry = this.Entries.Find key
 
@@ -105,7 +110,8 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
             then
                 this.RetireChanged key
 
-            this.Visit (key, item)
+            if this.Runs = mine then
+                this.Visit (key, item)
 
 /// <summary>An editable collection with insertion order and separately observable rows.</summary>
 /// <remarks>Owned by the creating scope. Updates use the graph's value equality policy; keys use structural equality.</remarks>

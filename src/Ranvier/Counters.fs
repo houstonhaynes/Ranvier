@@ -28,6 +28,8 @@ module internal Tallies =
             "MemoRecomputes"
             "EffectRuns"
             "Flushes"
+            "FactoryRowsCreated"
+            "OnceRowsCreated"
         |]
 
     /// <summary>
@@ -89,6 +91,14 @@ type Counters =
 
     static member internal Flushed() =
         Tallies.bump 10
+
+    /// <summary>A factory-form projection row, with its row memo.</summary>
+    static member internal FactoryRowCreated() =
+        Tallies.bump 11
+
+    /// <summary>A memo-free factory row.</summary>
+    static member internal OnceRowCreated() =
+        Tallies.bump 12
 
     /// <summary>
     /// Sets every count to zero.

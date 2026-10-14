@@ -35,6 +35,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)Batching.fs" Link="Batching.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)AsyncEdges.fs" Link="AsyncEdges.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Projections.fs" Link="Projections.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)TrimmedPass.fs" Link="TrimmedPass.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Lookups.fs" Link="Lookups.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)MemoScopes.fs" Link="MemoScopes.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)MemoPurity.fs" Link="MemoPurity.fs" />

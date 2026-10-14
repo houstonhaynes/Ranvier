@@ -1,0 +1,8 @@
+{
+  "name": "ranvier-core-list-bench",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@solidjs/signals": "2.0.0-rc.14"
+  }
+}

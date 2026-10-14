@@ -374,7 +374,12 @@ type Reactive =
     /// A keyed collection over <c>source ()</c>: one row per key, each separately observable. A row re-runs
     /// <c>map</c> only when its item changes.
     /// </summary>
-    /// <remarks>Duplicate keys fail the pass.</remarks>
+    /// <remarks>
+    /// Duplicate keys fail the pass. <c>keyOf</c> must return equal keys for equal items; by default, objects compare by
+    /// reference. A pass may skip <c>keyOf</c> for an item equal to the one at the same position in the previous pass,
+    /// so an item whose key property is mutated in place and republished may keep its old key and row. The order in
+    /// which a pass disposes removed rows is unspecified.
+    /// </remarks>
     static member Projection<'T, 'K, 'V when 'K: equality>
         (source: Func<IEnumerable<'T>>, keyOf: Func<'T, 'K>, map: Func<'T, 'V>)
         : Projection<'K, 'V> =

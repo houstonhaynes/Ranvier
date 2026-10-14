@@ -326,6 +326,19 @@ module internal Platform =
         Unchecked.defaultof<'T>
 #endif
 
+#if FABLE_COMPILER
+    /// <summary>The sequence when it is a JavaScript array or typed array, else null.</summary>
+    [<Fable.Core.Emit("(Array.isArray($0) || (ArrayBuffer.isView($0) && !($0 instanceof DataView))) ? $0 : null")>]
+    let asArray (items: seq<'T>) : 'T[] =
+        Fable.Core.Util.jsNative
+#else
+    /// <summary>The sequence when it is an array, else null.</summary>
+    let asArray (items: seq<'T>) : 'T[] =
+        match items with
+        | :? ('T[]) as array -> array
+        | _ -> null
+#endif
+
     /// <summary>
     /// Work handed to the graph from another thread, waiting for the graph's
     /// own thread to come and run it.

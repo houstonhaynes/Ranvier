@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The production keyed list on the reactive core, compiled by Fable for run.mjs to compare with Solid 2's mapArray. -->
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <IsPackable>false</IsPackable>
+        <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+        <RanvierTrace>false</RanvierTrace>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Fixture.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Ranvier\Ranvier.fsproj" />
+        <PackageReference Include="Fable.Core" Version="5.3.0" />
+    </ItemGroup>
+
+</Project>

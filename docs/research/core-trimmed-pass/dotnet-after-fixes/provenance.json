@@ -1,0 +1,11 @@
+{
+  "commit": "5b4e3b42040016470e260e46abd61c8228258bb9",
+  "dirty": [
+    "?? docs/research/core-trimmed-pass/after-fixes.json",
+    "?? docs/research/core-trimmed-pass/dotnet-after-fixes/"
+  ],
+  "measuredAt": "2026-10-14T20:08:43.301Z",
+  "command": "dotnet run -c Release --project bench/Ranvier.Benchmarks -- --filter '*ListPass*' --short --artifacts $CLAUDE_JOB_DIR/tmp/bdn-after-fixes2",
+  "dotnet": "10.0.402",
+  "cpu": "AMD Ryzen 9 9900X 12-Core Processor            "
+}

@@ -1,0 +1,10 @@
+{
+  "commit": "093269fcc4009a8d59866f1b3910a5746f03d549",
+  "dirty": [
+    "?? docs/research/core-trimmed-pass/"
+  ],
+  "measuredAt": "2026-10-14T16:43:42.567Z",
+  "command": "dotnet run -c Release --project bench/Ranvier.Benchmarks -- --filter '*ListPass*' '*ProjectionBenchmarks*' --artifacts $CLAUDE_JOB_DIR/tmp/bdn-before",
+  "dotnet": "10.0.402",
+  "cpu": "AMD Ryzen 9 9900X 12-Core Processor            "
+}

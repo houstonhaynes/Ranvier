@@ -253,4 +253,32 @@ let tests =
 
                 Expect.sequenceEqual (Seq.sort log) [ "extra 200"; "item 1: 2" ] "only the latest run's nodes react"
             }
+
+            test "ErrorsFrom returns the errors recorded at or after an index, in order" {
+                let owner = new Owner ()
+                owner.OnCleanup (fun () -> failwith "first")
+                owner.Dispose ()
+                let before = owner.ErrorCount
+                // On a disposed scope a cleanup runs immediately, and its failure is recorded.
+                owner.OnCleanup (fun () -> failwith "second")
+                owner.OnCleanup (fun () -> failwith "third")
+
+                Expect.equal before 1 "one error before the index"
+                Expect.equal owner.ErrorCount 3 "every recorded error is counted"
+
+                Expect.sequenceEqual
+                    (owner.ErrorsFrom before |> Array.map _.Message)
+                    [ "second"; "third" ]
+                    "the errors from the index, in recording order"
+
+                Expect.isEmpty (owner.ErrorsFrom 3) "an index at the count gives none"
+                Expect.throwsT<ArgumentOutOfRangeException> (fun () -> owner.ErrorsFrom -1 |> ignore) "a negative index raises"
+            }
+
+            test "ErrorCount of a scope that recorded nothing is zero" {
+                let owner = new Owner ()
+                owner.Dispose ()
+                Expect.equal owner.ErrorCount 0 "no errors"
+                Expect.isEmpty (owner.ErrorsFrom 0) "and no slice"
+            }
         ]

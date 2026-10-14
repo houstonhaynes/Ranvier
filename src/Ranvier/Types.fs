@@ -14,6 +14,18 @@ type Status =
     | Uninitialized = (1uy <<< 2)
 
 /// <summary>
+/// Options of a keyed projection.
+/// </summary>
+[<Flags>]
+type ProjectionOptions =
+    | None = 0
+    /// <summary>
+    /// A pass creates its added rows before it retires its removed rows. A factory failure fails the pass, and every
+    /// row, item and key stays as the previous pass applied it.
+    /// </summary>
+    | CreateFirst = 1
+
+/// <summary>
 /// Whether the graph checks that mutation happens on the thread that owns it.
 /// </summary>
 type ThreadAffinity =
