@@ -5,7 +5,7 @@
 /// </summary>
 /// <remarks>
 /// <para>
-/// Usage: node --expose-gc --single-threaded Main.fs.js --out &lt;file> [--scale k] [--warmup k] [--handshake]
+/// Usage: node --expose-gc --single-threaded Main.fs.js --out &lt;file> [--scale k] [--warmup k] [--only prefix] [--handshake]
 /// </para>
 /// <para>
 /// <c>--handshake</c> brackets each measured region for the processor-counter
@@ -22,6 +22,7 @@ type private Options =
         Out: string
         Scale: int
         Warmup: int
+        Only: string
         Handshake: bool
     }
 
@@ -31,6 +32,7 @@ let rec private parse (options: Options) (args: string list) =
     | "--out" :: path :: rest -> parse { options with Out = path } rest
     | "--scale" :: k :: rest -> parse { options with Scale = int k } rest
     | "--warmup" :: k :: rest -> parse { options with Warmup = int k } rest
+    | "--only" :: prefix :: rest -> parse { options with Only = prefix } rest
     | "--handshake" :: rest -> parse { options with Handshake = true } rest
     | unknown :: _ -> failwith $"Unknown argument '%s{unknown}'."
 
@@ -113,6 +115,7 @@ let main argv =
                 Out = ""
                 Scale = 1
                 Warmup = 10
+                Only = ""
                 Handshake = false
             }
             (List.ofArray argv)
@@ -122,6 +125,7 @@ let main argv =
 
     let results =
         Scenarios.all options.Scale
+        |> List.filter (fun case -> case.Scenario.StartsWith options.Only)
         |> List.mapi (fun index case ->
             for _ in 1 .. options.Warmup do
                 let warm = case.Prepare (2 * case.Ops)

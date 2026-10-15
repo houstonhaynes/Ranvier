@@ -979,6 +979,21 @@ let all (scale: int) : Case list =
                 ]
         yield! scenario "project-edit" $"change one row of a %d{RowCount}-row projection" (50 * scale) [ "Ranvier", Ranvier.projectEdit ]
         yield! scenario "project-reorder" $"reverse a %d{RowCount}-row projection" (50 * scale) [ "Ranvier", Ranvier.projectReorder ]
+        for name, unit, edit in
+            [
+                "keyed-remove", "alternately remove and restore the middle row", Workloads.removeMiddle
+                "keyed-swap", "alternately swap and restore the second and second-to-last rows", Workloads.swapInner
+                "keyed-insert", "alternately prepend a row and restore", Workloads.insertFirst
+            ] do
+            yield!
+                scenario
+                    name
+                    $"%s{unit} of a %d{Workloads.Rows}-row projection"
+                    (50 * scale)
+                    [
+                        "Ranvier (fresh items)", workload (Workloads.keyedPass true edit)
+                        "Ranvier (stable items)", workload (Workloads.keyedPass false edit)
+                    ]
         yield!
             scenario
                 "project-chain"

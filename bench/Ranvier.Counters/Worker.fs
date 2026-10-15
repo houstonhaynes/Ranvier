@@ -96,9 +96,14 @@ let measure (case: Case) (ops: int) (region: int) =
 /// <summary>
 /// Measures every case at N and 2N after one unmeasured run at N, which
 /// compiles every method and initialises every static the region reaches.
+/// With <c>only</c>, measures the cases whose scenario name starts with it.
 /// </summary>
-let run (scale: int) (output: string) =
-    let cases = Scenarios.all scale
+let run (scale: int) (only: string option) (output: string) =
+    let cases =
+        Scenarios.all scale
+        |> List.filter (fun case ->
+            only
+            |> Option.forall (fun prefix -> case.Scenario.StartsWith (prefix, StringComparison.Ordinal)))
 
     let results =
         cases

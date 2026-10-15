@@ -350,3 +350,68 @@ let asyncRecover (n: int) =
                     settled.Settle op
         Teardown = teardown owner graph
     }
+
+/// <summary>An item of the keyed-pass workloads, compared by reference under the default equality policy.</summary>
+type KeyedItem = { Id: int; Value: int }
+
+/// <summary>
+/// A <c>Rows</c>-row projection keyed by Id, with one effect per row and one reading the keys. Operations alternate
+/// between <c>edit</c> applied to the initial list and the initial list. With <c>fresh</c>, every write holds new item
+/// objects; otherwise every write shares the initial list's items.
+/// </summary>
+let keyedPass (fresh: bool) (edit: KeyedItem[] -> KeyedItem[]) (n: int) =
+    let graph = newGraph ()
+    let initial = Array.init Rows (fun i -> { Id = i; Value = i })
+    let edited = edit initial
+
+    let writes =
+        Array.init n (fun op ->
+            let next = if op % 2 = 0 then edited else initial
+
+            if fresh then
+                next
+                |> Array.map (fun item -> { item with Id = item.Id })
+            else
+                Array.copy next)
+
+    let owner, source =
+        graph.CreateRoot (fun owner ->
+            use _active = graph.Activate ()
+            let source = createSignal initial
+
+            let rows =
+                createProjection (fun item -> item.Id) (fun item -> item.Value) (fun () -> source.Value :> seq<_>)
+
+            createEffect (fun () -> sink <- rows.Keys.Length)
+
+            // Key Rows is the key the insert workload adds.
+            for key in 0..Rows do
+                createEffect (fun () ->
+                    match rows.TryGet key with
+                    | Some value -> sink <- value
+                    | None -> ())
+
+            owner, source)
+
+    {
+        Run =
+            fun () ->
+                for write in writes do
+                    source.Value <- write
+        Teardown = teardown owner graph
+    }
+
+/// <summary>Removes the middle item.</summary>
+let removeMiddle (items: KeyedItem[]) =
+    Array.removeAt (items.Length / 2) items
+
+/// <summary>Swaps the second and second-to-last items.</summary>
+let swapInner (items: KeyedItem[]) =
+    let swapped = Array.copy items
+    swapped[1] <- items[items.Length - 2]
+    swapped[items.Length - 2] <- items[1]
+    swapped
+
+/// <summary>Prepends an item of Id <c>Rows</c>.</summary>
+let insertFirst (items: KeyedItem[]) =
+    Array.insertAt 0 { Id = Rows; Value = Rows } items

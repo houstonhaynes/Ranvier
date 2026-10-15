@@ -47,7 +47,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
 | Projections.fs | 114 | 114 | 114 | 114 | 114 | 114 | 10 | 0 |
-| TrimmedPass.fs | 39 | 39 | 39 | 39 | 39 | 39 | 0 | 0 |
+| TrimmedPass.fs | 51 | 51 | 51 | 51 | 51 | 51 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
 | MemoPurity.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
@@ -69,7 +69,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 929 | 911 | 867 | 1021 | 999 | 950 | 87 | 1 |
+| **Total** | 941 | 923 | 879 | 1033 | 1011 | 962 | 87 | 1 |
 
 ## Tests.fs
 
@@ -990,7 +990,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## TrimmedPass.fs
 
-<details><summary>39 passed in every build and delivery that runs them</summary>
+<details><summary>51 passed in every build and delivery that runs them</summary>
 
 - list, lazy seq and array sources give the same keys and rows
 - an array mutated in place and republished is compared against the previous pass's copy
@@ -1007,8 +1007,20 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a swap of two items calls keyOf twice and creates no row
 - removing one item calls keyOf zero times and disposes its row
 - prepending one item calls keyOf once
+- appending one item calls keyOf once
 - replacing one item with an equal-key copy calls keyOf once and updates that row
 - an int array swap calls keyOf twice
+- a swap of the first and last items calls keyOf twice
+- a pass over new items calls keyOf once per item
+- a pass over new items hashes its keys as often as a full pass
+- every swap of the same two items hashes its keys as often
+- new items prepended with one new key keep every other row
+- new items with the middle key removed keep every other row
+- new items with the second and second-to-last keys swapped keep every row
+- new items in reverse order keep every row
+- an empty list of new items disposes every row
+- new items of equal length repeating a key fail the pass
+- new items of a new length repeating a key fail the pass
 - a changed key equal to a prefix key fails the pass
 - a changed key equal to a suffix key fails the pass
 - a changed key equal to a key kept at an unchanged middle position fails the pass

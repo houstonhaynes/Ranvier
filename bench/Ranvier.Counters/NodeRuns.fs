@@ -96,12 +96,24 @@ let private finish (p: Process) (resultFile: string) =
 
     JsonSerializer.Deserialize<NodeRun>(File.ReadAllText resultFile)
 
+/// <summary>The harness arguments selecting the scenarios whose name starts with <c>only</c>.</summary>
+let private onlyArgs (only: string option) =
+    only
+    |> Option.map (fun prefix -> [ "--only"; prefix ])
+    |> Option.defaultValue []
+
 /// <summary>
 /// Runs the harness <c>script</c> to completion.
 /// </summary>
-let run (node: string) (script: string) (scale: int) (resultFile: string) =
+let run (node: string) (script: string) (scale: int) (only: string option) (resultFile: string) =
     use p =
-        Process.Start (startInfo node script [ "--out"; resultFile; "--scale"; string scale ])
+        Process.Start (
+            startInfo
+                node
+                script
+                ([ "--out"; resultFile; "--scale"; string scale ]
+                 @ onlyArgs only)
+        )
 
     finish p resultFile
 
@@ -110,9 +122,13 @@ let run (node: string) (script: string) (scale: int) (resultFile: string) =
 /// boundary, <c>true</c> for a <c>BEGIN</c>, while the harness waits for the reply. Fails
 /// unless every measured region was marked at both ends.
 /// </summary>
-let runHandshake (node: string) (script: string) (scale: int) (resultFile: string) (mark: bool -> int -> unit) =
+let runHandshake (node: string) (script: string) (scale: int) (only: string option) (resultFile: string) (mark: bool -> int -> unit) =
     let info =
-        startInfo node script [ "--out"; resultFile; "--scale"; string scale; "--handshake" ]
+        startInfo
+            node
+            script
+            ([ "--out"; resultFile; "--scale"; string scale; "--handshake" ]
+             @ onlyArgs only)
 
     info.RedirectStandardInput <- true
     info.RedirectStandardOutput <- true

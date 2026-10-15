@@ -19,6 +19,8 @@ Usage: Ranvier.Counters [options]
                     this build.
   --repeat <k>      Run the worker k times and compare the runs (default 1).
   --scale <k>       Multiply every scenario's N by k (default 1).
+  --only <prefix>   Measure only the scenarios whose name starts with prefix,
+                    on .NET and under Node.js.
   --sources <list>  Comma-separated profile sources
                     (default InstructionRetired,TotalCycles,BranchMispredictions).
   --list-sources    Print the profile sources this machine offers, and exit.
@@ -59,6 +61,7 @@ type private Options =
         Pmc: bool
         Repeat: int
         Scale: int
+        Only: string option
         Sources: string[]
         ListSources: bool
         Out: string option
@@ -82,6 +85,7 @@ let rec private parse (options: Options) (args: string list) =
     | "--no-pmc" :: rest -> parse { options with Pmc = false } rest
     | "--repeat" :: k :: rest -> parse { options with Repeat = int k } rest
     | "--scale" :: k :: rest -> parse { options with Scale = int k } rest
+    | "--only" :: prefix :: rest -> parse { options with Only = Some prefix } rest
     | "--sources" :: list :: rest ->
         parse
             { options with
@@ -206,12 +210,15 @@ let private workerAt (path: string) =
 /// <summary>
 /// Starts the worker in worker mode and waits for its result.
 /// </summary>
-let private runWorker (host: string, prefix: string list) (scale: int) (resultFile: string) =
+let private runWorker (host: string, prefix: string list) (scale: int) (only: string option) (resultFile: string) =
     let info = ProcessStartInfo host
 
     for arg in
         prefix
-        @ [ "--worker"; resultFile; "--scale"; string scale ] do
+        @ [ "--worker"; resultFile; "--scale"; string scale ]
+        @ (only
+           |> Option.map (fun p -> [ "--only"; p ])
+           |> Option.defaultValue []) do
         info.ArgumentList.Add arg
 
     info.UseShellExecute <- false
@@ -240,7 +247,7 @@ let private measure (options: Options) (index: int) =
             options.CountersWorker
             |> Option.map (fun path ->
                 let run =
-                    runWorker (workerAt path) options.Scale (Path.Combine (directory, "counters.json"))
+                    runWorker (workerAt path) options.Scale options.Only (Path.Combine (directory, "counters.json"))
 
                 if not run.CountersCompiled then
                     failwith $"The counter worker at %s{path} was built without RanvierCounters."
@@ -252,7 +259,7 @@ let private measure (options: Options) (index: int) =
 
             let worker =
                 try
-                    runWorker (selfWorker ()) options.Scale resultFile
+                    runWorker (selfWorker ()) options.Scale options.Only resultFile
                 finally
                     collector.Stop ()
 
@@ -263,7 +270,7 @@ let private measure (options: Options) (index: int) =
             }
         else
             {
-                Report.Worker = runWorker (selfWorker ()) options.Scale resultFile
+                Report.Worker = runWorker (selfWorker ()) options.Scale options.Only resultFile
                 Report.Pmc = None
                 Report.Counters = counters
             }
@@ -313,7 +320,7 @@ let private measureNode (options: Options) (sha: string) (output: string) : Repo
 
     let runs (script: string) (name: string) =
         Array.init options.Repeat (fun i ->
-            withScratch $"%s{name}-%d{i}" (fun dir -> NodeRuns.run options.Node script options.Scale (Path.Combine (dir, "node.json"))))
+            withScratch $"%s{name}-%d{i}" (fun dir -> NodeRuns.run options.Node script options.Scale options.Only (Path.Combine (dir, "node.json"))))
 
     let allocation = runs plain "node-plain"
 
@@ -331,7 +338,7 @@ let private measureNode (options: Options) (sha: string) (output: string) : Repo
 
                     let run =
                         try
-                            NodeRuns.runHandshake options.Node plain options.Scale (Path.Combine (dir, "node.json")) mark
+                            NodeRuns.runHandshake options.Node plain options.Scale options.Only (Path.Combine (dir, "node.json")) mark
                         finally
                             collector.Stop ()
 
@@ -346,7 +353,7 @@ let private measureNode (options: Options) (sha: string) (output: string) : Repo
             Array.init options.Repeat (fun i ->
                 withScratch $"node-dry-%d{i}" (fun dir ->
                     {
-                        NodeRuns.Run = NodeRuns.runHandshake options.Node plain options.Scale (Path.Combine (dir, "node.json")) mark
+                        NodeRuns.Run = NodeRuns.runHandshake options.Node plain options.Scale options.Only (Path.Combine (dir, "node.json")) mark
                         NodeRuns.MainThread = [||]
                         NodeRuns.AllThreads = [||]
                     }))
@@ -395,6 +402,7 @@ let main argv =
                 Pmc = true
                 Repeat = 1
                 Scale = 1
+                Only = None
                 Sources = Pmc.DefaultSources
                 ListSources = false
                 Out = None
@@ -408,7 +416,7 @@ let main argv =
 
     match options.Worker with
     | Some output ->
-        Worker.run options.Scale output
+        Worker.run options.Scale options.Only output
         0
     | None when options.Help ->
         printfn "%s" usage

@@ -33,6 +33,9 @@ sessions.
 .PARAMETER Out
 Output directory, in place of docs/.ai/benchmarks/counters.
 
+.PARAMETER Only
+Measures only the scenarios whose name starts with this prefix.
+
 .EXAMPLE
 ./counters.ps1 -NoPmc
 
@@ -44,7 +47,8 @@ param(
     [int] $Scale = 1,
     [switch] $NoPmc,
     [switch] $PmcDryRun,
-    [string] $Out
+    [string] $Out,
+    [string] $Only
 )
 
 $ErrorActionPreference = 'Stop'
@@ -107,6 +111,8 @@ try {
     elseif ($NoPmc) { $arguments += '--no-pmc' }
 
     if ($Out) { $arguments += @('--out', $Out) }
+
+    if ($Only) { $arguments += @('--only', $Only) }
 
     Invoke-Checked dotnet $arguments
 }

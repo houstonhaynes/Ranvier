@@ -47,6 +47,118 @@ let private duplicateAfter (edit: Item[] -> Item[]) =
     Expect.stringContains proj.Error.Message "twice in one pass" "the duplicate-key failure"
     Expect.isEmpty disposed "the failed pass retired no row"
 
+/// <summary>An item compared by reference under every equality policy.</summary>
+type private Box(id: int, value: int) =
+    member _.Id = id
+    member _.Value = value
+
+/// <summary>A key equal by <c>Id</c> that counts its <c>GetHashCode</c> calls in <c>hashes</c>.</summary>
+type private HashedKey(id: int, hashes: int ref) =
+    member _.Id = id
+
+    override _.GetHashCode() =
+        hashes.Value <- hashes.Value + 1
+        id
+
+    override _.Equals(other) =
+        match other with
+        | :? HashedKey as key -> key.Id = id
+        | _ -> false
+
+/// <summary>
+/// A createProjectionWith over boxes with Ids 1..<c>n</c>, recording factory runs and cleanups. <c>write generation
+/// ids</c> publishes a new box for every Id, whose row reads <c>generation * 10000 + id</c>.
+/// </summary>
+let private boxed (n: int) =
+    let boxes (generation: int) (ids: int[]) =
+        ids
+        |> Array.map (fun id -> Box (id, generation * 10000 + id))
+
+    let ids = Array.init n (fun i -> i + 1)
+    let items = createSignal (boxes 0 ids)
+    let created = ResizeArray<int>()
+    let disposed = ResizeArray<int>()
+
+    let proj =
+        createProjectionWith
+            (fun (item: Box) -> item.Id)
+            (fun item ->
+                let id = (item ()).Id
+                created.Add id
+                onCleanup (fun () -> disposed.Add id)
+                fun () -> (item ()).Value)
+            (fun () -> items.Value :> seq<_>)
+
+    createEffect (fun () ->
+        try
+            for key in proj.Keys do
+                proj.Get key |> ignore
+        with _ ->
+            ())
+
+    let write (generation: int) (next: int[]) =
+        items.Value <- boxes generation next
+
+    ids, write, created, disposed, proj
+
+/// <summary>
+/// Writes new boxes at the Ids <c>edit</c> returns over 1,000 boxes, then new boxes at the same Ids again. After each
+/// write, the keys are the written Ids, only added keys create rows, only removed keys dispose rows, and every row reads
+/// its new box.
+/// </summary>
+let private freshAfter (edit: int[] -> int[]) =
+    use g = new Graph ()
+    use _ = g.Activate ()
+    let ids, write, created, disposed, proj = boxed 1000
+    let next = edit ids
+
+    for generation, before in [ 1, ids; 2, next ] do
+        created.Clear ()
+        disposed.Clear ()
+        write generation next
+        let kept = set before
+        let now = set next
+        Expect.sequenceEqual proj.Keys next $"write {generation}: the keys"
+
+        Expect.sequenceEqual
+            (Seq.sort created)
+            (next
+             |> Array.filter (kept.Contains >> not)
+             |> Array.sort)
+            $"write {generation}: rows are created for added keys alone"
+
+        Expect.sequenceEqual
+            (Seq.sort disposed)
+            (before
+             |> Array.filter (now.Contains >> not)
+             |> Array.sort)
+            $"write {generation}: rows are disposed for removed keys alone"
+
+        for key in next do
+            Expect.equal (proj.Get key) (generation * 10000 + key) $"write {generation}: row {key} reads its new box"
+
+/// <summary>
+/// Writes new boxes at the Ids <c>edit</c> returns, which repeat a key, over 10 boxes; then new boxes at the original
+/// Ids.
+/// </summary>
+let private freshDuplicate (edit: int[] -> int[]) =
+    use g = new Graph ()
+    use _ = g.Activate ()
+    let ids, write, created, disposed, proj = boxed 10
+    created.Clear ()
+    write 1 (edit ids)
+    Expect.throwsT<InvalidOperationException> (fun () -> proj.Keys |> ignore) "the pass fails"
+    Expect.stringContains proj.Error.Message "twice in one pass" "the duplicate-key failure"
+    Expect.isEmpty disposed "the failed pass retired no row"
+    Expect.isEmpty created "the failed pass created no row"
+    write 2 ids
+    Expect.sequenceEqual proj.Keys ids "the original keys"
+    Expect.isEmpty created "every row survived the failed pass"
+    Expect.isEmpty disposed "no row was retired"
+
+    for key in ids do
+        Expect.equal (proj.Get key) (20000 + key) $"row {key} reads its new box"
+
 /// <summary>
 /// A seeded pseudo-random sequence (MINSTD). Produces identical sequences on .NET and Fable. <c>seed</c> must be
 /// positive.
@@ -729,6 +841,18 @@ let tests =
                 Expect.equal proj.Keys[0] 5000 "the new key leads"
             }
 
+            test "appending one item calls keyOf once" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, keyCalls, created, _, proj = counted 1000
+                keyCalls.Value <- 0
+                created.Clear ()
+                items.Value <- Array.append items.Value [| { Id = 5000; Text = "new" } |]
+                Expect.equal keyCalls.Value 1 "only the new item"
+                Expect.sequenceEqual created [ 5000 ] "one row created"
+                Expect.equal proj.Keys[1000] 5000 "the new key trails"
+            }
+
             test "replacing one item with an equal-key copy calls keyOf once and updates that row" {
                 use g = new Graph ()
                 use _ = g.Activate ()
@@ -764,6 +888,125 @@ let tests =
                 Expect.equal proj.Keys[10] 90 "swapped"
                 Expect.equal calls.Value 2 "two changed positions"
             }
+
+            test "a swap of the first and last items calls keyOf twice" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, keyCalls, created, _, proj = counted 1000
+                keyCalls.Value <- 0
+                created.Clear ()
+                let swapped = Array.copy items.Value
+                swapped[0] <- items.Value[999]
+                swapped[999] <- items.Value[0]
+                items.Value <- swapped
+                Expect.equal keyCalls.Value 2 "keyOf runs for the two moved positions"
+                Expect.isEmpty created "no row is created"
+                Expect.equal proj.Keys[0] 1000 "the keys moved"
+                Expect.equal proj.Keys[999] 1 "the keys moved"
+            }
+
+            test "a pass over new items calls keyOf once per item" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let calls = ref 0
+                let items = createSignal (Array.init 1000 (fun i -> Box (i, i)))
+
+                let proj =
+                    createProjection
+                        (fun (item: Box) ->
+                            calls.Value <- calls.Value + 1
+                            item.Id)
+                        (fun item -> item.Value)
+                        (fun () -> items.Value :> seq<_>)
+
+                proj.Keys |> ignore
+
+                for edit in [ Array.removeAt 500; Array.insertAt 0 5000; Array.rev ] do
+                    calls.Value <- 0
+                    let next = edit (proj.Keys |> Array.copy)
+                    items.Value <- next |> Array.map (fun id -> Box (id, id))
+                    Expect.sequenceEqual proj.Keys next "the keys"
+                    Expect.equal calls.Value next.Length "keyOf runs once per item"
+            }
+
+            test "a pass over new items hashes its keys as often as a full pass" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal (Array.init 1000 (fun i -> Box (i + 1, i + 1)))
+                let tracked = createSignal 0
+                let hashes = ref 0
+                let fullHashes = ref 0
+
+                let projection (keyOf: Box -> HashedKey) =
+                    createProjection keyOf (fun item -> item.Value) (fun () -> items.Value :> seq<_>)
+
+                let proj = projection (fun item -> HashedKey (item.Id, hashes))
+
+                // A keyOf that reads a tracked source turns trimming off.
+                let full =
+                    projection (fun item ->
+                        tracked.Value |> ignore
+                        HashedKey (item.Id, fullHashes))
+
+                proj.Keys |> ignore
+                full.Keys |> ignore
+
+                for edit in [ Array.removeAt 500; Array.insertAt 0 5000; Array.rev; id ] do
+                    let next = edit (proj.Keys |> Array.map (fun k -> k.Id))
+                    hashes.Value <- 0
+                    fullHashes.Value <- 0
+                    items.Value <- next |> Array.map (fun id -> Box (id, id))
+                    Expect.sequenceEqual (proj.Keys |> Array.map (fun k -> k.Id)) next "the keys"
+                    Expect.sequenceEqual (full.Keys |> Array.map (fun k -> k.Id)) next "the full pass's keys"
+                    Expect.equal hashes.Value fullHashes.Value "key hashes against the full pass"
+            }
+
+            test "every swap of the same two items hashes its keys as often" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let hashes = ref 0
+                let items = createSignal (Array.init 100 (fun i -> HashedKey (i + 1, hashes)))
+
+                let proj =
+                    createProjection id (fun (key: HashedKey) -> key.Id) (fun () -> items.Value :> seq<_>)
+
+                proj.Keys |> ignore
+
+                let swap () =
+                    let swapped = Array.copy items.Value
+                    let first = swapped[10]
+                    swapped[10] <- swapped[90]
+                    swapped[90] <- first
+                    hashes.Value <- 0
+                    items.Value <- swapped
+                    proj.Keys |> ignore
+                    hashes.Value
+
+                let first = swap ()
+
+                for pass in 2..5 do
+                    Expect.equal (swap ()) first $"swap {pass}: key hashes against the first swap"
+            }
+
+            test "new items prepended with one new key keep every other row" { freshAfter (Array.insertAt 0 5000) }
+
+            test "new items with the middle key removed keep every other row" { freshAfter (Array.removeAt 500) }
+
+            test "new items with the second and second-to-last keys swapped keep every row" {
+                freshAfter (fun ids ->
+                    let swapped = Array.copy ids
+                    swapped[1] <- ids[ids.Length - 2]
+                    swapped[ids.Length - 2] <- ids[1]
+                    swapped)
+            }
+
+            test "new items in reverse order keep every row" { freshAfter Array.rev }
+
+            test "an empty list of new items disposes every row" { freshAfter (fun _ -> [||]) }
+
+            test "new items of equal length repeating a key fail the pass" { freshDuplicate (Array.updateAt 5 1) }
+
+            test "new items of a new length repeating a key fail the pass" { freshDuplicate (Array.insertAt 4 2) }
 
             test "a changed key equal to a prefix key fails the pass" { duplicateAfter (Array.updateAt 5 { Id = 1; Text = "dup" }) }
 
