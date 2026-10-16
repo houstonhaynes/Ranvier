@@ -2,25 +2,64 @@ name: Docs
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
+  workflow_run:
+    workflows: [Perf report]
+    types: [completed]
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.manual.outputs.ref || steps.measured.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - id: manual
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REF: ${{ github.sha }}
+        run: echo "ref=$REF" >> "$GITHUB_OUTPUT"
+      - id: provenance
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {hasProvenance} = require('./.github/scripts/docs-perf.cjs');
+            core.setOutput('present', await hasProvenance({github, repo: context.repo, run: context.payload.workflow_run}));
+      - uses: actions/download-artifact@v4
+        if: steps.provenance.outputs.present == 'true'
+        with:
+          name: docs-perf-provenance
+          path: ${{ runner.temp }}/docs-perf
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - id: measured
+        if: steps.provenance.outputs.present == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const {resolve} = require('./.github/scripts/docs-perf.cjs');
+            const provenance = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/docs-perf/provenance.json`, 'utf8'));
+            core.setOutput('ref', await resolve({github, repo: context.repo, provenance}));
+
   build:
+    needs: resolve
+    if: needs.resolve.outputs.ref != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.resolve.outputs.ref }}
           fetch-depth: 0
           persist-credentials: false
       - name: Check out performance history
@@ -45,11 +84,30 @@ jobs:
           path: docs/output
 
   deploy:
-    needs: build
+    needs: [resolve, build]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+      queue: max
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - id: current
+        uses: actions/github-script@v8
+        env:
+          MEASURED: ${{ needs.resolve.outputs.ref }}
+        with:
+          script: |
+            const {shouldDeploy} = require('./.github/scripts/docs-perf.cjs');
+            core.setOutput('deploy', await shouldDeploy({github, repo: context.repo,
+              eventName: context.eventName, measured: process.env.MEASURED}));
       - id: deployment
+        if: steps.current.outputs.deploy == 'true'
         uses: actions/deploy-pages@v5

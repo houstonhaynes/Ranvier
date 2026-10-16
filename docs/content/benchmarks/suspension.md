@@ -5,6 +5,14 @@ order: 7
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
+## CI instruction counts
+The chart compares retired instructions per operation across engines for the latest CI measurement.
+Choose a runtime or recorded commit, filter scenarios by name, and toggle libraries in the legend.
+
+<div class="rv-perf" data-perf-compare data-perf-group="flight,fail-recompute,async-"><p role="status">Loading recorded measurements…</p></div>
+<link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">
+<script src="/Ranvier/benchmarks/perf-charts.js"></script>
+
 The pending channel is what lets a computation read an async source that has no value yet. On .NET, a transparent read of a Pending source aborts the reading body by throwing, and an exception is the most expensive single operation in the design. These benchmarks measure what that costs and how a boundary limits it. See [Benchmarks](index.md) for configuration, environment and caveats.
 
 ## SuspensionBenchmarks
@@ -121,25 +129,3 @@ A failure's cost per reader: a memo whose body throws a fresh exception, read th
 The failing row of `fail-recompute` above measures `Depth` 1. `Depth` 4 and 16 are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*FailureChainBenchmarks*"`) and have no published figure yet.
 
 The `Ratio` and `Alloc Ratio` columns, where present, compare each method with the baseline method *of the same class* on the same run. They describe the relative cost of two operations inside Ranvier, not a comparison with any other library.
-
-## CI instruction counts
-
-The chart compares retired instructions per operation across engines for the latest CI measurement.
-Choose a runtime and scenario to explore the data.
-
-<div class="rv-perf-compare" data-perf-compare data-perf-group="flight,fail-recompute,async-">
-  <div class="rv-perf-compare__filters">
-    <label class="rv-perf-compare__control">Runtime
-      <select data-perf-runtime aria-label="Benchmark runtime"></select>
-    </label>
-    <label class="rv-perf-compare__control">Scenario
-      <select data-perf-scenario aria-label="Benchmark scenario"></select>
-    </label>
-  </div>
-  <p data-perf-status role="status" aria-live="polite">Loading comparison data…</p>
-  <div class="rv-perf-compare__chart">
-    <canvas data-perf-chart role="img" aria-label="Instructions per operation by engine"></canvas>
-  </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/Ranvier/benchmarks/perf-compare.js"></script>

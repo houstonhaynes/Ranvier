@@ -5,6 +5,14 @@ order: 2
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
+## CI instruction counts
+The chart compares retired instructions per operation across engines for the latest CI measurement.
+Choose a runtime or recorded commit, filter scenarios by name, and toggle libraries in the legend.
+
+<div class="rv-perf" data-perf-compare data-perf-group="chain,cutoff"><p role="status">Loading recorded measurements…</p></div>
+<link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">
+<script src="/Ranvier/benchmarks/perf-charts.js"></script>
+
 The write path is the most frequently executed path in the library. These benchmarks measure reads, writes and the equality cutoff on a single signal. See [Benchmarks](index.md) for configuration, environment and caveats.
 
 ## SignalBenchmarks
@@ -85,25 +93,3 @@ Recorded 2026-09-28. Source: `Ranvier.Benchmarks.Signals.EqualityBenchmarks` at 
 | StructuralWrite  | 6.208 ns | 0.0609 ns | 0.0540 ns | 161,091,273.4 | 4.46x slower |   0.07x | 0.0019 |      32 B |          NA |
 
 The `Ratio` and `Alloc Ratio` columns, where present, compare each method with the baseline method *of the same class* on the same run. They describe the relative cost of two operations inside Ranvier, not a comparison with any other library.
-
-## CI instruction counts
-
-The chart compares retired instructions per operation across engines for the latest CI measurement.
-Choose a runtime and scenario to explore the data.
-
-<div class="rv-perf-compare" data-perf-compare data-perf-group="chain,cutoff">
-  <div class="rv-perf-compare__filters">
-    <label class="rv-perf-compare__control">Runtime
-      <select data-perf-runtime aria-label="Benchmark runtime"></select>
-    </label>
-    <label class="rv-perf-compare__control">Scenario
-      <select data-perf-scenario aria-label="Benchmark scenario"></select>
-    </label>
-  </div>
-  <p data-perf-status role="status" aria-live="polite">Loading comparison data…</p>
-  <div class="rv-perf-compare__chart">
-    <canvas data-perf-chart role="img" aria-label="Instructions per operation by engine"></canvas>
-  </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/Ranvier/benchmarks/perf-compare.js"></script>

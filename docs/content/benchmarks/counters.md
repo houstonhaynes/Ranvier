@@ -12,7 +12,8 @@ read from hardware counters. Under matched, stable measurement conditions, diffe
 about 5 % are treated as run-to-run noise. Larger differences still need measurement-state checks,
 particularly under Node, where V8 compilation and deoptimisation can occur inside a measured region.
 
-The charts are the historical `e13f159` run, not current `master` (`2ce4b7d`, 2026-10-16).
+The static .NET and Node charts below are the historical `e13f159` run. The interactive
+views use recorded arm64 CI measurements and identify the selected commit explicitly.
 The broader [October 4 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md)
 includes timed operators and additional derived/effect scenarios. The later
 [keyed-pass report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md)
@@ -25,35 +26,22 @@ not scenarios with each other.
 
 The chart compares retired instructions per operation across commits and includes engine
 comparisons where the run provides them. Choose a runtime and scenario; .NET and Node.js remain
-separate because their measurements are not comparable. Select a commit label or bar to open its
-source commit. The site builds this history from the `perf-data` branch after each successful
+separate because their measurements are not comparable. Select a commit point or label to inspect its library comparison; open its
+source using the commit link. Hover or focus marks for exact values, toggle libraries in the legend,
+and switch between absolute instructions and values relative to Ranvier. The site builds this history from the `perf-data` branch after each successful
 master measurement.
 
-<div class="rv-perf-history" data-perf-history>
-  <div class="rv-perf-history__filters">
-    <label class="rv-perf-history__control">Runtime
-      <select data-perf-runtime aria-label="Benchmark runtime"></select>
-    </label>
-    <label class="rv-perf-history__control">Scenario
-      <select data-perf-scenario aria-label="Benchmark scenario"></select>
-    </label>
-    <label class="rv-perf-history__control rv-perf-history__comparative">
-      <input type="checkbox" data-perf-comparative aria-label="Show values relative to Ranvier">
-      Comparative
-      <span>(Ranvier = 100%)</span>
-    </label>
-  </div>
-  <p data-perf-status role="status" aria-live="polite">Loading CI counter history…</p>
-  <div class="rv-perf-history__chart">
-    <canvas data-perf-chart role="img" aria-label="Retired instructions per operation by commit"></canvas>
-  </div>
-  <nav class="rv-perf-history__commits" aria-label="Commits in the chart">
-    <span>Commit labels:</span>
-    <ul data-perf-commit-links></ul>
-  </nav>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/Ranvier/benchmarks/perf-history.js"></script>
+<div class="rv-perf" data-perf-history><p role="status">Loading recorded measurements…</p></div>
+
+## Library comparison
+
+Explore the scenarios together, filter by name, or choose a recorded commit. Each panel has its
+own scale from zero; compare library costs within a scenario. Toggle a library in the legend to
+isolate the others. Relative values use Ranvier at the selected commit as their reference.
+
+<div class="rv-perf" data-perf-compare><p role="status">Loading recorded measurements…</p></div>
+<link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">
+<script src="/Ranvier/benchmarks/perf-charts.js"></script>
 
 ## .NET
 

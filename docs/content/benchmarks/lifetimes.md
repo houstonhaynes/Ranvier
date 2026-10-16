@@ -5,6 +5,14 @@ order: 5
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
+## CI instruction counts
+The chart compares retired instructions per operation across engines for the latest CI measurement.
+Choose a runtime or recorded commit, filter scenarios by name, and toggle libraries in the legend.
+
+<div class="rv-perf" data-perf-compare data-perf-group="create,dispose"><p role="status">Loading recorded measurements…</p></div>
+<link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">
+<script src="/Ranvier/benchmarks/perf-charts.js"></script>
+
 Construction and teardown are not the hottest path, but they are the path a UI takes on every mount and unmount, and the one where an owner that only grows would show up as a leak rather than as a slowdown. See [Benchmarks](index.md) for configuration, environment and caveats.
 
 ## ConstructionBenchmarks
@@ -99,25 +107,3 @@ The shallow size of each node type: the `Allocated` column of an uninitialised i
 `SizeOfProbe` has no counter scenario and no published figure yet. It is in the suite for local runs: `dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*SizeOfProbe*"`.
 
 The `Ratio` and `Alloc Ratio` columns, where present, compare each method with the baseline method *of the same class* on the same run. They describe the relative cost of two operations inside Ranvier, not a comparison with any other library.
-
-## CI instruction counts
-
-The chart compares retired instructions per operation across engines for the latest CI measurement.
-Choose a runtime and scenario to explore the data.
-
-<div class="rv-perf-compare" data-perf-compare data-perf-group="create,dispose">
-  <div class="rv-perf-compare__filters">
-    <label class="rv-perf-compare__control">Runtime
-      <select data-perf-runtime aria-label="Benchmark runtime"></select>
-    </label>
-    <label class="rv-perf-compare__control">Scenario
-      <select data-perf-scenario aria-label="Benchmark scenario"></select>
-    </label>
-  </div>
-  <p data-perf-status role="status" aria-live="polite">Loading comparison data…</p>
-  <div class="rv-perf-compare__chart">
-    <canvas data-perf-chart role="img" aria-label="Instructions per operation by engine"></canvas>
-  </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/Ranvier/benchmarks/perf-compare.js"></script>
