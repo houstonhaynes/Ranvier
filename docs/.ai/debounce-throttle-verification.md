@@ -2,6 +2,12 @@
 
 Feature branch: `feat/debounce-throttle`. Product baseline: `506c8d29c57e29d92cdce7164d89886a6d0b5618`. Build/test checks ran on 2026-10-03; hardware-counter evidence at `878f294` was collected on 2026-10-04. Commands use `rtk proxy`.
 
+**Current status (2026-10-16):** implemented and merged in [#46](https://github.com/shayanhabibi/Ranvier/pull/46).
+This is the historical verification record, not an open implementation checklist. Later trace-verifier
+fixes landed in [#53](https://github.com/shayanhabibi/Ranvier/pull/53); the limitations below describe the
+recorded run rather than a fresh verdict on today's tool. The remaining measurement gaps below are
+distinct from feature availability. See the [timing guide](../content/guide/timing.md).
+
 ## Passing checks
 
 - Complete Release F# tests, both .NET 8 and 10: 975 passed per framework without tracing; 1,055 passed and five expected allocation-test skips per framework with tracing.
@@ -22,10 +28,10 @@ Feature branch: `feat/debounce-throttle`. Product baseline: `506c8d29c57e29d92cd
 
 ## Baseline and host limitations
 
-The full trace verifier run on 2026-10-03 exited nonzero for existing `Projections.fs` hook-placement/Appendix A lint violations, the stale legacy public-API baseline, and ETW processor counters unavailable in that non-elevated process. The 2026-10-04 `878f294` report resolves the hardware-counter collection blocker. It does not record a rerun of the full verifier or a matched merge-base retired-instruction comparison. The two existing lint/API-baseline issues remain; the new merge-base API gate provides a precise compatibility check without rewriting that legacy baseline.
+The full trace verifier run on 2026-10-03 exited nonzero for existing `Projections.fs` hook-placement/Appendix A lint violations, the stale legacy public-API baseline, and ETW processor counters unavailable in that non-elevated process. The 2026-10-04 `878f294` report resolves the hardware-counter collection blocker. It does not record a rerun of the full verifier or a matched merge-base retired-instruction comparison. The two lint/API-baseline issues remained at that point; the new merge-base API gate provided a precise compatibility check without rewriting that legacy baseline.
 
 `dotnet build Ranvier.slnx -c Release -p:RanvierTrace=false` fails in the existing Fable test project's .NET projection: missing `IcedTasks`/`cancellableTask`, `Expect.isNotNull`, `testSequenced` and `Expect.hasLength`. These correspond to the pre-existing semantic projection diagnostics recorded during planning; the actual Fable compilation and runner are the portability checks. New timed source introduces no diagnostic in that projection.
 
 Auditing all of `Combinators.fs` reports two existing long XML-doc lines, now at lines 612 and 933, outside the added timed module. New timed factory documentation has no audit finding.
 
-Hardware retired-instruction collection is complete. Native timer policy throughput, separate callback/dispatch costs and real deadline latency distributions remain outstanding. A matched merge-base hardware-counter regression verdict is not established by the supplied HEAD report alone. The branch is available for review; the report does not establish that all remaining performance and repository gates pass.
+Hardware retired-instruction collection is complete. Native timer policy throughput, separate callback/dispatch costs and real deadline latency distributions remain unmeasured in this record. A matched merge-base hardware-counter regression verdict is not established by the supplied HEAD report alone. The feature subsequently merged; this report does not establish that every performance question was closed.

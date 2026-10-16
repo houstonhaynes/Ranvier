@@ -174,11 +174,8 @@ The binding writes `"Ada"` on the next flush and again after every change to `na
 - The binding belongs to the current owner and is disposed with it; see
   [Scopes and disposal](roots.md).
 
-Against an effect that does the same copy, a binding creates and disposes in 0.69x to 0.77x
-the time and 0.54x the allocation at 64 and 1024 consumers, and a write observed by those
-consumers flushes in 0.69x to 0.76x the time. These figures come from a single run; see
-[the effect benchmarks](../benchmarks/effects.md#bindingbenchmarks) for the method, provenance and
-caveats.
+See [Fixed-dependency bindings](bindings.md) for flush timing, equality and lifetime, and the
+[binding benchmarks](../benchmarks/effects.md#bindingbenchmarks) for measurements and limitations.
 
 ## Failures
 

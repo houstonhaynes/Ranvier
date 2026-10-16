@@ -86,8 +86,9 @@ once, at the end. Its documentation does not say whether derived values update i
 
 Push-based streams, familiar to most .NET developers, with a large operator vocabulary. They model events
 over time. A derived value that must stay consistent across several inputs is a different shape of
-problem, and Ranvier addresses that shape. For event pipelines, throttling, windowing and time-based
-composition, a stream library provides operators Ranvier does not implement. Streams can also represent
+problem, and Ranvier addresses that shape. Ranvier's [debounce and throttle values](../guide/timing.md)
+control publication before downstream work. For event pipelines, windowing and broader time-based
+composition, a stream library provides a larger operator vocabulary. Streams can also represent
 state; the distinction here is graph-wide settling versus independent emissions. R3 supports recoverable
 `OnErrorResume` notifications and ends via `OnCompleted(Result)`; System.Reactive's `OnError` terminates
 the subscription, with recovery available through operators such as `Catch` and `Retry`.
@@ -190,9 +191,10 @@ recipes, not framework-specific renderer packages.
   the bindings' `IsLoading` and `HasErrors` give one loading and error state covering several sources. The
   dispatcher follows the UI thread's `SynchronizationContext`, and each handler runs on the context it subscribed
   from. No framework-specific package ships yet.
-- **Models shared between server and browser.** The same F# model code could run on .NET (server rendering,
-  tests, desktop) and through Fable, with Ranvier's pending and failure channels. The Fable target is implemented
-  and not yet published; see [Fable (JavaScript) target](../fable/index.md).
+- **Models shared between server and browser.** The same F# model code can run on .NET (tests, desktop,
+  server) and through Fable, with Ranvier's pending and failure channels. Package builds include Fable
+  source projects and CI checks package consumers. Read the target differences in
+  [Fable (JavaScript) target](../fable/index.md).
 - **Deterministic async in tests.** With `ManualDispatcher`, a test chooses when each flight settles and
   reads Pending, Ready and Failed states as values, with no UI thread involved. See
   [Testing async state](../guide/testing.md).
@@ -210,11 +212,14 @@ recipes, not framework-specific renderer packages.
 - No framework-specific UI packages yet. The .NET UI bindings are `ReactiveBindings` (`INotifyPropertyChanged` and
   `INotifyDataErrorInfo`), `ReactiveCommand` (`ICommand` with a derived `CanExecute`) and
   `Projection.AsObservableCollection`.
-- No debounce or throttle, and no flight policy that drops a new run while one is in progress.
+- No flight policy that drops a new run while one is in progress. Debounce and throttle are available as
+  timed values controlling admission before a request, separately from its flight policy.
 - Further collection incrementality: the scanning and sorting paths described above remain. Readers
   coalesce changes between reads and use bounded logs with reset recovery; they describe current state,
   not an event history. Coalescing is a state-delta contract, not evidence of absent incrementality.
-- The Fable target is implemented and not yet published; see [Fable (JavaScript) target](../fable/index.md).
+- JavaScript shares the core's pending and failure model, with target-specific delivery, equality and
+  API differences; see [Fable (JavaScript) target](../fable/index.md). A built package's Fable consumer
+  check does not establish identical behavior on every target or a released browser UI layer.
 
 The [roadmap](roadmap.md) lists which of these are under consideration.
 

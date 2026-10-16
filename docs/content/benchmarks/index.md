@@ -5,7 +5,7 @@ order: 1
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
-Ranvier ships a BenchmarkDotNet suite with one benchmark class per primitive: signals, memos, effects, lifetimes, projections and suspension. Its purpose is **tracking**: a number here is meaningful against another number from the same machine and the same configuration, typically the previous commit. It is not a statement of how fast Ranvier will be on your hardware, and these pages make no comparison with other libraries.
+Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetimes, projections and suspension. Its purpose is **tracking**: a number here is meaningful against another number from the same machine and the same configuration, typically the previous commit. It is not a statement of how fast Ranvier will be on your hardware. The primitive pages track Ranvier itself; the instruction-count and keyed-list reports include comparisons with other libraries, subject to their workload and measurement caveats.
 
 | Area | What it covers |
 | --- | --- |
@@ -23,7 +23,16 @@ Ranvier ships a BenchmarkDotNet suite with one benchmark class per primitive: si
 with a hand-written update of the same three-page dictionary model. It is a
 separate scenario from the primitive results below.
 
-The benchmark suite lives in this repository as `bench/Ranvier.Benchmarks`. The results on these pages come from a full run of the suite at commit `d87920f`, recorded on **2026-09-28**; each table states its own date and the benchmark class it came from. Cases added after that run take their figures from the [instruction-counter](counters.md) run at `e13f159` where a counter scenario covers them; the remaining cases are in the suite for local runs and have no published figure yet.
+The benchmark suite lives in this repository as `bench/Ranvier.Benchmarks`. Most primitive timing tables come from the full run at commit `d87920f`, recorded on **2026-09-28**. Binding tables were recorded on **2026-10-13** at `70291a5`; query reconciliation has its own **2026-10-05** run. Each table states its source. Later cases use the [instruction-counter](counters.md) run at `e13f159` where a counter scenario covers them; other cases remain available for local runs without a published figure.
+
+### Status at `2ce4b7d` (2026-10-16)
+
+The dated tables below are historical measurements, not a rerun of current `master`. Since those runs:
+
+- **Keyed projections** gained prefix/suffix trimming and nested-pass fixes in [#55](https://github.com/shayanhabibi/Ranvier/pull/55), then a full-visit fallback for passes that cannot trim in [#56](https://github.com/shayanhabibi/Ranvier/pull/56). [Projections](projections.md#keyed-pass-follow-ups) links the paired timing and hardware-counter evidence, including its limitations.
+- **Fable core output** sheds redundant affinity/inbox work, slot wrappers, async continuation/lock callbacks and checked scheduler stores in [#57](https://github.com/shayanhabibi/Ranvier/pull/57). The existing .NET executable implementation is preserved. [Instruction counts](counters.md#fable-core-follow-up) distinguishes the earlier experiment's timings from hardware-counter results; no fresh instruction-count acceptance run is available for this commit.
+
+The charts still show `e13f159`. The repository also retains the broader [2026-10-04 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md), and the targeted [2026-10-15 keyed-pass comparison](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md). None is a whole-suite measurement of `2ce4b7d`.
 
 The BenchmarkDotNet comparison runs against other .NET reactive libraries are not published here; [Instruction counts](counters.md) compares engines by instructions instead. The engine-internal diagnostic probes in the suite are not published either; they compare candidate implementations of internal data structures rather than measure a public operation.
 
@@ -36,11 +45,11 @@ Every run uses the same BenchmarkDotNet configuration, so that runs are comparab
 - **Columns**: the default column set plus `Categories` and `Op/s` (operations per second).
 - **Ratio style**: `RatioStyle.Trend`, so ratios read as "_N_x slower/faster" relative to the class's baseline method.
 - **Exporters**: GitHub-flavoured Markdown (the tables on these pages) and compressed full JSON (for diffing runs).
-- A **short** configuration (`Job.ShortRun`, same unroll factor) exists for smoke runs. It catches order-of-magnitude regressions only and is never used for published numbers. All results on these pages come from the full configuration.
+- A **short** configuration (`Job.ShortRun`, same unroll factor) exists for smoke runs. It catches order-of-magnitude regressions only. The primitive tables use the full configuration; the linked keyed-list research also reports explicitly labelled short runs, whose large errors limit timing conclusions.
 
 ## Environment
 
-All results were recorded on a single machine, as reported by BenchmarkDotNet:
+The September primitive tables were recorded on a single machine, as reported by BenchmarkDotNet. Later reports state their own SDK/runtime versions and settings:
 
 ```text
 BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.9457/25H2/2025Update/HudsonValley2)

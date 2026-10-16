@@ -314,9 +314,16 @@ nodes held in the previous value.
 
 :::details Cost of passing the previous value
 
-Passing the previous value allocates nothing. In the [counter bench](../benchmarks/counters.md) it
-adds about 10 instructions to a memo run under .NET and about 40 under Node.js: 2 % and 4.5 % of a
-write through a chain of four memos.
+On .NET the previous-value argument uses a struct option. Under Fable, option representation
+depends on the value: null and nested option values can require wrappers, so passing a generic
+previous value is not an allocation-free guarantee across targets.
+
+The matched September 28 reports at `cdef427` and `dd533de` measured a write through four memos
+at 1,889 → 1,928 retired instructions on .NET (+2.0%) and 3,405 → 3,566 under Node (+4.7%).
+Both differences lie within the reports' 5% noise threshold, with no meaningful measured
+per-operation allocation increase. This historical comparison supports retaining the feature;
+it does not establish zero cost or measure current `master`. See the
+[counter methodology and follow-up](../benchmarks/counters.md#fable-core-follow-up).
 :::
 
 :::tip Accumulate in a memo

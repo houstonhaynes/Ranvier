@@ -7,6 +7,11 @@ Use [roots and owners](roots.md) to control the lifetime of reactive nodes.
 `onCleanup f` registers cleanup with the innermost scope. Inside an effect, owning memo or boundary,
 it runs **before the next run** and **on disposal**.
 
+Cleanups and owned nodes share one reverse acquisition order. If you register a cleanup, create a
+child node, then register another cleanup, teardown runs the last cleanup, disposes the child,
+then runs the first cleanup. This lets a later resource release while an earlier resource is
+still alive. The same rule applies before a computation re-runs and when its owner is disposed.
+
 In this replay, changing the user releases the old subscription before creating the next.
 Disposing the root releases the final subscription.
 

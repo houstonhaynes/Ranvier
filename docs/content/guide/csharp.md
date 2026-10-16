@@ -425,6 +425,10 @@ to release observation. See [Reading changes](projections.fsx#reading-changes) f
 
 `ReactiveBindings` connects graph nodes to view-model property and error notifications.
 
+For copying a single source to an external target, the core also provides
+[fixed-dependency bindings](bindings.md). Those are separate from the XAML notification adapter
+described here; the C# `Reactive` facade has no `BindSignal` or `BindMemo` factories.
+
 - `Writable` registers a two-way property backed by a signal.
 - `Computed` registers a read-only property backed by a tracked `Func<T>`.
 

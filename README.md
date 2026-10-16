@@ -17,6 +17,8 @@
 > **Preview.** Ranvier is pre-release. Its APIs may change before the first release. Install the preview from NuGet as
 > [`Ranvier`](https://www.nuget.org/packages/Ranvier), or [`Ranvier.CSharp`](https://www.nuget.org/packages/Ranvier.CSharp) from C#.
 > The Elmish-style MVU bridge ships separately as [`Ranvier.Elmish`](https://www.nuget.org/packages/Ranvier.Elmish).
+> [`Ranvier.Query`](https://www.nuget.org/packages/Ranvier.Query) adds shared remote queries and mutation reconciliation.
+> The guide tracks current source; published preview versions can lag merged features. See [Installation](docs/content/guide/installation.md) for checked package versions and Fable packaging status.
 
 ## Overview
 
@@ -56,6 +58,15 @@ graph.Run(() =>
 
 Read the full documentation at **https://shayanhabibi.github.io/Ranvier/**.
 
+## Features
+
+- [Owners and cleanup](docs/content/guide/roots.md) release child computations and cleanups together in reverse acquisition order.
+- [Fixed-dependency bindings](docs/content/guide/bindings.md) copy one signal or memo into a target without dynamic dependency tracking.
+- [Debounce and throttle](docs/content/guide/timing.md) control when captured values reach downstream readers and async requests.
+- [Collections](docs/content/guide/collections.fsx) provide editable keyed sources, per-row projections, change readers, views and aggregates.
+- [Queries and mutations](docs/content/guide/queries.md) share acquired remote data, retain accepted data during refresh, and reconcile loaded queries in one batch.
+- [Fable](docs/content/fable/index.md) compiles the same model to JavaScript. Package builds include standalone Fable source projects, and CI checks package consumers. The guide documents target differences.
+
 ## Origin
 
 Ranvier began as experiments in a repository called [Partas.Signals](https://github.com/shayanhabibi/Partas.Signals).
@@ -73,6 +84,7 @@ dotnet fsi build.fsx -- --help
 |---------|--------------|
 | `build` | Restores and builds the source projects |
 | `test` | Cleans, then runs the F# (Expecto) and C# (xUnit) suites (`--skip-tests` to skip them) |
+| `test-fable` | Compiles and runs traced and untraced Fable suites, then writes the compatibility report |
 | `format` | Formats every source file with Fantomas (`--dry-format` checks instead) |
 | `compile` | Compiles the Fable projects to JavaScript (`--watch` to stay resident) |
 | `publish` | Builds, tests, packs and pushes to NuGet (`--api-key`, or the `NUGET_API_KEY` env var) |
@@ -90,10 +102,13 @@ build.fsx                      the build CLI
 src/Ranvier/                   the library
 src/Ranvier.CSharp/            the C# façade
 src/Ranvier.Elmish/            the MVU bridge (Mvu)
+src/Ranvier.Query/             shared remote queries and mutation reconciliation
 tests/Ranvier.Tests/           the Expecto suite
 tests/Ranvier.CSharp.Tests/    the xUnit suite, written in C#
 docs/docs.fsproj               the Nacara site (net10.0)
 docs/content/                  the pages
+fable/                         Fable tests and counter scenarios
+bench/                         BenchmarkDotNet suites
 ```
 
 ### Adding a project
@@ -102,7 +117,7 @@ The build CLI addresses the repository through `Partas.TypeProvider.BuildHelper`
 so projects are discovered at compile time: anything under `src/` is a source
 project, anything under `tests/` is a test project. Add the project to the
 solution and it is picked up by `build`, `test`
-and `pack`
+and `publish`
 on the next run.
 
 ### Adding a step

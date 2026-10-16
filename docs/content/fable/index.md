@@ -5,7 +5,7 @@ order: 1
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
-**Status: Implemented, not yet packaged for Fable.** Ranvier compiles with Fable and runs its shared test suite against the compiled engine under Node.js. [.NET preview packages](https://www.nuget.org/packages/Ranvier) are published; a Fable package is not yet published. This page lists the platform differences, including cases where evaluation timing or equality differs.
+**Status: Implemented, with Fable sources included in package builds.** Ranvier compiles with Fable and runs its shared test suite against the compiled engine under Node.js. CI also tests consumers of the packed sources. This page lists the platform differences, including cases where evaluation timing or equality differs.
 
 ## Intent
 
@@ -13,20 +13,52 @@ Ranvier is native .NET first and Fable second. The engine is written so that it 
 
 ## Current state
 
-The engine already compiles under Fable, and a smoke check runs the compiled engine under Node.js and asserts the same behaviour as the .NET test suite. Verified by running it, not only by compiling it:
+The shared test suite runs the compiled engine under Node.js with traced and untraced builds, using
+both inline and promise delivery. It exercises these APIs and records the target differences below:
 
 - signals, memos and effects;
+- fixed-dependency signal and memo bindings;
 - `batch`, `untrack` and `onCleanup`;
 - scope disposal and error boundaries;
 - the equality cutoff;
 - keyed projections, selectors and index projections;
 - `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all four flight policies.
 
-Ranvier's engine compiles under Fable in this repository, and the .NET test suite runs against it under Node.js (`dotnet fsi build.fsx test-fable`), once untraced and once with the trace log compiled in. Tests that exercise a .NET-only facility, such as threads, garbage collection or `ObservableCollection`, are compiled out. The run writes `docs/.ai/fable-compat.md`: the tests that pass, fail and are excluded, in each file. Every failure listed there is one of the differences below. No Fable package is published, and the Fable build is not part of Ranvier's release process yet.
+Ranvier's engine compiles under Fable in this repository, and the .NET test suite runs against it under Node.js (`dotnet fsi build.fsx test-fable`), once untraced and once with the trace log compiled in. Tests that exercise a .NET-only facility, such as threads, garbage collection or `ObservableCollection`, are compiled out. The run writes `docs/.ai/fable-compat.md`: the tests that pass, fail and are excluded, in each file. Every failure listed there is one of the differences below.
+
+## Package sources and CI
+
+Package builds of `Ranvier`, `Ranvier.Elmish`, `Ranvier.CSharp` and `Ranvier.Query`, including their
+`.Traced` variants, include Fable sources and a standalone `fable/<package>.fsproj`. The source
+project lists the packaged files in compile order and does not depend on the repository's build
+imports. Use a normal `PackageReference` from an F# project compiled with Fable; there is no separate
+JavaScript engine package to install.
+
+CI compiles and runs both the repository test project and consumers restored from locally packed
+NuGet packages, traced and untraced. The package consumer check is
+`tests/check-package-compatibility.ps1 -CheckFable`. These checks validate the package build;
+availability of a particular version on NuGet is a separate release step.
+
+**Published previews lag this packaging fix.** On 2026-10-16, the latest listed archives for
+`Ranvier` and `Ranvier.CSharp` (`0.1.0-preview.5`), `Ranvier.Elmish` (`0.1.0-preview.4`) and
+`Ranvier.Query` (`0.1.0-preview.1`) did not contain the standalone Fable project files. See
+[Installation](../guide/installation.md#from-nuget) for the package links. Until a release includes
+them, use packages built from the current checkout with a local package feed, or compile a repository
+project reference. The CI consumer script packs temporary packages and demonstrates the local-feed path.
 
 ## Known differences from .NET
 
 These are the differences that exist today. Some may narrow; others follow from the JavaScript runtime and will remain.
+
+**Graph dispatch is single-threaded.** Under Fable, `Graph.Dispatch` runs work inline,
+`IsOnGraphThread` is always true, and `PendingWork` and `Pump ()` return zero. Thread-affinity checks,
+cross-thread inbox machinery and internal locks are omitted. Promise completions still arrive on
+later microtasks, as described below; pumping cannot make a promise settle synchronously. The .NET
+threading and dispatcher contracts are unchanged; see [Threading and dispatch](../guide/threading.md).
+
+The generated JavaScript also erases the engine's internal source and observer slot wrappers to
+their references. This changes the representation without changing the reactive API or adding a
+new capability.
 
 **Async results arrive on a later microtask.** Under Fable an async flight is a promise. A flight that has already completed when its body returns still reads as Pending on the first read and becomes ready once the microtask queue drains. On .NET the continuation runs inline and the first read is ready. Synchronous rendering, such as server-side rendering, sees the Pending state.
 
@@ -82,6 +114,8 @@ The snippet uses only functions that exist on both targets, which is the style t
 - `Trace.dump`, which writes a file, and `TraceModel.parseDump`. `Trace.dumpText` gives the same text.
 - `SynchronizationContextDispatcher`. There is no synchronisation context to capture and no other thread to marshal to.
 
-## What comes next
+## UI integration
 
-The Fable target still needs a published package, the Fable test run in Ranvier's release process, and documentation of each difference above next to the API it affects. Until then, treat anything on this page as subject to change.
+The Fable target supplies the reactive engine, Elmish bridge and query layer. It does not include a
+browser DOM renderer or a framework-specific view adapter. Build those integrations on the public
+primitives, including [fixed-dependency bindings](../guide/bindings.md).

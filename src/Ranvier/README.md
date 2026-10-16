@@ -1,6 +1,6 @@
 # Ranvier
 
-Fine-grained reactive computation for .NET.
+Fine-grained reactive computation for .NET and Fable.
 
 > **Preview.** Ranvier is pre-release. Its APIs may change before the first release.
 
@@ -27,6 +27,35 @@ factories and extension methods.
 
 `net10.0`, `net8.0` and `netstandard2.1`.
 
+Package builds from this source include F# sources for Fable's JavaScript target. The same core APIs support
+signals, memos, effects, bindings and collections on both targets; see the
+[Fable guide](https://shayanhabibi.github.io/Ranvier/fable/).
+
+## Fixed-dependency bindings and ownership
+
+`bindSignal source target write` and `bindMemo source target write` copy one source into an
+external target in the flush. The writer receives the target and current value, runs untracked
+and must not create reactive nodes. A pending or failed memo leaves the target unchanged;
+an equal source value does not write again. Both factories return `unit` and attach to the current owner.
+Use a memo before `bindMemo` to derive a target value, or an effect for work with dynamic dependencies.
+
+Owners dispose children and cleanups together in reverse acquisition order. A cleanup registered
+after a child is created runs before that child is disposed, both on disposal and before a run's
+owned resources are replaced. See [Bindings](https://shayanhabibi.github.io/Ranvier/guide/bindings/)
+and [Cleanup](https://shayanhabibi.github.io/Ranvier/guide/cleanup/).
+
+## Keyed row factories
+
+`createProjectionWithOptions ProjectionOptions.CreateFirst keyOf factory source` creates added
+rows before retiring removed rows. If a new factory throws, the pass disposes its additions and
+keeps the previously applied rows, items and keys until a source change retries the pass.
+
+`createProjectionOnce options keyOf factory source` stores one factory result per key without a
+row memo. It suits a view object whose factory creates its own bindings. Key readers are supported;
+value readers, `AsObservableCollection` and projection view/aggregate operators are not. Use `createProjectionWith`
+when those consumers need reactive row values. See
+[Projections](https://shayanhabibi.github.io/Ranvier/guide/projections/).
+
 ## Per-node equality
 
 Ordinary factories use `GraphOptions.Equality`. To override a node's value cutoff, supply a
@@ -50,10 +79,8 @@ A comparer exception leaves a signal unchanged and reaches its writer; on a comp
 fails the node using its existing error handling. A boundary's recovery function handles body
 errors, so a comparer error fails the boundary directly.
 
-Comparers are selected once at construction and stored in the existing typed field. The default
-memo, split-effect and boundary constructors add a construction-time option check; update and
-read methods retain their existing IL and instance fields. Async sources and async memos retain
-their completion/state notifications, and collection APIs retain their graph-policy cutoffs.
+Comparers are selected once at construction. Async sources and async memos retain their
+completion/state notifications, and collection APIs retain their graph-policy cutoffs.
 
 The C# facade adds comparer overloads, for example `Reactive.Signal("Ada", StringComparer.OrdinalIgnoreCase)`
 and `Reactive.Memo(() => name.Value.Trim(), StringComparer.OrdinalIgnoreCase)`.

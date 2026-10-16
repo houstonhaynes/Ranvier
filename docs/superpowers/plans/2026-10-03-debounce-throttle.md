@@ -1,5 +1,10 @@
 # Debounce and Throttle Implementation Plan
 
+**Status (2026-10-16):** implementation merged in [#46](https://github.com/shayanhabibi/Ranvier/pull/46).
+This plan preserves the original task lists and dated verification. Use the
+[timing guide](../../content/guide/timing.md) for the current API; unresolved measurements below are not
+unimplemented timing features.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` if the user selects delegated execution, or `superpowers:executing-plans` for inline execution. Use `superpowers:test-driven-development` for the implementation and `superpowers:verification-before-completion` before completion claims.
 
 **Goal:** Add portable debounce and three throttle modes with correct graph ownership, causal tracing, and measured performance.

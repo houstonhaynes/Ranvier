@@ -88,7 +88,10 @@ SignalsDotnet and CommunityToolkit.Mvvm.
 - a drop-while-running policy, which ignores changes while a flight is in progress (R3 `Drop`)
 - a coalescing policy that publishes the finished flight's result before the trailing run (SignalsDotnet
   `ScheduleNext`, R3 `ThrottleFirstLast`); `FinishCurrent` keeps the memo pending until the trailing run settles
-- debounce and throttle, as a flight policy or as a combinator
+
+Debounce and throttle are implemented as [timed values](../guide/timing.md), with eager capture and delayed
+publication. Read a timed value from an async memo to control when requests start, and choose its flight
+policy separately. They are no longer exploratory flight-policy proposals.
 
 Streaming lifetime, restart policies and empty-stream behavior remain design questions. No streaming API
 or contract is shipped. In particular, applying start-order `Queue` semantics to infinite streams would
@@ -104,8 +107,9 @@ completions back to it.
 
 - **Ownership.** A graph belongs to the thread that constructed it. Under `ThreadAffinity = Guarded` (the
   default), a signal write, node creation, batch, flush, disposal or stale read from another thread raises
-  `InvalidOperationException`, and the error message names both threads. `Unchecked` removes the check. Use `Unchecked` for Fable, or when every write is known
-  to arrive on one thread. `Serialised` accepts any thread on the construction context, one at a time; see
+  `InvalidOperationException`, and the error message names both threads. `Unchecked` removes the check when
+  every access is known to obey the host's synchronization rules. Fable needs no affinity override: all three
+  policies run in its single JavaScript context without .NET thread checks. `Serialised` accepts any thread on the construction context, one at a time; see
   [Hopping synchronisation contexts](#hopping-synchronisation-contexts).
 - **Inbox.** Completions from other threads, such as `AsyncSource.Settle` and finished `AsyncMemo` flights,
   go into the graph's inbox. `Graph.Pump ()` applies them in arrival order on the owning thread and then

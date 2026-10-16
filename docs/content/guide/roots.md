@@ -2,7 +2,7 @@
 title: Roots and owners
 ---
 
-Every memo and effect belongs to an owner. Disposing that owner runs its cleanups and disposes
+Every memo, effect and binding belongs to an owner. Disposing that owner runs its cleanups and disposes
 its children. Disposing it again is safe.
 
 The owner can be the graph's `Root`, a scope created by `createRoot`, or the current run of an
@@ -47,6 +47,8 @@ controls [
 
 An owner tears down its cleanups and children together in reverse acquisition order, as `use` bindings
 are disposed. A cleanup registered after a node is created runs before that node is disposed.
+Nested owners apply that rule to their own children when they are reached; cleanups are not a
+separate phase that runs before or after all children.
 
 A root created inside an effect belongs to that effect's current run. It is disposed before the
 effect's next run.

@@ -59,6 +59,7 @@ let theme =
                                 Menu.page "guide/memos.md"
                                 Menu.page "guide/timing.md"
                                 Menu.page "guide/effects.md"
+                                Menu.page "guide/bindings.md"
                                 Menu.page "guide/roots.md"
                                 Menu.page "guide/cleanup.md"
                                 Menu.page "guide/untrack.md"
@@ -146,7 +147,7 @@ let theme =
             [
                 NavbarIcon ("GitHub", "https://github.com/shayanhabibi/Ranvier", Icons.github)
             ]
-        >> Theme.editUrl "https://github.com/shayanhabibi/Ranvier/edit/main/docs"
+        >> Theme.editUrl "https://github.com/shayanhabibi/Ranvier/edit/master/docs"
         >> Theme.footer (
             Html.p
                 [

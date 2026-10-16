@@ -21,6 +21,10 @@ Each view keeps rows by key and re-runs its function only for changed upstream r
 
 As with a source projection, `Keys` tracks membership and order; `Get key` tracks a row value.
 
+These operators work with reactive row values, including `createProjectionWith` and editable
+collections' `Rows`. They reject the fixed factory results of `createProjectionOnce` with
+`NotSupportedException`; use the ordinary factory form when rows feed a collection view.
+
 ## Filter and map
 
 

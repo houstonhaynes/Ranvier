@@ -17,7 +17,7 @@ Max Paige asked:
 - **Building collection-heavy views?** Compare Adaptive's established set/list/map operators with Ranvier's keyed collection paths.
 
 :::info Preview
-Ranvier is pre-release; its APIs may change. This article describes `master` and makes no comparative performance claim.
+Ranvier is pre-release; its APIs may change. Examples describe the desktop APIs; the collection status below is reviewed through `2ce4b7d` (2026-10-16). This article makes no comparative performance claim for your application.
 :::
 
 ## What connects state to a desktop control?
@@ -434,6 +434,8 @@ The trade-offs depend on your operators:
 - **Adaptive:** an established, broader family of incremental set/list/map operations.
 - **Ranvier:** keyed rows, delta readers and ownership, with some membership paths still scanning keys and changed sort ranks using a full sort.
 - **Either:** measure your edit/filter/sort/aggregate workload; deltas do not make every operation proportional to changed rows.
+
+As of `2ce4b7d` (2026-10-16), keyed snapshot projections trim unchanged prefixes and suffixes and take a full visit when no trim is possible (#55/#56). This improves those measured list paths while retaining the scans and full-sort costs above. #57 also removes redundant work from the generated Fable core; its timings concern Node experiments, not desktop .NET performance. The [projection benchmark follow-ups](../benchmarks/projections.md#keyed-pass-follow-ups) and [counter caveats](../benchmarks/counters.md#fable-core-follow-up) keep the measurements tied to their source versions.
 
 See [collection bindings](../guide/csharp.md#editable-keyed-collections), [reader contracts](../guide/projections.fsx#reading-changes) and [current costs](../concepts/ecosystem.md). The [collection maps](../guide/signal-maps.md#collections) show per-row propagation.
 

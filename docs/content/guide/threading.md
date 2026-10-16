@@ -2,6 +2,12 @@
 title: Threading and dispatch
 ---
 
+This page describes .NET threading. Under [Fable](../fable/index.md), graph work runs on the
+JavaScript thread: `Dispatch` runs inline, `IsOnGraphThread` is true, and `PendingWork` and
+`Pump ()` return zero. Thread-affinity checks and the cross-thread inbox are omitted. Promise
+completions still arrive on later microtasks, so calling `Pump` does not make an async flight
+ready synchronously.
+
 Examples using tasks import the .NET types and construct a graph with a manual dispatcher:
 
 ```fsharp

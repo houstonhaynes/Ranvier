@@ -128,7 +128,8 @@ storeTitles.Get 2
 
 :::details Keyed update costs and duplicate keys
 
-Only the row whose item changed wakes. The write still costs one projection pass over the whole list, and the list
+Only the row whose item changed wakes. A projection still reads the source collection, but can skip key work for
+unchanged items; see [projection identity](projections.fsx#identity). The list
 form rebuilds the cells before the match and shares the tail after it. Keep keys unique: `updateBy` rewrites the first
 match only, and a projection over a list with a duplicate key raises.
 
@@ -143,9 +144,11 @@ re-adding a key creates a new row and moves it to the end.
 
 *)
 let directTodos = createKeyedCollection (fun (todo: Todo) -> todo.Id)
-directTodos.Edit(fun edit ->
+
+directTodos.Edit (fun edit ->
     edit.AddOrUpdate { Id = 1; Title = "Write" }
     edit.AddOrUpdate { Id = 2; Title = "Test" })
+
 let directTitles = directTodos.Rows |> Projection.map _.Title
 let titleChanges = directTitles.NewValueReader ()
 titleChanges.Read () |> ignore

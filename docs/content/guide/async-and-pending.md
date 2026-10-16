@@ -12,6 +12,8 @@ failed states into values your application can display.
 - [Boundaries](boundaries.md): loading fallbacks, error recovery and stale results during refresh.
 - [Threading and dispatch](threading.md): apply completions on the graph's owning thread.
 - [Testing async state](testing.md): decide exactly when each flight completes.
+- [Fable](../fable/index.md): promise microtasks, untracked reads after every `await`, and
+  single-threaded dispatch in JavaScript.
 
 Start with [Signals](signals.fsx), [Memos](memos.md) and [Effects](effects.md) for the synchronous
 primitives. For async collection rows, see [Projections](projections.fsx#pending-and-failed-rows).

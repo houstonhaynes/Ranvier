@@ -21,4 +21,9 @@ Use `createKeyedCollection keyOf` when updates arrive one item at a time. Its `R
 feeds the same views and aggregates as a projection over an immutable collection. Use
 `NewKeyReader()` for membership and order, or `NewValueReader()` for settled row changes too;
 see [Reading changes](projections.fsx#reading-changes).
+
+For renderers that create one view object per key, projections also offer create-first teardown
+ordering and `createProjectionOnce`, which stores a factory result without a row memo. The latter
+supports key readers but does not support value readers or collection view operators; see
+[Store a factory result once per key](projections.fsx#store-a-factory-result-once-per-key).
 *)

@@ -24,6 +24,8 @@ The examples run inside an [active graph](graph.fsx).
 - Use a **keyed projection** when items have stable identities, such as IDs.
 - Use an **index projection** when rows should stay at their positions as items change.
 - Use a **factory form** when each row needs its own nodes or cleanup.
+- Use `createProjectionOnce` for a factory result that stays fixed for the lifetime of its key,
+  such as a view object that manages its own bindings.
 - Use a **lookup** for a value per requested key, or a **selector** for selection membership.
 
 :::details Creator signatures and row lifetimes
@@ -166,6 +168,14 @@ controls [
 policy: by default, records and classes compare by reference. A pass may skip `keyOf` for an item
 equal to the one at the same position in the previous pass, counted from the start or from the end.
 
+The source is enumerated completely before the first `keyOf` call. Keeping unchanged item references
+lets a pass skip key work in unchanged regions. Under the default identity policy, rebuilding every record removes that opportunity:
+the pass visits all items. This does not make immutable collection updates proportional only to
+the number of edited rows; the input still has to be read.
+
+A `keyOf` that reads a tracked source, creates a node or registers cleanup disables that skipping
+for every later pass. Keep identity selection a pure function of the item when possible.
+
 :::warning Replace an item to change its key
 An item whose key field is mutated in place and republished may keep its old key and row. Publish a
 new item instead.
@@ -291,6 +301,44 @@ memo keeps it until the memo's next run or disposal, whichever key or projection
 `createMemoWith`.
 
 :::
+
+## Create additions before retiring removals
+
+`createProjectionWithOptions ProjectionOptions.CreateFirst keyOf factory source` changes the
+order of a keyed factory pass. It creates added rows first, retires removed rows second, then
+writes surviving items and publishes the keys. Without this option, a pass retires removals
+before creating additions.
+
+If a create-first factory throws, the pass disposes its new rows in reverse creation order and
+keeps the previously applied rows, items and keys. Reads raise the held failure until a source
+change retries the pass. Without `CreateFirst`, reads of a failed projection retry the pass.
+This rollback covers the projection's rows; arrange cleanup for external resources in the factory.
+
+## Store a factory result once per key
+
+`createProjectionOnce options keyOf factory source` stores the factory's result directly as the
+row value, without a row memo. The factory receives the same latest-item accessor as
+`createProjectionWith` and runs once, untracked, in the key's scope. Use `ProjectionOptions.None`
+for the default order or `ProjectionOptions.CreateFirst` for the order and rollback above.
+
+The returned object stays the row value while the key survives. To reflect item changes in a view
+object, create memos and [bindings](bindings.md) in its factory using the latest-item accessor.
+A tracked `Get` observes the key set, so it wakes when that key leaves; it does not track changes
+inside the stored object.
+
+Without `CreateFirst`, a factory failure is stored on the row and its reads raise that failure.
+With `CreateFirst`, a factory failure fails and rolls back the pass.
+
+:::warning Choose the ordinary factory form for collection views
+`NewValueReader`, `AsObservableCollection` and the `Projection` view and aggregate operators raise
+`NotSupportedException` for rows made with `createProjectionOnce`. Use `createProjectionWith`
+when consumers need those APIs. `Keys` and key readers remain available for membership and order.
+:::
+
+These contracts are covered by the `create-first` and `memo-free` tests in
+[Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs).
+The pass's reuse and fallback cases are covered in
+[TrimmedPass.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/TrimmedPass.fs).
 
 ## Index projections
 

@@ -1,14 +1,17 @@
 # Debounce and throttle: design
 
-**Status:** deferred: after FinishCurrent and its benchmarks. Reviewer corrections applied (wave B decisions:
-not implemented now). Line references are to `src/Ranvier/*.fs` at `c631f23`, except those marked "at `b693a42`".
+**Status (2026-10-16):** historical proposal, superseded by the implementation merged in
+[#46](https://github.com/shayanhabibi/Ranvier/pull/46). Use the [timing guide](../../content/guide/timing.md)
+for the shipped API, injected clock and four timing modes; the proposed signatures below are not current.
+The original research deferred this work until after FinishCurrent. Line references below are to
+`src/Ranvier/*.fs` at `c631f23`, except those marked "at `b693a42`".
 Costs are read from the code; no numbers were measured. §5 names the benchmarks that check them.
 
 ## 1. Goal
 
 Research §1 asks for debounce and throttle (FuncUI#360, Fabulous discussion #1061); §11 asks that any time-based
 policy take its time from a replaceable source, so a test advances time instead of sleeping (R3 uses
-`FakeTimeProvider`). Ranvier has no timers today: no source file references `TimeProvider`, `Timer`, `Task.Delay` or
+`FakeTimeProvider`). At the research baseline Ranvier had no timers: no source file referenced `TimeProvider`, `Timer`, `Task.Delay` or
 `setTimeout`.
 
 The canonical case: a search box signal, debounced, feeding an async memo under `CancelPrevious`.

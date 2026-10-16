@@ -7,11 +7,11 @@ order: 6
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-This page lists what Ranvier provides today, what is being finished, and what is being considered. The last
-list is a set of candidates, not a schedule. An item may change shape, move, or be dropped. The page carries
-no dates.
+This page lists what the current source provides and what is being considered. Package builds and CI
+coverage are described separately from the version a particular application has installed. The candidates
+are not a schedule: an item may change shape, move, or be dropped.
 
-## Shipped
+## Implemented in current source
 
 These are implemented and covered by tests.
 
@@ -19,11 +19,19 @@ These are implemented and covered by tests.
   updates and an equality cutoff. See [Getting started](../guide/getting-started.md).
 - **Per-node equality.** Typed comparers for signals, memos, split effects and boundaries, overriding
   the graph's default value cutoff. See [Equality](../guide/equality.md#per-node-comparers).
+- **Fixed-dependency bindings.** `bindSignal` and `bindMemo` copy one declared source into a target, with
+  batching and owner disposal. Use an effect when the dependencies must change. See
+  [Bindings](../guide/bindings.md).
+- **Reverse acquisition teardown.** Cleanups and child nodes are released together in reverse acquisition
+  order, including before an owning computation re-runs. See [Cleanup](../guide/cleanup.md).
 - **Pending channel and boundaries.** A propagating "not ready" status, with `createSuspense`,
   `createErrorBoundary` and `createBoundary` to decide what to show in the meantime. See
   [Suspension](suspension.md).
 - **Async memos.** `createAsync` with the `CancelPrevious`, `KeepLatest`, `Queue` and `FinishCurrent` flight policies, and the
   previous value passed to each flight. See [Async and pending](../guide/async-and-pending.md).
+- **Debounce and throttle.** `debounce`, `throttleFirst`, `throttleLast` and `throttle` control publication
+  before downstream work starts. They compose with flight policies and support injected clocks for tests.
+  See [Debounce and throttle](../guide/timing.md).
 - **Threading, failure and ownership contracts.** Thread affinity checks, dispatch from other threads, and
   `ManualDispatcher` for deterministic tests. See [Contracts](contracts.md).
 - **Keyed collections.** Projections, index projections, lookups and selectors, with `filter`, `map`,
@@ -54,12 +62,16 @@ These are implemented and covered by tests.
   [Blazor Server](../guide/blazor-server.md).
 - **Failure provenance.** `ErrorOrigin` on a failed node and `CaughtFrom` on an error boundary report the node a
   failure originated in. See [Finding where a failure came from](contracts.md#finding-where-a-failure-came-from).
-
-## In progress
-
-- **Fable target.** The engine compiles with Fable and the test suite runs against it under Node.js. It still
-  needs a published package, a place in the release process, and documentation of each difference next to
-  the API it affects. See [Fable (JavaScript) target](../fable/index.md).
+- **Projection construction and reconciliation.** Memo-free row factories through `createProjectionOnce`,
+  an opt-in create-before-remove pass, and prefix/suffix trimming with a full-visit path for changes that
+  cannot trim. The costs and ordering contracts are described in [Projections](../guide/projections.fsx).
+- **Shared queries and mutations.** `Ranvier.Query` provides acquired query leases, explicit loading,
+  retained data during refresh, and mutation receipts reconciled across loaded queries. See
+  [Queries and mutations](../guide/queries.md) and [Dictionary navigation](../guide/query-navigation.md).
+- **Fable target and package consumers.** The core and extension packages include standalone Fable source
+  projects in package builds. CI runs traced/untraced compatibility checks and compiles consumers from
+  built packages. Fable omits .NET thread/inbox/continuation bookkeeping and uses direct slot references;
+  the .NET implementations are preserved. See [Fable (JavaScript) target](../fable/index.md).
 
 ## Under consideration
 
@@ -68,9 +80,13 @@ None of these is available. Each one is an open question about whether and how i
 - **A drop-while-running flight policy.** A policy that ignores a new run while one is in progress,
   analogous to [R3's `AwaitOperation.Drop`](https://github.com/Cysharp/R3#asyncawait-support).
   Command gating through `CanExecute` is a separate feature already available in `ReactiveCommand`.
-- **Debounce and throttle.** As a flight policy or as a combinator.
 - **More incremental collection views.** Map membership consumes upstream key deltas. Filter, sort,
   grouping and some aggregate membership paths still scan keys; further delta processing remains
   under consideration.
+- **Additional async adapters.** F# `Async<'T>` and streaming `IAsyncEnumerable<'T>` adapters remain
+  exploratory; their lifetime and restart contracts are not shipped. See
+  [The async graph](async-graph.md#not-implemented).
+- **Reusable lenses and prisms.** Deep write paths can be expressed in application code today; reusable
+  focus values over collections remain under consideration.
 
 The [Ecosystem](ecosystem.md) page lists the current gaps these items address.

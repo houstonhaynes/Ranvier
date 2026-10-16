@@ -1,5 +1,9 @@
 # Execution ledger: 2026-10-04-query-mutation.md
 
+**Status (2026-10-16):** merged in [#47](https://github.com/shayanhabibi/Ranvier/pull/47).
+The ledger below records the pre-merge execution and its test counts; it is not an outstanding task list.
+See [Queries and mutations](../../content/guide/queries.md) for the current user guide.
+
 Branch: `feat/query-mutation`. Worktree: `C:/Users/shaya/RiderProjects/Ranvier-query`. Base: `7c672a5`.
 
 Tasks 1–7 are complete: public-API composition, typed query identity and leases,

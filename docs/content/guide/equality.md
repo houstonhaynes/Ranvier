@@ -112,6 +112,11 @@ The opt-in factories are `createSignalWithComparer`, `createMemoWithComparer`,
 previous-value rules match the ordinary factories. Comparers are selected once at construction.
 Async sources, async memos and collection value cutoffs continue to use the graph policy.
 
+[Bindings](bindings.md) use their source's cutoff. Give the signal or memo a comparer when a
+target should ignore equivalent values; the binding has no separate equality policy. Projection
+item equality also determines which key-selection work a pass can skip, while keys themselves
+always compare structurally; see [Projection identity](projections.fsx#identity).
+
 :::details Invalid comparers and comparer failures
 Null comparers are rejected at construction. If a signal's comparer throws, the signal stays
 unchanged and the exception reaches its writer. On a computed node, a comparer exception fails

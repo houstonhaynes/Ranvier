@@ -28,8 +28,10 @@ When a completion arrives from another thread, pump the graph on its owning thre
 [Threading and dispatch](threading.md) and the `pumpUntil` helper in [Testing async state](testing.md).
 
 The body runs synchronously up to its first `await` that suspends. Only the reactive reads made in
-that part are tracked. An `await` on a task that has already completed does not suspend, so a read
-after it is still tracked.
+that part are tracked. On .NET, an `await` on a task that has already completed does not suspend,
+so a read after it is still tracked. Under [Fable](../fable/index.md),
+every `await` resumes on a later microtask and reads after it are untracked. Even an already
+completed flight first reads as `Pending`; its result becomes ready on a later microtask.
 
 ```fsharp
 let flightGraph = newGraph ()
@@ -139,6 +141,9 @@ show refused.TryValue, show faulted.TryValue
 
 ### Flight policy
 
+Under Fable, `Queue` applies each outcome on a later microtask even when it and the flights before
+it have already settled. On .NET, settled queued outcomes can apply inline.
+
 `GraphOptions.FlightPolicy` sets what a change does while a flight is in progress:
 
 | Policy | New flight at once | Old token cancelled | Superseded result discarded | Every result applied |
@@ -238,7 +243,8 @@ new flight, or under `FinishCurrent` a trailing one. For commands, C# has `React
 `CommandPolicy.Disable` provides analogous command gating to
 [`AllowConcurrentExecutions = false`](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/mvvm/generators/relaycommand#handling-concurrent-executions);
 this is not an async-memo drop policy. See [C#](csharp.md#commands).
-Debounce and throttle are not implemented either, as a policy or as a combinator.
+Debounce and throttle are implemented as [timed values](timing.md). Read one from the async memo to
+control when requests start, and choose the flight policy separately to handle requests already running.
 
 :::
 

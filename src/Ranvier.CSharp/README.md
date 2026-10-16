@@ -69,6 +69,10 @@ and cancels the token of the one in progress; `IsSearching` and `Error` follow t
 
 ## Binding to XAML
 
+The core's [fixed-dependency bindings](https://shayanhabibi.github.io/Ranvier/guide/bindings/)
+copy one source to a target. The `Reactive` facade has no `BindSignal` or `BindMemo` factories;
+the XAML notification adapter below serves view-model properties.
+
 `ReactiveBindings` raises `INotifyPropertyChanged` and `INotifyDataErrorInfo` for view-model properties backed by
 memos and signals, inside any existing view model; `ReactiveObject` is a base class over it. See the
 [C# guide](https://github.com/shayanhabibi/Ranvier/blob/master/docs/content/guide/csharp.md#binding-to-xaml).

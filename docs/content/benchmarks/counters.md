@@ -8,8 +8,15 @@ order: 8
 The counter bench measures whole scenarios rather than single primitives: creating and disposing
 rows, propagating writes, projections, application-shaped workloads, graph shapes and async
 boundaries. Each figure is retired processor instructions per operation, `(m(2N) − m(N)) / N`,
-read from hardware counters. Instruction counts are steadier than time, so a change of more than
-about 5 % is a real change in work done.
+read from hardware counters. Under matched, stable measurement conditions, differences below
+about 5 % are treated as run-to-run noise. Larger differences still need measurement-state checks,
+particularly under Node, where V8 compilation and deoptimisation can occur inside a measured region.
+
+The charts are the historical `e13f159` run, not current `master` (`2ce4b7d`, 2026-10-16).
+The broader [October 4 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md)
+includes timed operators and additional derived/effect scenarios. The later
+[keyed-pass report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md)
+is a targeted comparison for #56, rather than a replacement for every chart panel.
 
 Each panel scales from zero to its largest bar, so bar lengths compare engines within a scenario,
 not scenarios with each other.
@@ -29,7 +36,15 @@ Fable.Ripple 1.0.0-beta.5. Bars are main-thread figures.
 ![Instructions per operation under Node.js](/Ranvier/benchmarks/counters-node.svg)
 
 Scenarios with a negative figure (`derive-effect`, `derive-on`, `shape-dynamic`, `async-recover`)
-do less work per operation than Node's run-to-run noise and show no bar.
+show no bar. A negative subtraction is a measurement limitation, not negative engine work.
+
+### Fable core follow-up
+
+[#57](https://github.com/shayanhabibi/Ranvier/pull/57), merged as `2ce4b7d`, removes redundant Fable affinity/inbox work, observer/dependency slot wrappers, async continuation and lock callbacks, and checked scheduler queue stores. The .NET executable implementation is preserved.
+
+The [source investigation at `d962b84`](https://github.com/shayanhabibi/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-generated-fable-savings.md) measured the combined patch before its core-only cherry-pick into `master`. Three fresh processes per version/scenario, forty warmups and twenty-one measured rounds gave median elapsed-time reductions of 36% for equal writes, 11% for updates, 26% for disposing 1,000 rows and 34% for creating 1,000 rows; the 2% chain difference was treated as noise. These are timings for that experiment, not fresh retired-instruction counts for #57. Creation/disposal remain sensitive to JIT state and warmup. Renderer changes and the measured playground bundle saving in that report were not merged by #57.
+
+The companion [historical-counter investigation](https://github.com/shayanhabibi/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-instruction-erosions.md) compares `d87920f`, `878f294` and the PoC's `2ef3876` snapshot. Historical Node creation totals were nonlinear in N; separate traces of the isolated scenario found compilation/deoptimisation inside measured regions. Those traces demonstrate the protocol's vulnerability, not the exact compilation cost in the historical full-suite runs. The reported +18.5% creation delta therefore does not establish a steady-state source regression. The disposal gap remains an observation under that protocol, requiring a compilation-audited, scale-checked matched rerun before assigning it to a feature. No new hardware-counter acceptance run is claimed for #57.
 
 ## Wave B scenarios
 

@@ -24,6 +24,10 @@ When a completion arrives from another thread, pump the graph on its owning thre
 once. Neither returns the source to pending; use an [async memo](async-memos.md) for requests
 that start again when tracked inputs change.
 
+Under [Fable](../fable/index.md), `Settle` and `Fail` dispatch inline on the JavaScript thread;
+no graph pump is needed. A callback supplied by a promise still runs on that promise's later
+microtask. This differs from an async memo, whose promise result always settles on a later microtask.
+
 - `Settle` applies no equality cutoff. Settling twice publishes the second value, and settling with the
   value already held still wakes every reader.
 - A failed source can be settled later. The settle clears the `Error` flag.

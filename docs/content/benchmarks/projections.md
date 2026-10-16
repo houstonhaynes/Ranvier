@@ -7,6 +7,18 @@ order: 6
 
 Projections keep keyed, per-row reactive state over a collection source. Selectors (`Lookup`) track, per key, whether that key matches a source value. See [Benchmarks](index.md) for configuration, environment and caveats.
 
+## Keyed-pass follow-ups
+
+Current `master` at `2ce4b7d` includes two changes after the primitive tables on this page. Those tables retain their original commits and must not be read as current timings.
+
+[#55](https://github.com/shayanhabibi/Ranvier/pull/55) trims unchanged prefixes and suffixes under the projection's item equality policy, visits the changed middle, and handles nested passes and construction rollback. This reduces reconciliation work when item identities are retained; it does not make an arbitrary snapshot update proportional to its delta. A layout effect that reads every row still does linear work.
+
+The [2026-10-14 keyed-list report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-14-core-trimmed-pass.md) compares the earlier implementation with the branch that became #55. In the final paired Node rerun, swap/remove elapsed-time medians were 0.45–0.51 of baseline, with all reported interquartile intervals below 1. Creation/clear medians were 1.07–1.20 of baseline; creation intervals crossed 1 and the 1,000-row clear interval did not. The after run used three processes with five warmups and fifteen timed rounds. Its .NET after measurements used BenchmarkDotNet's short job, so they are diagnostic rather than full-run replacements for the tables below.
+
+[#56](https://github.com/shayanhabibi/Ranvier/pull/56) takes the full visit when no prefix or suffix can trim, avoiding the trimmed path's per-position hash-set bookkeeping. Its [matched instruction-count report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md) uses 1,000 rows, alternating base/change runs, five processes per round and scale 8 (N = 400, 2N = 800). With fresh item records in every position, remove/swap/insert retired 19% fewer instructions on .NET and 30–31% fewer under Node. Library operation counts were identical. Stable-item .NET remove/insert stayed within noise; Node stable remove/insert still included compilation effects and establish no measured speedup. Node allocation rows with a collection inside the region understate allocation.
+
+These are two different comparisons with different baselines. Their ratios must not be multiplied into a claimed speedup for current `master`, which also includes the later Fable core changes in #57.
+
 ## ProjectionBenchmarks
 
 A projection over `Items` rows (8, 64 or 512), observed by one effect so that the projection stays scheduled.

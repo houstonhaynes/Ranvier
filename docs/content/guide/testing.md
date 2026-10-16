@@ -216,8 +216,10 @@ testCase "a boundary shows its fallback while a flight is in progress"
 Prefer a fake completed by the test. It controls result order without involving the thread pool.
 
 :::details When the test must use real IO
-Wait until `graph.PendingWork` is above zero, then call `graph.Pump ()` on the test thread to apply
+On .NET with manual dispatch, wait until `graph.PendingWork` is above zero, then call `graph.Pump ()` on the test thread to apply
 the queued result. See [Dispatcher selection](threading.md#dispatcher-selection).
+Under Fable, promise continuations arrive on later microtasks and do not use the graph's inbox;
+`PendingWork` stays zero. Await the test's controlled promise delivery instead of waiting for inbox work.
 :::
 
 :::warning Keep the test on the graph's thread
@@ -227,6 +229,13 @@ resume on another thread, and the graph's thread guard raises on the next write.
 
 ## Time
 
-A Ranvier graph reads no clock, so these tests need no timer to fake. Debounce and throttle are
-under consideration in the [roadmap](../concepts/roadmap.md); neither is currently a flight policy
-or combinator.
+The async settlement tests above control flights directly and need no wall-clock timer.
+[Debounce and throttle](timing.md) do use time: inject a monotonic `TimedClock` through `TimedOptions<'T>`
+and decide when its armed one-shot timers fire. Advancing that clock and delivering its callbacks lets
+the test check admission at a deadline without sleeping. The timing guide's signal maps demonstrate this
+with a manual clock.
+
+On .NET 8 and 10, `TimedClock.ofTimeProvider` adapts a host or test `TimeProvider`. A timer callback
+delivered from another thread still uses the graph's dispatcher; pump manual dispatch on the graph's
+thread before checking the admitted value. The same timing options are available under Fable, where
+callback delivery is governed by the JavaScript event loop.
