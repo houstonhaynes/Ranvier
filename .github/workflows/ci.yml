@@ -13,9 +13,8 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# The steps run the commands `build.fsx test`, `build.fsx test-fable` and `build.fsx --dry-format` run. The build
-# CLI itself exits non-zero when its output is redirected: its timing summary raises "Console width must be greater
-# than zero".
+# These steps run the operations provided by the build CLI directly.
+# Partas.Build 0.8.1 also supports redirected output and automatic GitHub stage summaries.
 
 jobs:
   dotnet:

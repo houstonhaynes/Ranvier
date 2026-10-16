@@ -1,0 +1,152 @@
+name: Perf
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  actions: read
+
+# Every master push must reach history; no concurrency group drops pending runs.
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.previous.outputs.run }}
+      base: ${{ steps.refs.outputs.base }}
+      head: ${{ steps.refs.outputs.head }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: refs
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          [[ "$HEAD" =~ ^[0-9a-f]{40}$ ]]
+          if [ "$EVENT" = pull_request ]; then
+            base=$(git merge-base origin/master "$HEAD")
+          else
+            base=$(git rev-parse "$HEAD^1")
+          fi
+          [[ "$base" =~ ^[0-9a-f]{40}$ ]]
+          printf 'head=%s\nbase=%s\n' "$HEAD" "$base" >> "$GITHUB_OUTPUT"
+      - id: previous
+        if: github.event.action == 'labeled' || github.event.action == 'unlabeled'
+        uses: actions/github-script@v8
+        env:
+          HEAD: ${{ steps.refs.outputs.head }}
+          BASE: ${{ steps.refs.outputs.base }}
+        with:
+          script: |
+            const {find} = require('./.github/scripts/perf-reuse.cjs');
+            core.setOutput('run', await find({github, repo: context.repo, head: process.env.HEAD, base: process.env.BASE, currentRun: context.runId}));
+
+  measure:
+    needs: find
+    if: needs.find.outputs.run == ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: arm64-counters
+            os: ubuntu-24.04-arm
+          - leg: x64-timing
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      BASE: ${{ needs.find.outputs.base }}
+      HEAD: ${{ needs.find.outputs.head }}
+      LEG: ${{ matrix.leg }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.find.outputs.head }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+      - run: sudo sysctl -w kernel.perf_event_paranoid=-1
+      - name: Full counter suite
+        run: dotnet test bench/Ranvier.Counters.Tests -c Release
+      - name: Workflow logic tests
+        run: node --test .github/scripts/*.test.cjs
+      - run: dotnet fsi build.fsx -- perf-build "$BASE" "$RUNNER_TEMP/perf/base"
+      - run: dotnet fsi build.fsx -- perf-build "$HEAD" "$RUNNER_TEMP/perf/head"
+      - name: Alternating measurements (arm64 asserts hardware in every region)
+        run: dotnet fsi build.fsx -- perf-ab "$LEG" "$BASE" "$RUNNER_TEMP/perf/base" "$HEAD" "$RUNNER_TEMP/perf/head" "out/ab-$LEG.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ab-${{ matrix.leg }}
+          path: out/ab-${{ matrix.leg }}.json
+          if-no-files-found: error
+
+  verdict:
+    needs: [find, measure]
+    if: always() && needs.find.result == 'success' && (needs.measure.result == 'success' || needs.measure.result == 'skipped')
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ needs.find.outputs.base }}
+      HEAD: ${{ needs.find.outputs.head }}
+      ACCEPTED: ${{ contains(github.event.pull_request.labels.*.name, 'perf-accepted') }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.find.outputs.head }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ab-*
+          merge-multiple: true
+          path: out
+          run-id: ${{ needs.find.outputs.run || github.run_id }}
+          github-token: ${{ github.token }}
+      - if: needs.find.outputs.run != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-arm64-counters
+          path: out/ab-arm64-counters.json
+          if-no-files-found: error
+      - if: needs.find.outputs.run != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-x64-timing
+          path: out/ab-x64-timing.json
+          if-no-files-found: error
+      - run: dotnet build bench/Ranvier.Counters -c Release -p:RanvierTrace=false -p:RanvierCounters=false -o out/head/worker
+      - name: Compare and annotate
+        run: dotnet fsi build.fsx -- perf-compare "$BASE" "$HEAD" "$ACCEPTED" out/report out/ab-arm64-counters.json out/ab-x64-timing.json
+      - name: Bind report to this run
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            if (!fs.existsSync('out/report/verdict.json') || !fs.existsSync('out/report/comment.md')) throw new Error('No complete fresh verdict');
+            fs.writeFileSync('out/report/provenance.json', JSON.stringify({run: String(context.runId), repository: process.env.GITHUB_REPOSITORY, event: context.eventName, pr: process.env.PR, base: process.env.BASE, head: process.env.HEAD}));
+            for (const leg of ['arm64-counters', 'x64-timing']) fs.copyFileSync(`out/ab-${leg}.json`, `out/report/ab-${leg}.json`);
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-report
+          path: out/report
+          if-no-files-found: error

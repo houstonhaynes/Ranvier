@@ -27,6 +27,14 @@ type Measurement =
         /// length.
         /// </summary>
         NoGcRegion: bool
+        /// <summary>User-mode instructions on Linux; -1 when hardware counters are unavailable.</summary>
+        Instructions: int64
+        /// <summary>User-mode CPU cycles on Linux; -1 when hardware counters are unavailable.</summary>
+        Cycles: int64
+        /// <summary>User-mode branch misses on Linux; -1 when hardware counters are unavailable.</summary>
+        BranchMisses: int64
+        /// <summary>Measured thread CPU time in nanoseconds on Linux; -1 when unmeasured.</summary>
+        CpuNs: int64
         /// <summary>
         /// <c>Ranvier.Counters.Snapshot()</c> after the region. Empty when
         /// the library was built without <c>RanvierCounters</c>.

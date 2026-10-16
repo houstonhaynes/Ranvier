@@ -29,6 +29,32 @@ type Run =
 let counterRun (run: Run) =
     run.Counters |> Option.defaultValue run.Worker
 
+let private linuxCounts region instructions cycles misses : Pmc.RegionCounts =
+    if instructions < 0L || cycles < 0L || misses < 0L then
+        invalidOp $"Hardware counters were unavailable or incomplete for region %d{region}."
+
+    {
+        Region = region
+        Values = [| uint64 instructions; uint64 cycles; uint64 misses |]
+        Intervals = 1
+    }
+
+/// <summary>Converts complete Linux worker hardware measurements to the default source order.</summary>
+/// <remarks>Unavailable or incomplete hardware measurements raise InvalidOperationException.</remarks>
+let linuxRegionCounts (run: WorkerRun) : Pmc.RegionCounts[] =
+    run.Cases
+    |> Array.collect (fun case ->
+        case.Measurements
+        |> Array.map (fun m -> linuxCounts m.Region m.Instructions m.Cycles m.BranchMisses))
+
+/// <summary>Converts complete Node main-thread hardware measurements, sorted by region ID.</summary>
+/// <remarks>Unavailable or incomplete hardware measurements raise InvalidOperationException.</remarks>
+let linuxNodeRegionCounts (regions: System.Collections.Generic.IReadOnlyDictionary<int, LinuxPmc.Counts>) : Pmc.RegionCounts[] =
+    regions
+    |> Seq.sortBy (fun pair -> pair.Key)
+    |> Seq.map (fun pair -> linuxCounts pair.Key pair.Value.Instructions pair.Value.Cycles pair.Value.BranchMisses)
+    |> Seq.toArray
+
 /// <summary>
 /// The case of <c>counters</c> matching <c>case</c> by scenario and engine.
 /// </summary>

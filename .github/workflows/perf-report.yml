@@ -1,0 +1,83 @@
+name: Perf report
+
+on:
+  workflow_run:
+    workflows: [Perf]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      # workflow_run must already be on master. Only trusted master scripts run here.
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          ref: master
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: perf-report
+          path: ${{ runner.temp }}/report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const {publish, readReport} = require('./.github/scripts/perf-report.cjs');
+            await publish({github, repo: context.repo, run: context.payload.workflow_run, report: readReport(`${process.env.RUNNER_TEMP}/report`)});
+
+  history:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      # This is the repository's master push, never a pull-request ref or artifact code.
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: perf-report
+          path: ${{ runner.temp }}/report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Validate provenance
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs'), assert = require('node:assert/strict');
+            const m = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/report/provenance.json`, 'utf8'));
+            const run = context.payload.workflow_run;
+            assert.equal(run.head_repository.full_name, process.env.GITHUB_REPOSITORY);
+            assert.equal(m.repository, process.env.GITHUB_REPOSITORY);
+            assert.equal(m.event, 'push');
+            assert.equal(m.run, String(run.id));
+            assert.equal(m.head, run.head_sha);
+            assert.match(m.head, /^[0-9a-f]{40}$/);
+      - run: dotnet build bench/Ranvier.Counters -c Release -p:RanvierTrace=false -p:RanvierCounters=false -o out/head/worker
+      - name: Record master measurement
+        env:
+          HEAD: ${{ github.event.workflow_run.head_sha }}
+        run: dotnet fsi build.fsx -- perf-record "$HEAD" "$RUNNER_TEMP/record/runs/$HEAD.json" "$RUNNER_TEMP/report/ab-arm64-counters.json" "$RUNNER_TEMP/report/ab-x64-timing.json"
+      - name: Preserve and publish history with optimistic retries
+        env:
+          HEAD: ${{ github.event.workflow_run.head_sha }}
+        run: node .github/scripts/perf-history.cjs "$RUNNER_TEMP/record/runs/$HEAD.json" out/head/worker/Ranvier.Counters.dll

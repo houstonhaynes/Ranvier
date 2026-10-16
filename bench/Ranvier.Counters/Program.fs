@@ -5,12 +5,40 @@ open System.Diagnostics
 open System.IO
 open System.Reflection
 open System.Text.Json
+open System.Text.Json.Serialization.Metadata
+open CounterBench.Workers
+
+/// <summary>Serialization options for the legacy published report, retaining its original measurement fields.</summary>
+let reportJsonOptions () =
+    let resolver = DefaultJsonTypeInfoResolver ()
+
+    resolver.Modifiers.Add (fun info ->
+        if info.Type = typeof<Measurement> then
+            for property in info.Properties |> Seq.toArray do
+                if
+                    [ "Instructions"; "Cycles"; "BranchMisses"; "CpuNs" ]
+                    |> List.contains property.Name
+                then
+                    info.Properties.Remove property |> ignore)
+
+    JsonSerializerOptions (WriteIndented = true, TypeInfoResolver = resolver)
 
 let private usage =
     """Ranvier.Counters: instructions, allocations and library operation counts per operation.
 
 Usage: Ranvier.Counters [options]
 
+  record --ab <file>... --commit <sha> --parent <sha> --date <iso> --subject <text> --message <file> --out <file>
+                    Record validated process figures, medians and accepted regressions.
+  timeline --runs <dir> --out <file>
+                    Regenerate the arm64 instruction timeline from recorded runs.
+
+  ab --leg <name> --base <sha> <dir> --head <sha> <dir> --out <file>
+                    Alternate base and head builds (optional --rounds, --scale, --only, --node).
+  compare --ab <file> [--ab <file>] --out <dir>
+                    Write verdict.json and comment.md. Overrides: --label true,
+                    --messages <NUL-separated file>, --accept <names|all>
+                    --accept-reason <reason>; optional --threshold and --floor.
   --no-pmc          Skip processor counters. Runs without elevation.
   --counters-worker <path>
                     Read the library counters from a second worker: the
@@ -39,20 +67,6 @@ Usage: Ranvier.Counters [options]
 Processor counters need an elevated process. Build with -p:RanvierCounters=true,
 or pass --counters-worker, for the library counter columns. counters.ps1 at the
 repository root compiles both Fable builds and runs this tool with --fable."""
-
-/// <summary>
-/// The environment the worker runs in. Tiered compilation off: every method is
-/// compiled once, fully optimised, on first call. No PGO: the code is the same
-/// in every run. ReadyToRun off: framework code is JIT-compiled at the same
-/// optimisation level, rather than served precompiled.
-/// </summary>
-let workerEnvironment =
-    [
-        "DOTNET_TieredCompilation", "0"
-        "DOTNET_TieredPGO", "0"
-        "DOTNET_ReadyToRun", "0"
-        "DOTNET_gcServer", "0"
-    ]
 
 type private Options =
     {
@@ -194,46 +208,6 @@ let private selfWorker () =
     else
         host, []
 
-/// <summary>
-/// The worker at <c>path</c>: a <c>.dll</c> runs under <c>dotnet</c>, anything else runs
-/// directly.
-/// </summary>
-let private workerAt (path: string) =
-    if not (File.Exists path) then
-        failwith $"No counter worker at %s{path}."
-
-    if Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase) then
-        "dotnet", [ path ]
-    else
-        path, []
-
-/// <summary>
-/// Starts the worker in worker mode and waits for its result.
-/// </summary>
-let private runWorker (host: string, prefix: string list) (scale: int) (only: string option) (resultFile: string) =
-    let info = ProcessStartInfo host
-
-    for arg in
-        prefix
-        @ [ "--worker"; resultFile; "--scale"; string scale ]
-        @ (only
-           |> Option.map (fun p -> [ "--only"; p ])
-           |> Option.defaultValue []) do
-        info.ArgumentList.Add arg
-
-    info.UseShellExecute <- false
-
-    for name, value in workerEnvironment do
-        info.Environment[name] <- value
-
-    use p = Process.Start info
-    p.WaitForExit ()
-
-    if p.ExitCode <> 0 then
-        failwith $"The worker exited with %d{p.ExitCode}."
-
-    JsonSerializer.Deserialize<WorkerRun>(File.ReadAllText resultFile)
-
 let private measure (options: Options) (index: int) =
     let directory =
         Path.Combine (Path.GetTempPath (), $"ranvier-counters-%d{Environment.ProcessId}-%d{index}")
@@ -254,7 +228,15 @@ let private measure (options: Options) (index: int) =
 
                 run)
 
-        if options.Pmc then
+        if options.Pmc && OperatingSystem.IsLinux () then
+            let worker = runWorker (selfWorker ()) options.Scale options.Only resultFile
+
+            {
+                Report.Worker = worker
+                Report.Pmc = Some (Report.linuxRegionCounts worker)
+                Report.Counters = counters
+            }
+        elif options.Pmc then
             let collector = Pmc.start directory options.Sources
 
             let worker =
@@ -300,7 +282,7 @@ let private withScratch (name: string) (body: string -> 'T) =
 /// <summary>
 /// Brackets a region of the node process with this process's markers.
 /// </summary>
-let private mark (isBegin: bool) (region: int) =
+let private mark (_: int) (isBegin: bool) (region: int) =
     if isBegin then
         Markers.Log.Begin region
     else
@@ -331,7 +313,22 @@ let private measureNode (options: Options) (sha: string) (output: string) : Repo
             [||]
 
     let pmc =
-        if options.Pmc then
+        if options.Pmc && OperatingSystem.IsLinux () then
+            Array.init options.Repeat (fun i ->
+                withScratch $"node-pmc-%d{i}" (fun dir ->
+                    use recorder = new LinuxPmc.RegionRecorder ()
+
+                    let run =
+                        NodeRuns.runHandshake options.Node plain options.Scale options.Only (Path.Combine (dir, "node.json")) recorder.Mark
+
+                    let regions = Report.linuxNodeRegionCounts recorder.Regions
+
+                    {
+                        NodeRuns.Run = run
+                        NodeRuns.MainThread = regions
+                        NodeRuns.AllThreads = regions
+                    }))
+        elif options.Pmc then
             Array.init options.Repeat (fun i ->
                 withScratch $"node-pmc-%d{i}" (fun dir ->
                     let collector = Pmc.start dir options.Sources
@@ -363,7 +360,11 @@ let private measureNode (options: Options) (sha: string) (output: string) : Repo
     let sources = if options.Pmc then options.Sources else [||]
 
     let mode =
-        if options.Pmc then
+        if options.Pmc && OperatingSystem.IsLinux () then
+            "perf_event_open user-mode counters ("
+            + String.Join (", ", sources)
+            + "); main and all: the main thread"
+        elif options.Pmc then
             "per-context-switch PMC counters ("
             + String.Join (", ", sources)
             + "); main: the main thread, all: every thread of the process"
@@ -392,8 +393,7 @@ configuration are restricted to administrators.
 Run again from an administrator shell, or pass --no-pmc to measure allocations
 and library counters only."""
 
-[<EntryPoint>]
-let main argv =
+let private legacyMain argv =
     let options =
         parse
             {
@@ -423,11 +423,34 @@ let main argv =
         0
     | None when options.Reconcile -> if Reconcile.run options.Scale = 0 then 0 else 1
     | None when options.ListSources ->
-        for name, id in Pmc.availableSources () do
-            printfn "%3d  %s" id name
+        if OperatingSystem.IsLinux () then
+            if LinuxPmc.hardwareAvailable () then
+                for name in Pmc.DefaultSources do
+                    printfn "%s" name
+        else
+            for name, id in Pmc.availableSources () do
+                printfn "%3d  %s" id name
 
         0
-    | None when options.Pmc && not (Pmc.isElevated ()) ->
+    | None when
+        options.Pmc
+        && OperatingSystem.IsLinux ()
+        && options.Sources <> Pmc.DefaultSources
+        ->
+        eprintfn "On Linux the processor counters are fixed: %s." (String.Join (", ", Pmc.DefaultSources))
+        2
+    | None when
+        options.Pmc
+        && OperatingSystem.IsLinux ()
+        && not (LinuxPmc.hardwareAvailable ())
+        ->
+        eprintfn "This machine offers no hardware counters to perf_event_open. Pass --no-pmc, or lower kernel.perf_event_paranoid."
+        2
+    | None when
+        options.Pmc
+        && OperatingSystem.IsWindows ()
+        && not (Pmc.isElevated ())
+        ->
         eprintfn "%s" elevationMessage
         2
     | None ->
@@ -453,7 +476,11 @@ let main argv =
                         |]
                     )
                 Mode =
-                    if options.Pmc then
+                    if options.Pmc && OperatingSystem.IsLinux () then
+                        "perf_event_open user-mode counters ("
+                        + String.Join (", ", sources)
+                        + ")"
+                    elif options.Pmc then
                         "per-context-switch PMC counters ("
                         + String.Join (", ", sources)
                         + ")"
@@ -530,10 +557,18 @@ let main argv =
                     Runs = runs
                     Fable = Option.toObj (node |> Option.map box)
                 |},
-                JsonSerializerOptions (WriteIndented = true)
+                reportJsonOptions ()
             )
 
         File.WriteAllText (stem + ".json", json)
         File.WriteAllText (stem + ".md", markdown)
         eprintfn "Wrote %s.json and %s.md" stem stem
         0
+
+[<EntryPoint>]
+let main argv =
+    match List.ofArray argv with
+    | "ab" :: rest -> Ab.main rest
+    | "compare" :: rest -> Compare.main rest
+    | ("record" | "timeline") :: _ -> History.main (List.ofArray argv)
+    | _ -> legacyMain argv

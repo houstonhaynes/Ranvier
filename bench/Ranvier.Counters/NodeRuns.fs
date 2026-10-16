@@ -118,11 +118,11 @@ let run (node: string) (script: string) (scale: int) (only: string option) (resu
     finish p resultFile
 
 /// <summary>
-/// Runs the harness <c>script</c> with <c>--handshake</c>. <c>mark</c> receives each region
+/// Runs the harness <c>script</c> with <c>--handshake</c>. <c>mark</c> receives the Node process ID and each region
 /// boundary, <c>true</c> for a <c>BEGIN</c>, while the harness waits for the reply. Fails
 /// unless every measured region was marked at both ends.
 /// </summary>
-let runHandshake (node: string) (script: string) (scale: int) (only: string option) (resultFile: string) (mark: bool -> int -> unit) =
+let runHandshake (node: string) (script: string) (scale: int) (only: string option) (resultFile: string) (mark: int -> bool -> int -> unit) =
     let info =
         startInfo
             node
@@ -138,36 +138,72 @@ let runHandshake (node: string) (script: string) (scale: int) (only: string opti
         p.StandardInput.Write '\n'
         p.StandardInput.Flush ()
 
-    let marked = HashSet<struct (bool * int)>()
-    let mutable line = p.StandardOutput.ReadLine ()
+    try
+        let completed = HashSet<int>()
+        let mutable active = None
+        let mutable line = p.StandardOutput.ReadLine ()
 
-    while not (isNull line) do
-        match line.Split ' ' with
-        | [| ("BEGIN" | "END") as marker; region |] ->
-            let isBegin = marker = "BEGIN"
-            mark isBegin (int region)
+        while not (isNull line) do
+            match line.Split ' ' with
+            | [| ("BEGIN" | "END") as marker; text |] ->
+                let region =
+                    match Int32.TryParse text with
+                    | true, region when region >= 0 -> region
+                    | _ -> failwith $"Invalid region: %s{line}."
 
-            marked.Add (struct (isBegin, int region))
-            |> ignore
+                let isBegin = marker = "BEGIN"
 
-            reply ()
-        | _ -> eprintfn "%s" line
+                if isBegin then
+                    if active.IsSome || completed.Contains region then
+                        failwith $"Overlapping or repeated region: %s{line}."
 
-        line <- p.StandardOutput.ReadLine ()
+                    active <- Some region
+                else
+                    if active <> Some region then
+                        failwith $"Unmatched region end: %s{line}."
 
-    let run = finish p resultFile
+                    active <- None
+                    completed.Add region |> ignore
 
-    for case in run.Cases do
-        for m in case.Measurements do
-            if
-                not (
-                    marked.Contains (struct (true, m.Region))
-                    && marked.Contains (struct (false, m.Region))
-                )
-            then
-                failwith $"Region %d{m.Region} of %s{case.Scenario}/%s{case.Engine} was not marked at both ends."
+                mark p.Id isBegin region
+                reply ()
+            | _ when
+                line.StartsWith ("BEGIN", StringComparison.Ordinal)
+                || line.StartsWith ("END", StringComparison.Ordinal)
+                ->
+                failwith $"Invalid region boundary: %s{line}."
+            | _ -> eprintfn "%s" line
 
-    run
+            line <- p.StandardOutput.ReadLine ()
+
+        if active.IsSome then
+            failwith "Node exited with an unfinished region."
+
+        let run = finish p resultFile
+
+        if run.ProcessId <> p.Id then
+            failwith "The Node result process ID does not match the measured process."
+
+        let measured = HashSet<int>()
+
+        for case in run.Cases do
+            for m in case.Measurements do
+                if m.Region < 0 || not (measured.Add m.Region) then
+                    failwith "The Node result contains an invalid or repeated measurement region."
+
+        if not (completed.SetEquals measured) then
+            failwith "The measured regions must exactly match the completed handshake regions."
+
+        run
+    with _ ->
+        try
+            if not p.HasExited then
+                p.Kill true
+        with :? InvalidOperationException when p.HasExited ->
+            ()
+
+        p.WaitForExit ()
+        reraise ()
 
 /// <summary>
 /// The Node.js version <c>node</c> reports.
