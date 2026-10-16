@@ -2,9 +2,8 @@ name: Docs
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Perf report]
-    types: [completed]
+  push:
+    branches: [master]
 
 permissions:
   contents: read
@@ -17,7 +16,6 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
