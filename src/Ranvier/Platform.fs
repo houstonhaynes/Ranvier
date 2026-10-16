@@ -252,12 +252,13 @@ module internal Platform =
     /// returns false when the frame is already entered, as on the return from a nested
     /// continuation. Under Fable neither runs.
     /// </remarks>
-    let runFlightBody (enter: obj -> bool) (leave: obj -> unit) (body: unit -> 'T) : 'T =
 #if FABLE_COMPILER
+    let inline runFlightBody (enter: obj -> bool) (leave: obj -> unit) ([<InlineIfLambda>] body: unit -> 'T) : 'T =
         ignore enter
         ignore leave
         body ()
 #else
+    let runFlightBody (enter: obj -> bool) (leave: obj -> unit) (body: unit -> 'T) : 'T =
         let frame = FlightFrame (enter, leave)
         let previous = flightFrame.Value
         flightFrame.Value <- frame
@@ -300,11 +301,12 @@ module internal Platform =
     /// A rethrow of a capture will carry the captured frames followed by the rethrowing reader's frames only,
     /// however many reads preceded it.
     /// </remarks>
-    let captureFailure (held: CapturedFailure) (error: exn) : CapturedFailure =
 #if FABLE_COMPILER
+    let inline captureFailure (held: CapturedFailure) (error: exn) : CapturedFailure =
         ignore held
         error
 #else
+    let captureFailure (held: CapturedFailure) (error: exn) : CapturedFailure =
         if
             not (isNull held)
             && obj.ReferenceEquals (held.SourceException, error)
@@ -474,6 +476,10 @@ module internal Platform =
 #if FABLE_COMPILER
     [<Emit("$1[$0]")>]
     let entryAt (index: int) (slots: ResizeArray<'T>) : 'T = jsNative
+
+    /// <summary>Replaces an existing slot whose index the caller has already checked against the list's count.</summary>
+    [<Emit("$1[$0] = $2")>]
+    let setEntryAt (index: int) (slots: ResizeArray<'T>) (value: 'T) : unit = jsNative
 #else
     let inline entryAt (index: int) (slots: ResizeArray<'T>) =
         slots[index]

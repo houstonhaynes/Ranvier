@@ -6,6 +6,13 @@ open System.Collections.Generic
 open System.Threading
 open System.Threading.Tasks
 
+#if FABLE_COMPILER
+module private FableLocks =
+    let inline lock (_target: obj) ([<InlineIfLambda>] action: unit -> 'T) : 'T = action ()
+
+open FableLocks
+#endif
+
 /// <summary>
 /// Dirtiness — the axis every reactive graph already has. Deliberately separate
 /// from <c>Status</c>, which carries pending and error. Solid 2's contribution is
@@ -85,31 +92,28 @@ and internal IScheduled =
 /// One slot in an observer list.
 /// </summary>
 /// <remarks>
-/// A struct wrapper rather than the interface reference itself, because
-/// storing a reference into an array of an interface type is a covariant
-/// store: the CLR checks the assignment against the array's element type on
-/// every write. A recomputation writes three of these per edge, and measured
-/// against the <c>HashSet</c> it replaced, that check made the array the slower
-/// structure despite doing less work. A struct element has no covariance to
-/// check.
-/// MUTATE BY REPLACING THE WHOLE SLOT, never by assigning to <c>.Observer</c> of an
-/// element in place. Fable compiles <c>Array.zeroCreate</c> on a struct type to one
-/// instance shared by every element — <c>fill(new Array(n), new ObserverSlot(null))</c>
-/// — because JavaScript has no value types to copy. In-place field assignment
-/// then writes every slot at once, and the whole list silently becomes one
-/// entry. Assigning <c>items[i] &lt;- ObserverSlot c</c> replaces the shared reference
-/// instead, which is correct there and is the same single store on .NET.
+/// On .NET, a struct slot avoids covariant interface-array store checks.
+/// Under Fable, the slot is the observer reference itself. Replace whole slots when updating the array.
 /// </remarks>
+#if FABLE_COMPILER
+[<Fable.Core.Erase; NoEquality; NoComparison>]
+type internal ObserverSlot =
+    | ObserverSlot of IComputation
+
+    member inline this.Observer =
+        let (ObserverSlot observer) = this
+        observer
+#else
 [<Struct; NoEquality; NoComparison>]
 type internal ObserverSlot =
     val mutable Observer: IComputation
 
     new(observer: IComputation) = { Observer = observer }
+#endif
 
 module internal ObserverSlots =
     /// <summary>
-    /// The slot stored into a vacated position. Under Fable one instance,
-    /// shared as the <c>Array.zeroCreate</c> fill is.
+    /// The slot stored into a vacated position.
     /// </summary>
 #if FABLE_COMPILER
     let empty = ObserverSlot Unchecked.defaultof<IComputation>
@@ -346,19 +350,27 @@ type internal ObserverSet() =
 #endif
 
 /// <summary>
-/// One slot in a computation's dependency list. A struct for the reason given
-/// on <c>ObserverSlot</c>: an array of an interface type type-checks every store.
+/// One slot in a computation's dependency list, with the same target-specific representation as <c>ObserverSlot</c>.
 /// </summary>
+#if FABLE_COMPILER
+[<Fable.Core.Erase; NoEquality; NoComparison>]
+type internal SourceSlot =
+    | SourceSlot of ISource
+
+    member inline this.Source =
+        let (SourceSlot source) = this
+        source
+#else
 [<Struct; NoEquality; NoComparison>]
 type internal SourceSlot =
     val mutable Source: ISource
 
     new(source: ISource) = { Source = source }
+#endif
 
 module internal SourceSlots =
     /// <summary>
-    /// The slot stored into a vacated position. Under Fable one instance,
-    /// shared as the <c>Array.zeroCreate</c> fill is.
+    /// The slot stored into a vacated position.
     /// </summary>
 #if FABLE_COMPILER
     let empty = SourceSlot Unchecked.defaultof<ISource>
@@ -1269,11 +1281,13 @@ type Graph(options: GraphOptions) =
     /// </summary>
     let mutable queueHead = 0
 
+#if !FABLE_COMPILER
     /// <summary>
     /// The thread the graph was constructed on. Everything mutating the graph
     /// must end up here; see <c>Dispatch</c>.
     /// </summary>
     let ownerThread = Platform.currentThreadId ()
+#endif
     let guarded = options.ThreadAffinity = Guarded
 
     /// <summary>
@@ -1282,14 +1296,9 @@ type Graph(options: GraphOptions) =
     /// </summary>
     let ownerAmbient = if guarded then AmbientSlot.Cell else null
 
-    let serialised =
-#if FABLE_COMPILER
-        false
-#else
-        options.ThreadAffinity = Serialised
-#endif
-
 #if !FABLE_COMPILER
+    let serialised = options.ThreadAffinity = Serialised
+
     /// <summary>
     /// The synchronisation context every entry of a <c>Serialised</c> graph must run on.
     /// </summary>
@@ -1301,10 +1310,12 @@ type Graph(options: GraphOptions) =
     let mutable holder = 0
 #endif
 
+#if !FABLE_COMPILER
     /// <summary>
     /// True when the outermost stale read acquired the graph and its <c>ExitPull</c> releases it.
     /// </summary>
     let mutable pullHeld = false
+#endif
 
     let mutable batchDepth = 0
     let mutable flushing = false
@@ -1325,12 +1336,14 @@ type Graph(options: GraphOptions) =
     /// </summary>
     let mutable currentOwner = root
 
+#if !FABLE_COMPILER
     /// <summary>
     /// Saved on entry to each flight continuation, keyed by the body's frame: the tracking
     /// context, owner and raised pending read. Innermost last.
     /// </summary>
     let mutable continuations: ResizeArray<struct (obj * IComputation * Owner * INode)> =
         null
+#endif
 
     /// <summary>
     /// The scope host whose body entered <c>untrack</c> before creating anything.
@@ -1365,11 +1378,13 @@ type Graph(options: GraphOptions) =
     /// </summary>
     let mutable detachedDepth = 0
 
+#if !FABLE_COMPILER
     /// <summary>
     /// Work that arrived from another thread, waiting for this one to come and
     /// run it. See <c>Platform.Inbox</c> for why it is the queue it is.
     /// </summary>
     let inbox = Platform.Inbox<unit -> unit>()
+#endif
 
     let dispatcher =
         match options.Dispatcher with
@@ -1509,6 +1524,7 @@ type Graph(options: GraphOptions) =
                 cell.Hosting <- previous
             | _ -> ()
 
+#if !FABLE_COMPILER
     /// <summary>
     /// Makes the calling thread the graph's holder under <c>Serialised</c>.
     /// </summary>
@@ -1517,9 +1533,6 @@ type Graph(options: GraphOptions) =
     /// The caller runs outside the construction context, or another thread holds the graph.
     /// </exception>
     member private this.Acquire(operation: string) : bool =
-#if FABLE_COMPILER
-        false
-#else
         let me = Platform.currentThreadId ()
 
         if Volatile.Read &holder = me then
@@ -1554,6 +1567,10 @@ type Graph(options: GraphOptions) =
     /// <returns>True when the caller must pair it with <c>Release</c>.</returns>
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
     member internal this.Enter(operation: string) : bool =
+#if FABLE_COMPILER
+        ignore operation
+        false
+#else
         if guarded then
             if not (obj.ReferenceEquals (AmbientSlot.Existing, ownerAmbient)) then
                 this.FailOffThread operation
@@ -1561,6 +1578,7 @@ type Graph(options: GraphOptions) =
             false
         else
             serialised && this.Acquire operation
+#endif
 
     /// <summary>
     /// Runs <c>body</c> as the entry point <c>operation</c>: checked under <c>Guarded</c>, held under
@@ -1568,7 +1586,6 @@ type Graph(options: GraphOptions) =
     /// </summary>
     member inline internal this.Entered<'T>(operation: string, [<InlineIfLambda>] body: unit -> 'T) : 'T =
 #if FABLE_COMPILER
-        this.AssertOnGraphThread operation
         body ()
 #else
         if this.Enter operation then
@@ -1683,7 +1700,7 @@ type Graph(options: GraphOptions) =
     /// </summary>
     member _.IsOnGraphThread =
 #if FABLE_COMPILER
-        Platform.currentThreadId () = ownerThread
+        true
 #else
         if serialised then
             Volatile.Read &holder = Platform.currentThreadId ()
@@ -1707,6 +1724,9 @@ type Graph(options: GraphOptions) =
         this.Post work.Invoke
 
     member internal this.Post(work: unit -> unit) =
+#if FABLE_COMPILER
+        work ()
+#else
         if this.IsOnGraphThread then
             work ()
         else
@@ -1716,6 +1736,7 @@ type Graph(options: GraphOptions) =
             // and the work stays queued.
             inbox.Enqueue work
             dispatcher.Post (Action this.PumpFromDispatcher)
+#endif
 
     /// <summary>
     /// Marshals <c>work</c> as <c>Dispatch</c> does. The returned task completes once
@@ -1744,7 +1765,12 @@ type Graph(options: GraphOptions) =
     /// <summary>
     /// Work that arrived from another thread and has not been drained yet.
     /// </summary>
-    member _.PendingWork = inbox.Count
+    member _.PendingWork =
+#if FABLE_COMPILER
+        0
+#else
+        inbox.Count
+#endif
 
     /// <summary>
     /// Runs everything the inbox has collected, then flushes. Must be called on
@@ -1758,6 +1784,9 @@ type Graph(options: GraphOptions) =
         this.Entered ("Pump", (fun () -> this.Drain ()))
 
     member private this.Drain() =
+#if FABLE_COMPILER
+        0
+#else
         let mutable ran = 0
         let mutable draining = true
 
@@ -1779,6 +1808,7 @@ type Graph(options: GraphOptions) =
             this.RequestFlush ()
 
         ran
+#endif
 
     member private this.PumpFromDispatcher() =
 #if FABLE_COMPILER
@@ -1807,10 +1837,12 @@ type Graph(options: GraphOptions) =
     /// thread is inside the graph, or if the caller is outside it and runs off the construction context.
     /// </summary>
     /// <remarks>
-    /// The failure this prevents is the worst one available here: two threads
-    /// interleaving inside an observer set or a flush queue, corrupting both,
-    /// with no exception and no bad value until much later and somewhere else.
+    /// Thread-affinity checks are omitted under Fable.
     /// </remarks>
+#if FABLE_COMPILER
+    member inline this.AssertOnGraphThread(operation: string) =
+        ignore operation
+#else
     member this.AssertOnGraphThread(operation: string) =
         // The owner thread is the one thread whose cell is `ownerAmbient`.
         if guarded then
@@ -1818,7 +1850,9 @@ type Graph(options: GraphOptions) =
                 this.FailOffThread operation
         elif serialised then
             this.CheckHeld operation
+#endif
 
+#if !FABLE_COMPILER
     member private _.FailOffThread(operation: string) : unit =
         raise (
             InvalidOperationException (
@@ -1836,7 +1870,6 @@ type Graph(options: GraphOptions) =
     /// context. Enters nothing.
     /// </summary>
     member private this.CheckHeld(operation: string) =
-#if !FABLE_COMPILER
         let held = Volatile.Read &holder
 
         if held <> Platform.currentThreadId () then
@@ -1844,8 +1877,6 @@ type Graph(options: GraphOptions) =
                 this.FailConcurrent (operation, held)
 
             this.CheckContext operation
-#else
-        ()
 #endif
 
 #if !FABLE_COMPILER
@@ -1878,7 +1909,11 @@ type Graph(options: GraphOptions) =
         Tracer.Schedule (this, item, queueCount - queueHead)
 
         if queueCount < queue.Count then
+#if FABLE_COMPILER
+            Platform.setEntryAt queueCount queue item
+#else
             queue[queueCount] <- item
+#endif
         else
             queue.Add item
 
@@ -1981,8 +2016,10 @@ type Graph(options: GraphOptions) =
     /// ambient until it ends.
     /// </summary>
     member internal this.EnterPull() =
+#if !FABLE_COMPILER
         if this.Enter "A stale read" then
             pullHeld <- true
+#endif
 
         if pullDepth = 0 then
             let previous = this.EnterAmbient ()
@@ -2004,6 +2041,7 @@ type Graph(options: GraphOptions) =
             if not (isNull lastRaised) then
                 lastRaised <- null
 
+#if !FABLE_COMPILER
             if pullHeld then
                 pullHeld <- false
 
@@ -2014,6 +2052,10 @@ type Graph(options: GraphOptions) =
                     this.Release ()
             elif flushOwed then
                 this.SettleFlush ()
+#else
+            if flushOwed then
+                this.SettleFlush ()
+#endif
 
     /// <summary>
     /// Evaluates <c>body</c> without recording anything it reads.
@@ -2112,7 +2154,9 @@ type Graph(options: GraphOptions) =
     interface ILateRunner with
         member this.RunDetached(owner, f) =
             // Holds a Serialised graph for a root scope's teardown; Guarded checks each disposed node instead.
+#if !FABLE_COMPILER
             let held = serialised && this.Acquire "Disposing a root"
+#endif
 
             try
                 this.Detached (
@@ -2127,11 +2171,19 @@ type Graph(options: GraphOptions) =
                 if queueHead < queueCount then
                     this.RequestFlush ()
             finally
+#if !FABLE_COMPILER
                 if held then
                     this.Release ()
+#else
+                ()
+#endif
 
         member this.HoldTeardown() =
+#if FABLE_COMPILER
+            false
+#else
             serialised && this.Acquire "Disposing a root"
+#endif
 
         member this.ReleaseTeardown() =
             this.Release ()
@@ -2249,6 +2301,7 @@ type Graph(options: GraphOptions) =
             if not (obj.ReferenceEquals (raisedPending, previousRaised)) then
                 raisedPending <- previousRaised
 
+#if !FABLE_COMPILER
     /// <summary>
     /// Detaches a flight continuation starting on the graph thread from the
     /// computation it interrupts: reads in it are untracked, and nodes it
@@ -2297,6 +2350,7 @@ type Graph(options: GraphOptions) =
                 current <- computation
                 currentOwner <- owner
                 raisedPending <- raised
+#endif
 
     /// <summary>
     /// The exception a pending read of <c>node</c> raises. Inside a computation's
@@ -4135,7 +4189,11 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                 // unhandled rejection ends the node process.
                 let run () =
                     let started =
+#if FABLE_COMPILER
+                        compute previous token
+#else
                         Platform.runFlightBody graph.EnterContinuation graph.LeaveContinuation (fun () -> compute previous token)
+#endif
 
                     if
                         (violated || graph.RaisedPending)
