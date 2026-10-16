@@ -74,3 +74,25 @@ Recorded 2026-09-28. Source: `Ranvier.Benchmarks.Memos.DiamondBenchmarks` at com
 | WriteThenRead | 45.98 ns | 0.930 ns | 1.142 ns | 21,747,537.4 |         - |
 
 The `Ratio` and `Alloc Ratio` columns, where present, compare each method with the baseline method *of the same class* on the same run. They describe the relative cost of two operations inside Ranvier, not a comparison with any other library.
+
+## CI instruction counts
+
+The chart compares retired instructions per operation across engines for the latest CI measurement.
+Choose a runtime and scenario to explore the data.
+
+<div class="rv-perf-compare" data-perf-compare data-perf-group="chain,shape-diamond">
+  <div class="rv-perf-compare__filters">
+    <label class="rv-perf-compare__control">Runtime
+      <select data-perf-runtime aria-label="Benchmark runtime"></select>
+    </label>
+    <label class="rv-perf-compare__control">Scenario
+      <select data-perf-scenario aria-label="Benchmark scenario"></select>
+    </label>
+  </div>
+  <p data-perf-status role="status" aria-live="polite">Loading comparison data…</p>
+  <div class="rv-perf-compare__chart">
+    <canvas data-perf-chart role="img" aria-label="Instructions per operation by engine"></canvas>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+<script src="/Ranvier/benchmarks/perf-compare.js"></script>

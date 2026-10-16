@@ -333,6 +333,13 @@ module Stage =
                         run "node docs/.nacara/map-validation/out/Main.mjs"
                     }
 
+                    stage "perf data" {
+                        run "git fetch origin perf-data"
+                        run "git worktree add --detach .docs-perf-data origin/perf-data"
+                        run "node" ".github/scripts/perf-site-data.cjs .docs-perf-data/runs docs/static/perf-data/index.json"
+                        run "git" "worktree remove --force .docs-perf-data"
+                    }
+
                     run (
                         Cmd.ofString "dotnet"
                         |> Cmd.args (

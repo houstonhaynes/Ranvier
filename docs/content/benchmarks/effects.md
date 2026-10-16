@@ -148,3 +148,25 @@ Binding / effect, each binding against the effect of its own source kind:
 No kind allocates per write. Both bindings are at most 0.854x their effect at every `Nodes`.
 
 Both reports are a single run on the recording machine: AMD Ryzen 9 9900X, Windows 11, .NET 10.0.12, BenchmarkDotNet v0.15.8. Commit `16d2e63` later reordered owner attachment in `Start` and added trace edges that compile out of Release builds. The figures were not re-recorded after it. Reproduce with `dotnet run --project bench/Ranvier.Benchmarks -c Release -- --anyCategories Binding`.
+
+## CI instruction counts
+
+The chart compares retired instructions per operation across engines for the latest CI measurement.
+Choose a runtime and scenario to explore the data.
+
+<div class="rv-perf-compare" data-perf-compare data-perf-group="work-,mvu-dispatch,editable-">
+  <div class="rv-perf-compare__filters">
+    <label class="rv-perf-compare__control">Runtime
+      <select data-perf-runtime aria-label="Benchmark runtime"></select>
+    </label>
+    <label class="rv-perf-compare__control">Scenario
+      <select data-perf-scenario aria-label="Benchmark scenario"></select>
+    </label>
+  </div>
+  <p data-perf-status role="status" aria-live="polite">Loading comparison data…</p>
+  <div class="rv-perf-compare__chart">
+    <canvas data-perf-chart role="img" aria-label="Instructions per operation by engine"></canvas>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+<script src="/Ranvier/benchmarks/perf-compare.js"></script>

@@ -2,8 +2,9 @@ name: Docs
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
+  workflow_run:
+    workflows: [Perf report]
+    types: [completed]
 
 permissions:
   contents: read
@@ -16,9 +17,20 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out performance history
+        uses: actions/checkout@v7
+        with:
+          ref: perf-data
+          path: perf-data
+          persist-credentials: false
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
@@ -26,6 +38,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Collect performance history
+        run: node .github/scripts/perf-site-data.cjs perf-data/runs docs/static/perf-data/index.json
       - name: Build the site
         run: dotnet fsi build.fsx -- docs
       - uses: actions/upload-pages-artifact@v5

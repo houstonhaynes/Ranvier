@@ -21,6 +21,40 @@ is a targeted comparison for #56, rather than a replacement for every chart pane
 Each panel scales from zero to its largest bar, so bar lengths compare engines within a scenario,
 not scenarios with each other.
 
+## CI counter history
+
+The chart compares retired instructions per operation across commits and includes engine
+comparisons where the run provides them. Choose a runtime and scenario; .NET and Node.js remain
+separate because their measurements are not comparable. Select a commit label or bar to open its
+source commit. The site builds this history from the `perf-data` branch after each successful
+master measurement.
+
+<div class="rv-perf-history" data-perf-history>
+  <div class="rv-perf-history__filters">
+    <label class="rv-perf-history__control">Runtime
+      <select data-perf-runtime aria-label="Benchmark runtime"></select>
+    </label>
+    <label class="rv-perf-history__control">Scenario
+      <select data-perf-scenario aria-label="Benchmark scenario"></select>
+    </label>
+    <label class="rv-perf-history__control rv-perf-history__comparative">
+      <input type="checkbox" data-perf-comparative aria-label="Show values relative to Ranvier">
+      Comparative
+      <span>(Ranvier = 100%)</span>
+    </label>
+  </div>
+  <p data-perf-status role="status" aria-live="polite">Loading CI counter history…</p>
+  <div class="rv-perf-history__chart">
+    <canvas data-perf-chart role="img" aria-label="Retired instructions per operation by commit"></canvas>
+  </div>
+  <nav class="rv-perf-history__commits" aria-label="Commits in the chart">
+    <span>Commit labels:</span>
+    <ul data-perf-commit-links></ul>
+  </nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+<script src="/Ranvier/benchmarks/perf-history.js"></script>
+
 ## .NET
 
 .NET 10.0.12, with tiered compilation, PGO and ReadyToRun off. Ranvier at `e13f159`,
