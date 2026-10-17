@@ -44,7 +44,7 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
         if stopped then
             raise (ObjectDisposedException "The keyed collection was disposed.")
 
-    member _.AddOrUpdate(key: 'K, value: 'V) =
+    member this.AddOrUpdate(key: 'K, value: 'V) =
         graph.RunBatch (fun () ->
             this.EnsureLive ()
             let item = items.Find key
@@ -57,7 +57,7 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
             else
                 item.Value <- value)
 
-    member _.Remove(key: 'K) =
+    member this.Remove(key: 'K) =
         graph.RunBatch (fun () ->
             this.EnsureLive ()
 
@@ -75,7 +75,7 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
                 revision.Value <- revision.Peek + 1
                 true)
 
-    member _.Clear() =
+    member this.Clear() =
         graph.RunBatch (fun () ->
             this.EnsureLive ()
 
@@ -87,12 +87,12 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
                 order.Clear ()
                 revision.Value <- revision.Peek + 1)
 
-    member _.Edit(body: unit -> unit) =
+    member this.Edit(body: unit -> unit) =
         graph.RunBatch (fun () ->
             this.EnsureLive ()
             body ())
 
-    override _.Enumerate() =
+    override this.Enumerate() =
         revision.Value |> ignore
         let mine = this.Runs
         let keys = order.ToArray ()

@@ -48,7 +48,7 @@ type internal KeyChanges<'K when 'K: equality>() =
 
                 if slot - 1 < last then
                     let moved = Platform.entryAt last pairs
-                    pairs[slot - 1] <- moved
+                    Platform.setEntryAt (slot - 1) pairs moved
                     slots.Set (moved.Key, slot)
 
                 pairs.RemoveAt last
@@ -57,12 +57,12 @@ type internal KeyChanges<'K when 'K: equality>() =
                 change = KeyChange.Added
                 && previous = KeyChange.Removed
             then
-                pairs[slot - 1] <- KeyValuePair (key, KeyChange.Replaced)
+                Platform.setEntryAt (slot - 1) pairs (KeyValuePair (key, KeyChange.Replaced))
             elif change = KeyChange.Changed then
                 if previous = KeyChange.Changed then
-                    pairs[slot - 1] <- KeyValuePair (key, change)
+                    Platform.setEntryAt (slot - 1) pairs (KeyValuePair (key, change))
             else
-                pairs[slot - 1] <- KeyValuePair (key, change)
+                Platform.setEntryAt (slot - 1) pairs (KeyValuePair (key, change))
         else
             pairs.Add (KeyValuePair (key, change))
             slots.Set (key, pairs.Count)

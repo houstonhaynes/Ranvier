@@ -620,7 +620,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
     /// Records whether a live row is pending. A pending row is observed by
     /// <c>watch</c>, so its settle reaches the summary without a reader.
     /// </summary>
-    member private _.Report(entry: RowEntry<'K, 'V>, pending: bool) =
+    member private this.Report(entry: RowEntry<'K, 'V>, pending: bool) =
         if entry.Live && pending <> entry.Watched then
             entry.Watched <- pending
 
@@ -689,7 +689,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
     /// Drops a removed key's row from the summary and disposes the row with
     /// every node its factory created.
     /// </summary>
-    member private _.Retire(entry: RowEntry<'K, 'V>) =
+    member private this.Retire(entry: RowEntry<'K, 'V>) =
         entry.Live <- false
 
         if not (Platform.isNull (box values)) then
@@ -769,34 +769,39 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
         checkPending <- false
         failure <- null
         status <- Status.None
-        let mutable delta: ProjectionDelta<'K> = Unchecked.defaultof<_>
 
         // The guard covers the diff as well as `Enumerate`: a failure in either
         // leaves the projection `Dirty`, and the next pass diffs against
         // whatever the failed one applied.
         try
-            try
-                graph.RunHosted (
-                    this :> IComputation,
-                    fun () ->
-                        if not (Platform.isNull (box this.ReadDelta)) then
-                            delta <- this.ReadDelta ()
+            let delta: ProjectionDelta<'K> =
+                try
+                    graph.RunHosted (
+                        this :> IComputation,
+                        fun () ->
+                            let delta =
+                                if not (Platform.isNull (box this.ReadDelta)) then
+                                    this.ReadDelta ()
+                                else
+                                    Unchecked.defaultof<_>
 
-                        if
-                            Platform.isNull (box delta)
-                            || delta.IsReset
-                            || previousStatus <> Status.None
-                        then
-                            delta <- Unchecked.defaultof<_>
-                            this.Pass.Enumerate ()
-                )
-            finally
-                if disposed then
-                    sources.Clear (this :> IComputation)
-                else
-                    sources.EndRun (this :> IComputation)
+                            if
+                                Platform.isNull (box delta)
+                                || delta.IsReset
+                                || previousStatus <> Status.None
+                            then
+                                this.Pass.Enumerate ()
+                                Unchecked.defaultof<_>
+                            else
+                                delta
+                    )
+                finally
+                    if disposed then
+                        sources.Clear (this :> IComputation)
+                    else
+                        sources.EndRun (this :> IComputation)
 
-                beaconsStale <- true
+                    beaconsStale <- true
 
             if runs = mine && not disposed then
                 graph.RunUntracked (fun () ->
@@ -1003,7 +1008,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
             this.ObservePass ()
 
-    member private _.ObservePass() =
+    member private this.ObservePass() =
 
         observed <-
             keys.ObserverCount > 0
@@ -1152,7 +1157,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
         member _.Status = status
 
     interface IComputation with
-        member _.AddSource s =
+        member this.AddSource s =
             trackedReads <- trackedReads + 1
             sources.Add (this :> IComputation, s)
 
@@ -1817,7 +1822,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
         member this.ReadKeys() = this.Keys
         member _.LiveCount = entries.Count
 
-        member _.Detach reader =
+        member this.Detach reader =
             this.DetachReader reader
 
     interface IDisposable with
@@ -2195,7 +2200,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                 if count = buffer.Length then
                     buffer <- grow buffer count (count + 1)
 
-                buffer[count] <- item
+                Platform.setItemAt count buffer item
                 count <- count + 1
 
             struct (buffer, count, true)
@@ -2275,7 +2280,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
             elif aligned then
                 for k in 0 .. changedAt.Count - 1 do
                     let i = Platform.entryAt k changedAt
-                    prev[i] <- Platform.itemAt i cur
+                    Platform.setItemAt i prev (Platform.itemAt i cur)
             else
                 lastItems <- grow prev start n1
                 Array.blit cur start lastItems start (n1 - start)
@@ -2288,11 +2293,14 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
             let items = lastItems
             let mutable nextKeys: 'K[] = null
 
-            let visit (i: int) =
+            // Returns `next` with the key of position `i` written, allocated on the first aligned change.
+            let visit (i: int) (next: 'K[]) : 'K[] =
                 let item = Platform.itemAt i items
                 let key = this.KeyOf item
 
-                if this.Runs = mine then
+                if this.Runs <> mine then
+                    next
+                else
                     if not (changed.Add key) then
                         raise (ProjectionFailures.duplicateKey key)
 
@@ -2308,13 +2316,20 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                     this.Stage (key, item)
 
                     if aligned then
-                        if not (EqualityComparer<'K>.Default.Equals(key, Platform.itemAt i prevKeys)) then
-                            if Platform.isNull nextKeys then
-                                nextKeys <- Array.sub prevKeys 0 n0
+                        if EqualityComparer<'K>.Default.Equals(key, Platform.itemAt i prevKeys) then
+                            next
+                        else
+                            let next =
+                                if Platform.isNull next then
+                                    Array.sub prevKeys 0 n0
+                                else
+                                    next
 
-                            nextKeys[i] <- key
+                            Platform.setItemAt i next key
+                            next
                     else
-                        nextKeys[i] <- key
+                        Platform.setItemAt i next key
+                        next
 
             try
                 for k in 0 .. changedAt.Count - 1 do
@@ -2335,13 +2350,13 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                     let mutable k = 0
 
                     while this.Runs = mine && k < changedAt.Count do
-                        visit (Platform.entryAt k changedAt)
+                        nextKeys <- visit (Platform.entryAt k changedAt) nextKeys
                         k <- k + 1
                 else
                     let mutable i = start
 
                     while this.Runs = mine && i <= end1 do
-                        visit i
+                        nextKeys <- visit i nextKeys
                         i <- i + 1
 
                 if this.Runs = mine then
@@ -3030,7 +3045,8 @@ type internal LookupOf<'S, 'K, 'V when 'K: equality>(graph: Graph, f: 'S -> 'K -
                 this.Invalidate Seq.empty
             elif moved then
                 let prev = previous
-                previous <- next
+                let current = next
+                previous <- current
                 sourcePending <- false
                 sourceError <- null
 
@@ -3038,7 +3054,7 @@ type internal LookupOf<'S, 'K, 'V when 'K: equality>(graph: Graph, f: 'S -> 'K -
                 let mutable affectedError: exn = null
 
                 try
-                    keys <- this.RunPure (ScopeMessages.lookupAffected, (fun () -> ResizeArray (affected prev next) :> 'K seq))
+                    keys <- this.RunPure (ScopeMessages.lookupAffected, (fun () -> ResizeArray (affected prev current) :> 'K seq))
                 with ex ->
                     affectedError <- ex
 

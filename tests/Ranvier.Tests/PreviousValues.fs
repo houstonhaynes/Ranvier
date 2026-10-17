@@ -401,6 +401,45 @@ let asyncTests =
     testList
         "PreviousValues.AsyncMemo"
         [
+#if FABLE_COMPILER
+            // Fable only: awaits the promises. The .NET form below reads the tasks' completion synchronously.
+            testCaseAsync "Queue resolves each read of Settled with the predecessor's result"
+            <| async {
+                let run =
+                    async {
+                        let g = withPolicy FlightPolicy.Queue
+                        let trigger = Signal (g, 0)
+                        let flights = ResizeArray<Flight<int>>()
+                        let prevs = ResizeArray<Task<int voption>>()
+
+                        let a =
+                            Make.AsyncMemo<int>(
+                                g,
+                                fun prev _ ->
+                                    trigger.Value |> ignore
+                                    prevs.Add prev.Settled
+                                    prevs.Add prev.Settled
+                                    let f = Flight<int>()
+                                    flights.Add f
+                                    f.Task
+                            )
+
+                        launch a trigger 3
+                        flights[0].Settle 10
+                        let! second = Async.AwaitTask prevs[2]
+                        let! again = Async.AwaitTask prevs[3]
+                        Expect.equal second (ValueSome 10) "flight 2's first read sees flight 1"
+                        Expect.equal again (ValueSome 10) "flight 2's second read sees flight 1"
+                        flights[1].Settle 20
+                        let! third = Async.AwaitTask prevs[4]
+                        Expect.equal third (ValueSome 20) "flight 3 sees flight 2"
+                    }
+
+                let! finished = Async.StartChild (run, 5000)
+                do! finished
+            }
+#endif
+
 #if !FABLE_COMPILER
             // .NET only: reads the prev task's completion synchronously, and under Fable it is a promise.
             test "a default-policy prev is complete at launch" {
@@ -526,6 +565,31 @@ let asyncTests =
 
                 flights[1].Settle 20
                 Expect.equal (settledWith prevs[2]) (ValueSome (ValueSome 20)) "flight 3 sees flight 2, not flight 1"
+            }
+
+            test "Queue resolves each read of Settled with the predecessor's result" {
+                let g = withPolicy FlightPolicy.Queue
+                let trigger = Signal (g, 0)
+                let flights = ResizeArray<Flight<int>>()
+                let prevs = ResizeArray<Task<int voption>>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun prev _ ->
+                            trigger.Value |> ignore
+                            prevs.Add prev.Settled
+                            prevs.Add prev.Settled
+                            let f = Flight<int>()
+                            flights.Add f
+                            f.Task
+                    )
+
+                launch a trigger 2
+                Expect.isFalse prevs[2].IsCompleted "flight 2's first read waits on flight 1"
+                flights[0].Settle 10
+                Expect.equal (settledWith prevs[2]) (ValueSome (ValueSome 10)) "flight 2's first read sees flight 1"
+                Expect.equal (settledWith prevs[3]) (ValueSome (ValueSome 10)) "flight 2's second read sees flight 1"
             }
 
             test "Queue resolves the waiter when the predecessor faults" {

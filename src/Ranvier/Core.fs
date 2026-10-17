@@ -3961,11 +3961,11 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         applied <- applied + 1
 
         if not (Platform.isNull waiters) then
-            match waiters.TryGetValue applied with
-            | true, waiter ->
+            let waiter = Platform.findOrDefault waiters applied
+
+            if not (Platform.isNull (box waiter)) then
                 waiters.Remove applied |> ignore
                 Platform.resolve waiter (lastSettled ())
-            | _ -> ()
 
     /// <summary>Disposes the flight token's source without cancelling it. The next flight allocates another.</summary>
     let retireSource () =
@@ -4424,11 +4424,13 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                     if Platform.isNull waiters then
                         waiters <- Dictionary<int, Platform.Deferred<'T voption>>()
 
-                    match waiters.TryGetValue position with
-                    | true, waiter -> Platform.deferredTask waiter
-                    | _ ->
+                    let waiter = Platform.findOrDefault waiters position
+
+                    if Platform.isNull (box waiter) then
                         let waiter = Platform.deferred<'T voption>()
                         waiters[position] <- waiter
+                        Platform.deferredTask waiter
+                    else
                         Platform.deferredTask waiter)
 
     member _.Status = status

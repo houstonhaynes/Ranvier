@@ -36,6 +36,24 @@ let independentReaders () =
         check "retained delta is unchanged" [ 1, KeyChange.Changed ] (changes retained)
         check "idle value read" true (fast.Read().IsEmpty))
 
+let repeatedChanges () =
+    use graph = new Graph ()
+
+    graph.Run (fun () ->
+        let input = createSignal [| 1, 10; 2, 20; 3, 30 |]
+        let rows = createProjection fst snd (fun () -> input.Value)
+        use fast = rows.NewValueReader ()
+        use slow = rows.NewValueReader ()
+        fast.Read () |> ignore
+        slow.Read () |> ignore
+        input.Value <- [| 1, 11; 2, 20; 3, 30 |]
+        fast.Read () |> ignore
+        input.Value <- [| 1, 11; 2, 22; 3, 30 |]
+        fast.Read () |> ignore
+        input.Value <- [| 1, 12; 2, 22; 3, 30 |]
+        fast.Read () |> ignore
+        check "a key changed twice is one change, beside the other key's" [ 1, KeyChange.Changed; 2, KeyChange.Changed ] (changes (slow.Read ())))
+
 let reactiveCutoffs () =
     use graph = new Graph ()
 
@@ -518,9 +536,49 @@ let mappedCleanupRecovery () =
         check "retry recreates both factory scopes" 4 factories
         check "retry retires both original scopes" 2 cleanups)
 
+let mappedRetryAfterFailedDelta () =
+    use graph = new Graph ()
+
+    graph.Run (fun () ->
+        let input = createSignal [| 1; 2 |]
+        let mutable failing = false
+
+        let upstream =
+            createProjection
+                (fun (x: int) ->
+                    if failing && x = 3 then
+                        failwith "key"
+
+                    x)
+                id
+                (fun () -> input.Value)
+
+        let mapped =
+            upstream
+            |> Projection.mapWith (fun _ read -> read)
+
+        use reader = mapped.NewKeyReader ()
+        check "initial keys" [ 1; 2 ] (List.ofArray mapped.Keys)
+        reader.Read () |> ignore
+        failing <- true
+        input.Value <- [| 1; 2; 3 |]
+        let mutable threw = false
+
+        try
+            mapped.Keys |> ignore
+        with _ ->
+            threw <- true
+
+        check "the pass reading a failed upstream fails" true threw
+        failing <- false
+        input.Value <- [| 2; 3; 4 |]
+        check "the retry has the latest keys" [ 2; 3; 4 ] (List.ofArray mapped.Keys)
+        check "the key reader sees the retry's changes" [ 1, KeyChange.Removed; 3, KeyChange.Added; 4, KeyChange.Added ] (changes (reader.Read ())))
+
 let cases =
     [|
         "value readers have independent baselines and immutable deltas", independentReaders
+        "a value reader merges repeated changes to a key in place", repeatedChanges
         "value readers preserve reactive cutoffs", reactiveCutoffs
         "value readers report first settlement but not pending/error states", firstSettlementAndStates
         "new value readers retain rows settled before observation", previouslySettledRows
@@ -539,4 +597,5 @@ let cases =
         "map factories consume batched source replacement deltas", editableMappedReplacement
         "map overflow recovery preserves replacement lifetimes", mappedOverflowReplacement
         "map cleanup failure recovery preserves replacement lifetimes", mappedCleanupRecovery
+        "a map pass after a failed upstream pass has the latest keys", mappedRetryAfterFailedDelta
     |]

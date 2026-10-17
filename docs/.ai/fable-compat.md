@@ -26,7 +26,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Owners.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
-| ValueReaders.fs | 19 | 19 | 19 | 19 | 19 | 19 | 0 | 0 |
+| ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Async.fs | 30 | 22 | 7 | 30 | 22 | 7 | 2 | 0 |
 | Boundaries.fs | 27 | 27 | 23 | 27 | 27 | 23 | 1 | 0 |
 | Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
@@ -48,7 +48,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
 | Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
-| TrimmedPass.fs | 55 | 55 | 55 | 55 | 55 | 55 | 0 | 0 |
+| TrimmedPass.fs | 57 | 57 | 57 | 57 | 57 | 57 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
 | MemoPurity.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
@@ -58,7 +58,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
 | Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
-| PreviousValues.fs | 11 | 11 | 11 | 11 | 11 | 11 | 14 | 0 |
+| PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 5 | 5 | 5 | 1 | 0 |
 | FailureOrigins.fs | 16 | 16 | 15 | 16 | 16 | 15 | 2 | 0 |
 | NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
@@ -71,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 970 | 952 | 908 | 1062 | 1040 | 991 | 88 | 1 |
+| **Total** | 975 | 957 | 913 | 1067 | 1045 | 996 | 89 | 1 |
 
 ## Tests.fs
 
@@ -258,9 +258,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## ValueReaders.fs
 
-<details><summary>19 passed in every build and delivery that runs them</summary>
+<details><summary>21 passed in every build and delivery that runs them</summary>
 
 - value readers have independent baselines and immutable deltas
+- a value reader merges repeated changes to a key in place
 - value readers preserve reactive cutoffs
 - value readers report first settlement but not pending/error states
 - new value readers retain rows settled before observation
@@ -279,6 +280,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - map factories consume batched source replacement deltas
 - map overflow recovery preserves replacement lifetimes
 - map cleanup failure recovery preserves replacement lifetimes
+- a map pass after a failed upstream pass has the latest keys
 
 </details>
 
@@ -1021,7 +1023,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## TrimmedPass.fs
 
-<details><summary>55 passed in every build and delivery that runs them</summary>
+<details><summary>57 passed in every build and delivery that runs them</summary>
 
 - random edits call keyOf once per position outside the common prefix and suffix
 - a trimmed pass after a shrink publishes keys of the list's length
@@ -1044,6 +1046,8 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - prepending one item calls keyOf once
 - appending one item calls keyOf once
 - replacing one item with an equal-key copy calls keyOf once and updates that row
+- a new key followed by an equal-key copy at a later changed position publishes the new key
+- an equal-key copy followed by a new key at a later changed position publishes the new key
 - an int array swap calls keyOf twice
 - a swap of the first and last items calls keyOf twice
 - a pass over new items calls keyOf once per item
@@ -1525,6 +1529,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | a read of Settled off the graph thread never caches a value older than the one published | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue chains three or more overlapping flights in start order | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue resolves each waiter with its own predecessor | reads the prev task's completion synchronously, and under Fable it is a promise. |
+| Queue resolves each read of Settled with the predecessor's result | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue resolves the waiter when the predecessor faults | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue resolves the waiter when the predecessor is dropped | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue passes a result applied while suspended to the next run | reads the prev task's completion synchronously, and under Fable it is a promise. |
@@ -1532,7 +1537,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Queue loses a read made after awaiting prev | reads the prev task's completion synchronously, and under Fable it is a promise. |
 | Queue resumes a body awaiting prev outside applyResult | reads the prev task's completion synchronously, and under Fable it is a promise. |
 
-<details><summary>11 passed in every build and delivery that runs them</summary>
+<details><summary>12 passed in every build and delivery that runs them</summary>
 
 - the first run receives ValueNone
 - a later run receives the value last published
@@ -1545,6 +1550,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a seeded Suspense fallback receives the seed, then the last value
 - a seeded Errors recover receives the error and the seed, then the last value
 - a seeded Catching boundary passes the seed, then its last value, to both handlers
+- Queue resolves each read of Settled with the predecessor's result
 
 </details>
 

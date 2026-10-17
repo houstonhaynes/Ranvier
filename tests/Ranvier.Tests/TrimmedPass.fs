@@ -1132,6 +1132,37 @@ let tests =
                 Expect.equal (proj.Get 501) "changed" "the row reads the new item"
             }
 
+            test "a new key followed by an equal-key copy at a later changed position publishes the new key" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, keyCalls, _, disposed, proj = counted 5
+                keyCalls.Value <- 0
+
+                items.Value <-
+                    items.Value
+                    |> Array.updateAt 1 { Id = 99; Text = "new" }
+                    |> Array.updateAt 3 { Id = 4; Text = "changed" }
+
+                Expect.equal keyCalls.Value 2 "only the two changed positions"
+                Expect.sequenceEqual proj.Keys [| 1; 99; 3; 4; 5 |] "the new key at its position"
+                Expect.sequenceEqual disposed [ 2 ] "the replaced key's row is retired"
+                Expect.equal (proj.Get 4) "changed" "the kept key's row reads the new item"
+            }
+
+            test "an equal-key copy followed by a new key at a later changed position publishes the new key" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, _, _, _, proj = counted 5
+
+                items.Value <-
+                    items.Value
+                    |> Array.updateAt 1 { Id = 2; Text = "changed" }
+                    |> Array.updateAt 3 { Id = 99; Text = "new" }
+
+                Expect.sequenceEqual proj.Keys [| 1; 2; 3; 99; 5 |] "the new key at its position"
+                Expect.equal (proj.Get 2) "changed" "the kept key's row reads the new item"
+            }
+
             test "an int array swap calls keyOf twice" {
                 use g = new Graph ()
                 use _ = g.Activate ()

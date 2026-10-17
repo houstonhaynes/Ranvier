@@ -42,8 +42,7 @@ type internal ValueRow<'K, 'V>(graph: Graph, entry: RowEntry<'K, 'V>, touched: V
 
 /// <summary>Shared settled-value observation, active only while value readers exist.</summary>
 [<Sealed>]
-type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K -> RowEntry<'K, 'V>, readKeys: unit -> 'K[], changed: 'K -> unit) as this
-    =
+type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K -> RowEntry<'K, 'V>, readKeys: unit -> 'K[], changed: 'K -> unit) =
     let id = graph.NextId ()
     let observers = ObserverSet ()
     do Tracer.Bind (observers, graph, id)
@@ -191,7 +190,7 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
         member _.RemoveObserver c =
             observers.Remove c
 
-        member _.UpdateIfNecessary() =
+        member this.UpdateIfNecessary() =
             if not disposed then
                 try
                     graph.RunUntracked (fun () -> this.Refresh (readKeys ()))
