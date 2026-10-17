@@ -24,6 +24,7 @@
         <Compile Include="Markers.fs" />
         <Compile Include="LinuxPmc.fs" />
         <Compile Include="Workloads.fs" />
+        <Compile Include="OnceWorkloads.fs" />
         <Compile Include="Scenarios.fs" />
         <Compile Include="Reconcile.fs" />
         <Compile Include="Worker.fs" />

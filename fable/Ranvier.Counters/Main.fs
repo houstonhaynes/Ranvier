@@ -15,7 +15,15 @@
 /// </remarks>
 module FableCounters.Main
 
+open Fable.Core
 open FableCounters.Scenarios
+
+/// <summary>
+/// <c>Appended.appended</c>, loading its module on the first call. Every case of <c>Scenarios.all</c> then runs with
+/// the code loaded by a harness without the appended cases.
+/// </summary>
+[<Emit("process.getBuiltinModule('node:module').createRequire(import.meta.url)('./Appended.fs.js').appended($0)")>]
+let private loadAppended (scale: int) : Case list = jsNative
 
 type private Options =
     {
@@ -123,10 +131,13 @@ let main argv =
     if not (Node.canCollect ()) then
         failwith "Run node with --expose-gc."
 
-    let results =
-        Scenarios.all options.Scale
+    // Measures the cases selected by --only, numbering their regions from 2 * first.
+    let measureAll (first: int) (cases: Case list) =
+        cases
         |> List.filter (fun case -> case.Scenario.StartsWith options.Only)
-        |> List.mapi (fun index case ->
+        |> List.mapi (fun offset case ->
+            let index = first + offset
+
             for _ in 1 .. options.Warmup do
                 let warm = case.Prepare (2 * case.Ops)
                 warm.Run ()
@@ -143,6 +154,11 @@ let main argv =
                     |]
             |})
         |> List.toArray
+
+    let measured = measureAll 0 (Scenarios.all options.Scale)
+
+    let results =
+        Array.append measured (measureAll measured.Length (loadAppended options.Scale))
 
     let run =
         {|
