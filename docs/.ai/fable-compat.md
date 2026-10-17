@@ -32,7 +32,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
-| Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 10 | 0 |
+| Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 11 | 0 |
 | Tracing.fs | 2 | 2 | 2 | 75 | 71 | 66 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 24 | 24 | 24 | 24 | 24 | 24 | 0 | 0 |
@@ -47,7 +47,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
 | Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
-| TrimmedPass.fs | 51 | 51 | 51 | 51 | 51 | 51 | 0 | 0 |
+| TrimmedPass.fs | 55 | 55 | 55 | 55 | 55 | 55 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
 | MemoPurity.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
@@ -69,7 +69,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 943 | 925 | 881 | 1035 | 1013 | 964 | 87 | 1 |
+| **Total** | 947 | 929 | 885 | 1039 | 1017 | 968 | 88 | 1 |
 
 ## Tests.fs
 
@@ -455,6 +455,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | {name}: overlapping flights release their registrations once the last one settles | JavaScript exposes no forced collection. |
 | {name}: disposing the memo cancels the flight in progress after an earlier flight settled | JavaScript exposes no forced collection. |
 | {name}: a flight that never settles is released when the memo is disposed | JavaScript exposes no forced collection. |
+| the items and keys {name} from a projection over {source} source are released | JavaScript exposes no forced collection. |
 | a failed read swallowed inside a {name} is released when it ends | JavaScript exposes no forced collection. |
 
 <details><summary>2 passed in every build and delivery that runs them</summary>
@@ -992,8 +993,12 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## TrimmedPass.fs
 
-<details><summary>51 passed in every build and delivery that runs them</summary>
+<details><summary>55 passed in every build and delivery that runs them</summary>
 
+- random edits call keyOf once per position outside the common prefix and suffix
+- a trimmed pass after a shrink publishes keys of the list's length
+- a keyOf writing into the source array leaves every row on the item the pass read
+- a trimmed pass that outgrows the previous list keeps its prefix and suffix
 - list, lazy seq and array sources give the same keys and rows
 - an array mutated in place and republished is compared against the previous pass's copy
 - an int array source reads by index

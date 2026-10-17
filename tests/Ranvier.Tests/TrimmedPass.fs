@@ -349,11 +349,278 @@ let private edit (rng: Lcg) (fresh: unit -> int) (op: int) (items: Item[]) =
 
     Array.truncate 40 next
 
+/// <summary>
+/// The <c>keyOf</c> calls of a trimmed pass from <c>prev</c> to <c>next</c>, comparing items by reference: the changed
+/// positions of an equal-length list, else the positions of <c>next</c> between the common prefix and suffix; every
+/// position of <c>next</c> when no position is shared.
+/// </summary>
+let private trimmedCalls (prev: Item[]) (next: Item[]) =
+    let n0 = prev.Length
+    let n1 = next.Length
+    let mutable start = 0
+
+    while start < min n0 n1
+          && obj.ReferenceEquals (prev[start], next[start]) do
+        start <- start + 1
+
+    let mutable end0 = n0 - 1
+    let mutable end1 = n1 - 1
+
+    while end0 >= start
+          && end1 >= start
+          && obj.ReferenceEquals (prev[end0], next[end1]) do
+        end0 <- end0 - 1
+        end1 <- end1 - 1
+
+    if n0 = n1 then
+        let changed =
+            [ start..end0 ]
+            |> List.filter (fun i -> not (obj.ReferenceEquals (prev[i], next[i])))
+            |> List.length
+
+        if changed = n0 then n1 else changed
+    elif start = 0 && end0 = n0 - 1 then
+        n1
+    else
+        end1 - start + 1
+
+/// <summary>
+/// The next list of the window test: operation <c>op</c> applied to <c>items</c>, holding at most 150 items. Every
+/// operation keeps the Ids unique.
+/// </summary>
+let private windowEdit (rng: Lcg) (fresh: unit -> Item) (op: int) (items: Item[]) =
+    let n = items.Length
+
+    let next =
+        match op with
+        | 0 when n >= 1 -> Array.removeAt (rng.Next n) items
+        | 1 when n >= 1 ->
+            let i = rng.Next n
+            Array.removeManyAt i (min (n - i) (1 + rng.Next 5)) items
+        | 2 -> Array.insertAt (rng.Next (n + 1)) (fresh ()) items
+        | 3 -> Array.insertManyAt (rng.Next (n + 1)) (Array.init (1 + rng.Next 40) (fun _ -> fresh ())) items
+        | 4 -> Array.truncate (rng.Next (n + 1)) items
+        | 5 when n >= 2 ->
+            let copy = Array.copy items
+            let i = rng.Next n
+            let j = rng.Next n
+            let t = copy[i]
+            copy[i] <- copy[j]
+            copy[j] <- t
+            copy
+        | 6 when n >= 1 -> Array.updateAt (rng.Next n) (fresh ()) items
+        | 7 when n >= 1 ->
+            let i = rng.Next n
+
+            Array.updateAt
+                i
+                { items[i] with
+                    Text = items[i].Text + "'"
+                }
+                items
+        | 8 -> Array.rev items
+        | 9 -> Array.empty
+        | 10 ->
+            items
+            |> Array.map (fun item -> { item with Text = item.Text })
+        | 11 -> Array.append items (Array.init (1 + rng.Next 40) (fun _ -> fresh ()))
+        | _ -> Array.copy items
+
+    Array.truncate 150 next
+
 [<Tests>]
 let tests =
     testList
         "Trimmed pass"
         [
+            test "random edits call keyOf once per position outside the common prefix and suffix" {
+                let kinds = [| "createProjectionWith"; "createProjectionOnce"; "createProjection" |]
+
+                for seed in 1..12 do
+                    let kind = (seed - 1) % 3
+                    let lazySource = seed > 6
+
+                    let label =
+                        $"""seed {seed} {kinds[kind]} {if lazySource then "lazy seq" else "array"}"""
+
+                    use g = new Graph ()
+                    use _ = g.Activate ()
+                    let rng = Lcg seed
+                    let counter = ref 0
+
+                    let fresh () =
+                        counter.Value <- counter.Value + 1
+
+                        {
+                            Id = counter.Value
+                            Text = string counter.Value
+                        }
+
+                    let items = createSignal (Array.init (rng.Next 30) (fun _ -> fresh ()))
+                    let calls = ref 0
+                    let created = ResizeArray<int>()
+                    let disposed = ResizeArray<int>()
+
+                    let keyOf (item: Item) =
+                        calls.Value <- calls.Value + 1
+                        item.Id
+
+                    let enter (item: unit -> Item) =
+                        let id = (item ()).Id
+                        created.Add id
+                        onCleanup (fun () -> disposed.Add id)
+
+                    let source () =
+                        if lazySource then
+                            seq { yield! items.Value }
+                        else
+                            items.Value :> seq<_>
+
+                    let keys, row =
+                        match kind with
+                        | 0 ->
+                            let proj =
+                                createProjectionWith
+                                    keyOf
+                                    (fun item ->
+                                        enter item
+                                        fun () -> (item ()).Text)
+                                    source
+
+                            (fun () -> proj.Keys), proj.Get
+                        | 1 ->
+                            let proj =
+                                createProjectionOnce
+                                    ProjectionOptions.None
+                                    keyOf
+                                    (fun item ->
+                                        enter item
+                                        fun () -> (item ()).Text)
+                                    source
+
+                            (fun () -> proj.Keys), (fun key -> proj.Get key ())
+                        | _ ->
+                            let proj = createProjection keyOf (fun item -> item.Text) source
+                            (fun () -> proj.Keys), proj.Get
+
+                    createEffect (fun () ->
+                        for key in keys () do
+                            row key |> ignore)
+
+                    let mutable prev = items.Value
+
+                    for i in 0..399 do
+                        let op = rng.Next 13
+                        let next = windowEdit rng fresh op prev
+                        let step = $"{label} op {i} ({op}, {prev.Length} -> {next.Length})"
+                        calls.Value <- 0
+                        created.Clear ()
+                        disposed.Clear ()
+                        items.Value <- next
+                        let ids = next |> Array.map _.Id
+                        Expect.sequenceEqual (keys ()) ids $"{step}: the keys"
+                        Expect.equal calls.Value (trimmedCalls prev next) $"{step}: keyOf calls"
+
+                        for item in next do
+                            Expect.equal (row item.Id) item.Text $"{step}: row {item.Id}"
+
+                        if kind < 2 then
+                            let before = prev |> Array.map _.Id |> set
+                            let after = set ids
+
+                            Expect.sequenceEqual
+                                (Seq.sort created)
+                                (ids
+                                 |> Array.filter (before.Contains >> not)
+                                 |> Array.sort)
+                                $"{step}: created"
+
+                            Expect.sequenceEqual
+                                (Seq.sort disposed)
+                                (prev
+                                 |> Array.map _.Id
+                                 |> Array.filter (after.Contains >> not)
+                                 |> Array.sort)
+                                $"{step}: disposed"
+
+                        prev <- next
+            }
+
+            test "a trimmed pass after a shrink publishes keys of the list's length" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, keyCalls, _, _, proj = counted 10
+                items.Value <- Array.truncate 4 items.Value
+                Expect.sequenceEqual proj.Keys [ 1..4 ] "the shrunk keys"
+                keyCalls.Value <- 0
+                items.Value <- Array.updateAt 2 { Id = 50; Text = "50" } items.Value
+                Expect.equal keyCalls.Value 1 "one changed position"
+                Expect.sequenceEqual proj.Keys [ 1; 2; 50; 4 ] "the keys of the equal-length pass"
+                items.Value <- Array.insertAt 1 { Id = 60; Text = "60" } items.Value
+                Expect.sequenceEqual proj.Keys [ 1; 60; 2; 50; 4 ] "the keys of the longer pass"
+                Expect.equal (proj.Get 50) "50" "the replaced row"
+            }
+
+            test "a keyOf writing into the source array leaves every row on the item the pass read" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+
+                let item id =
+                    { Id = id; Text = string id }
+
+                let first = [| item 1; item 2; item 3; item 4 |]
+                let items = createSignal first
+                // keyOf of the trigger's item writes the replacement into target[at].
+                let mutable trigger = 1
+                let mutable target = first
+                let mutable at = 1
+                let mutable replacement = item 9
+
+                let keyOf (x: Item) =
+                    if x.Id = trigger then
+                        target[at] <- replacement
+
+                    x.Id
+
+                let proj =
+                    createProjection keyOf (fun x -> x.Text) (fun () -> items.Value :> seq<_>)
+
+                Expect.sequenceEqual proj.Keys [ 1; 2; 3; 4 ] "the first pass keeps the items it read"
+                let next = [| first[0]; item 5; item 6; first[3] |]
+                trigger <- 5
+                target <- next
+                at <- 2
+                replacement <- item 8
+                items.Value <- next
+                Expect.sequenceEqual proj.Keys [ 1; 5; 6; 4 ] "the trimmed pass keeps the items it read"
+                Expect.equal (proj.Get 6) "6" "the row of the item the pass read"
+            }
+
+            test "a trimmed pass that outgrows the previous list keeps its prefix and suffix" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items, keyCalls, _, _, proj = counted 4
+
+                for round in 1..3 do
+                    let block =
+                        Array.init (10 * round) (fun i ->
+                            {
+                                Id = 1000 * round + i
+                                Text = string (1000 * round + i)
+                            })
+
+                    keyCalls.Value <- 0
+                    let next = Array.insertManyAt 2 block items.Value
+                    items.Value <- next
+                    Expect.equal keyCalls.Value block.Length $"round {round}: the inserted block alone"
+                    Expect.sequenceEqual proj.Keys (next |> Array.map _.Id) $"round {round}: the keys"
+                    keyCalls.Value <- 0
+                    items.Value <- Array.removeAt 0 next
+                    Expect.equal keyCalls.Value 0 $"round {round}: the removal calls keyOf zero times"
+                    Expect.sequenceEqual proj.Keys (next |> Array.removeAt 0 |> Array.map _.Id) $"round {round}: the keys after the removal"
+                    items.Value <- next
+            }
+
             test "list, lazy seq and array sources give the same keys and rows" {
                 use g = new Graph ()
                 use _ = g.Activate ()

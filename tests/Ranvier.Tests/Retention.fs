@@ -96,6 +96,52 @@ let private swallowFailedRead (g: Graph) (viaEffect: bool) =
 
     failing.Dispose ()
     WeakReference failing
+
+/// <summary>An item compared, and keyed, by reference.</summary>
+type private Payload(id: int) =
+    member _.Id = id
+
+/// <summary>
+/// A projection of 100 payloads, keyed by the payload, or by its Id for <c>"disposed"</c>. The first two payloads swap
+/// places. Then <c>"trimmed"</c> shrinks the list to its first 10 payloads, <c>"full"</c> replaces it with 10 new
+/// payloads, and <c>"disposed"</c> disposes the projection and empties the list. With <c>lazySource</c> the source is a
+/// lazy sequence. Returns the projection, its source and weak references to the payloads the last step drops.
+/// </summary>
+[<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+let private shrink (g: Graph) (step: string) (lazySource: bool) =
+    use _ = g.Activate ()
+    let items = createSignal (Array.init 100 Payload)
+
+    let proj =
+        createProjection (fun (p: Payload) -> if step = "disposed" then box p.Id else box p) _.Id (fun () ->
+            if lazySource then
+                seq { yield! items.Value }
+            else
+                items.Value :> seq<_>)
+
+    proj.Keys |> ignore
+    let first = Array.copy items.Value
+    first[0] <- items.Value[1]
+    first[1] <- items.Value[0]
+    items.Value <- first
+    proj.Keys |> ignore
+
+    match step with
+    | "trimmed" -> items.Value <- Array.truncate 10 first
+    | "full" -> items.Value <- Array.init 10 Payload
+    | _ ->
+        proj.Dispose ()
+        items.Value <- Array.empty
+
+    proj.Keys |> ignore
+
+    let dropped =
+        ResizeArray
+            [
+                for p in (if step = "trimmed" then first[10..] else first) -> WeakReference p
+            ]
+
+    proj, items, dropped
 #endif
 
 [<Tests>]
@@ -313,6 +359,26 @@ let tests =
                     Expect.isLessThan (aliveOf refs) 20 "disposal cancels every flight in progress"
                     g.Dispose ()
                 }
+
+            for step, name in
+                [
+                    "trimmed", "a trimmed pass drops"
+                    "full", "a full pass drops"
+                    "disposed", "a disposal drops"
+                ] do
+                for lazySource in [ false; true ] do
+                    let source = if lazySource then "a lazy" else "an array"
+
+                    // The trace log keeps every written value and every row key.
+                    untracedOnly
+                    <| test $"the items and keys {name} from a projection over {source} source are released" {
+                        let g = new Graph ()
+                        let proj, items, dropped = shrink g step lazySource
+                        Expect.equal (aliveOf dropped) 0 "the projection keeps no dropped item or key"
+                        GC.KeepAlive proj
+                        GC.KeepAlive items
+                        GC.KeepAlive g
+                    }
 
             for name, viaEffect in [ "stale read", false; "flush", true ] do
                 test $"a failed read swallowed inside a {name} is released when it ends" {

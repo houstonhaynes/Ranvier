@@ -2082,25 +2082,21 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
     (graph: Graph, keyOf: 'T -> 'K, map: 'T -> 'V, factory: (unit -> 'T) -> (unit -> 'V), source: unit -> 'T seq) =
     inherit RowsOf<'T, 'K, 'V>(graph, map, factory)
 
-    /// <summary>The items of the last installed pass, in <c>lastItems[0 .. lastCount - 1]</c>.</summary>
+    /// <summary>The items of the last pass, in <c>lastItems[0 .. lastCount - 1]</c>.</summary>
     let mutable lastItems: 'T[] = Array.empty
     let mutable lastCount = 0
 
-    /// <summary>A private copy of the key array of the last installed pass.</summary>
+    /// <summary>A private copy of the key array of the last installed pass, in <c>lastKeys[0 .. keyCount - 1]</c>.</summary>
     let mutable lastKeys: 'K[] = Array.empty
+    let mutable keyCount = 0
 
     /// <summary>The published key array <c>lastKeys</c> was copied from.</summary>
     let mutable lastPublished: 'K[] = null
 
-    /// <summary>A reusable item buffer, or null while a pass holds it.</summary>
+    /// <summary>A reusable buffer for a source that is not an array, or null while a pass holds it.</summary>
     let mutable spare: 'T[] = Array.empty
 
-    /// <summary>
-    /// The items of the pass in progress, in <c>passItems[0 .. passCount - 1]</c>, read when <c>Runs</c> was
-    /// <c>passRun</c>. <c>passRun</c> is -1 once the buffer is installed or released.
-    /// </summary>
-    let mutable passItems: 'T[] = Array.empty
-    let mutable passCount = 0
+    /// <summary>The <c>Runs</c> of the pass whose items <c>lastItems</c> holds, or -1.</summary>
     let mutable passRun = -1
 
     /// <summary>
@@ -2112,8 +2108,20 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
     /// <summary>False once a <c>keyOf</c> call has read a tracked source, created a node or used the pass's owner. Never reset.</summary>
     let mutable keyPure = true
 
+    /// <summary>The key array staged by the last trimmed pass, until the next <c>Applied</c>; or null.</summary>
+    let mutable trimmedKeys: 'K[] = null
+
+    /// <summary>
+    /// The first position at which <c>trimmedKeys</c> can differ from <c>lastKeys</c>, or -1 when they can differ at the
+    /// positions in <c>changedAt</c> alone.
+    /// </summary>
+    let mutable trimmedFrom = 0
+
     /// <summary>The keys at the changed positions of the last installed pass, while a trimmed pass runs.</summary>
     let previousChanged = Platform.KeySet<'K>()
+
+    /// <summary>The keys this pass added to <c>previousChanged</c>.</summary>
+    let previousKeys = ResizeArray<'K>()
 
     /// <summary>The keys at the changed positions of the trimmed pass in progress.</summary>
     let changed = Platform.KeySet<'K>()
@@ -2126,6 +2134,15 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
 
     let same = graph.Options.Equality.Comparer<'T>()
 
+    /// <summary><c>buffer</c> when it has <c>size</c> slots, else a larger array holding <c>buffer[0 .. count - 1]</c>.</summary>
+    let grow (buffer: 'a[]) (count: int) (size: int) : 'a[] =
+        if buffer.Length >= size then
+            buffer
+        else
+            let next = Array.zeroCreate (max size (buffer.Length * 2))
+            Array.blit buffer 0 next 0 count
+            next
+
     /// <summary>A buffer of at least <c>size</c> items: <c>spare</c> when it fits, else a new array.</summary>
     let take (size: int) =
         let buffer = spare
@@ -2136,48 +2153,48 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
         else
             buffer
 
-    /// <summary>Returns <c>passItems</c> to <c>spare</c> when no buffer is spare.</summary>
-    let release () =
-        if
-            isNull spare
-            && not (obj.ReferenceEquals (passItems, lastItems))
-        then
-            Array.fill passItems 0 passCount Unchecked.defaultof<'T>
-            spare <- passItems
+    /// <summary>
+    /// Makes <c>items[0 .. count - 1]</c> the items of the last pass. An <c>owned</c> buffer, from <c>take</c>, becomes
+    /// <c>lastItems</c>; any other array is copied.
+    /// </summary>
+    let install (items: 'T[]) (count: int) (owned: bool) =
+        if owned then
+            if lastCount > 0 then
+                Array.fill lastItems 0 lastCount Unchecked.defaultof<'T>
 
-        passItems <- Array.empty
-        passCount <- 0
-        passRun <- -1
+            spare <- lastItems
+            lastItems <- items
+        else
+            lastItems <- grow lastItems 0 count
+            Array.blit items 0 lastItems 0 count
 
-    /// <summary>Reads the source into a buffer owned by this pass.</summary>
-    member private this.Read() =
-        passItems <- Array.empty
-        passCount <- 0
-        passRun <- -1
+            if lastCount > count then
+                Array.fill lastItems count (lastCount - count) Unchecked.defaultof<'T>
+
+        lastCount <- count
+
+    /// <summary>
+    /// The items of the source and their count: the source array itself, or an <c>owned</c> buffer from <c>take</c>
+    /// holding the enumerated items.
+    /// </summary>
+    member private this.Read() : struct ('T[] * int * bool) =
         let items = source ()
         let array = Platform.asArray items
-        let mutable buffer = Array.empty
-        let mutable count = 0
 
         if isNull array then
-            buffer <- take 8
+            let mutable buffer = take 8
+            let mutable count = 0
 
             for item in items do
                 if count = buffer.Length then
-                    let grown = Array.zeroCreate (buffer.Length * 2)
-                    Array.blit buffer 0 grown 0 count
-                    buffer <- grown
+                    buffer <- grow buffer count (count + 1)
 
                 buffer[count] <- item
                 count <- count + 1
-        else
-            count <- array.Length
-            buffer <- take count
-            Array.blit array 0 buffer 0 count
 
-        passItems <- buffer
-        passCount <- count
-        passRun <- this.Runs
+            struct (buffer, count, true)
+        else
+            struct (array, array.Length, false)
 
     /// <summary>
     /// <c>keyOf</c>, clearing <c>keyPure</c> when the call reads a tracked source, creates a node or uses the pass's owner.
@@ -2198,24 +2215,23 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                 keyPure <- false
 
     /// <summary>
-    /// Reconciles the positions whose item differs from the last installed pass, after trimming the common prefix and
-    /// suffix, and stages the removed keys and the key array. Stops after a <c>keyOf</c> call that runs a nested pass.
-    /// Returns false before any staging when every position is changed: at equal lengths, every item differs from the
-    /// previous item at its position; at unequal lengths, the first and last items differ from the previous pass's
-    /// first and last items.
+    /// Reconciles the positions whose item differs from the last pass, after trimming the common prefix and suffix, and
+    /// stages the removed keys and the key array. Installs <c>cur[0 .. n1 - 1]</c> as the items of the pass by writing the
+    /// changed positions and every position after them. Stops after a <c>keyOf</c> call that runs a nested pass. Returns
+    /// false before any install or staging when every position is changed: at equal lengths, every item differs from the
+    /// previous item at its position; at unequal lengths, the first and last items differ from the previous pass's first
+    /// and last items.
     /// </summary>
-    member private this.Trim() : bool =
+    member private this.Trim(cur: 'T[], n1: int, owned: bool) : bool =
         let mine = this.Runs
         let prev = lastItems
         let prevKeys = lastKeys
         let n0 = lastCount
-        let cur = passItems
-        let n1 = passCount
         let limit = min n0 n1
         let mutable start = 0
 
         while start < limit
-              && same.Equals (prev[start], cur[start]) do
+              && same.Equals (Platform.itemAt start prev, Platform.itemAt start cur) do
             start <- start + 1
 
         let mutable end0 = n0 - 1
@@ -2223,49 +2239,19 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
 
         while end0 >= start
               && end1 >= start
-              && same.Equals (prev[end0], cur[end1]) do
+              && same.Equals (Platform.itemAt end0 prev, Platform.itemAt end1 cur) do
             end0 <- end0 - 1
             end1 <- end1 - 1
 
         // Equal-length middles compare index by index.
         let aligned = n0 = n1
-        let mutable nextKeys: 'K[] = null
-
-        let visit (i: int) =
-            let item = cur[i]
-            let key = this.KeyOf item
-
-            if this.Runs = mine then
-                if not (changed.Add key) then
-                    raise (ProjectionFailures.duplicateKey key)
-
-                changedKeys.Add key
-
-                if
-                    not (previousChanged.Contains key)
-                    && this.HasRow key
-                then
-                    // The key belongs to a kept position.
-                    raise (ProjectionFailures.duplicateKey key)
-
-                this.Stage (key, item)
-
-                if aligned then
-                    if not (EqualityComparer<'K>.Default.Equals(key, prevKeys[i])) then
-                        if isNull nextKeys then
-                            nextKeys <- Array.copy prevKeys
-
-                        nextKeys[i] <- key
-                else
-                    nextKeys[i] <- key
-
         changedAt.Clear ()
 
         let mutable untrimmable = start = 0 && end0 = n0 - 1
 
         if aligned then
             for i in start..end0 do
-                if not (same.Equals (prev[i], cur[i])) then
+                if not (same.Equals (Platform.itemAt i prev, Platform.itemAt i cur)) then
                     changedAt.Add i
 
             untrimmable <- changedAt.Count = n0
@@ -2278,14 +2264,65 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                 for i in start..end0 do
                     changedAt.Add i
 
+            if owned then
+                install cur n1 true
+            elif aligned then
+                for k in 0 .. changedAt.Count - 1 do
+                    let i = changedAt[k]
+                    prev[i] <- Platform.itemAt i cur
+            else
+                lastItems <- grow prev start n1
+                Array.blit cur start lastItems start (n1 - start)
+
+                if n0 > n1 then
+                    Array.fill lastItems n1 (n0 - n1) Unchecked.defaultof<'T>
+
+                lastCount <- n1
+
+            let items = lastItems
+            let mutable nextKeys: 'K[] = null
+
+            let visit (i: int) =
+                let item = Platform.itemAt i items
+                let key = this.KeyOf item
+
+                if this.Runs = mine then
+                    if not (changed.Add key) then
+                        raise (ProjectionFailures.duplicateKey key)
+
+                    changedKeys.Add key
+
+                    if
+                        not (previousChanged.Contains key)
+                        && this.HasRow key
+                    then
+                        // The key belongs to a kept position.
+                        raise (ProjectionFailures.duplicateKey key)
+
+                    this.Stage (key, item)
+
+                    if aligned then
+                        if not (EqualityComparer<'K>.Default.Equals(key, Platform.itemAt i prevKeys)) then
+                            if isNull nextKeys then
+                                nextKeys <- Array.sub prevKeys 0 n0
+
+                            nextKeys[i] <- key
+                    else
+                        nextKeys[i] <- key
+
             try
                 for k in 0 .. changedAt.Count - 1 do
-                    previousChanged.Add (prevKeys[changedAt[k]])
-                    |> ignore
+                    let key = prevKeys[changedAt[k]]
+                    previousKeys.Add key
+                    previousChanged.Add key |> ignore
 
                 if not aligned then
-                    nextKeys <- Array.zeroCreate n1
-                    Array.blit prevKeys 0 nextKeys 0 start
+                    if n1 <= n0 then
+                        nextKeys <- Array.sub prevKeys 0 n1
+                    else
+                        nextKeys <- Array.zeroCreate n1
+                        Array.blit prevKeys 0 nextKeys 0 start
+
                     Array.blit prevKeys (end0 + 1) nextKeys (end1 + 1) (n0 - end0 - 1)
 
                 if aligned then
@@ -2312,9 +2349,13 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
 
                     this.StageRemovals ()
                     this.StageKeys nextKeys
+                    trimmedKeys <- nextKeys
+                    trimmedFrom <- if aligned then -1 else start
             finally
-                for k in 0 .. changedAt.Count - 1 do
-                    previousChanged.Remove (prevKeys[changedAt[k]])
+                for k in 0 .. previousKeys.Count - 1 do
+                    previousChanged.Remove (previousKeys[k])
+
+                previousKeys.Clear ()
 
                 for k in 0 .. changedKeys.Count - 1 do
                     changed.Remove (changedKeys[k])
@@ -2326,16 +2367,18 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
     override this.Enumerate() =
         let trim = trimValid && keyPure
         trimValid <- false
-        this.Read ()
+        passRun <- -1
+        let struct (items, count, owned) = this.Read ()
+        passRun <- this.Runs
 
-        if not (trim && this.Trim ()) then
+        if not (trim && this.Trim (items, count, owned)) then
+            install items count owned
             let mine = this.Runs
-            let items = passItems
-            let count = passCount
+            let items = lastItems
             let mutable i = 0
 
             while this.Runs = mine && i < count do
-                let item = items[i]
+                let item = Platform.itemAt i items
                 i <- i + 1
                 this.Visit (this.KeyOf item, item)
 
@@ -2344,37 +2387,47 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
             let published = this.PublishedKeys
 
             if not (obj.ReferenceEquals (published, lastPublished)) then
-                lastKeys <- Array.copy published
+                let count = published.Length
+
+                if
+                    not (isNull trimmedKeys)
+                    && obj.ReferenceEquals (published, trimmedKeys)
+                then
+                    if trimmedFrom < 0 then
+                        for k in 0 .. changedAt.Count - 1 do
+                            let i = changedAt[k]
+                            lastKeys[i] <- Platform.itemAt i published
+                    else
+                        lastKeys <- grow lastKeys trimmedFrom count
+                        Array.blit published trimmedFrom lastKeys trimmedFrom (count - trimmedFrom)
+                else
+                    lastKeys <- grow lastKeys 0 count
+                    Array.blit published 0 lastKeys 0 count
+
+                if keyCount > count then
+                    Array.fill lastKeys count (keyCount - count) Unchecked.defaultof<'K>
+
+                keyCount <- count
                 lastPublished <- published
 
-            if lastCount > 0 then
-                Array.fill lastItems 0 lastCount Unchecked.defaultof<'T>
-
-            spare <- lastItems
-            lastItems <- passItems
-            lastCount <- passCount
-            passItems <- Array.empty
-            passCount <- 0
-            passRun <- -1
             trimValid <- true
         else
             trimValid <- false
-            release ()
+
+        trimmedKeys <- null
 
     override this.Abandoned() =
         trimValid <- false
 
         if this.IsDisposedInternal then
+            trimmedKeys <- null
             lastItems <- Array.empty
+            lastCount <- 0
             lastKeys <- Array.empty
+            keyCount <- 0
             lastPublished <- null
             spare <- Array.empty
-            lastCount <- 0
-            passItems <- Array.empty
-            passCount <- 0
             passRun <- -1
-        else
-            release ()
 
 /// <summary>
 /// A projection keyed by position: Solid's <c>indexArray</c>. The row at a slot
