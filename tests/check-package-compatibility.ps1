@@ -51,7 +51,7 @@ try {
                     throw "$id must not depend on the Fable packaging SDK at runtime"
                 }
                 $dependencies = $nuspec.SelectNodes("//*[local-name()='dependency' and @id='FSharp.Core']")
-                if ($dependencies.Count -ne 3) { throw "$id must declare FSharp.Core for all three targets" }
+                if ($dependencies.Count -ne 2) { throw "$id must declare FSharp.Core for both targets" }
                 foreach ($dependency in $dependencies) {
                     if ($dependency.version -ne '8.0.100') { throw "$id requires FSharp.Core $($dependency.version), expected 8.0.100" }
                 }

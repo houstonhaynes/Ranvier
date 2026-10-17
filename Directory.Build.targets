@@ -20,12 +20,12 @@
 
     <!--
     `RanvierAotClean=true` (set by the library projects) compiles an untraced build without `%A` and without the
-    `%+A`-based generated `ToString`, and marks it trimmable and AOT-compatible on net8.0 and later. A traced build keeps
+    `%+A`-based generated `ToString`, and marks the net10.0 build trimmable and AOT-compatible. A traced build keeps
     the generated `ToString` text of its public trace types and makes no AOT claim.
     -->
     <PropertyGroup Condition="'$(RanvierAotClean)' == 'true' and '$(RanvierTrace)' != 'true'">
         <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
-        <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+        <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
     </PropertyGroup>
 
     <!--

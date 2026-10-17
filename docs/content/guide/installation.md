@@ -15,9 +15,11 @@ Choose the package for your language, then continue with [Getting started](getti
 |**Target**|Supported|Recommended|
 |---:|:---:|:---:|
 | **`net10`** | Yes | Yes |
-| `net8` | Yes | - |
 | `netstandard2.1` | Yes | No |
 :::
+
+Applications on .NET 8 and .NET 9 use the `netstandard2.1` build. That build omits
+`TimedClock.ofTimeProvider` and carries no trimming or Native AOT annotations.
 
 :::tip Prefer .NET 10
 The [pending-throw measurements](../concepts/suspension.md#what-a-throw-costs) document runtime-specific

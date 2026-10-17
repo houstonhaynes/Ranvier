@@ -19,7 +19,7 @@ knowledge of it, and a boundary decides what to show in the meantime. The rest o
 effects, owners, height-ordered updates and equality cutoff) is well established, and other libraries
 provide it too.
 
-It is early. The project is pre-release and has one maintainer. It targets `net10.0`, `net8.0` and `netstandard2.1`, and its public
+It is early. The project is pre-release and has one maintainer. It targets `net10.0` and `netstandard2.1`, and its public
 API includes an F# core and a delegate-based C# facade. Evaluate it with that in mind.
 
 ## Related libraries

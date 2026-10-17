@@ -26,7 +26,7 @@ Elmish commands pass unchanged; the package does not depend on Elmish.
 
 ## Targets
 
-`net10.0`, `net8.0` and `netstandard2.1`.
+`net10.0` and `netstandard2.1`.
 
 Package builds also include Fable sources and a standalone source project. F# consumers compiled
 with Fable use a normal package reference; CI tests both traced and untraced package consumers.

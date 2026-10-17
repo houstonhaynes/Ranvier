@@ -25,7 +25,7 @@ factories and extension methods.
 
 ## Targets
 
-`net10.0`, `net8.0` and `netstandard2.1`.
+`net10.0` and `netstandard2.1`. Applications on .NET 8 and .NET 9 use the `netstandard2.1` build.
 
 Package builds from this source include F# sources for Fable's JavaScript target. The same core APIs support
 signals, memos, effects, bindings and collections on both targets; see the

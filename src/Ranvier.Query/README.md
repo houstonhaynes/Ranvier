@@ -41,7 +41,7 @@ values and must not reenter client operations.
 
 The layer uses public Ranvier primitives without changing the graph engine.
 Whole-record and list reconstruction costs remain. Supported targets are .NET 10,
-.NET 8, .NET Standard 2.1 and Fable; the untraced build supports NativeAOT. Use the
+.NET Standard 2.1 and Fable; the untraced build supports NativeAOT. Use the
 matching `Ranvier.Query.Traced` package with a traced graph build.
 
 Package builds include Fable sources and a standalone source project, tested in CI through

@@ -22,7 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # The test projects target net10.0 and net8.0; global.json pins the SDK.
+      # The test projects target net10.0, and global.json pins the SDK. The package check runs a net8.0 consumer of
+      # the netstandard2.1 build, which needs the .NET 8 runtime.
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json

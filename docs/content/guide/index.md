@@ -78,7 +78,7 @@ Dispatchers move work from other threads onto the graph thread.
 
 ## Targets
 
-`net10.0`, `net8.0` and `netstandard2.1` and [Fable (JavaScript)](../fable/index.md).
+`net10.0`, `netstandard2.1` and [Fable (JavaScript)](../fable/index.md).
 
 ## Guide
 

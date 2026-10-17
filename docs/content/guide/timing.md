@@ -62,7 +62,7 @@ See [Threading and dispatch](threading.md).
 
 The `With` factories accept `TimedOptions<'T>` with an injected monotonic `TimedClock` and optional
 typed comparer. `TimedClock.system` uses `Stopwatch` on .NET and `performance.now()` under Fable.
-.NET 8 and 10 also expose `TimedClock.ofTimeProvider`. Custom timers start disarmed, replace a
+.NET 10 also exposes `TimedClock.ofTimeProvider`. Custom timers start disarmed, replace a
 one-shot wait on `Arm`, and never invoke callbacks synchronously from `Arm`. Callbacks can race cancellation;
 the timed node checks its current deadline and disposal state.
 
