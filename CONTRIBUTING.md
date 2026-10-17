@@ -45,7 +45,14 @@ five processes each, for Node and for .NET, on two legs:
 
 - **`arm64-counters`** counts hardware instructions per operation. A scenario regresses when the
   head median exceeds the base median by more than max(2%, 20 instructions per operation) *and*
-  every head process exceeds every base process. An unaccepted regression fails the check.
+  every head process exceeds every base process, and the lower modes of the two sides pass the
+  same test. A side's lower mode is its lowest processes, up to the first gap between sorted
+  values wider than that limit. When only the medians separate, the scenario is a **state shift**:
+  some processes landed in a different discrete state, and the check passes. An unaccepted
+  regression fails the check.
+- Every worker process also measures `control`, a fixed workload with no Ranvier code. When the
+  control regresses or improves by the same rule, the runtime's regressions on that leg are
+  **inconclusive** and do not fail the check.
 - **`x64-timing`** measures thread CPU time with a 15% threshold. It only emits warnings.
 
 The results arrive as one pull-request comment, updated on each run, with regressions,

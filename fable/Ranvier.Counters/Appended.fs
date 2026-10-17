@@ -31,4 +31,11 @@ let appended (scale: int) : Case list =
                 Ops = 50 * scale
                 Prepare = workload (OnceWorkloads.keyedOncePass edit)
             }
+        {
+            Scenario = Control.Scenario
+            Engine = "Control"
+            Unit = $"refill a %d{Control.Size}-entry closure table, sum it, and sort a copy of its array"
+            Ops = 50 * scale
+            Prepare = workload Control.prepare
+        }
     ]

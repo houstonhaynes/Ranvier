@@ -25,7 +25,7 @@ function validate(report, run, repo) {
     assert.equal(typeof v.Fails, 'boolean');
     assert.ok(Array.isArray(v.Findings) && Array.isArray(v.Warnings));
     for (const f of v.Findings) {
-      assert.ok(['Regressed', 'Improved', 'Unchanged', 'Added', 'Removed', 'CounterChanged', 'NoBaseline'].includes(f.Kind));
+      assert.ok(['Regressed', 'Improved', 'Unchanged', 'Added', 'Removed', 'CounterChanged', 'NoBaseline', 'StateShift', 'Inconclusive'].includes(f.Kind));
       assert.equal(typeof f.Accepted, 'boolean');
     }
   }

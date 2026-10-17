@@ -22,6 +22,7 @@
         <Compile Include="Node.fs" />
         <Compile Include="..\..\bench\Ranvier.Counters\Workloads.fs" Link="Workloads.fs" />
         <Compile Include="..\..\bench\Ranvier.Counters\OnceWorkloads.fs" Link="OnceWorkloads.fs" />
+        <Compile Include="..\..\bench\Ranvier.Counters\Control.fs" Link="Control.fs" />
         <Compile Include="Scenarios.fs" />
         <Compile Include="Appended.fs" />
         <Compile Include="Main.fs" />

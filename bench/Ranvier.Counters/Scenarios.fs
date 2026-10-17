@@ -1092,4 +1092,10 @@ let all (scale: int) : Case list =
                     "Ranvier (signal per field)", Ranvier.fieldWrite false
                     "Ranvier (Mvu)", Ranvier.fieldWrite true
                 ]
+        yield!
+            scenario
+                Control.Scenario
+                $"refill a %d{Control.Size}-entry closure table, sum it, and sort a copy of its array"
+                (50 * scale)
+                [ "Control", workload Control.prepare ]
     ]

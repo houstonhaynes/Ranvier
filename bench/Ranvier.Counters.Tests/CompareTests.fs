@@ -79,6 +79,83 @@ let private mapScenarios f (ps: ProcessFigures[]) =
             Scenarios = p.Scenarios |> Array.map (f p)
         })
 
+/// <summary>
+/// <c>run</c> with per-process gate values for scenario <c>x</c> and, when given, a <c>control</c> scenario in every
+/// process of both runtimes.
+/// </summary>
+let private sampled (b: float[]) (h: float[]) (control: (float[] * float[]) option) =
+    let r = run 0. 0.
+
+    let pick (p: ProcessFigures) (bs: float[], hs: float[]) =
+        if p.Side = "base" then bs[p.Process] else hs[p.Process]
+
+    let valued samples (p: ProcessFigures) (s: ScenarioFigures) =
+        { s with
+            Metrics =
+                s.Metrics
+                |> Array.map (fun m ->
+                    if m.Name = "bytes" then
+                        m
+                    else
+                        { m with Value = pick p samples })
+        }
+
+    let withControl (p: ProcessFigures) =
+        match control with
+        | None -> p
+        | Some samples ->
+            { p with
+                Scenarios =
+                    Array.append
+                        p.Scenarios
+                        [|
+                            valued
+                                samples
+                                p
+                                { p.Scenarios[0] with
+                                    Scenario = Control.Scenario
+                                    Engine = "Control"
+                                }
+                        |]
+            }
+
+    { r with
+        Processes =
+            r.Processes
+            |> Array.map (fun p ->
+                { p with
+                    Scenarios = p.Scenarios |> Array.map (valued (b, h) p)
+                }
+                |> withControl)
+        Counters =
+            r.Counters
+            |> Array.map (fun p ->
+                match control with
+                | None -> p
+                | Some _ ->
+                    { p with
+                        Scenarios =
+                            Array.append
+                                p.Scenarios
+                                [|
+                                    { p.Scenarios[0] with
+                                        Scenario = Control.Scenario
+                                        Engine = "Control"
+                                    }
+                                |]
+                    })
+    }
+
+let private gateKind runtime scenario (v: Verdict) =
+    let f =
+        v.Findings
+        |> Array.find (fun f ->
+            f.Runtime = runtime
+            && f.Scenario = scenario
+            && f.Metric = v.Gate)
+
+    f.Kind
+
 [<Tests>]
 let tests =
     testList
@@ -104,6 +181,118 @@ let tests =
                 Expect.equal (classify 0.02 20. (five 1000.) [| 1001.; 900.; 900.; 900.; 900. |]) Unchanged "overlap"
                 Expect.equal (classify 0.02 20. (five 1000.) [| 1000.; 900.; 900.; 900.; 900. |]) Unchanged "fall tie"
                 Expect.equal (classify 0.02 20. (five 1000.) (five 900.)) Improved "fall"
+            testCase "lower mode ends at the first gap wider than the limit"
+            <| fun _ ->
+                Expect.equal (lowerMode 0.02 20. [| 1100.; 1000.; 1020.; 1200. |]) [| 1000.; 1020. |] "gap of the floor joins"
+                Expect.equal (lowerMode 0.02 20. [| 1000.; 1021. |]) [| 1000. |] "gap past the floor splits"
+                Expect.equal (lowerMode 0.02 20. [| 10000.; 10200.; 10400. |]) [| 10000.; 10200.; 10400. |] "relative limit chains"
+                Expect.equal (lowerMode 0.02 20. [| -808.; -1632.; -1631. |]) [| -1632.; -1631. |] "signed values"
+                Expect.equal (lowerMode 0.02 20. [| 5. |]) [| 5. |] "single value"
+                Expect.equal (lowerMode 0.02 20. [| 100.; 120. |]) [| 100.; 120. |] "floor beyond the relative limit"
+                Expect.equal (lowerMode 0.02 20. [| -1970.; -2000. |]) [| -2000.; -1970. |] "relative limit of a negative minimum"
+            testCase "unimodal regression fails"
+            <| fun _ ->
+                let b = [| 1000.; 1001.; 1002.; 1000.; 1001. |]
+                let h = [| 1100.; 1101.; 1102.; 1100.; 1103. |]
+                Expect.equal (classify 0.02 20. b h) Regressed "classified"
+                let v = verdictOf (sampled b h None)
+                Expect.isTrue v.Fails "fails"
+                Expect.equal (gateKind "node" "x" v) Regressed "finding"
+            testCase "bimodal flip with equal lower modes is a state shift and passes"
+            <| fun _ ->
+                let b = [| 1000.; 1001.; 1000.; 1001.; 1000. |]
+                let h = [| 1002.; 1100.; 1003.; 1100.; 1100. |]
+                Expect.equal (classify 0.02 20. b h) StateShift "head flip"
+                Expect.equal (classify 0.02 20. [| 1000.; 1100.; 1001.; 1100.; 1100. |] (five 999.)) StateShift "base flip"
+                let v = verdictOf (sampled b h None)
+                Expect.isFalse v.Fails "passes"
+                Expect.equal (gateKind "dotnet" "x" v) StateShift "finding"
+                Expect.stringContains (markdown none [ v ]) "State shifts" "own section"
+                Expect.stringContains (markdown none [ v ]) "no unaccepted regression" "heading"
+            testCase "PR 79 .NET app-table steps are a state shift and Node's uniform state is a regression"
+            <| fun _ ->
+                Expect.equal
+                    (classify 0.02 20. [| 9255829.; 9255733.; 9255717.; 9255717.; 9255717. |] [| 9488690.; 9488863.; 9488816.; 9259253.; 9259218. |])
+                    StateShift
+                    "two head processes in the lower state"
+
+                Expect.equal
+                    (classify 0.02 20. [| 6329262.; 6319160.; 6333139.; 6346065.; 6347849. |] [| 8329393.; 8357194.; 13328080.; 8349579.; 8352106. |])
+                    Regressed
+                    "every head process in the upper state"
+            testCase "lower modes decide a separated movement at the limit"
+            <| fun _ ->
+                Expect.equal (classify 0.02 20. (five 1000.) [| 1021.; 1021.; 1100.; 1100.; 1100. |]) Regressed "lower modes still regress"
+                Expect.equal (classify 0.02 20. (five 1000.) [| 1020.; 1020.; 1100.; 1100.; 1100. |]) StateShift "lower modes at the limit"
+            testCase "control shift makes a regression inconclusive"
+            <| fun _ ->
+                let v =
+                    verdictOf (sampled (five 1000.) (five 1100.) (Some (five 5000., [| 5400.; 5401.; 5402.; 5400.; 5401. |])))
+
+                Expect.isFalse v.Fails "passes"
+                Expect.equal (gateKind "node" "x" v) Inconclusive "finding"
+                Expect.equal (Set.ofArray v.ControlMoved) (Set.ofList [ "node"; "dotnet" ]) "runtimes"
+                Expect.equal (gateKind "node" Control.Scenario v) Regressed "control finding"
+                let text = markdown none [ v ]
+                Expect.stringContains text "## Performance: inconclusive" "heading"
+                Expect.stringContains text "the control moved" "reason"
+
+                let falling =
+                    verdictOf (sampled (five 1000.) (five 1100.) (Some (five 5000., five 4000.)))
+
+                Expect.isFalse falling.Fails "a falling control also moves"
+
+                let accepted =
+                    verdict
+                        "instructions"
+                        0.02
+                        20.
+                        true
+                        (acceptance false [ "Perf-Accepted: x -- expected" ] (Set.singleton "x"))
+                        (sampled (five 1000.) (five 1100.) (Some (five 5000., five 4000.)))
+
+                Expect.isFalse
+                    (accepted.Findings
+                     |> Array.exists (fun f -> f.Kind = Inconclusive && f.Accepted))
+                    "an inconclusive finding carries no acceptance"
+            testCase "regression with a stable control fails"
+            <| fun _ ->
+                for name, control in
+                    [
+                        "equal", (five 5000., five 5000.)
+                        "overlapping", ([| 5000.; 5400.; 5000.; 5000.; 5000. |], [| 5400.; 5400.; 5000.; 5400.; 5400. |])
+                        "within the limit", (five 5000., five 5100.)
+                        "lower modes agree", (five 5000., [| 5001.; 5400.; 5400.; 5400.; 5400. |])
+                    ] do
+                    let v = verdictOf (sampled (five 1000.) (five 1100.) (Some control))
+                    Expect.isTrue v.Fails name
+                    Expect.isEmpty v.ControlMoved name
+                    Expect.equal (gateKind "node" "x" v) Regressed name
+            testCase "control measured on one side only leaves regressions gating"
+            <| fun _ ->
+                let r = sampled (five 1000.) (five 1100.) (Some (five 5000., five 9000.))
+
+                let headOnly (ps: ProcessFigures[]) =
+                    ps
+                    |> Array.map (fun p ->
+                        if p.Side = "base" then
+                            { p with
+                                Scenarios =
+                                    p.Scenarios
+                                    |> Array.filter (fun s -> s.Scenario <> Control.Scenario)
+                            }
+                        else
+                            p)
+
+                let v =
+                    verdictOf
+                        { r with
+                            Processes = headOnly r.Processes
+                            Counters = headOnly r.Counters
+                        }
+
+                Expect.isTrue v.Fails "fails"
+                Expect.equal (gateKind "node" Control.Scenario v) Added "control added"
             testCase "pure classifier rejects empty nonfinite or invalid thresholds"
             <| fun _ ->
                 for xs in [ [||]; [| nan |]; [| infinity |] ] do

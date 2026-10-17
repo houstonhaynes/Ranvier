@@ -46,3 +46,13 @@ test('oversize UTF8 report keeps bounded verdict and artifact link', () => {
   assert.ok(body.includes(run.html_url));
   assert.equal(data.comment.length > body.length, true);
 });
+test('state-shift and inconclusive findings are valid kinds; unknown kinds are rejected', async () => {
+  for (const [Kind, valid] of [['StateShift', true], ['Inconclusive', true], ['Flaky', false]]) {
+    const data = report();
+    data.verdict.Verdicts[0].Findings = [{ Kind, Accepted: false }];
+    const github = api();
+    const published = publish({ github, repo: { owner: 'owner', repo: 'repo' }, run, report: data });
+    if (valid) await published; else await assert.rejects(published);
+    assert.equal(github.calls.length, valid ? 1 : 0);
+  }
+});
