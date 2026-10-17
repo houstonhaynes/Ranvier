@@ -2693,6 +2693,43 @@ let rowOptionTests =
                 Expect.sequenceEqual seen [ Some 20; None ] "the reader re-ran when key 2 left"
             }
 
+            test "a memo-free projection read untracked stays lazy" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1; 2 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> item () * 10) (fun () -> items.Value)
+
+                untrack (fun () ->
+                    proj.Keys |> ignore
+                    proj.Get 1 |> ignore)
+
+                let before = proj.Runs
+
+                for i in 3..10 do
+                    items.Value <- [ 1; i ]
+
+                Expect.equal proj.Runs before "no observer, no work"
+            }
+
+            test "a tracked read of a memo-free row keeps the projection eager" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1; 2 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> item () * 10) (fun () -> items.Value)
+
+                createEffect (fun () -> proj.TryGet 1 |> ignore)
+                let before = proj.Runs
+
+                for i in 3..10 do
+                    items.Value <- [ 1; i ]
+
+                Expect.equal proj.Runs (before + 8) "each write runs a pass"
+            }
+
             test "a memo-free factory failure is raised by reads of its row" {
                 use g = new Graph ()
                 use _ = g.Activate ()

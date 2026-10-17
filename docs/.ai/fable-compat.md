@@ -46,7 +46,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Reads.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
-| Projections.fs | 114 | 114 | 114 | 114 | 114 | 114 | 10 | 0 |
+| Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
 | TrimmedPass.fs | 51 | 51 | 51 | 51 | 51 | 51 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
@@ -69,7 +69,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 941 | 923 | 879 | 1033 | 1011 | 962 | 87 | 1 |
+| **Total** | 943 | 925 | 881 | 1035 | 1013 | 964 | 87 | 1 |
 
 ## Tests.fs
 
@@ -869,7 +869,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | a view stops following when the scope that created it re-runs | AsObservableCollection returns an ObservableCollection, which the library omits under Fable. |
 | AsObservableCollection over a pending pass resets once when the pass settles | AsObservableCollection returns an ObservableCollection, which the library omits under Fable. |
 
-<details><summary>114 passed in every build and delivery that runs them</summary>
+<details><summary>116 passed in every build and delivery that runs them</summary>
 
 - the key order follows the source
 - a projection nothing reads is never recomputed
@@ -980,6 +980,8 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a removed row's cleanup that disposes the projection stops a create-first pass
 - a memo-free row is its factory's result, built once per key
 - a tracked read of a memo-free row wakes when its key leaves
+- a memo-free projection read untracked stays lazy
+- a tracked read of a memo-free row keeps the projection eager
 - a memo-free factory failure is raised by reads of its row
 - memo-free create-first rows keep the previous rows when a factory fails
 - value readers and combinators reject memo-free rows

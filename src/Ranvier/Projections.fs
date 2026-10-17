@@ -1016,7 +1016,8 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
         then
             observed <- this.ExtraObserved ()
 
-        if not observed then
+        // Memo-free rows are observed through the key set alone.
+        if not observed && isNull this.OnceValue then
             observed <- entries.Exists (fun entry -> rowObserved entry)
 
         if deferredDirty then
