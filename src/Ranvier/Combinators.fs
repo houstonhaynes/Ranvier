@@ -129,7 +129,7 @@ type internal MapView<'K, 'V, 'U when 'K: equality>(graph: Graph, upstream: Proj
         let mutable i = 0
 
         while this.Runs = mine && i < keys.Length do
-            let key = keys[i]
+            let key = Platform.itemAt i keys
             i <- i + 1
             let item = upstream.Entries.Find key
             let entry = this.Entries.Find key
@@ -185,7 +185,7 @@ type internal SliceView<'K, 'V when 'K: equality>(graph: Graph, upstream: Projec
             else start + count
 
         for i in start .. stop - 1 do
-            let key = keys[i]
+            let key = Platform.itemAt i keys
             this.Visit (key, key)
 
         heldOut.Publish upstream
@@ -212,8 +212,10 @@ type internal FilterView<'K, 'V, 'U when 'K: equality>
     override this.Enumerate() =
         heldOut.Begin ()
         let rows = inclusion.Value
+        let keys = rows.Keys
 
-        for key in rows.Keys do
+        for i in 0 .. keys.Length - 1 do
+            let key = Platform.itemAt i keys
             let entry = rows.Entries.Find key
 
             if not (Platform.isNull entry) then
@@ -289,8 +291,8 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: G
 
         while same && i < placed.Count do
             same <-
-                equalKeys.Equals (placed[i], lastPlaced[i])
-                && compareRanks ranks[i] lastRanks[i] = 0
+                equalKeys.Equals (Platform.entryAt i placed, Platform.entryAt i lastPlaced)
+                && compareRanks (Platform.entryAt i ranks) (Platform.entryAt i lastRanks) = 0
 
             i <- i + 1
 
@@ -305,7 +307,7 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: G
 
         order
         |> Array.sortInPlaceWith (fun i j ->
-            let byRank = compareRanks ranks[i] ranks[j]
+            let byRank = compareRanks (Platform.entryAt i ranks) (Platform.entryAt j ranks)
             if byRank <> 0 then byRank else compare i j)
 
     /// <summary>
@@ -319,8 +321,10 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: G
         let rows = sortKeys.Value
         placed.Clear ()
         ranks.Clear ()
+        let keys = rows.Keys
 
-        for key in rows.Keys do
+        for i in 0 .. keys.Length - 1 do
+            let key = Platform.itemAt i keys
             let entry = rows.Entries.Find key
 
             if not (Platform.isNull entry) then
@@ -343,8 +347,11 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: G
             sort ()
             sorted <- true
 
-        for i in order do
-            this.Visit (placed[i], placed[i])
+        let positions = order
+
+        for k in 0 .. positions.Length - 1 do
+            let key = placed[Platform.itemAt k positions]
+            this.Visit (key, key)
 
         let swapKeys = lastPlaced
         lastPlaced <- placed
@@ -447,8 +454,10 @@ type Grouping<'G, 'K, 'V when 'G: equality and 'K: equality> internal (graph: Gr
         heldOut.Begin ()
         let rows = groupKeys.Value
         order.Clear ()
+        let keys = rows.Keys
 
-        for key in rows.Keys do
+        for i in 0 .. keys.Length - 1 do
+            let key = Platform.itemAt i keys
             let entry = rows.Entries.Find key
 
             if not (Platform.isNull entry) then
@@ -535,7 +544,7 @@ type internal FoldReads(graph: Graph, changed: unit -> unit) =
             let mutable i = 0
 
             while not dirty && i < order.Count do
-                order[i].UpdateIfNecessary()
+                (Platform.entryAt i order).UpdateIfNecessary()
                 i <- i + 1
 
         let moved = dirty
@@ -774,7 +783,8 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
         added.Clear ()
         removed.Clear ()
 
-        for key in keys do
+        for i in 0 .. keys.Length - 1 do
+            let key = Platform.itemAt i keys
             let entry = upstream.Entries.Find key
 
             if not (Platform.isNull entry) then
@@ -820,8 +830,10 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
         let fold () =
             let mutable s = zero
 
-            for key in lastKeys do
-                let row = rows.Find key
+            let keys = lastKeys
+
+            for i in 0 .. keys.Length - 1 do
+                let row = rows.Find (Platform.itemAt i keys)
 
                 if not (Platform.isNull (box row)) && row.HasValue then
                     s <- add s row.Value
@@ -849,7 +861,7 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
         let mutable i = 0
 
         while i < queue.Count do
-            let row = queue[i]
+            let row = Platform.entryAt i queue
 
             if row.Attached && row.Entry.Live then
                 this.Read row

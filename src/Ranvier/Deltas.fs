@@ -38,7 +38,7 @@ type internal KeyChanges<'K when 'K: equality>() =
         let slot = slots.Find key
 
         if slot > 0 then
-            let previous = pairs[slot - 1].Value
+            let previous = (Platform.entryAt (slot - 1) pairs).Value
 
             if
                 change = KeyChange.Removed
@@ -47,7 +47,7 @@ type internal KeyChanges<'K when 'K: equality>() =
                 let last = pairs.Count - 1
 
                 if slot - 1 < last then
-                    let moved = pairs[last]
+                    let moved = Platform.entryAt last pairs
                     pairs[slot - 1] <- moved
                     slots.Set (moved.Key, slot)
 
@@ -287,7 +287,7 @@ type internal KeyLog<'K when 'K: equality>() =
 
     member _.Record(key: 'K, change: KeyChange) =
         for i in 0 .. readers.Count - 1 do
-            readers[i].Record(key, change)
+            (Platform.entryAt i readers).Record(key, change)
 
     member _.RecordValue(key: 'K) =
         for reader in readers do
@@ -297,4 +297,4 @@ type internal KeyLog<'K when 'K: equality>() =
     /// <summary>Flags every reader for a reset.</summary>
     member _.Reset() =
         for i in 0 .. readers.Count - 1 do
-            readers[i].MarkReset()
+            (Platform.entryAt i readers).MarkReset()

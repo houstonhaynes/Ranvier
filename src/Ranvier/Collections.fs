@@ -99,7 +99,7 @@ type internal CollectionProjection<'K, 'V when 'K: equality>(graph: Graph) as th
         let mutable i = 0
 
         while this.Runs = mine && i < keys.Length do
-            let key = keys[i]
+            let key = Platform.itemAt i keys
             i <- i + 1
             let item = items.Find key
             let entry = this.Entries.Find key

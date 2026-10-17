@@ -70,7 +70,8 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
         if not (obj.ReferenceEquals (keys, current)) then
             seen.Clear ()
 
-            for key in current do
+            for i in 0 .. current.Length - 1 do
+                let key = Platform.itemAt i current
                 seen.Add key |> ignore
                 let entry = find key
                 let old = rows.Find key
@@ -114,7 +115,7 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
 
                 try
                     while processed < queue.Count do
-                        let row = queue[processed]
+                        let row = Platform.entryAt processed queue
                         row.Queued <- false
 
                         try

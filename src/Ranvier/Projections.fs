@@ -158,7 +158,7 @@ type internal RowSnapshot<'K, 'V when 'K: equality>(capacity: int) =
         let slot = slots.Find key
 
         if slot > 0 then
-            pairs[slot - 1].Value
+            (Platform.entryAt (slot - 1) pairs).Value
         else
             raise (KeyNotFoundException ("The snapshot has no key " + string key + "."))
 
@@ -174,7 +174,7 @@ type internal RowSnapshot<'K, 'V when 'K: equality>(capacity: int) =
             let slot = slots.Find key
 
             if slot > 0 then
-                value <- pairs[slot - 1].Value
+                value <- (Platform.entryAt (slot - 1) pairs).Value
                 true
             else
                 value <- Unchecked.defaultof<'V>
@@ -465,7 +465,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             let mutable i = 0
 
             while same && i < passKeys.Count do
-                if not (EqualityComparer<'K>.Default.Equals(current[i], passKeys[i])) then
+                if not (EqualityComparer<'K>.Default.Equals(Platform.itemAt i current, Platform.entryAt i passKeys)) then
                     same <- false
 
                 i <- i + 1
@@ -939,7 +939,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
                 let mutable i = 0
 
                 while i < removed.Count && runs = mine do
-                    let key = removed[i]
+                    let key = Platform.entryAt i removed
                     i <- i + 1
                     let entry = entries.Find key
 
@@ -1137,7 +1137,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
                     while freshness = Freshness.Clean
                           && i < upstreamBeacons.Count do
-                        upstreamBeacons[i].UpdateIfNecessary()
+                        (Platform.entryAt i upstreamBeacons).UpdateIfNecessary()
                         i <- i + 1
 
                     Tracer.Walked (graph, id)
@@ -1509,7 +1509,10 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             let copy = RowSnapshot<'K, 'V>(entries.Count)
             Tracer.Walk (graph, id)
 
-            for key in keys.Peek do
+            let shown = keys.Peek
+
+            for i in 0 .. shown.Length - 1 do
+                let key = Platform.itemAt i shown
                 let entry = entries.Find key
 
                 if not (Platform.isNull entry) then
@@ -2040,7 +2043,7 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
                 let mutable i = 0
 
                 while i < adds.Count && this.Runs = mine do
-                    let struct (key, item) = adds[i]
+                    let struct (key, item) = Platform.entryAt i adds
                     i <- i + 1
 
                     if memoFree then
@@ -2061,7 +2064,7 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
             while started < adds.Count
                   && not this.IsDisposedInternal
                   && this.Runs = mine do
-                let struct (key, item) = adds[started]
+                let struct (key, item) = Platform.entryAt started adds
                 started <- started + 1
 
                 if memoFree then
@@ -2271,7 +2274,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                 install cur n1 true
             elif aligned then
                 for k in 0 .. changedAt.Count - 1 do
-                    let i = changedAt[k]
+                    let i = Platform.entryAt k changedAt
                     prev[i] <- Platform.itemAt i cur
             else
                 lastItems <- grow prev start n1
@@ -2315,7 +2318,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
 
             try
                 for k in 0 .. changedAt.Count - 1 do
-                    let key = prevKeys[changedAt[k]]
+                    let key = Platform.itemAt (Platform.entryAt k changedAt) prevKeys
                     previousKeys.Add key
                     previousChanged.Add key |> ignore
 
@@ -2332,7 +2335,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                     let mutable k = 0
 
                     while this.Runs = mine && k < changedAt.Count do
-                        visit changedAt[k]
+                        visit (Platform.entryAt k changedAt)
                         k <- k + 1
                 else
                     let mutable i = start
@@ -2345,7 +2348,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                     let removed = this.Removed
 
                     for k in 0 .. changedAt.Count - 1 do
-                        let key = prevKeys[changedAt[k]]
+                        let key = Platform.itemAt (Platform.entryAt k changedAt) prevKeys
 
                         if not (changed.Contains key) then
                             removed.Add key
@@ -2356,12 +2359,12 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                     trimmedFrom <- if aligned then -1 else start
             finally
                 for k in 0 .. previousKeys.Count - 1 do
-                    previousChanged.Remove (previousKeys[k])
+                    previousChanged.Remove (Platform.entryAt k previousKeys)
 
                 previousKeys.Clear ()
 
                 for k in 0 .. changedKeys.Count - 1 do
-                    changed.Remove (changedKeys[k])
+                    changed.Remove (Platform.entryAt k changedKeys)
 
                 changedKeys.Clear ()
 
@@ -2398,7 +2401,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
                 then
                     if trimmedFrom < 0 then
                         for k in 0 .. changedAt.Count - 1 do
-                            let i = changedAt[k]
+                            let i = Platform.entryAt k changedAt
                             lastKeys[i] <- Platform.itemAt i published
                     else
                         lastKeys <- grow lastKeys trimmedFrom count

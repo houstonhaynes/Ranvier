@@ -28,6 +28,7 @@ let all =
             testList "AmbientGraph.fs" [ Ranvier.Tests.AmbientGraph.tests ]
             testList "Owners.fs" [ Ranvier.Tests.Owners.tests ]
             testList "Equality.fs" [ Ranvier.Tests.Equality.tests ]
+            testList "ValueReaders.fs" [ Ranvier.Tests.ValueReaders.tests ]
             testList "Async.fs" [ Ranvier.Tests.Async.tests ]
             testList "Boundaries.fs" [ Ranvier.Tests.Boundaries.tests ]
             testList "Threading.fs" [ Ranvier.Tests.Threading.tests ]

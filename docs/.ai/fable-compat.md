@@ -26,6 +26,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Owners.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
+| ValueReaders.fs | 19 | 19 | 19 | 19 | 19 | 19 | 0 | 0 |
 | Async.fs | 30 | 22 | 7 | 30 | 22 | 7 | 2 | 0 |
 | Boundaries.fs | 27 | 27 | 23 | 27 | 27 | 23 | 1 | 0 |
 | Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
@@ -55,7 +56,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | DischargeReentry.fs | 29 | 29 | 28 | 29 | 29 | 28 | 1 | 0 |
 | MapSemantics.fs | 42 | 42 | 41 | 42 | 42 | 41 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
-| Combinators.fs | 126 | 126 | 126 | 126 | 126 | 126 | 1 | 0 |
+| Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | PreviousValues.fs | 11 | 11 | 11 | 11 | 11 | 11 | 14 | 0 |
 | Texts.fs | 5 | 5 | 5 | 5 | 5 | 5 | 1 | 0 |
@@ -70,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 950 | 932 | 888 | 1042 | 1020 | 971 | 88 | 1 |
+| **Total** | 970 | 952 | 908 | 1062 | 1040 | 991 | 88 | 1 |
 
 ## Tests.fs
 
@@ -252,6 +253,32 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - an equal write, by type / list
 - an equal write, by type / the same class instance
 - an equal write, by type / an equal class instance
+
+</details>
+
+## ValueReaders.fs
+
+<details><summary>19 passed in every build and delivery that runs them</summary>
+
+- value readers have independent baselines and immutable deltas
+- value readers preserve reactive cutoffs
+- value readers report first settlement but not pending/error states
+- new value readers retain rows settled before observation
+- value readers do not publish purity-rejected results
+- value readers preserve replacement identity and lifetimes
+- disposing the last value reader stops row observation
+- value readers coalesce batched writes
+- map deltas preserve row factories and cleanup
+- sparse updates traverse a two-map pipeline incrementally
+- value readers respect hidden and recovered predicate rows
+- value readers drain invalidations raised while settling
+- editable collections report direct edits and replacement identity
+- editable collections update two maps without replacing keys
+- editable collections preserve scope and throwing batch semantics
+- editable collections remove structurally equal keys
+- map factories consume batched source replacement deltas
+- map overflow recovery preserves replacement lifetimes
+- map cleanup failure recovery preserves replacement lifetimes
 
 </details>
 
@@ -1309,7 +1336,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | --- | --- |
 | foldGroup rejects a null subtract | Fable wraps a null function argument in a closure, so it is never null. |
 
-<details><summary>126 passed in every build and delivery that runs them</summary>
+<details><summary>127 passed in every build and delivery that runs them</summary>
 
 - 200 single edits at N=1000 make 200 predicate calls
 - a Keys reader wakes only when membership flips
@@ -1425,6 +1452,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - an edit that leaves the row value equal leaves the reader asleep
 - a value read by add re-folds on change
 - a key removed and re-added counts once, with its new value
+- a change to the second memo read by add re-folds
 - a pending row keeps its last settled value; a never-settled row adds nothing
 - a failed row raises its error until it recovers
 - a removed failed row stops raising

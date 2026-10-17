@@ -1930,6 +1930,29 @@ let foldTests =
                 Expect.equal total.Value 8 "key 2 re-added unread"
             }
 
+            test "a change to the second memo read by add re-folds" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal (items [ 1, 1; 2, 2 ])
+                let scale = createSignal 1
+                let offset = createSignal 0
+                let scaleMemo = createMemo (fun _ -> scale.Value)
+                let offsetMemo = createMemo (fun _ -> offset.Value)
+
+                let total =
+                    rows source
+                    |> Projection.foldGroup
+                        (fun s n -> s + n * scaleMemo.Value + offsetMemo.Value)
+                        (fun s n -> s - n * scaleMemo.Value - offsetMemo.Value)
+                        0
+
+                Expect.equal total.Value 3 "scale 1, offset 0"
+                offset.Value <- 100
+                Expect.equal total.Value 203 "offset 100"
+                scale.Value <- 10
+                Expect.equal total.Value 230 "scale 10"
+            }
+
             test "a pending row keeps its last settled value; a never-settled row adds nothing" {
                 use g = new Graph ()
                 use _ = g.Activate ()
