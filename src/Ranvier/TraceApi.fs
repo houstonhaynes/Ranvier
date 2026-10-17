@@ -256,7 +256,7 @@ module Trace =
         | :? TraceWaiting as w -> TraceModel.renderWaiting snap w
         | :? (TraceEvent[]) as events -> TraceModel.renderEvents snap events
         | :? TraceOrigin as o ->
-            let site = if isNull o.Site then "?" else string o.Site
+            let site = if Platform.isNull o.Site then "?" else string o.Site
 
             TraceModel.pathOf snap o.Node
             + " "
@@ -286,7 +286,7 @@ module Trace =
                 )
             )
 
-        if isNull (box graph.CurrentComputation) then
+        if Platform.isNull (box graph.CurrentComputation) then
             Tracer.AbandonStale (logOf graph)
 
         if (logOf graph).Busy then

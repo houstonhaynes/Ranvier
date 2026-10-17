@@ -205,13 +205,13 @@ type Editable<'T> internal (graph: Graph, seed: 'T voption -> 'T, draft: bool) =
 module Api =
     /// <summary>An empty editable collection with insertion order and reactive rows.</summary>
     let createKeyedCollection (keyOf: 'V -> 'K) : KeyedCollection<'K, 'V> =
-        if isNull (box keyOf) then
+        if Platform.isNull (box keyOf) then
             nullArg "keyOf"
 
         new KeyedCollection<'K, 'V> (Graph.Current, keyOf)
 
     let private requireComparer (comparer: IEqualityComparer<'T>) =
-        if isNull comparer then
+        if Platform.isNull comparer then
             nullArg "comparer"
 
     /// <summary>

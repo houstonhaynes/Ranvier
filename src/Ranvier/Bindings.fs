@@ -56,7 +56,7 @@ type internal Binding<'Target, 'T>
         Tracer.RunStart (graph, id, runs)
 
         try
-            if isNull (box memo) then
+            if Platform.isNull (box memo) then
                 status <- Status.None
                 failure <- null
                 write target signal.Peek
@@ -97,7 +97,7 @@ type internal Binding<'Target, 'T>
                     Tracer.EdgesRemove (this, 0)
                     disposed <- true
 
-                    if not (isNull link) then
+                    if not (Platform.isNull link) then
                         link.Detach ()
                         link <- null
 
@@ -148,7 +148,7 @@ type internal Binding<'Target, 'T>
                     Tracer.CheckStart (graph, id)
                     source.UpdateIfNecessary ()
                     Tracer.CheckResolved (graph, id, (freshness = Freshness.Dirty))
-                elif not (isNull (box memo)) then
+                elif not (Platform.isNull (box memo)) then
                     source.UpdateIfNecessary ()
 
                 let shouldRun = freshness = Freshness.Dirty

@@ -87,10 +87,10 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
         if duration < TimeSpan.Zero then
             raise (ArgumentOutOfRangeException (nameof duration))
 
-        if isNull (box clock) then
+        if Platform.isNull (box clock) then
             nullArg "options.Clock"
 
-        if isNull (box read) then
+        if Platform.isNull (box read) then
             nullArg (nameof read)
 #if RANVIER_COUNTERS
         Counters.MemoCreated ()
@@ -128,7 +128,7 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
 
     member private _.Arm() =
         if not armed && hasCandidate then
-            if isNull (box timer) then
+            if Platform.isNull (box timer) then
                 timer <- clock.CreateTimer callback
 
             armed <- true
@@ -377,12 +377,12 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
                     disposed <- true
                     this.Cancel ()
 
-                    if not (isNull (box timer)) then
+                    if not (Platform.isNull (box timer)) then
                         timer.Dispose ()
 
                     sources.Clear (this :> IComputation)
 
-                    if not (isNull link) then
+                    if not (Platform.isNull link) then
                         link.Detach ()
                         link <- null
 

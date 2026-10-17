@@ -453,7 +453,7 @@ type internal TraceLog(locked: bool) =
                         label <- e.Payload
 
             let named =
-                if isNull label then
+                if Platform.isNull label then
                     ""
                 else
                     String.Concat (" \"", string label, "\"")
@@ -598,7 +598,7 @@ type internal Tracer =
 
     /// <summary>Opens a <c>Trace.named</c> label on this thread.</summary>
     static member PushLabel(label: string) =
-        if isNull Tracer.labels then
+        if Platform.isNull Tracer.labels then
             Tracer.labels <- ResizeArray ()
 
         Tracer.labels.Add label
@@ -613,7 +613,7 @@ type internal Tracer =
         let label = labels[last]
         labels.RemoveAt last
 
-        if not (isNull label || isNull graph) then
+        if not (Platform.isNull label || Platform.isNull graph) then
             (graph :?> ITraced).TraceLog.Append(TraceEventKind.Label, 0, 0, 0, 0, 0, label)
             |> ignore
 
@@ -621,11 +621,11 @@ type internal Tracer =
     static member private Consume(log: TraceLog, id: int) =
         let labels = Tracer.labels
 
-        if not (isNull labels) && labels.Count > 0 then
+        if not (Platform.isNull labels) && labels.Count > 0 then
             let last = labels.Count - 1
             let label = labels[last]
 
-            if not (isNull label) then
+            if not (Platform.isNull label) then
                 labels[last] <- null
 
                 log.Append (TraceEventKind.Label, id, 0, 0, 0, 0, label)
@@ -634,7 +634,12 @@ type internal Tracer =
     /// <summary>Records <c>NodeNew</c> for node <c>id</c> under <c>owner</c>, an owner or null.</summary>
     static member private Node(graph: obj, id: int, kind: TraceNodeKind, owner: obj) =
         let log = (graph :?> ITraced).TraceLog
-        let ownerId = if isNull owner then 0 else (owner :?> ITraced).TraceId
+
+        let ownerId =
+            if Platform.isNull owner then
+                0
+            else
+                (owner :?> ITraced).TraceId
 
         if ownerId <> 0 then
             log.SetOwner (id, ownerId)
@@ -693,7 +698,7 @@ type internal Tracer =
         let traced = sources :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.Append (kind, traced.TraceId, Tracer.IdOf source, slot, 0, 0, null)
             |> ignore
 
@@ -702,7 +707,7 @@ type internal Tracer =
         let traced = observers :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.Append (kind, traced.TraceId, Tracer.IdOf observer, 0, 0, 0, null)
             |> ignore
 
@@ -711,7 +716,7 @@ type internal Tracer =
         let traced = observers :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             let target = Tracer.IdOf observer
             let seq = log.Append (kind, target, traced.TraceId, arg, 0, log.Cause, null)
 
@@ -794,11 +799,11 @@ type internal Tracer =
 #if RANVIER_TRACE
         let labels = Tracer.labels
 
-        if not (isNull labels) && labels.Count > 0 then
+        if not (Platform.isNull labels) && labels.Count > 0 then
             let last = labels.Count - 1
             let label = labels[last]
 
-            if not (isNull label) then
+            if not (Platform.isNull label) then
                 labels[last] <- null
                 (graph :?> ITraced).TraceLog.Reserve(id, label)
 #else
@@ -979,17 +984,17 @@ type internal Tracer =
         if Platform.hasMember child "TraceLog" then
             let child = child :?> ITraced
 
-            if isNull child.TraceLog then
+            if Platform.isNull child.TraceLog then
                 let parent = parent :?> ITraced
 
-                if not (isNull parent.TraceLog) then
+                if not (Platform.isNull parent.TraceLog) then
                     Tracer.Joined (parent.TraceLog, child, parent.TraceId, 0, (if root then 1 else 0))
 #else
         match child with
-        | :? ITraced as child when isNull child.TraceLog ->
+        | :? ITraced as child when Platform.isNull child.TraceLog ->
             let parent = parent :?> ITraced
 
-            if not (isNull parent.TraceLog) then
+            if not (Platform.isNull parent.TraceLog) then
                 Tracer.Joined (parent.TraceLog, child, parent.TraceId, 0, (if root then 1 else 0))
         | _ -> ()
 #endif
@@ -1003,7 +1008,7 @@ type internal Tracer =
 #if RANVIER_TRACE
         let owner = owner :?> ITraced
 
-        if not (isNull owner.TraceLog) then
+        if not (Platform.isNull owner.TraceLog) then
             owner.TraceLog.Append (TraceEventKind.OwnerDispose, owner.TraceId, 0, 0, 0, 0, null)
             |> ignore
 #else
@@ -1017,7 +1022,7 @@ type internal Tracer =
         let owner = owner :?> ITraced
         let log = owner.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.Discharging true
 
             log.Append (TraceEventKind.DischargeStart, owner.TraceId, log.HostOf owner.TraceId, 0, 0, 0, null)
@@ -1033,7 +1038,7 @@ type internal Tracer =
         let owner = owner :?> ITraced
         let log = owner.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.Discharging false
 
             log.Append (TraceEventKind.DischargeEnd, owner.TraceId, log.HostOf owner.TraceId, 0, 0, 0, null)
@@ -1061,7 +1066,7 @@ type internal Tracer =
         let traced = sources :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             let ids = (sources :?> ITracedEdges).Ids
 
             for slot in from .. ids.Length - 1 do
@@ -1117,7 +1122,7 @@ type internal Tracer =
         let traced = observers :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             let current = log.Current
             let cause = if current = 0 then 0 else log.OpenRun current
 
@@ -1136,7 +1141,7 @@ type internal Tracer =
 #if RANVIER_TRACE
         let log = Tracer.LogOf traced
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.PopCause ()
 #else
         ()
@@ -1148,7 +1153,7 @@ type internal Tracer =
 #if RANVIER_TRACE
         let log = Tracer.LogOf graph
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             log.PushCause 0
 #else
         ()
@@ -1363,7 +1368,7 @@ type internal Tracer =
         let traced = observers :?> ITraced
         let log = traced.TraceLog
 
-        if not (isNull log) then
+        if not (Platform.isNull log) then
             let kind =
                 if failed then
                     TraceEventKind.Fail

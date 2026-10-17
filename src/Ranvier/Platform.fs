@@ -18,6 +18,20 @@ open System.Collections.Concurrent
 /// file of its own
 /// </para></remarks>
 module internal Platform =
+    /// <summary>
+    /// <c>true</c> for <c>null</c>, and under Fable also for <c>undefined</c>; the same
+    /// result as FSharp.Core's <c>isNull</c>. Under Fable it compiles to an inline
+    /// <c>value == null</c> instead of a call to fable-library's <c>Operators_IsNull</c>.
+    /// </summary>
+#if FABLE_COMPILER
+    [<Emit("$0 == null")>]
+    let isNull (value: 'T when 'T: null) : bool =
+        nativeOnly
+#else
+    let inline isNull (value: 'T when 'T: null) =
+        Operators.isNull value
+#endif
+
 #if FABLE_COMPILER
     /// <summary>
     /// Constant under Fable. With one thread the comparison is always true,

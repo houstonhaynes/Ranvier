@@ -915,7 +915,7 @@ module TraceModel =
                         }
                 | None -> ()
             | TraceEventKind.Write when e.Flag = 1 -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
-            | TraceEventKind.Moved when not (isNull e.Payload) -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
+            | TraceEventKind.Moved when not (Platform.isNull e.Payload) -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
             | TraceEventKind.Settle
             | TraceEventKind.Fail when e.Arg = 0 -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
             | TraceEventKind.Mark when e.Arg = 2 ->
@@ -1462,7 +1462,7 @@ module TraceModel =
     // JSONL dump, schema 1
 
     let private jsonString (sb: StringBuilder) (text: string) =
-        if isNull text then
+        if Platform.isNull text then
             sb.Append "null" |> ignore
         else
             sb.Append '"' |> ignore

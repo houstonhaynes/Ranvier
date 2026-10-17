@@ -125,7 +125,7 @@ type ProjectionDelta<'K when 'K: equality> internal (changes: KeyChanges<'K>, ke
     /// </summary>
     /// <remarks>Computed by the first read of the property, O(N log N), and cached.</remarks>
     member this.Positional: IReadOnlyList<PositionalChange<'K>> =
-        if isNull positional then
+        if Platform.isNull positional then
             positional <-
                 if this.OrderChanged then
                     Positional.diff previousKeys keys
@@ -224,7 +224,7 @@ and
             idle <- Unchecked.defaultof<ProjectionDelta<'K>>
             delta
         elif obj.ReferenceEquals (current, cursor) then
-            if isNull (box idle) then
+            if Platform.isNull (box idle) then
                 idle <- ProjectionDelta (empty, cursor, cursor, false)
 
             idle
@@ -238,7 +238,7 @@ and
         if not disposed then
             disposed <- true
 
-            if not (isNull link) then
+            if not (Platform.isNull link) then
                 link.Detach ()
                 link <- null
 

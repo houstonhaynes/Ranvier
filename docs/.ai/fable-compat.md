@@ -60,6 +60,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | PreviousValues.fs | 11 | 11 | 11 | 11 | 11 | 11 | 14 | 0 |
 | Texts.fs | 5 | 5 | 5 | 5 | 5 | 5 | 1 | 0 |
 | FailureOrigins.fs | 16 | 16 | 15 | 16 | 16 | 15 | 2 | 0 |
+| NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Editables.fs | 17 | 17 | 17 | 17 | 17 | 17 | 1 | 0 |
 | MvuBridge.fs | 7 | 7 | 7 | 7 | 7 | 7 | 1 | 0 |
 | QueryComposition.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
@@ -69,7 +70,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 947 | 929 | 885 | 1039 | 1017 | 968 | 88 | 1 |
+| **Total** | 950 | 932 | 888 | 1042 | 1020 | 971 | 88 | 1 |
 
 ## Tests.fs
 
@@ -1564,6 +1565,16 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a fold over a failed row reports the row's origin
 - a lookup over a failed source reports the upstream node
 - a failed read swallowed by a body leaves the next failure its own
+
+</details>
+
+## NullChecks.fs
+
+<details><summary>3 passed in every build and delivery that runs them</summary>
+
+- is true for null
+- is false for a value
+- is true for undefined, as isNull is
 
 </details>
 

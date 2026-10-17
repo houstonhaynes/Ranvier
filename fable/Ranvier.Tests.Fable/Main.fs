@@ -90,6 +90,7 @@ let all =
                 ]
             testList "Texts.fs" [ Ranvier.Tests.Texts.tests ]
             testList "FailureOrigins.fs" [ Ranvier.Tests.FailureOrigins.tests ]
+            testList "NullChecks.fs" [ Ranvier.Tests.NullChecks.tests ]
             testList "Editables.fs" [ Ranvier.Tests.Editables.tests ]
             testList "MvuBridge.fs" [ Ranvier.Tests.MvuBridge.tests ]
             testList "QueryComposition.fs" [ Ranvier.Tests.QueryComposition.tests ]

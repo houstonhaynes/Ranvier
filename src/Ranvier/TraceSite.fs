@@ -21,12 +21,12 @@ module internal TraceSite =
     let private assemblyOf (frame: StackFrame) =
         match frame.GetMethod () with
         | null -> null
-        | m when isNull m.DeclaringType -> null
+        | m when Platform.isNull m.DeclaringType -> null
         | m when Object.ReferenceEquals (m.DeclaringType.Assembly, library) -> "Ranvier"
         | m -> m.DeclaringType.Assembly.GetName().Name
 
     let private excluded (name: string) =
-        isNull name
+        Platform.isNull name
         || name = "Ranvier"
         || name = "Ranvier.CSharp"
         || name = "FSharp.Core"
@@ -57,7 +57,7 @@ module internal TraceSite =
                 let name = assemblyOf frame
 
                 if
-                    not (isNull name)
+                    not (Platform.isNull name)
                     && name.StartsWith "FSI-ASSEMBLY"
                 then
                     let script =

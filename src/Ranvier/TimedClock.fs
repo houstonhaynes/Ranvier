@@ -96,7 +96,7 @@ module TimedClock =
                     / float Diagnostics.Stopwatch.Frequency
 #endif
                 member this.CreateTimer(callback) =
-                    if isNull callback then
+                    if Platform.isNull callback then
                         nullArg (nameof callback)
 
                     let create (fire: Action) =
@@ -104,7 +104,7 @@ module TimedClock =
                         let mutable handle: obj = null
 
                         let stop () =
-                            if not (isNull handle) then
+                            if not (Platform.isNull handle) then
                                 Fable.Core.JsInterop.emitJsExpr handle "clearTimeout($0)"
                                 handle <- null
 
@@ -141,7 +141,7 @@ module TimedClock =
     /// <summary>Uses a .NET time provider's timestamps and timers with the same deadline and rounding rules as the system clock.</summary>
     /// <exception cref="T:System.ArgumentNullException"><c>provider</c> is null.</exception>
     let ofTimeProvider (provider: TimeProvider) =
-        if isNull provider then
+        if Platform.isNull provider then
             nullArg (nameof provider)
 
         { new TimedClock() with
@@ -150,7 +150,7 @@ module TimedClock =
                 / float provider.TimestampFrequency
 
             member this.CreateTimer(callback) =
-                if isNull callback then
+                if Platform.isNull callback then
                     nullArg (nameof callback)
 
                 let create (fire: Action) =

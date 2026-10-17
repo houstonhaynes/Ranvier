@@ -76,11 +76,11 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
                 let old = rows.Find key
 
                 if
-                    not (isNull entry)
-                    && (isNull (box old)
+                    not (Platform.isNull entry)
+                    && (Platform.isNull (box old)
                         || not (obj.ReferenceEquals (old.Entry, entry)))
                 then
-                    if not (isNull (box old)) then
+                    if not (Platform.isNull (box old)) then
                         this.Detach old
 
                     let row = ValueRow (graph, entry, touched)
@@ -154,7 +154,7 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
         let row = rows.Find entry.Key
 
         if
-            not (isNull (box row))
+            not (Platform.isNull (box row))
             && obj.ReferenceEquals (row.Entry, entry)
         then
             this.Detach row
@@ -165,7 +165,7 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
     member _.TryAccepted(key: 'K) =
         let row = rows.Find key
 
-        if not (isNull (box row)) && row.HasValue then
+        if not (Platform.isNull (box row)) && row.HasValue then
             ValueSome row.Value
         else
             ValueNone
