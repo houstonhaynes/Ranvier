@@ -95,6 +95,8 @@ Global flags: `--quick` skips restores and cleaning,
 `--format` formats before building, `--dry-format` checks formatting before building,
 `-c` picks the configuration (default `Release`).
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for commit conventions and the CI checks, including performance.
+
 ## Layout
 
 ```

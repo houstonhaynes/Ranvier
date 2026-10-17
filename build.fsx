@@ -359,8 +359,9 @@ module private Perf =
     open System.IO
     open System.Text.Json
 
-    let private argument name =
+    let private argument name description =
         Input.argument<string> name
+        |> Input.description description
 
     let private absolute path =
         Path.GetFullPath (path, __REPOSITORY_DIRECTORY__)
@@ -394,8 +395,8 @@ module private Perf =
 
     let build =
         input {
-            let! reference = argument "REF"
-            and! directory = argument "DIR"
+            let! reference = argument "REF" "Git revision to build"
+            and! directory = argument "DIR" "Fresh output directory for the worktree and builds"
             let output = absolute directory
             let source = combine output "src"
 
@@ -513,12 +514,12 @@ module private Perf =
 
     let ab =
         input {
-            let! leg = argument "LEG"
-            and! baseSha = argument "BASE_SHA"
-            and! baseDir = argument "BASE_DIR"
-            and! headSha = argument "HEAD_SHA"
-            and! headDir = argument "HEAD_DIR"
-            and! output = argument "OUT"
+            let! leg = argument "LEG" "Measurement leg: arm64-counters or x64-timing"
+            and! baseSha = argument "BASE_SHA" "Commit of the base build"
+            and! baseDir = argument "BASE_DIR" "perf build output of the base"
+            and! headSha = argument "HEAD_SHA" "Commit of the head build"
+            and! headDir = argument "HEAD_DIR" "perf build output of the head"
+            and! output = argument "OUT" "File to write the measurements to"
 
             return
                 stage "perf alternating measurements" {
@@ -544,11 +545,18 @@ module private Perf =
 
     let compare =
         input {
-            let! baseSha = argument "BASE_SHA"
-            and! headSha = argument "HEAD_SHA"
-            and! label = argument "LABEL"
-            and! directory = argument "OUT"
-            and! files = Input.argument<string list> "AB"
+            let! baseSha = argument "BASE_SHA" "Base commit the measurements must name"
+            and! headSha = argument "HEAD_SHA" "Head commit the measurements must name"
+
+            and! label =
+                argument "LABEL" "Whether the pull request carries the perf-accepted label: true or false"
+
+            and! directory = argument "OUT" "Directory to write verdict.json and comment.md to"
+
+            and! files =
+                Input.argument<string list> "AB"
+                |> Input.description "perf ab measurement files, one per leg"
+
             let output = absolute directory
             let verdictFile = combine output "verdict.json"
 
@@ -653,9 +661,15 @@ module private Perf =
 
     let record =
         input {
-            let! sha = argument "SHA"
-            and! file = argument "OUT_FILE"
-            and! files = Input.argument<string list> "AB"
+            let! sha = argument "SHA" "Commit to record"
+
+            and! file =
+                argument "OUT_FILE" "Run file to write, under the history's runs directory"
+
+            and! files =
+                Input.argument<string list> "AB"
+                |> Input.description "perf ab measurement files, one per leg"
+
             let output = absolute file
             let directory = Path.GetDirectoryName output
             let message = output + ".message"
@@ -720,10 +734,30 @@ exit
     description "Build CLI"
     workingDir __REPOSITORY_DIRECTORY__
 
-    command "perf-build" { Perf.build }
-    command "perf-ab" { Perf.ab }
-    command "perf-compare" { Perf.compare }
-    command "perf-record" { Perf.record }
+    command "perf" {
+        description "CI: counter-bench measurements, verdicts and history"
+        hidden
+
+        command "build" {
+            description "Builds the counter bench of a revision in a fresh worktree"
+            Perf.build
+        }
+
+        command "ab" {
+            description "Measures a base and a head build in alternating processes"
+            Perf.ab
+        }
+
+        command "compare" {
+            description "Applies the regression verdict to the measurements and writes the report"
+            Perf.compare
+        }
+
+        command "record" {
+            description "Records a commit's measurements in the performance history and rebuilds its timeline"
+            Perf.record
+        }
+    }
 
     command "build" {
         description "Builds the solution"

@@ -37,8 +37,28 @@ jobs:
             const {publish, readReport} = require('./.github/scripts/perf-report.cjs');
             await publish({github, repo: context.repo, run: context.payload.workflow_run, report: readReport(`${process.env.RUNNER_TEMP}/report`)});
 
-  history:
+  ignore:
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master'
+    runs-on: ubuntu-latest
+    outputs:
+      ignored: ${{ steps.trailer.outputs.ignored }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          ref: master
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - id: trailer
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {ignoreReason} = require('./.github/scripts/perf-ignore.cjs');
+            core.setOutput('ignored', String(ignoreReason(context.payload.workflow_run.head_commit?.message) !== null));
+
+  history:
+    needs: ignore
+    if: needs.ignore.outputs.ignored != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -76,7 +96,7 @@ jobs:
       - name: Record master measurement
         env:
           HEAD: ${{ github.event.workflow_run.head_sha }}
-        run: dotnet fsi build.fsx -- perf-record "$HEAD" "$RUNNER_TEMP/record/runs/$HEAD.json" "$RUNNER_TEMP/report/ab-arm64-counters.json" "$RUNNER_TEMP/report/ab-x64-timing.json"
+        run: dotnet fsi build.fsx -- perf record "$HEAD" "$RUNNER_TEMP/record/runs/$HEAD.json" "$RUNNER_TEMP/report/ab-arm64-counters.json" "$RUNNER_TEMP/report/ab-x64-timing.json"
       - name: Preserve and publish history with optimistic retries
         env:
           HEAD: ${{ github.event.workflow_run.head_sha }}
