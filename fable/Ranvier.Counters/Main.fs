@@ -5,7 +5,7 @@
 /// </summary>
 /// <remarks>
 /// <para>
-/// Usage: node --expose-gc --single-threaded Main.fs.js --out &lt;file> [--scale k] [--warmup k] [--only prefix] [--scenario name] [--handshake]
+/// Usage: node --expose-gc --single-threaded --min-semi-space-size=32 --max-semi-space-size=32 Main.fs.js --out &lt;file> [--scale k] [--warmup k] [--only prefix] [--scenario name] [--handshake]
 /// </para>
 /// <para>
 /// <c>--list</c> writes each scenario name once, one per line in measurement order, and measures nothing.

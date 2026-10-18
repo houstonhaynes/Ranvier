@@ -220,6 +220,11 @@ let perScenario =
                         Expect.equal (NodeRuns.scenarios "node" path) (Some [| "alpha"; "beta" |]) "listed names"
                         Expect.equal (File.ReadAllText (Path.Combine (directory, "flags"))) (String.Join (" ", NodeRuns.flags)) "flags")
             }
+            test "the V8 flags hold a 15 MB region between young collections without a collection" {
+                script
+                    "const v8 = require('v8'); gc({ type: 'minor' }); gc({ type: 'minor' }); const p = new v8.GCProfiler(); p.start(); let keep = []; for (let i = 0; i < 200000; i++) { keep.push({ a: i, b: i }); if (keep.length > 1000) keep = []; } process.stdout.write('collections ' + p.stop().statistics.length + '\\n');"
+                    (fun _ path -> Expect.equal (NodeRuns.scenarios "node" path) (Some [| "collections 0" |]) "collections in the region")
+            }
             test "scenarios is None for a harness that rejects --list, lists nothing or fails" {
                 script "console.error('Unknown argument'); process.exit(1);" (fun _ path -> Expect.isNone (NodeRuns.scenarios "node" path) "rejected")
 

@@ -76,7 +76,17 @@ type NodePmcRun =
 /// V8 flags for every run. V8 compiles and collects on the main thread, and
 /// the heap after a region is the same in every run.
 /// </summary>
-let flags = [ "--expose-gc"; "--single-threaded" ]
+/// <remarks>
+/// Each semi-space is fixed at 32 MB, so every region starts with the same young-generation capacity on every
+/// machine and in every process.
+/// </remarks>
+let flags =
+    [
+        "--expose-gc"
+        "--single-threaded"
+        "--min-semi-space-size=32"
+        "--max-semi-space-size=32"
+    ]
 
 /// <summary>
 /// Whether V8 compiled inside the region of <c>m</c>.
