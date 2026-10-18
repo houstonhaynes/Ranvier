@@ -24,7 +24,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Bindings.fs | 17 | 17 | 17 | 17 | 17 | 17 | 0 | 0 |
 | EffectSplit.fs | 26 | 26 | 21 | 26 | 26 | 21 | 0 | 0 |
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
-| Owners.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
+| Owners.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
 | ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Async.fs | 52 | 44 | 9 | 52 | 44 | 9 | 4 | 0 |
@@ -71,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 999 | 981 | 917 | 1136 | 1113 | 1039 | 91 | 1 |
+| **Total** | 1004 | 986 | 922 | 1141 | 1118 | 1044 | 91 | 1 |
 
 ## Tests.fs
 
@@ -188,7 +188,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Owners.fs
 
-<details><summary>16 passed in every build and delivery that runs them</summary>
+<details><summary>21 passed in every build and delivery that runs them</summary>
 
 - disposing a root disposes the effects created inside it
 - a cleanup runs before the next run of the same effect
@@ -197,6 +197,11 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a cleanup registered after an attached disposable runs before it is disposed
 - nested roots are torn down depth-first
 - teardown order is last-created-first
+- cleanups and children interleave in reverse acquisition order
+- a first cleanup registered after two children runs before both
+- each run of an effect discharges the cleanups that run registered
+- a cleanup registered while 1 cleanups are discharged joins the emptied scope
+- a cleanup registered while 2 cleanups are discharged joins the emptied scope
 - a throwing cleanup does not strand the rest of the scope
 - a cleanup registered on a disposed owner runs at once
 - a throwing cleanup registered on a disposed owner is recorded

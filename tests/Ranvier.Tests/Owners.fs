@@ -129,6 +129,93 @@ let tests =
                 Expect.sequenceEqual log [ "second"; "first" ] "reverse of construction order"
             }
 
+            test "cleanups and children interleave in reverse acquisition order" {
+                let g = new Graph ()
+                let log = ResizeArray ()
+
+                let owner =
+                    g.CreateRoot (fun owner ->
+                        g.OnCleanup (fun () -> log.Add "c1")
+                        g.CreateRoot (fun _ -> g.OnCleanup (fun () -> log.Add "r1"))
+                        g.OnCleanup (fun () -> log.Add "c2")
+                        g.CreateRoot (fun _ -> g.OnCleanup (fun () -> log.Add "r2"))
+                        g.OnCleanup (fun () -> log.Add "c3")
+                        owner)
+
+                owner.Dispose ()
+                Expect.sequenceEqual log [ "c3"; "r2"; "c2"; "r1"; "c1" ] "one reverse order across cleanups and children"
+            }
+
+            test "a first cleanup registered after two children runs before both" {
+                let g = new Graph ()
+                let log = ResizeArray ()
+
+                let owner =
+                    g.CreateRoot (fun owner ->
+                        g.CreateRoot (fun _ -> g.OnCleanup (fun () -> log.Add "r1"))
+                        g.CreateRoot (fun _ -> g.OnCleanup (fun () -> log.Add "r2"))
+                        g.OnCleanup (fun () -> log.Add "c1")
+                        owner)
+
+                owner.Dispose ()
+                Expect.sequenceEqual log [ "c1"; "r2"; "r1" ] "the cleanup is the newest acquisition"
+            }
+
+            test "each run of an effect discharges the cleanups that run registered" {
+                let g = new Graph ()
+                let count = Signal (g, 1)
+                let log = ResizeArray ()
+
+                let effect =
+                    new Effect (
+                        g,
+                        fun () ->
+                            let n = count.Value
+
+                            for i in 1..n do
+                                g.OnCleanup (fun () -> log.Add $"%d{n}.%d{i}")
+                    )
+
+                for n in [ 3; 1; 0; 2 ] do
+                    count.Value <- n
+
+                effect.Dispose ()
+
+                Expect.sequenceEqual log [ "1.1"; "3.3"; "3.2"; "3.1"; "1.1"; "2.2"; "2.1" ] "a run's cleanups, newest first, before the next run"
+            }
+
+            for registered in [ 1; 2 ] do
+                test $"a cleanup registered while %d{registered} cleanups are discharged joins the emptied scope" {
+                    let g = new Graph ()
+                    let run = Signal (g, 1)
+                    let log = ResizeArray ()
+
+                    let effect =
+                        new Effect (
+                            g,
+                            fun () ->
+                                if run.Value = 1 then
+                                    for i in 1..registered do
+                                        g.OnCleanup (fun () ->
+                                            log.Add $"first %d{i}"
+
+                                            if i = 1 then
+                                                g.OnCleanup (fun () -> log.Add "late"))
+                                else
+                                    g.OnCleanup (fun () -> log.Add "second")
+                        )
+
+                    run.Value <- 2
+                    Expect.isFalse (log.Contains "late") "the late cleanup outlives the discharge that registered it"
+                    effect.Dispose ()
+
+                    let expected =
+                        [ for i in registered .. -1 .. 1 -> $"first %d{i}" ]
+                        @ [ "second"; "late" ]
+
+                    Expect.sequenceEqual log expected "the late cleanup belongs to the next teardown"
+                }
+
             test "a throwing cleanup does not strand the rest of the scope" {
                 let g = new Graph ()
                 let log = ResizeArray ()

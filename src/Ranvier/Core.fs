@@ -632,8 +632,18 @@ and Owner internal (sink: Owner) =
     let mutable tail: OwnerLink = null
 
     /// <summary>
-    /// Allocated by the first <c>OnCleanup</c>. Null while a teardown runs the
-    /// cleanups it detached.
+    /// The earliest cleanup registered since the last teardown, or null.
+    /// </summary>
+    let mutable firstCleanup: unit -> unit = Unchecked.defaultof<_>
+
+    /// <summary>
+    /// The acquisition count of <c>firstCleanup</c>.
+    /// </summary>
+    let mutable firstOrder = 0
+
+    /// <summary>
+    /// The cleanups registered after <c>firstCleanup</c>. Allocated by the second <c>OnCleanup</c>; null while a
+    /// teardown runs the cleanups it detached.
     /// </summary>
     let mutable cleanups: ResizeArray<unit -> unit> = null
 
@@ -826,12 +836,17 @@ and Owner internal (sink: Owner) =
         if disposed then
             this.RunLate f
         else
-            if Platform.isNull cleanups then
-                cleanups <- ResizeArray<unit -> unit>()
-                cleanupOrder <- ResizeArray<int>()
+            if Platform.isNull (box firstCleanup) then
+                firstCleanup <- f
+                firstOrder <- acquisitions
+            else
+                if Platform.isNull cleanups then
+                    cleanups <- ResizeArray<unit -> unit>()
+                    cleanupOrder <- ResizeArray<int>()
 
-            cleanups.Add f
-            cleanupOrder.Add acquisitions
+                cleanups.Add f
+                cleanupOrder.Add acquisitions
+
             acquisitions <- acquisitions + 1
 
     /// <summary>
@@ -853,6 +868,8 @@ and Owner internal (sink: Owner) =
     /// </para>
     /// </remarks>
     member internal this.DisposeScope() =
+        let first = firstCleanup
+        let firstAcquired = firstOrder
         let detached = cleanups
         let detachedOrder = cleanupOrder
         let mutable node = tail
@@ -860,16 +877,27 @@ and Owner internal (sink: Owner) =
         tail <- null
         generation <- (generation + 1) &&& 0x7FFFFFFF
         acquisitions <- 0
+        firstCleanup <- Unchecked.defaultof<_>
         cleanups <- null
         cleanupOrder <- null
 
-        let mutable index = if Platform.isNull detached then -1 else detached.Count - 1
+        // Index 0 is `first` when it is set; the rest index `detached` from `offset`.
+        let offset = if Platform.isNull (box first) then 0 else 1
+
+        let mutable index =
+            offset
+            + (if Platform.isNull detached then 0 else detached.Count)
+            - 1
 
         while index >= 0 || not (Platform.isNull node) do
             if
                 not (Platform.isNull node)
                 && (index < 0
-                    || node.Acquired > Platform.entryAt index detachedOrder)
+                    || node.Acquired >
+                        (if index < offset then
+                             firstAcquired
+                         else
+                             Platform.entryAt (index - offset) detachedOrder))
             then
                 let prev = node.Prev
 
@@ -881,7 +909,10 @@ and Owner internal (sink: Owner) =
                 node <- prev
             else
                 try
-                    (Platform.entryAt index detached) ()
+                    if index < offset then
+                        first ()
+                    else
+                        (Platform.entryAt (index - offset) detached) ()
                 with ex ->
                     this.RecordError ex
 
