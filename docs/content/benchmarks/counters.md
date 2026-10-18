@@ -55,6 +55,11 @@ FSharp.Data.Adaptive 1.2.27, R3 1.3.1.
 Node.js v26.7.0 (`--expose-gc --single-threaded`), fable-library-js 5.18.0. Ranvier at `e13f159`,
 Fable.Ripple 1.0.0-beta.5. Bars are main-thread figures.
 
+The CI counter history runs Node.js 26 with
+`--expose-gc --single-threaded --min-semi-space-size=32 --max-semi-space-size=32`. The semi-space
+flags fix each V8 semi-space at 32 MB, and every measured region starts with the same
+young-generation capacity.
+
 ![Instructions per operation under Node.js](/Ranvier/benchmarks/counters-node.svg)
 
 Scenarios with a negative figure (`derive-effect`, `derive-on`, `shape-dynamic`, `async-recover`)
