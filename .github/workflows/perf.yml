@@ -18,6 +18,7 @@ jobs:
     outputs:
       run: ${{ steps.previous.outputs.run }}
       ignored: ${{ steps.ignore.outputs.ignored }}
+      docs: ${{ steps.changes.outputs.docs }}
       base: ${{ steps.refs.outputs.base }}
       head: ${{ steps.refs.outputs.head }}
     steps:
@@ -30,11 +31,13 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          TARGET: ${{ github.base_ref }}
         shell: bash
         run: |
           [[ "$HEAD" =~ ^[0-9a-f]{40}$ ]]
           if [ "$EVENT" = pull_request ]; then
-            base=$(git merge-base origin/master "$HEAD")
+            [ "$TARGET" = master ]
+            base=$(git merge-base "origin/$TARGET" "$HEAD")
           else
             base=$(git rev-parse "$HEAD^1")
           fi
@@ -50,8 +53,17 @@ jobs:
             const reason = ignoreReason(context.payload.head_commit?.message);
             if (reason !== null) core.notice(`Perf-Ignore: ${reason}. This commit is not measured or recorded.`);
             core.setOutput('ignored', String(reason !== null));
+      # Pull requests changing only documentation are not measured. Master pushes always are, to keep the history whole.
+      - id: changes
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ steps.refs.outputs.base }}
+          HEAD: ${{ steps.refs.outputs.head }}
+        run: node .github/scripts/changes.cjs pull_request "$BASE" "$HEAD" >> "$GITHUB_OUTPUT"
+      # A completed run that measured the same base and head trees, such as the pull request of a commit now on
+      # master, supplies the measurement.
       - id: previous
-        if: github.event.action == 'labeled' || github.event.action == 'unlabeled'
+        if: steps.ignore.outputs.ignored != 'true' && steps.changes.outputs.docs != 'true'
         uses: actions/github-script@v8
         env:
           HEAD: ${{ steps.refs.outputs.head }}
@@ -59,11 +71,13 @@ jobs:
         with:
           script: |
             const {find} = require('./.github/scripts/perf-reuse.cjs');
-            core.setOutput('run', await find({github, repo: context.repo, head: process.env.HEAD, base: process.env.BASE, currentRun: context.runId}));
+            const found = await find({github, repo: context.repo, head: process.env.HEAD, base: process.env.BASE, currentRun: context.runId});
+            if (found) core.notice(`Reusing the measurement of run ${found.run} (${found.head} against ${found.base}).`);
+            core.setOutput('run', found?.run ?? '');
 
   measure:
     needs: find
-    if: needs.find.outputs.run == '' && needs.find.outputs.ignored != 'true'
+    if: needs.find.outputs.run == '' && needs.find.outputs.ignored != 'true' && needs.find.outputs.docs != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -107,7 +121,7 @@ jobs:
 
   verdict:
     needs: [find, measure]
-    if: always() && needs.find.result == 'success' && needs.find.outputs.ignored != 'true' && (needs.measure.result == 'success' || needs.measure.result == 'skipped')
+    if: always() && needs.find.result == 'success' && needs.find.outputs.ignored != 'true' && needs.find.outputs.docs != 'true' && (needs.measure.result == 'success' || needs.measure.result == 'skipped')
     runs-on: ubuntu-latest
     env:
       BASE: ${{ needs.find.outputs.base }}
@@ -129,6 +143,11 @@ jobs:
           path: out
           run-id: ${{ needs.find.outputs.run || github.run_id }}
           github-token: ${{ github.token }}
+      - name: Restate a reused measurement for this base and head
+        if: needs.find.outputs.run != ''
+        env:
+          RUN: ${{ needs.find.outputs.run }}
+        run: node .github/scripts/perf-reuse.cjs out "$BASE" "$HEAD" "$RUN"
       - if: needs.find.outputs.run != ''
         uses: actions/upload-artifact@v4
         with:
@@ -161,3 +180,18 @@ jobs:
           name: perf-report
           path: out/report
           if-no-files-found: error
+
+  # The Perf check that branch rules require: a skipped verdict passes only when nothing failed before it.
+  result:
+    name: Perf result
+    needs: [find, measure, verdict]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done

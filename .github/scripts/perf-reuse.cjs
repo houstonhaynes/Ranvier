@@ -49,21 +49,67 @@ async function readArchive(github, repo, artifact) {
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
-async function find({ github, repo, head, base, currentRun, read = a => readArchive(github, repo, a) }) {
-  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, { ...repo, workflow_id: 'perf.yml', head_sha: head, status: 'completed', per_page: 100 });
-  runs.sort((a, b) => b.id - a.id);
+async function commitTree(github, repo, sha) {
+  const { data } = await github.rest.git.getCommit({ ...repo, commit_sha: sha });
+  return data.tree.sha;
+}
+
+// The newest completed Perf run whose two measurement artifacts compare the same base and head trees, as
+// { run, base, head } with the commits that run measured, or null. A run of the head commit qualifies from any
+// source; a run of another commit qualifies only from this repository, among the 100 newest Perf runs.
+async function find({ github, repo, head, base, currentRun, read = a => readArchive(github, repo, a), treeOf = sha => commitTree(github, repo, sha) }) {
+  const same = await github.paginate(github.rest.actions.listWorkflowRuns, { ...repo, workflow_id: 'perf.yml', head_sha: head, status: 'completed', per_page: 100 });
+  const trees = new Map([[head, await treeOf(head)], [base, await treeOf(base)]]);
+  const tree = async sha => {
+    if (!trees.has(sha)) trees.set(sha, await treeOf(sha).catch(() => null));
+    return trees.get(sha);
+  };
+  const { data: recent } = await github.rest.actions.listWorkflowRuns({ ...repo, workflow_id: 'perf.yml', status: 'completed', per_page: 100 });
+  const full = `${repo.owner}/${repo.repo}`;
+  const moved = (recent.workflow_runs ?? []).filter(r =>
+    r.head_sha !== head && r.head_commit?.tree_id === trees.get(head) && r.head_repository?.full_name === full);
+  const runs = [...same.filter(r => r.head_sha === head), ...moved].sort((a, b) => b.id - a.id);
   for (const run of runs) {
-    if (run.id === Number(currentRun) || run.head_sha !== head || run.status !== 'completed') continue;
+    if (run.id === Number(currentRun) || run.status !== 'completed') continue;
     const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, { ...repo, run_id: run.id, per_page: 100 });
     const pair = legs.map(leg => artifacts.find(a => a.name === `ab-${leg}` && !a.expired && a.size_in_bytes > 0 && Date.parse(a.expires_at) > Date.now()));
     if (pair.some(a => !a)) continue;
     try {
-      for (let i = 0; i < pair.length; i++) usable(await read(pair[i]), legs[i], base, head);
-      return String(run.id);
+      const data = [];
+      for (const artifact of pair) data.push(await read(artifact));
+      const measured = { base: data[0].Base, head: data[0].Head };
+      assert.equal(await tree(measured.head), trees.get(head), 'head tree differs');
+      assert.equal(await tree(measured.base), trees.get(base), 'base tree differs');
+      for (let i = 0; i < data.length; i++) usable(data[i], legs[i], measured.base, measured.head);
+      return { run: String(run.id), ...measured };
     } catch (error) {
       console.log(`Run ${run.id} has unusable measurement artifacts: ${error.message}`);
     }
   }
-  return '';
+  return null;
 }
-module.exports = { find, usable };
+
+// The measurement restated for base and head. A "reused" label names the run and commits that produced it.
+function relabel(data, { base, head, from }) {
+  if (data.Base === base && data.Head === head) return data;
+  const side = p => ({ ...p, Commit: p.Side === 'head' ? head : base });
+  return {
+    ...data,
+    Base: base,
+    Head: head,
+    Processes: data.Processes.map(side),
+    Counters: data.Counters.map(side),
+    Versions: [...data.Versions, { Name: 'reused', Value: `run ${from}: ${data.Head} against ${data.Base}` }],
+  };
+}
+
+module.exports = { find, usable, relabel };
+
+if (require.main === module) {
+  // node perf-reuse.cjs <dir> <base> <head> <run> relabels <dir>/ab-<leg>.json in place.
+  const [dir, base, head, from] = process.argv.slice(2);
+  for (const leg of legs) {
+    const file = path.join(dir, `ab-${leg}.json`);
+    fs.writeFileSync(file, JSON.stringify(relabel(JSON.parse(fs.readFileSync(file, 'utf8')), { base, head, from })));
+  }
+}

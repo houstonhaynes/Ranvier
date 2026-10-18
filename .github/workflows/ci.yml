@@ -17,8 +17,40 @@ concurrency:
 # Partas.Build 0.8.1 also supports redirected output and automatic GitHub stage summaries.
 
 jobs:
+  # Documentation-only changes (see .github/scripts/changes.cjs) skip the build and test jobs; formatting always runs.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.classify.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          FROM: ${{ github.event.pull_request.base.sha || github.event.before }}
+          TO: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node .github/scripts/changes.cjs "$EVENT" "$FROM" "$TO" >> "$GITHUB_OUTPUT"
+
+  scripts:
+    name: Workflow scripts
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node --test .github/scripts/*.test.cjs
+
   dotnet:
     name: .NET tests
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -43,6 +75,8 @@ jobs:
   # exits non-zero when an exception or a ToString text differs from the JIT build's. Untraced build only.
   aot:
     name: NativeAOT smoke
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -70,6 +104,8 @@ jobs:
 
   fable:
     name: Fable tests
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -94,3 +130,19 @@ jobs:
       - name: Check Fable package consumers
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1 -CheckFable
+
+  # The one CI check that branch rules require: it fails when any job failed or was cancelled, and passes when the
+  # build and test jobs were skipped for a documentation-only change.
+  result:
+    name: CI result
+    needs: [changes, scripts, dotnet, aot, format, fable]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done
