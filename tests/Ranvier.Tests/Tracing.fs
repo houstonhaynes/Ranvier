@@ -60,6 +60,51 @@ let private here (line: string) =
     System.IO.Path.GetFileName __SOURCE_FILE__
     + ":"
     + line
+
+/// <summary>
+/// The second <c>RunStart</c> of an async memo under <c>Drop</c> and the last dirty <c>Mark</c> of the memo before it.
+/// A change during the first flight is dropped at a read when <c>atRead</c> is true, else at the settle; a change
+/// after the settle starts the second run.
+/// </summary>
+let private runAfterDrop (atRead: bool) =
+    use g =
+        new Graph (
+            { GraphOptions.Default with
+                FlightPolicy = Drop
+            }
+        )
+
+    use _ = g.Activate ()
+    let s = createSignal 1
+    let flights = ResizeArray<TaskCompletionSource<int>>()
+
+    let a =
+        createAsync (fun _ _ ->
+            s.Value |> ignore
+            let flight = TaskCompletionSource<int>()
+            flights.Add flight
+            flight.Task)
+
+    let id = (a :> INode).Id
+    a.TryValue |> ignore
+    s.Value <- 2
+
+    if atRead then
+        a.TryValue |> ignore
+
+    flights[0].SetResult 10
+    s.Value <- 3
+    a.TryValue |> ignore
+
+    let run =
+        ofKind TraceEventKind.RunStart g
+        |> Array.findBack (fun e -> e.Node = id)
+
+    let mark =
+        ofKind TraceEventKind.Mark g
+        |> Array.findBack (fun e -> e.Node = id && e.Arg = 2 && e.Seq < run.Seq)
+
+    run, mark
 #endif
 
 [<Tests>]
@@ -1327,6 +1372,177 @@ let tests =
                         State = TraceFlightState.Dropped (_, reason)
                     } ] -> Expect.equal reason TraceDropReason.Trailing "dropped for the trailing run"
                 | other -> failtestf "expected one dropped flight, got %A" other
+            }
+
+            test "FinishCurrent's trailing run is notified with the dropped failure as its cause" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = FinishCurrent
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let flights = ResizeArray<TaskCompletionSource<int>>()
+
+                let a =
+                    createAsync (fun _ _ ->
+                        s.Value |> ignore
+                        let flight = TaskCompletionSource<int>()
+                        flights.Add flight
+                        flight.Task)
+
+                let id = (a :> INode).Id
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                createEffect (fun () -> a.TryValue |> ignore)
+                flights[0].SetException(exn "stale")
+
+                let drop =
+                    ofKind TraceEventKind.FlightDrop g
+                    |> Array.find (fun e -> e.Node = id)
+
+                let mark =
+                    ofKind TraceEventKind.Mark g
+                    |> Array.filter (fun e -> e.Other = id && e.Seq > drop.Seq)
+                    |> Array.head
+
+                Expect.equal mark.Cause drop.Seq "the notification names the dropped failure"
+            }
+
+            test "Drop records a run dropped at a read and a change dropped at the settle" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = Drop
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let flights = ResizeArray<TaskCompletionSource<int>>()
+
+                let a =
+                    createAsync (fun _ _ ->
+                        s.Value |> ignore
+                        let flight = TaskCompletionSource<int>()
+                        flights.Add flight
+                        flight.Task)
+
+                let id = (a :> INode).Id
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+
+                let dropped () =
+                    ofKind TraceEventKind.RunDropped g
+                    |> Array.filter (fun e -> e.Node = id)
+                    |> Array.map (fun e -> e.Arg, e.Flag)
+
+                Expect.equal (dropped ()) [| 1, 0 |] "one run dropped at the read, during flight 1"
+                Expect.isEmpty (ofKind TraceEventKind.RunDeferred g) "no deferred run"
+                s.Value <- 3
+                flights[0].SetResult 10
+                Expect.equal (dropped ()) [| 1, 0; 1, 1 |] "the unpulled change is dropped at the settle"
+
+                let settle =
+                    ofKind TraceEventKind.Settle g
+                    |> Array.find (fun e -> e.Node = id)
+
+                Expect.equal settle.Flag 0 "the settle is not held"
+            }
+
+            test "Drop records one run dropped for a change discarded at a read and settled with no later change" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = Drop
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let flights = ResizeArray<TaskCompletionSource<int>>()
+
+                let a =
+                    createAsync (fun _ _ ->
+                        s.Value |> ignore
+                        let flight = TaskCompletionSource<int>()
+                        flights.Add flight
+                        flight.Task)
+
+                let id = (a :> INode).Id
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].SetResult 10
+
+                let dropped =
+                    ofKind TraceEventKind.RunDropped g
+                    |> Array.filter (fun e -> e.Node = id)
+                    |> Array.map (fun e -> e.Arg, e.Flag)
+
+                Expect.equal dropped [| 1, 0 |] "the change is dropped once, at the read"
+            }
+
+            test "Drop names the next change as the cause of the run after a change dropped at a read" {
+                let run, mark = runAfterDrop true
+                Expect.equal run.Arg 2 "the change after the settle runs the memo"
+                Expect.equal run.Cause mark.Seq "the run's cause is the change after the settle"
+            }
+
+            test "Drop names the next change as the cause of the run after a change dropped at the settle" {
+                let run, mark = runAfterDrop false
+                Expect.equal run.Arg 2 "the change after the settle runs the memo"
+                Expect.equal run.Cause mark.Seq "the run's cause is the change after the settle"
+            }
+
+            test "DropWhilePending drops a failure that settles after a discarded change as Retried" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = DropWhilePending
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let flights = ResizeArray<TaskCompletionSource<int>>()
+
+                let a =
+                    createAsync (fun _ _ ->
+                        s.Value |> ignore
+                        let flight = TaskCompletionSource<int>()
+                        flights.Add flight
+                        flight.Task)
+
+                let id = (a :> INode).Id
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                createEffect (fun () -> a.TryValue |> ignore)
+                flights[0].SetException(exn "stale")
+
+                let drop =
+                    ofKind TraceEventKind.FlightDrop g
+                    |> Array.find (fun e -> e.Node = id)
+
+                Expect.equal (enum<TraceDropReason> drop.Flag) TraceDropReason.Retried "dropped for the replacing run"
+
+                let mark =
+                    ofKind TraceEventKind.Mark g
+                    |> Array.filter (fun e -> e.Other = id && e.Seq > drop.Seq)
+                    |> Array.head
+
+                Expect.equal mark.Cause drop.Seq "the replacing run's notification names the dropped failure"
+
+                let runs =
+                    ofKind TraceEventKind.RunStart g
+                    |> Array.filter (fun e -> e.Node = id)
+
+                Expect.equal (runs |> Array.last).Arg 2 "the effect's read starts the replacing run"
             }
 
             test "waitingOn reports superseded, settled and failed flights" {

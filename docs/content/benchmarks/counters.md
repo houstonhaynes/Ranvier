@@ -76,7 +76,7 @@ Seven scenarios measure Ranvier alone, on .NET only. A scenario with variants re
 | --- | --- | --- |
 | `chain-affinity` | Write the source of a chain of 4 memos and read the tail. | `Guarded`, `Unchecked`, `Serialised` |
 | `project-churn` | Replace the last key of a 1000-row projection with a new key. | No key reader; one key reader read by an effect |
-| `flight` | Write an async memo's trigger and read it, twice, then settle every flight the writes started. | `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent` |
+| `flight` | Write an async memo's trigger and read it, twice, then settle every flight the writes started. | `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent`, `Drop`, `DropWhilePending` |
 | `fail-recompute` | Re-run a memo and its one reader, then read the reader's `ErrorOrigin`. | Succeeding; failing with a fresh exception |
 | `editable-edit` | Edit every 10th of 1000 editables, each read by one effect. | — |
 | `editable-upstream` | Write the seed source of every 10th of 1000 editables. | — |

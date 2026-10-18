@@ -36,7 +36,9 @@ type MapFlags =
             | Some "policy=keep-latest" -> Ok "KeepLatest"
             | Some "policy=queue" -> Ok "Queue"
             | Some "policy=finish-current" -> Ok "FinishCurrent"
-            | Some flag -> Error $"%s{flag}: the policy is cancel-previous, keep-latest, queue or finish-current."
+            | Some "policy=drop" -> Ok "Drop"
+            | Some "policy=drop-while-pending" -> Ok "DropWhilePending"
+            | Some flag -> Error $"%s{flag}: the policy is cancel-previous, keep-latest, queue, finish-current, drop or drop-while-pending."
 
         let groups =
             match

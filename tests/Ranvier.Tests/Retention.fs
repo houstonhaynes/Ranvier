@@ -38,6 +38,8 @@ let private flightPolicies =
         "KeepLatest", KeepLatest
         "Queue", FlightPolicy.Queue
         "FinishCurrent", FinishCurrent
+        "Drop", Drop
+        "DropWhilePending", DropWhilePending
     ]
 
 let private graphWith policy =

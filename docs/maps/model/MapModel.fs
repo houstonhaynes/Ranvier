@@ -268,6 +268,7 @@ module MapModel =
         | TraceDropReason.Disposed -> "disposed"
         | TraceDropReason.Suspended -> "suspended"
         | TraceDropReason.Trailing -> "trailing"
+        | TraceDropReason.Retried -> "retried"
         | _ -> "dropped"
 
     let private payload (e: TraceEvent) =

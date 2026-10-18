@@ -1,4 +1,6 @@
 field Ranvier.FlightPolicy+Tags CancelPrevious : Int32
+field Ranvier.FlightPolicy+Tags Drop : Int32
+field Ranvier.FlightPolicy+Tags DropWhilePending : Int32
 field Ranvier.FlightPolicy+Tags FinishCurrent : Int32
 field Ranvier.FlightPolicy+Tags KeepLatest : Int32
 field Ranvier.FlightPolicy+Tags Queue : Int32
@@ -120,11 +122,15 @@ member Ranvier.FlightPolicy GetHashCode() : Int32
 member Ranvier.FlightPolicy GetHashCode(System.Collections.IEqualityComparer) : Int32
 member Ranvier.FlightPolicy ToString() : String
 member Ranvier.FlightPolicy get_IsCancelPrevious() : Boolean
+member Ranvier.FlightPolicy get_IsDrop() : Boolean
+member Ranvier.FlightPolicy get_IsDropWhilePending() : Boolean
 member Ranvier.FlightPolicy get_IsFinishCurrent() : Boolean
 member Ranvier.FlightPolicy get_IsKeepLatest() : Boolean
 member Ranvier.FlightPolicy get_IsQueue() : Boolean
 member Ranvier.FlightPolicy get_Tag() : Int32
 member Ranvier.FlightPolicy static get_CancelPrevious() : Ranvier.FlightPolicy
+member Ranvier.FlightPolicy static get_Drop() : Ranvier.FlightPolicy
+member Ranvier.FlightPolicy static get_DropWhilePending() : Ranvier.FlightPolicy
 member Ranvier.FlightPolicy static get_FinishCurrent() : Ranvier.FlightPolicy
 member Ranvier.FlightPolicy static get_KeepLatest() : Ranvier.FlightPolicy
 member Ranvier.FlightPolicy static get_Queue() : Ranvier.FlightPolicy

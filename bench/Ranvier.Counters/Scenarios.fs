@@ -1066,6 +1066,8 @@ let all (scale: int) : Case list =
                     "Ranvier (KeepLatest)", Ranvier.flight KeepLatest
                     "Ranvier (Queue)", Ranvier.flight FlightPolicy.Queue
                     "Ranvier (FinishCurrent)", Ranvier.flight FinishCurrent
+                    "Ranvier (Drop)", Ranvier.flight Drop
+                    "Ranvier (DropWhilePending)", Ranvier.flight DropWhilePending
                 ]
         yield!
             scenario

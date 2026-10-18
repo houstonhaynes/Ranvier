@@ -152,6 +152,8 @@ it have already settled. On .NET, settled queued outcomes can apply inline.
 | `KeepLatest` | Yes | No | Yes | No |
 | `Queue` | Yes | No | No | Yes, in the order the flights started |
 | `FinishCurrent` | No, one trailing flight after it settles | No | No flight is superseded | No |
+| `Drop` | No, the change is discarded | No | No flight is superseded | No |
+| `DropWhilePending` | No, the change is discarded; one replacing flight if the flight fails | No | No flight is superseded | No |
 
 `CancelPrevious` and `KeepLatest` publish the same values. They differ only in whether the
 superseded flight's `CancellationToken` is cancelled. Pass the token to the IO the flight performs,
@@ -207,6 +209,32 @@ save, where the settled value must still match the latest inputs.
 
 :::
 
+:::details When to use Drop
+
+`Drop` discards every change that arrives while a flight is in progress. The change runs no body
+and starts no flight, and nothing is replayed when the flight settles: its value or its error
+becomes the memo's, and the memo is current until a source changes again. The first change after
+the settle starts a flight as usual. The settled value can belong to inputs the graph has since
+left. The settle brings the memo's sources current: a memo source left stale by a discarded change
+recomputes then, and an async memo source starts its flight then, without waiting for a read. That
+source's own settle is a change after the memo's settle and runs the memo. Use it for a submit that ignores repeated clicks while the request is in flight, as R3's
+`AwaitOperation.Drop` and Rx's `exhaustMap` do.
+
+:::
+
+:::details When to use DropWhilePending
+
+`DropWhilePending` discards the changes that arrive while a flight is pending, as `Drop` does, and
+keeps a successful flight's value. A failed flight that discarded a change does not publish its
+error: the memo stays pending and runs once more against the current inputs, so a failure always
+belongs to the latest inputs. The replacing run starts at the memo's next read, and its previous
+value is the value published before the failed flight. A failed flight with no change during it
+settles to its error, and so does a replacing run that fails with no change during it. Use it
+where a stale success is acceptable and a stale failure is not, such as a refresh that a newer
+query may repair.
+
+:::
+
 :::details Compare policies with other .NET libraries
 
 The following names describe related scheduling choices in
@@ -221,6 +249,8 @@ Ranvier's demand-driven flights, `Previous.Settled` or propagating pending chann
 | `KeepLatest` | none (`Switch` without the cancellation) | none |
 | `Queue` | `SequentialParallel` | none |
 | `FinishCurrent` | none | none |
+| `Drop` | `Drop` | none |
+| `DropWhilePending` | none | none |
 
 `FinishCurrent` is closest to SignalsDotnet's `ScheduleNext` and R3's `ThrottleFirstLast`. Both
 publish the finished run's result; `FinishCurrent` keeps the memo pending until the trailing run
@@ -232,14 +262,14 @@ Ranvier does not implement these policies:
 |--------|---------------------|------------------------------------------|
 | Run one flight at a time, queue every change | `Sequential` | none |
 | Run once more after the current run and publish both results | none | `ScheduleNext` |
-| Ignore changes while a flight runs | `Drop` | none |
 | Run every flight, apply results in completion order | `Parallel` | none |
 | Run the first and the last change | `ThrottleFirstLast` | none |
 
 CommunityToolkit's `AsyncRelayCommand` has no async-memo counterpart. `AllowConcurrentExecutions` is a
 gate on `CanExecute` for a command with no result: `false` reports the command as not executable while
 it runs, and `true` lets executions overlap. An async memo has no `CanExecute`: every change starts a
-new flight, or under `FinishCurrent` a trailing one. For commands, C# has `ReactiveCommand`, whose
+new flight, under `FinishCurrent` a trailing one, and under `Drop` and `DropWhilePending` none while
+a flight is in progress. For commands, C# has `ReactiveCommand`, whose
 `CommandPolicy.Disable` provides analogous command gating to
 [`AllowConcurrentExecutions = false`](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/mvvm/generators/relaycommand#handling-concurrent-executions);
 this is not an async-memo drop policy. See [C#](csharp.md#commands).
@@ -252,7 +282,8 @@ control when requests start, and choose the flight policy separately to handle r
 
 Cancellation costs one `CancellationTokenSource` per flight under `CancelPrevious`: each launch cancels
 and disposes the superseded flight's source and allocates the next. Under `KeepLatest` and `Queue`,
-overlapping flights share one source. Under `FinishCurrent` flights never overlap, and each flight
+overlapping flights share one source. Under `FinishCurrent`, `Drop` and `DropWhilePending` flights
+never overlap, and each flight
 allocates one source, disposed without being cancelled when the flight settles. A change during
 a flight allocates nothing. It is disposed, without being cancelled, once every flight that
 holds it has settled, and the next flight allocates another; disposing the memo cancels it. A body
@@ -267,8 +298,8 @@ belongs to the async memo alone: signals, memos and effects carry none, and thei
 A registration on the token lives as long as its source. `use _ = token.Register ...`, and every API
 that takes the token and completes (`Task.Delay`, `HttpClient`, `SemaphoreSlim.WaitAsync`,
 `cancellableTask` binds), releases its registration when the operation ends. A registration left
-undisposed is released with the source: under `CancelPrevious` at the next launch, under `FinishCurrent`
-when its flight settles, under `KeepLatest` and `Queue` once the flights sharing the source have all settled, so a stream of overlapping flights
+undisposed is released with the source: under `CancelPrevious` at the next launch, under `FinishCurrent`,
+`Drop` and `DropWhilePending` when its flight settles, under `KeepLatest` and `Queue` once the flights sharing the source have all settled, so a stream of overlapping flights
 keeps each one's registration until the stream goes quiet. A flight that completes only on
 cancellation stays in progress under `KeepLatest` and `Queue` until the memo is disposed, together
 with everything its task and registrations hold; use `CancelPrevious` for such bodies. Work that
@@ -318,10 +349,12 @@ leaves the previous value unchanged.
 
 :::details Previous values under each flight policy
 
-Read every input, then await `previous.Settled`. Under `CancelPrevious`, `KeepLatest` and
-`FinishCurrent`, `Settled` is complete when the body runs. Under the first two, only the newest
-flight's result becomes a previous value; under `FinishCurrent`, a trailing run receives the value of
-the flight it waited for, or the value before it when that flight failed.
+Read every input, then await `previous.Settled`. Under every policy except `Queue`, `Settled` is
+complete when the body runs. Under `CancelPrevious` and `KeepLatest`, only the newest flight's result
+becomes a previous value; under `FinishCurrent`, a trailing run receives the value of the flight it
+waited for, or the value before it when that flight failed. Under `Drop`, the next run receives the
+settled flight's value; under `DropWhilePending`, a replacing run receives the value published
+before the failed flight.
 Under `Queue`, `Settled` completes when the flight started before this one is applied, so the
 flights fold in start order. An await on it suspends, and reads after it are untracked. If the
 earlier flight fails or is dropped, `Settled` returns the value published before it. Disposing the

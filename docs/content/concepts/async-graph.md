@@ -69,6 +69,10 @@ the older flight:
 `FinishCurrent` starts no flight while one is in progress. The flight finishes, and every change during it folds
 into one trailing run against the current inputs; the memo stays pending until that run settles.
 
+`Drop` and `DropWhilePending` also start no flight while one is in progress: the change is discarded, and the
+settled flight's value stays current. Under `DropWhilePending`, a flight that fails after discarding a change
+runs once more against the current inputs instead of publishing its error.
+
 Pass the `CancellationToken` to the I/O that the flight performs. Under `CancelPrevious`, cancellation
 is requested for superseded work; the operation must cooperate. This does not guarantee that its I/O or
 external side effects stop. JavaScript also has cancellation mechanisms such as `AbortController`;
@@ -85,7 +89,6 @@ SignalsDotnet and CommunityToolkit.Mvvm.
 
 - an `Async<'T>` adapter for cold, restartable F# async workflows
 - a streaming memo over `IAsyncEnumerable<'T>`, inspired by async-iterable reactive results
-- a drop-while-running policy, which ignores changes while a flight is in progress (R3 `Drop`)
 - a coalescing policy that publishes the finished flight's result before the trailing run (SignalsDotnet
   `ScheduleNext`, R3 `ThrottleFirstLast`); `FinishCurrent` keeps the memo pending until the trailing run settles
 

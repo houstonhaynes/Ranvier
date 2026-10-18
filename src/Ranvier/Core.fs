@@ -3801,9 +3801,9 @@ type internal NothingPublished<'T> private () =
 /// </summary>
 /// <remarks>
 /// <para>
-/// Under <c>CancelPrevious</c>, <c>KeepLatest</c> and <c>FinishCurrent</c>, <c>Settled</c> is complete when the body
-/// runs. Under <c>Queue</c>, a flight that starts while an earlier flight's result is unapplied receives the value as it
-/// stands once that result is applied, so a chain of flights folds in start order. A faulted or dropped predecessor leaves the last settled value,
+/// Under every policy except <c>Queue</c>, <c>Settled</c> is complete when the body runs. Under <c>Queue</c>, a flight
+/// that starts while an earlier flight's result is unapplied receives the value as it stands once that result is
+/// applied, so a chain of flights folds in start order. A faulted or dropped predecessor leaves the last settled value,
 /// and disposing the memo completes <c>Settled</c> with the value last published.
 /// </para>
 /// <para>
@@ -3871,9 +3871,8 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     let mutable generation = 0
 
     /// <summary>
-    /// The source of the flight token. Under <c>CancelPrevious</c> each flight gets its own. Under <c>KeepLatest</c>,
-    /// <c>Queue</c> and <c>FinishCurrent</c> the flights in progress share one, disposed once every flight holding it has
-    /// settled.
+    /// The source of the flight token. Under <c>CancelPrevious</c> each flight gets its own. Under the other policies
+    /// the flights in progress share one, disposed once every flight holding it has settled.
     /// </summary>
     let mutable cts: CancellationTokenSource = null
 
@@ -3890,8 +3889,8 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
 
     /// <summary>
     /// Under <c>Queue</c>, the number of results chained onto <c>tail</c> and not yet applied. Under
-    /// <c>FinishCurrent</c>, 0 with no flight in progress, 1 with a flight in progress, 2 with a trailing run owed as well.
-    /// Zero under the other policies.
+    /// <c>FinishCurrent</c>, <c>Drop</c> and <c>DropWhilePending</c>, 0 with no flight in progress, 1 with a flight in
+    /// progress, 2 with a flight in progress that has deferred or discarded a change. Zero under the other policies.
     /// </summary>
     let mutable queued = 0
 
@@ -3974,20 +3973,51 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             cts <- null
 
     /// <summary>
-    /// Retires the shared source under <c>KeepLatest</c>, <c>Queue</c> and <c>FinishCurrent</c> once no body is
-    /// executing and every flight holding it has settled. Registrations left on the token are released with it.
+    /// Retires the shared source under every policy except <c>CancelPrevious</c> once no body is executing and every
+    /// flight holding it has settled. Registrations left on the token are released with it.
     /// </summary>
     let retireIfQuiet () =
         if running = 0 then
             match graph.Options.FlightPolicy with
             | FlightPolicy.Queue
-            | FinishCurrent when queued = 0 -> retireSource ()
+            | FinishCurrent
+            | Drop
+            | DropWhilePending when queued = 0 -> retireSource ()
             | KeepLatest when flying = 0 -> retireSource ()
             | _ -> ()
 
+    /// <summary>
+    /// Brings every source current. Clears a stale source left behind by a discarded change, so the source's next
+    /// change reaches this node.
+    /// </summary>
+    let refreshSources () =
+        graph.EnterPull ()
+
+        try
+            let mutable i = 0
+
+            while i < sources.Count do
+                sources.SourceAt(i).UpdateIfNecessary()
+                i <- i + 1
+        finally
+            graph.ExitPull ()
+
+    /// <summary>
+    /// Discards the change left by a flight under <c>Drop</c> or a successful flight under <c>DropWhilePending</c>:
+    /// the sources are brought current and the node is Clean.
+    /// </summary>
+    let discardAtSettle (gen: int) =
+        refreshSources ()
+
+        if freshness = Freshness.Dirty then
+            Tracer.RunDropped (graph, id, gen)
+
+        freshness <- Freshness.Clean
+
     /// <summary>Applies the result of the run numbered <c>gen</c>. Runs on the graph thread.</summary>
     let applyResult (gen: int) (outcome: Platform.FlightOutcome<'T>) =
-        // True under `FinishCurrent` when a change arrived during the flight.
+        // True under `FinishCurrent` when a change arrived during the flight, and under `DropWhilePending` when a
+        // failed flight discarded a change.
         let mutable owed = false
 
         // `Queue` applies every result in the order the flights started,
@@ -4001,6 +4031,34 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                 flying <- flying - 1
                 gen = generation
             | CancelPrevious -> gen = generation
+            | Drop ->
+                if
+                    not disposed
+                    && (queued = 2 || freshness <> Freshness.Clean)
+                then
+                    discardAtSettle gen
+
+                queued <- 0
+                gen = generation
+            | DropWhilePending ->
+                if
+                    not disposed
+                    && (queued = 2 || freshness <> Freshness.Clean)
+                then
+                    if outcome.IsCompleted then
+                        discardAtSettle gen
+                    else
+                        // A Check is a discarded change only once a source resolves it to Dirty.
+                        if queued = 1 && freshness = Freshness.Check then
+                            refreshSources ()
+
+                        if queued = 2 || freshness = Freshness.Dirty then
+                            owed <- true
+                        else
+                            freshness <- Freshness.Clean
+
+                queued <- 0
+                gen = generation
             | FinishCurrent ->
                 owed <- queued = 2
                 queued <- 0
@@ -4025,8 +4083,15 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                 status <- Status.Pending
             | Platform.FlightOutcome.Faulted _
             | Platform.FlightOutcome.Canceled _ when suspended ->
-                // An older flight's failure is dropped; the node stays pending on the source or the trailing run.
-                Tracer.FlightDrop (graph, id, gen, (if owed then 4 else 3))
+                // An older flight's failure is dropped; the node stays pending on the source or the run owed.
+                Tracer.FlightDrop (
+                    graph,
+                    id,
+                    gen,
+                    (if not owed then 3
+                     elif graph.Options.FlightPolicy.IsFinishCurrent then 4
+                     else 5)
+                )
             | Platform.FlightOutcome.Completed v ->
                 Tracer.FlightSettled (graph, id, gen, 0, 0, box v)
                 write v
@@ -4047,8 +4112,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         match graph.Options.FlightPolicy with
         // Every chained result, dropped or failed included, completes the waiter behind it with the last settled value.
         | FlightPolicy.Queue -> lock observers releaseNext
-        // The trailing run starts at the next read: readers are told the value is stale again.
-        | FinishCurrent when owed && not disposed ->
+        // The trailing or replacing run starts at the next read: readers are told the value is stale again.
+        | FinishCurrent
+        | DropWhilePending when owed && not disposed ->
             freshness <- Freshness.Dirty
             Tracer.TrailingRun (graph, id)
             observers.NotifyDirty ()
@@ -4056,7 +4122,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             graph.RequestFlush ()
         | CancelPrevious
         | KeepLatest
-        | FinishCurrent -> ()
+        | FinishCurrent
+        | Drop
+        | DropWhilePending -> ()
 
     let publish (gen: int) (outcome: Platform.FlightOutcome<'T>) =
         graph.Post (fun () -> applyResult gen outcome)
@@ -4112,18 +4180,17 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// the async memo was disposed meanwhile. A read from a cleanup serves the
     /// previous state. A flight started by a cleanup's read replaces this one,
     /// and a write after that read starts over, as on <c>Memo.Recompute</c>.
-    /// Under <c>FinishCurrent</c> with a flight in progress, owes a trailing run instead and keeps the scope.
+    /// With a flight in progress, under <c>FinishCurrent</c> owes a trailing run instead and keeps the scope, and under
+    /// <c>Drop</c> and <c>DropWhilePending</c> discards the change and keeps the scope.
     /// </summary>
     member private this.Start() =
         if
             queued <> 0
-            && (match graph.Options.FlightPolicy with
-                | FinishCurrent -> true
-                | _ -> false)
+            && not graph.Options.FlightPolicy.IsQueue
         then
             freshness <- Freshness.Clean
             queued <- 2
-            Tracer.RunDeferred (graph, id, generation)
+            Tracer.RunDeferred (graph, id, generation, graph.Options.FlightPolicy.IsFinishCurrent)
         elif Platform.isNull (box scope) then
             this.Launch ()
         else
@@ -4162,7 +4229,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             cts <- new CancellationTokenSource ()
         | KeepLatest
         | FlightPolicy.Queue
-        | FinishCurrent ->
+        | FinishCurrent
+        | Drop
+        | DropWhilePending ->
             if Platform.isNull cts then
                 cts <- new CancellationTokenSource ()
 
@@ -4258,7 +4327,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                 | KeepLatest ->
                     flying <- flying + 1
                     Platform.whenSettled flight settle |> ignore
-                | FinishCurrent ->
+                | FinishCurrent
+                | Drop
+                | DropWhilePending ->
                     queued <- 1
                     Platform.whenSettled flight settle |> ignore
                 | CancelPrevious -> Platform.whenSettled flight settle |> ignore
@@ -4440,7 +4511,8 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// </summary>
     /// <remarks>
     /// Under <c>KeepLatest</c> and <c>Queue</c>, an earlier flight may still be in progress while a source is listed.
-    /// Under <c>FinishCurrent</c>, a source is listed only by a run that started no flight.
+    /// Under <c>FinishCurrent</c>, <c>Drop</c> and <c>DropWhilePending</c>, a source is listed only by a run that started
+    /// no flight.
     /// </remarks>
     member _.PendingSources =
         if Platform.isNull pendingSources then

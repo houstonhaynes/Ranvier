@@ -333,6 +333,10 @@ type internal TraceLog(locked: bool) =
     member _.FirstDirty(node: int) =
         sync (fun () -> lookup firstDirty node)
 
+    /// <summary>Forgets <c>node</c>'s first dirty mark, so the next mark becomes the next run's cause.</summary>
+    member _.ClearDirty(node: int) =
+        sync (fun () -> firstDirty.Remove node |> ignore)
+
     /// <summary>Records <c>seq</c> as <c>node</c>'s first dirty mark unless one is pending.</summary>
     member _.NoteDirty(node: int, seq: int) =
         sync (fun () ->
@@ -1314,18 +1318,41 @@ type internal Tracer =
 #endif
 
     /// <summary>
-    /// Records <c>RunDeferred</c> for node <c>id</c>: a change arrived while flight number <c>flight</c> is in progress
-    /// under <c>FinishCurrent</c>.
+    /// Records a change that reached node <c>id</c> at a read while flight number <c>flight</c> is in progress:
+    /// <c>RunDeferred</c> when <c>deferred</c> is true, under <c>FinishCurrent</c>, else <c>RunDropped</c>.
     /// </summary>
     [<Conditional("RANVIER_TRACE")>]
-    static member RunDeferred(graph: obj, id: int, flight: int) =
+    static member RunDeferred(graph: obj, id: int, flight: int, deferred: bool) =
 #if RANVIER_TRACE
         let log = Tracer.LogOf graph
         let walker = log.Walker
         let puller = if walker <> 0 then walker else log.Current
 
-        log.Append (TraceEventKind.RunDeferred, id, puller, flight, 0, log.FirstDirty id, null)
+        if deferred then
+            log.Append (TraceEventKind.RunDeferred, id, puller, flight, 0, log.FirstDirty id, null)
+            |> ignore
+        else
+            log.Append (TraceEventKind.RunDropped, id, puller, flight, 0, log.FirstDirty id, null)
+            |> ignore
+
+            log.ClearDirty id
+#else
+        ()
+#endif
+
+    /// <summary>
+    /// Records <c>RunDropped</c> for node <c>id</c>: a change that arrived during flight number <c>flight</c> was
+    /// discarded as the flight settled.
+    /// </summary>
+    [<Conditional("RANVIER_TRACE")>]
+    static member RunDropped(graph: obj, id: int, flight: int) =
+#if RANVIER_TRACE
+        let log = Tracer.LogOf graph
+
+        log.Append (TraceEventKind.RunDropped, id, 0, flight, 1, log.FirstDirty id, null)
         |> ignore
+
+        log.ClearDirty id
 #else
         ()
 #endif
@@ -1345,14 +1372,20 @@ type internal Tracer =
         ()
 #endif
 
-    /// <summary>Records <c>FlightDrop</c> for flight number <c>flight</c> of node <c>id</c>, with <c>TraceDropReason</c> <c>reason</c>.</summary>
+    /// <summary>
+    /// Records <c>FlightDrop</c> for flight number <c>flight</c> of node <c>id</c>, with <c>TraceDropReason</c>
+    /// <c>reason</c>. A drop for <c>Trailing</c> or <c>Retried</c> becomes the cause of the run owed.
+    /// </summary>
     [<Conditional("RANVIER_TRACE")>]
     static member FlightDrop(graph: obj, id: int, flight: int, reason: int) =
 #if RANVIER_TRACE
         let log = Tracer.LogOf graph
 
-        log.Append (TraceEventKind.FlightDrop, id, 0, flight, reason, log.FlightOf (id, flight), null)
-        |> ignore
+        let seq =
+            log.Append (TraceEventKind.FlightDrop, id, 0, flight, reason, log.FlightOf (id, flight), null)
+
+        if reason >= int TraceDropReason.Trailing then
+            log.NoteSettle (id, seq)
 #else
         ()
 #endif

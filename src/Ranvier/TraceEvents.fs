@@ -67,6 +67,13 @@ type TraceEventKind =
     /// <c>Mark</c> since the previous run, or 0.
     /// </summary>
     | RunDeferred = 24
+    /// <summary>
+    /// A change reached an async memo while a flight is in progress under <c>Drop</c> or <c>DropWhilePending</c>, and
+    /// was discarded. <c>Other</c>: the puller, or 0. <c>Arg</c>: the flight in progress. <c>Flag</c>: 1 when discarded
+    /// as the flight settled, 0 when discarded at a read. <c>Cause</c>: the first dirty <c>Mark</c> since the previous
+    /// run, or 0.
+    /// </summary>
+    | RunDropped = 25
     /// <summary>A flush started. <c>Arg</c>: the flush number.</summary>
     | FlushStart = 30
     /// <summary>A flush ended. <c>Arg</c>: the flush number.</summary>
@@ -180,6 +187,10 @@ type TraceDropReason =
     | Suspended = 3
     /// <summary>A failure arrived while a trailing run is owed under <c>FinishCurrent</c>.</summary>
     | Trailing = 4
+    /// <summary>
+    /// A failure arrived after a change was discarded under <c>DropWhilePending</c>, and the node runs once more.
+    /// </summary>
+    | Retried = 5
 
 /// <summary>The case names of the trace enums, on .NET and under Fable. A value outside the cases gives its number.</summary>
 module internal TraceNames =
@@ -208,6 +219,7 @@ module internal TraceNames =
         | TraceEventKind.RunEnd -> "RunEnd"
         | TraceEventKind.WalkAbandoned -> "WalkAbandoned"
         | TraceEventKind.RunDeferred -> "RunDeferred"
+        | TraceEventKind.RunDropped -> "RunDropped"
         | TraceEventKind.FlushStart -> "FlushStart"
         | TraceEventKind.FlushEnd -> "FlushEnd"
         | TraceEventKind.BatchEnter -> "BatchEnter"
@@ -257,6 +269,7 @@ module internal TraceNames =
         | TraceDropReason.Disposed -> "Disposed"
         | TraceDropReason.Suspended -> "Suspended"
         | TraceDropReason.Trailing -> "Trailing"
+        | TraceDropReason.Retried -> "Retried"
         | other -> string (int other)
 #else
         string value

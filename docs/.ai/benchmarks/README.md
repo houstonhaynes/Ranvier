@@ -44,7 +44,7 @@ comparable with it.
 | `SuspensionBenchmarks` | What does a throw through a chain cost, against re-running it over a settled source? |
 | `BoundaryBenchmarks` | Re-running a body and catching its throw, against a clean boundary. |
 | `SettleBenchmarks` | Settling on the graph's own thread, taking the inline path. |
-| `FlightBenchmarks` | What does a flight cost under each `FlightPolicy` (`Policy`: `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent`), settled on launch and with `Writes` (1, 10) changes arriving during a flight? |
+| `FlightBenchmarks` | What does a flight cost under each `FlightPolicy` (`Policy`: `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent`, `Drop`, `DropWhilePending`), settled on launch and with `Writes` (1, 10) changes arriving during a flight? |
 | `TimedBenchmarks` | Changed capture, equal writes, construction, and capture plus admission for debounce and three throttle modes at 1 / 64 / 4096 nodes. See [timing evidence](../debounce-throttle-performance.md) for measured cases and limits. |
 | `DeadlinePolicyBenchmarks` | How do per-input rearm and lazy deadline extension compare for deterministic counting-timer bursts? Native timer latency is outside this benchmark. |
 | `FailureBenchmarks` | What does the error channel add to a recomputation: a body that throws a fresh exception, against one that succeeds? |
@@ -219,7 +219,7 @@ several variants, each is reported as its own engine:
 | --- | --- | --- |
 | `chain-affinity` | `chain`, in a graph of each `ThreadAffinity`. | `Guarded`, `Unchecked`, `Serialised` |
 | `project-churn` | Replace the last key of a 1000-row projection with a new key. | no key reader, one key reader read by an effect |
-| `flight` | Write an async memo's trigger and read it twice, then settle every flight the writes started. | `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent` |
+| `flight` | Write an async memo's trigger and read it twice, then settle every flight the writes started. | `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent`, `Drop`, `DropWhilePending` |
 | `fail-recompute` | Re-run a memo and its one reader, then read the reader's `ErrorOrigin`. | succeeding, failing with a fresh exception |
 | `editable-edit` | Edit every 10th of 1000 `createEditable` values, each read by one effect. | — |
 | `editable-upstream` | Write the seed source of every 10th of 1000 editables. | — |

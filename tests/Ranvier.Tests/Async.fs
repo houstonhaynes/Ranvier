@@ -39,6 +39,37 @@ let private finishCurrentGraph () =
         }
     )
 
+/// <summary>A graph under <c>policy</c> whose off-thread work waits for <c>Pump</c>.</summary>
+let private policyGraph (policy: FlightPolicy) =
+    new Graph (
+        { GraphOptions.Default with
+            Dispatcher = Some (ManualDispatcher () :> IGraphDispatcher)
+            FlightPolicy = policy
+        }
+    )
+
+/// <summary>
+/// An async memo over <c>t</c> and a memo of <c>s</c>, with one hand-settled <c>Flight</c> per run, and the memo's
+/// value each run read.
+/// </summary>
+let private derivedMemo (g: Graph) (s: Signal<int>) (t: Signal<int>) =
+    let flights = ResizeArray<Flight<int>>()
+    let inputs = ResizeArray<int>()
+    let doubled = Make.Memo (g, (fun _ -> s.Value * 2))
+
+    let a =
+        Make.AsyncMemo<int>(
+            g,
+            fun _ _ ->
+                t.Value |> ignore
+                inputs.Add doubled.Value
+                let flight = Flight<int>()
+                flights.Add flight
+                flight.Task
+        )
+
+    a, flights, inputs
+
 /// <summary>
 /// An async memo over <c>s</c> with one hand-settled <c>Flight</c> per run, and the value of <c>s</c> each run read.
 /// </summary>
@@ -57,6 +88,56 @@ let private finishCurrentMemo (g: Graph) (s: Signal<int>) =
         )
 
     a, flights, inputs
+
+/// <summary>
+/// Under <c>policy</c>, discards a change that reaches an async memo through an async memo source during the memo's
+/// flight, then settles the flight and the source's next flight, asserting each step.
+/// </summary>
+let private discardThroughAsyncSource (policy: FlightPolicy) =
+    let g = policyGraph policy
+    let s = Signal (g, 1)
+    let upstream = ResizeArray<Flight<int>>()
+    let flights = ResizeArray<Flight<int>>()
+    let inputs = ResizeArray<int>()
+
+    let b =
+        Make.AsyncMemo<int>(
+            g,
+            fun _ _ ->
+                s.Value |> ignore
+                let flight = Flight<int>()
+                upstream.Add flight
+                flight.Task
+        )
+
+    let a =
+        Make.AsyncMemo<int>(
+            g,
+            fun _ _ ->
+                inputs.Add b.Value
+                let flight = Flight<int>()
+                flights.Add flight
+                flight.Task
+        )
+
+    use _reader = new Effect (g, (fun () -> a.TryValue |> ignore))
+    upstream[0].Settle 1
+    Expect.equal a.Runs 2 "the source's value starts the memo's flight"
+
+    s.Value <- 2
+    Expect.equal a.TryValue Pending "the change during the flight is discarded"
+    Expect.equal b.Runs 1 "the discarded change starts no source flight"
+
+    flights[0].Settle 10
+    Expect.equal a.TryValue (Ready 10) "the flight's value is the memo's value"
+    Expect.equal b.Runs 2 "the settle brings the source current, starting its flight"
+    Expect.equal a.Runs 2 "the memo does not run at the settle"
+
+    upstream[1].Settle 2
+    Expect.equal a.Runs 3 "the source's settle is a change after the memo's settle and runs the memo"
+    Expect.sequenceEqual inputs [ 1; 2 ] "against the source's new value"
+    flights[1].Settle 20
+    Expect.equal a.TryValue (Ready 20) "the new flight publishes"
 
 /// <summary>What a search view shows: nothing known yet, or a loaded list that may be empty.</summary>
 type private Results =
@@ -765,6 +846,463 @@ let tests =
 
                 flights[1].Settle 30
                 Expect.equal seen[seen.Count - 1] (Ready 30) "then the trailing flight's value"
+            }
+
+            test "Drop discards the changes during a flight and keeps its value" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                Expect.equal a.TryValue Pending "a change during the flight keeps the memo pending"
+                s.Value <- 3
+                Expect.equal a.TryValue Pending "so does a second"
+                Expect.equal a.Runs 1 "changes during the flight run no body"
+
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the flight's value is the memo's value"
+                Expect.equal a.TryValue (Ready 10) "a later read keeps it"
+                Expect.equal a.Runs 1 "the discarded changes are not replayed"
+                Expect.sequenceEqual inputs [ 1 ] "one run, against the first inputs"
+            }
+
+            test "Drop discards a change no reader pulled during the flight" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the read after the settle keeps the flight's value"
+                Expect.equal a.Runs 1 "the unpulled change is not replayed"
+            }
+
+            test "Drop runs the first change after the flight settles" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].Settle 10
+                s.Value <- 3
+                Expect.equal a.TryValue Pending "the change after the settle starts a flight"
+                Expect.equal a.Runs 2 "one more run"
+                Expect.sequenceEqual inputs [ 1; 3 ] "against the current inputs"
+                flights[1].Settle 30
+                Expect.equal a.TryValue (Ready 30) "the new flight publishes"
+            }
+
+            test "Drop keeps a memo source current across a change discarded at the settle" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let t = Signal (g, 0)
+                let a, flights, inputs = derivedMemo g s t
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the unpulled change is discarded"
+                s.Value <- 3
+                Expect.equal a.TryValue Pending "a change after the settle reaches the memo through its memo source"
+                Expect.sequenceEqual inputs [ 2; 6 ] "against the current inputs"
+            }
+
+            test "Drop keeps a memo source current across a change discarded at a read" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let t = Signal (g, 0)
+                let a, flights, inputs = derivedMemo g s t
+
+                a.TryValue |> ignore
+
+                g.Batch (fun () ->
+                    t.Value <- 1
+                    s.Value <- 2)
+
+                Expect.equal a.TryValue Pending "the pulled change is discarded"
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the flight publishes"
+                s.Value <- 3
+                Expect.equal a.TryValue Pending "a change after the settle reaches the memo through its memo source"
+                Expect.sequenceEqual inputs [ 2; 6 ] "against the current inputs"
+            }
+
+            test "Drop starts an async memo source's flight at the settle and runs on its value" { discardThroughAsyncSource Drop }
+
+            test "DropWhilePending starts an async memo source's flight at the settle and runs on its value" {
+                discardThroughAsyncSource DropWhilePending
+            }
+
+            test "Drop settles a failed flight that discarded a change to its error" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].Fail(exn "boom")
+
+                match a.TryValue with
+                | Failed e -> Expect.equal e.Message "boom" "the flight's error is the memo's error"
+                | other -> failtestf "expected Failed, got %A" other
+
+                a.TryValue |> ignore
+                Expect.equal a.Runs 1 "the discarded change is not replayed"
+            }
+
+            test "Drop disposed during a flight runs nothing more" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let tokens = ResizeArray<CancellationToken>()
+                let flight = Flight<int>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun _ token ->
+                            s.Value |> ignore
+                            tokens.Add token
+                            flight.Task
+                    )
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                a.Dispose ()
+                Expect.isTrue tokens[0].IsCancellationRequested "the flight in progress is cancelled"
+                flight.Settle 10
+
+                match a.TryValue with
+                | Failed e -> Expect.isTrue (isDisposedError e) "the memo fails as disposed"
+                | other -> failtestf "expected Failed, got %A" other
+
+                Expect.equal a.Runs 1 "nothing more runs"
+            }
+
+            test "Drop does not hold a run back behind a body suspended on a pending source" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let upstream = AsyncSource<int>(g)
+                let flight = Flight<int>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun _ _ ->
+                            s.Value |> ignore
+                            upstream.Value |> ignore
+                            flight.Task
+                    )
+
+                Expect.equal a.TryValue Pending "suspended before a flight started"
+                s.Value <- 2
+                a.TryValue |> ignore
+                Expect.equal a.Runs 2 "the change runs the body"
+                upstream.Settle 1
+                a.TryValue |> ignore
+                Expect.equal a.Runs 3 "the settle runs it again and starts the flight"
+                flight.Settle 7
+                Expect.equal a.TryValue (Ready 7) "the flight publishes"
+            }
+
+            test "Drop wakes an effect that read the memo while pending" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+                let seen = ResizeArray<Reading<int>>()
+                use _reader = new Effect (g, (fun () -> seen.Add a.TryValue))
+
+                s.Value <- 2
+                s.Value <- 3
+                Expect.equal a.Runs 1 "the effect's re-reads during the flight run no body"
+
+                flights[0].Settle 10
+                Expect.equal a.Runs 1 "the settle replays nothing"
+                Expect.equal seen[seen.Count - 1] (Ready 10) "the effect sees the flight's value"
+                Expect.equal (seen |> Seq.filter ((=) (Ready 10)) |> Seq.length) 1 "once"
+            }
+
+#if !FABLE_COMPILER
+            // .NET only: reads Settled's completion synchronously, and under Fable it is a promise.
+            test "Drop hands the settled value to the next run as Previous" {
+                let g = policyGraph Drop
+                let s = Signal (g, 1)
+                let flights = ResizeArray<Flight<int>>()
+                let prevs = ResizeArray<Previous<int>>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun prev _ ->
+                            s.Value |> ignore
+                            prevs.Add prev
+                            let flight = Flight<int>()
+                            flights.Add flight
+                            flight.Task
+                    )
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].Settle 10
+                s.Value <- 3
+                a.TryValue |> ignore
+
+                Expect.equal prevs.Count 2 "two runs"
+                Expect.isTrue prevs[1].Settled.IsCompleted "Settled is complete when the next body runs"
+                Expect.equal prevs[1].Settled.Result (ValueSome 10) "the next run starts from the settled flight"
+            }
+#endif
+
+            test "DropWhilePending keeps a successful flight's value and discards the changes during it" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                Expect.equal a.TryValue Pending "a change during the flight keeps the memo pending"
+                s.Value <- 3
+                a.TryValue |> ignore
+                Expect.equal a.Runs 1 "changes during the flight run no body"
+
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the flight's value is the memo's value"
+                Expect.equal a.TryValue (Ready 10) "a later read keeps it"
+                Expect.sequenceEqual inputs [ 1 ] "the discarded changes are not replayed"
+            }
+
+            test "DropWhilePending discards an unpulled change when the flight succeeds" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the read after the settle keeps the flight's value"
+                Expect.equal a.Runs 1 "the unpulled change is not replayed"
+            }
+
+            test "DropWhilePending keeps a memo source current across a change discarded at the settle" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let t = Signal (g, 0)
+                let a, flights, inputs = derivedMemo g s t
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 10) "the unpulled change is discarded"
+                s.Value <- 3
+                Expect.equal a.TryValue Pending "a change after the settle reaches the memo through its memo source"
+                Expect.sequenceEqual inputs [ 2; 6 ] "against the current inputs"
+            }
+
+            test "DropWhilePending replaces a failed flight that discarded a change with one run" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                s.Value <- 3
+                a.TryValue |> ignore
+                flights[0].Fail(exn "stale")
+                Expect.equal a.TryValue Pending "the failure is discarded and the replacing run starts"
+                Expect.equal a.Runs 2 "one replacing run for both changes"
+                Expect.sequenceEqual inputs [ 1; 3 ] "against the current inputs"
+                flights[1].Settle 30
+                Expect.equal a.TryValue (Ready 30) "the replacing flight publishes"
+            }
+
+            test "DropWhilePending replaces a failed flight that discarded an unpulled change" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                flights[0].Fail(exn "stale")
+                Expect.equal a.TryValue Pending "the failure is discarded and the replacing run starts"
+                Expect.equal a.Runs 2 "the replacing run"
+                Expect.sequenceEqual inputs [ 1; 2 ] "against the current inputs"
+                flights[1].Settle 20
+                Expect.equal a.TryValue (Ready 20) "the replacing flight publishes"
+            }
+
+            test "DropWhilePending settles a failed flight to its error when a memo source resolves unchanged" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let parity = Make.Memo (g, (fun _ -> s.Value % 2))
+                let flights = ResizeArray<Flight<int>>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun _ _ ->
+                            parity.Value |> ignore
+                            let flight = Flight<int>()
+                            flights.Add flight
+                            flight.Task
+                    )
+
+                a.TryValue |> ignore
+                s.Value <- 3
+                flights[0].Fail(exn "boom")
+
+                match a.TryValue with
+                | Failed e -> Expect.equal e.Message "boom" "an unchanged memo source is no discarded change"
+                | other -> failtestf "expected Failed, got %A" other
+
+                Expect.equal a.Runs 1 "no replacing run"
+                s.Value <- 4
+                Expect.equal a.TryValue Pending "the memo source's next change reaches the memo"
+                Expect.equal a.Runs 2 "and runs the body"
+            }
+
+            test "DropWhilePending settles a failed flight with no change during it to its error" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                flights[0].Fail(exn "boom")
+
+                match a.TryValue with
+                | Failed e -> Expect.equal e.Message "boom" "the flight's error is the memo's error"
+                | other -> failtestf "expected Failed, got %A" other
+
+                Expect.equal a.Runs 1 "one run"
+            }
+
+            test "DropWhilePending settles a failed replacing run to its error" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].Fail(exn "stale")
+                a.TryValue |> ignore
+                flights[1].Fail(exn "boom")
+
+                match a.TryValue with
+                | Failed e -> Expect.equal e.Message "boom" "the replacing run's error is the memo's error"
+                | other -> failtestf "expected Failed, got %A" other
+
+                Expect.equal a.Runs 2 "the failures do not loop"
+            }
+
+            test "DropWhilePending disposed with a failure owed runs nothing more" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, _ = finishCurrentMemo g s
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                a.Dispose ()
+                flights[0].Fail(exn "stale")
+
+                match a.TryValue with
+                | Failed e -> Expect.isTrue (isDisposedError e) "the memo fails as disposed"
+                | other -> failtestf "expected Failed, got %A" other
+
+                Expect.equal a.Runs 1 "the replacing run is not started"
+            }
+
+            test "DropWhilePending starts the replacing run for an effect that reads the memo" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let a, flights, inputs = finishCurrentMemo g s
+                let seen = ResizeArray<Reading<int>>()
+                use _reader = new Effect (g, (fun () -> seen.Add a.TryValue))
+
+                s.Value <- 2
+                s.Value <- 3
+                Expect.equal a.Runs 1 "the effect's re-reads during the flight run no body"
+
+                flights[0].Fail(exn "stale")
+                Expect.equal a.Runs 2 "the settle wakes the effect, and its read starts the replacing run"
+                Expect.sequenceEqual inputs [ 1; 3 ] "against the current inputs"
+
+                Expect.isFalse
+                    (seen
+                     |> Seq.exists (function
+                         | Failed _ -> true
+                         | _ -> false))
+                    "the effect never sees the discarded error"
+
+                flights[1].Settle 30
+                Expect.equal seen[seen.Count - 1] (Ready 30) "then the replacing flight's value"
+            }
+
+#if !FABLE_COMPILER
+            // .NET only: reads Settled's completion synchronously, and under Fable it is a promise.
+            test "DropWhilePending hands the replacing run the value published before the failed flight" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let flights = ResizeArray<Flight<int>>()
+                let prevs = ResizeArray<Previous<int>>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun prev _ ->
+                            s.Value |> ignore
+                            prevs.Add prev
+                            let flight = Flight<int>()
+                            flights.Add flight
+                            flight.Task
+                    )
+
+                a.TryValue |> ignore
+                flights[0].Settle 10
+                s.Value <- 2
+                a.TryValue |> ignore
+                s.Value <- 3
+                a.TryValue |> ignore
+                flights[1].Fail(exn "stale")
+                a.TryValue |> ignore
+
+                Expect.equal prevs.Count 3 "the first run, the failed run and the replacing run"
+                Expect.isTrue prevs[2].Settled.IsCompleted "Settled is complete when the replacing body runs"
+                Expect.equal prevs[2].Settled.Result (ValueSome 10) "the value published before the failed flight"
+            }
+#endif
+
+            test "DropWhilePending does not hold a run back behind a body suspended on a pending source" {
+                let g = policyGraph DropWhilePending
+                let s = Signal (g, 1)
+                let upstream = AsyncSource<int>(g)
+                let flight = Flight<int>()
+
+                let a =
+                    Make.AsyncMemo<int>(
+                        g,
+                        fun _ _ ->
+                            s.Value |> ignore
+                            upstream.Value |> ignore
+                            flight.Task
+                    )
+
+                Expect.equal a.TryValue Pending "suspended before a flight started"
+                s.Value <- 2
+                a.TryValue |> ignore
+                Expect.equal a.Runs 2 "the change runs the body"
+                upstream.Settle 1
+                a.TryValue |> ignore
+                Expect.equal a.Runs 3 "the settle runs it again and starts the flight"
+                flight.Settle 7
+                Expect.equal a.TryValue (Ready 7) "the flight publishes"
             }
 
             test "a failed flight settles as Failed" {

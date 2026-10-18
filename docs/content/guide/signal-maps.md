@@ -194,7 +194,7 @@ a callback or by a custom helper, use `Trace.named "name" (fun () -> …)` expli
 | `timeline` | Adds the play, step and scrub bar. |
 | `replay` | Runs every control in order, for the timeline to play back; implies `timeline`. |
 | `speed=` | Initial playback multiplier from `0.25` to `4`, such as `speed=0.5`; defaults to `1`. Readers can change it with **Speed**. |
-| `policy=` | The graph's flight policy: `cancel-previous` (default), `keep-latest`, `queue` or `finish-current`. |
+| `policy=` | The graph's flight policy: `cancel-previous` (default), `keep-latest`, `queue`, `finish-current`, `drop` or `drop-while-pending`. |
 | `groups=` | How collections draw: `expand` (default), a box with a row per key, or `collapse`, one node. |
 | `code=` | The code disclosure's initial state: `open` (default) or `collapsed`. The map stays visible in either state. |
 | `code-max-height=` | Optional positive length in `px`, `rem`, `em` or `vh`, such as `code-max-height=24rem`. Taller code scrolls; omitted means unrestricted height. |

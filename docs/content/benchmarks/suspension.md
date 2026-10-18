@@ -87,7 +87,7 @@ Repeated flight launches under each `FlightPolicy`, set by `Policy`. `Writes` ap
 | Method | What it measures |
 | --- | --- |
 | `RelaunchSettled` | Baseline. Writes a trigger the body reads and reads the memo. The body returns a completed task, so every flight settles on launch. |
-| `WritesDuringFlight` | Starts a flight whose task stays open, writes and reads `Writes` more times, then completes every open task, reading after each round. Under `FinishCurrent` the body runs twice whatever `Writes` is; under the other policies it runs `Writes + 1` times. |
+| `WritesDuringFlight` | Starts a flight whose task stays open, writes and reads `Writes` more times, then completes every open task, reading after each round. Under `FinishCurrent` the body runs twice whatever `Writes` is, and under `Drop` and `DropWhilePending` once; under the other policies it runs `Writes + 1` times. |
 
 The counter scenario `flight` runs the same shape at one write during a flight, once per policy: two writes and reads, then a settle of every flight the writes started. Figures are retired instructions per operation at commit `e13f159`, .NET 10 with tiered compilation and PGO off (see [Instruction counts](counters.md)):
 

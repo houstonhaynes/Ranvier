@@ -832,7 +832,15 @@ let unobserved =
                 Expect.hasLength reported 1 "the unobserved fault reached the event"
             }
 
-            for policy in [ CancelPrevious; KeepLatest; FlightPolicy.Queue; FinishCurrent ] do
+            for policy in
+                [
+                    CancelPrevious
+                    KeepLatest
+                    FlightPolicy.Queue
+                    FinishCurrent
+                    Drop
+                    DropWhilePending
+                ] do
                 for fault in [ Superseded; SupersededOffThread; NodeDisposed; GraphDisposed ] do
                     test $"a late fault is observed: %A{policy}, %A{fault}" {
                         let marker = $"late-{Guid.NewGuid ()}"

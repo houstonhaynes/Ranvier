@@ -227,7 +227,7 @@ type FlightBenchmarks() =
     let mutable tick = 0
 
     /// <summary>The case name of the graph's <c>FlightPolicy</c>.</summary>
-    [<Params("CancelPrevious", "KeepLatest", "Queue", "FinishCurrent")>]
+    [<Params("CancelPrevious", "KeepLatest", "Queue", "FinishCurrent", "Drop", "DropWhilePending")>]
     member val Policy = "CancelPrevious" with get, set
 
     /// <summary>The writes made while the first flight of a <c>WritesDuringFlight</c> iteration is in progress.</summary>
@@ -241,6 +241,8 @@ type FlightBenchmarks() =
             | "KeepLatest" -> KeepLatest
             | "Queue" -> FlightPolicy.Queue
             | "FinishCurrent" -> FinishCurrent
+            | "Drop" -> Drop
+            | "DropWhilePending" -> DropWhilePending
             | _ -> CancelPrevious
 
         let graph = new Graph (GraphOptions.Default.WithFlightPolicy policy)
