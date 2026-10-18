@@ -48,7 +48,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
 | Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
-| TrimmedPass.fs | 57 | 57 | 57 | 57 | 57 | 57 | 0 | 0 |
+| TrimmedPass.fs | 59 | 59 | 59 | 59 | 59 | 59 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
 | MemoPurity.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
@@ -71,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 997 | 979 | 915 | 1095 | 1073 | 999 | 91 | 1 |
+| **Total** | 999 | 981 | 917 | 1097 | 1075 | 1001 | 91 | 1 |
 
 ## Tests.fs
 
@@ -1073,8 +1073,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## TrimmedPass.fs
 
-<details><summary>57 passed in every build and delivery that runs them</summary>
+<details><summary>59 passed in every build and delivery that runs them</summary>
 
+- ChangedSince bounds every edit it answers, and is the removed position after a trimmed removal
+- ChangedSince is empty at the current version and answers nothing for a version older than the last pass
 - random edits call keyOf once per position outside the common prefix and suffix
 - a trimmed pass after a shrink publishes keys of the list's length
 - a keyOf writing into the source array leaves every row on the item the pass read

@@ -271,6 +271,7 @@ member Ranvier.ProjectionModule static take<2>(Microsoft.FSharp.Core.FSharpFunc`
 member Ranvier.ProjectionReader`1 Dispose() : Void
 member Ranvier.ProjectionReader`1 Read() : Ranvier.ProjectionDelta`1<!0>
 member Ranvier.Projection`2 AsObservableCollection() : System.Collections.ObjectModel.ObservableCollection`1<!1>
+member Ranvier.Projection`2 ChangedSince(Int32) : Microsoft.FSharp.Core.FSharpValueOption`1<System.ValueTuple`3<Int32,Int32,Int32>>
 member Ranvier.Projection`2 Dispose() : Void
 member Ranvier.Projection`2 Get(!0) : !1
 member Ranvier.Projection`2 NewKeyReader() : Ranvier.ProjectionReader`1<!0>
@@ -282,6 +283,7 @@ member Ranvier.Projection`2 get_Count() : Int32
 member Ranvier.Projection`2 get_Error() : System.Exception
 member Ranvier.Projection`2 get_ErrorOrigin() : Ranvier.INode
 member Ranvier.Projection`2 get_Keys() : !0[]
+member Ranvier.Projection`2 get_KeysVersion() : Int32
 member Ranvier.Projection`2 get_PendingKeys() : !0[]
 member Ranvier.Projection`2 get_Runs() : Int32
 member Ranvier.Projection`2 get_Snapshot() : System.Collections.Generic.IReadOnlyDictionary`2<!0,!1>
