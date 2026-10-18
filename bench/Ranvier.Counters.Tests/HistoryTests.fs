@@ -253,6 +253,26 @@ let tests =
                         0
                         "timeline reads recorded JSON"
 
+                    let recorded = File.ReadAllText output
+                    let predating = recorded.Replace ("\"Compiled\": false,", "")
+                    Expect.notEqual predating recorded "the record carries Compiled"
+                    File.WriteAllText (Path.Combine (runDir, "h.json"), predating)
+
+                    Expect.equal
+                        (History.main [ "timeline"; "--runs"; runDir; "--out"; Path.Combine (dir, "timeline.md") ])
+                        0
+                        "timeline reads records that predate Compiled"
+
+                    File.WriteAllText (Path.Combine (runDir, "h.json"), recorded.Replace ("\"Gc\": true,", ""))
+
+                    Expect.throws
+                        (fun () ->
+                            History.main [ "timeline"; "--runs"; runDir; "--out"; Path.Combine (dir, "timeline.md") ]
+                            |> ignore)
+                        "timeline still requires Gc"
+
+                    File.WriteAllText (Path.Combine (runDir, "h.json"), recorded)
+
                     Expect.throws
                         (fun () ->
                             History.main [ "timeline"; "--runs"; runDir; "--out"; output; "--runs"; runDir ]

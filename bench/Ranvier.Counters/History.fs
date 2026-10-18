@@ -5,6 +5,7 @@ open System
 open System.IO
 open System.Text
 open System.Text.Json
+open System.Text.Json.Serialization.Metadata
 open System.Globalization
 
 /// <summary>A per-side median for an available timing metric across five processes.</summary>
@@ -275,8 +276,20 @@ let private options allowed repeated (args: string list) =
 
     loop Map.empty args
 
+// Records that predate `ScenarioFigures.Compiled` read it as false.
+let private resolver =
+    let r = DefaultJsonTypeInfoResolver ()
+
+    r.Modifiers.Add (fun info ->
+        if info.Type = typeof<ScenarioFigures> then
+            for p in info.Properties do
+                if p.Name = "Compiled" then
+                    p.IsRequired <- false)
+
+    r
+
 let private json =
-    JsonSerializerOptions (WriteIndented = true, RespectRequiredConstructorParameters = true)
+    JsonSerializerOptions (WriteIndented = true, RespectRequiredConstructorParameters = true, TypeInfoResolver = resolver)
 
 let private read<'T> path =
     let value = JsonSerializer.Deserialize<'T>(File.ReadAllText path, json)
