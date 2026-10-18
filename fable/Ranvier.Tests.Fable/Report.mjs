@@ -43,6 +43,7 @@ const differences = {
         "the Queue policy applies a failure in the middle without losing what follows",
         "the Queue policy applies a synchronous failure after the flight started before it",
         "the Queue policy keeps a run suspended on a source pending when an older flight lands",
+        "Queue drops a failure that settles while the newest run waits on a source as Suspended",
     ],
     "Trace records carry less": [
         "a node reports the test's file:line",

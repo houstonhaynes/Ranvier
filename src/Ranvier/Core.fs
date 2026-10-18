@@ -4084,14 +4084,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             | Platform.FlightOutcome.Faulted _
             | Platform.FlightOutcome.Canceled _ when suspended ->
                 // An older flight's failure is dropped; the node stays pending on the source or the run owed.
-                Tracer.FlightDrop (
-                    graph,
-                    id,
-                    gen,
-                    (if not owed then 3
-                     elif graph.Options.FlightPolicy.IsFinishCurrent then 4
-                     else 5)
-                )
+                Tracer.FlightFailureDrop (graph, id, gen, owed, graph.Options.FlightPolicy.IsFinishCurrent)
             | Platform.FlightOutcome.Completed v ->
                 Tracer.FlightSettled (graph, id, gen, 0, 0, box v)
                 write v

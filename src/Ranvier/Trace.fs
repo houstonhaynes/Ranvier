@@ -1391,6 +1391,23 @@ type internal Tracer =
 #endif
 
     /// <summary>
+    /// Records <c>FlightDrop</c> for the failure of flight number <c>flight</c> of a pending node: <c>Suspended</c>
+    /// without a run owed, else <c>Trailing</c> under <c>FinishCurrent</c> and <c>Retried</c> under any other policy.
+    /// </summary>
+    [<Conditional("RANVIER_TRACE")>]
+    static member FlightFailureDrop(graph: obj, id: int, flight: int, owed: bool, finishCurrent: bool) =
+#if RANVIER_TRACE
+        let reason =
+            if not owed then TraceDropReason.Suspended
+            elif finishCurrent then TraceDropReason.Trailing
+            else TraceDropReason.Retried
+
+        Tracer.FlightDrop (graph, id, flight, int reason)
+#else
+        ()
+#endif
+
+    /// <summary>
     /// Records <c>Settle</c>, or <c>Fail</c> when <c>failed</c> is true, for the async source of <c>observers</c>, a
     /// bound observer set, and opens a notification, closed by <c>Notified</c>. <c>payload</c> is the value or the
     /// exception.

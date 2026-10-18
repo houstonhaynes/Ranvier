@@ -34,7 +34,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 11 | 0 |
-| Tracing.fs | 2 | 2 | 2 | 81 | 77 | 67 | 1 | 0 |
+| Tracing.fs | 2 | 2 | 2 | 82 | 77 | 67 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 24 | 24 | 24 | 24 | 24 | 24 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
@@ -71,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 999 | 981 | 917 | 1097 | 1075 | 1001 | 91 | 1 |
+| **Total** | 999 | 981 | 917 | 1098 | 1075 | 1001 | 91 | 1 |
 
 ## Tests.fs
 
@@ -551,6 +551,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | traced | valueText renders a value as one line | failed | failed | Trace records carry less |
 | traced | FinishCurrent records a deferred run and a settle held for the trailing run | passed | failed | Async results arrive on a later microtask |
 | traced | FinishCurrent drops a failure that settles with a run owed as Trailing | passed | failed | Async results arrive on a later microtask |
+| traced | Queue drops a failure that settles while the newest run waits on a source as Suspended | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | FinishCurrent's trailing run is notified with the dropped failure as its cause | passed | failed | Async results arrive on a later microtask |
 | traced | Drop records a run dropped at a read and a change dropped at the settle | passed | failed | Async results arrive on a later microtask |
 | traced | Drop names the next change as the cause of the run after a change dropped at a read | passed | failed | Async results arrive on a later microtask |

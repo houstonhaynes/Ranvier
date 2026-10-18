@@ -1374,6 +1374,41 @@ let tests =
                 | other -> failtestf "expected one dropped flight, got %A" other
             }
 
+            test "Queue drops a failure that settles while the newest run waits on a source as Suspended" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = Queue
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let gate = TaskCompletionSource<int>()
+                let source = createAsync (fun _ _ -> gate.Task)
+                let flights = ResizeArray<TaskCompletionSource<int>>()
+
+                let a =
+                    createAsync (fun _ _ ->
+                        if s.Value = 2 then
+                            source.Value |> ignore
+
+                        let flight = TaskCompletionSource<int>()
+                        flights.Add flight
+                        flight.Task)
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                flights[0].SetException(exn "stale")
+
+                match (Trace.waitingOn g a).Flights with
+                | [ {
+                        State = TraceFlightState.Dropped (_, reason)
+                    } ] -> Expect.equal reason TraceDropReason.Suspended "dropped while the newest run waits on the source"
+                | other -> failtestf "expected one dropped flight, got %A" other
+            }
+
             test "FinishCurrent's trailing run is notified with the dropped failure as its cause" {
                 use g =
                     new Graph (
