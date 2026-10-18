@@ -1,5 +1,59 @@
 namespace Ranvier
 
+/// <summary>F# diagnostic text for trace fields, collections and records.</summary>
+module internal TraceText =
+    /// <summary>Quotes strings, prints null as <c>null</c>, and calls <c>ToString</c> on other values.</summary>
+    let value (value: obj) =
+        match value with
+        | null -> "null"
+        | :? string as s -> "\"" + s + "\""
+        | :? bool as b -> if b then "true" else "false"
+        | value -> value.ToString ()
+
+    let private sequence render values =
+        values |> Seq.map render |> String.concat "; "
+
+    /// <summary>Renders elements between <c>[</c> and <c>]</c>, separated by semicolons.</summary>
+    let list render values =
+        "[" + sequence render values + "]"
+
+    /// <summary>Renders elements between <c>[|</c> and <c>|]</c>, separated by semicolons.</summary>
+    let array render values =
+        "[|" + sequence render values + "|]"
+
+    /// <summary>Prints <c>None</c> or <c>Some</c> with the rendered value, parenthesising a case with arguments.</summary>
+    let option (render: 'T -> string) value =
+        match value with
+        | None -> "None"
+        | Some v ->
+            let text = render v
+
+            if
+                text.Contains " "
+                && text.Length > 0
+                && "([{\"".IndexOf text[0] < 0
+            then
+                "Some (" + text + ")"
+            else
+                "Some " + text
+
+    /// <summary>Prints fields in declaration order, one per line, with nested lines indented.</summary>
+    let record fields =
+        "{ "
+        + (fields
+           |> List.map (fun (name, text: string) -> name + " = " + text.Replace ("\n", "\n  "))
+           |> String.concat "\n  ")
+        + " }"
+
+    /// <summary>Prints ordered key/value pairs as <c>map [(key, value); ...]</c>.</summary>
+    let map key value entries =
+        "map "
+        + list (fun (k, v) -> "(" + key k + ", " + value v + ")") (Map.toSeq entries)
+
+    /// <summary>Prints ordered elements as <c>set [value; ...]</c>.</summary>
+    let set render values =
+        "set " + list render values
+
 /// <summary>What a <c>TraceEvent</c> records. Each kind gives its own meaning to the event's fields.</summary>
 type TraceEventKind =
     /// <summary>The graph was constructed. <c>Other</c>: the root owner id.</summary>
@@ -151,6 +205,18 @@ type TraceTiming =
         WinningCapture: int
     }
 
+    /// <summary>The timing fields, one per line, in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Mode", TraceText.value this.Mode
+                "CapturedStatus", string this.CapturedStatus
+                "PublishedStatus", string this.PublishedStatus
+                "WindowOpen", TraceText.value this.WindowOpen
+                "RemainingMilliseconds", string this.RemainingMilliseconds
+                "WinningCapture", string this.WinningCapture
+            ]
+
 /// <summary>A recorded timing state and its offset from this clock's first timed node in the graph.</summary>
 type internal TraceTimedState =
     {
@@ -158,6 +224,15 @@ type internal TraceTimedState =
         AtMilliseconds: float
         Timing: TraceTiming
     }
+
+    /// <summary>The clock, offset and timing fields in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Clock", string this.Clock
+                "AtMilliseconds", string this.AtMilliseconds
+                "Timing", this.Timing.ToString ()
+            ]
 
 /// <summary>A timed node's live diagnostic state and graph identity.</summary>
 type internal ITimedTrace =
@@ -194,6 +269,15 @@ type TraceDropReason =
 
 /// <summary>The case names of the trace enums, on .NET and under Fable. A value outside the cases gives its number.</summary>
 module internal TraceNames =
+    /// <summary>The run-status case name, or its number for an unknown value.</summary>
+    let runStatus (value: RunStatus) =
+        match value with
+        | RunStatus.Ok -> "Ok"
+        | RunStatus.Pending -> "Pending"
+        | RunStatus.Error -> "Error"
+        | RunStatus.Abandoned -> "Abandoned"
+        | other -> string (int other)
+
     let eventKind (value: TraceEventKind) : string =
 #if FABLE_COMPILER
         match value with
@@ -294,6 +378,20 @@ type TraceEvent =
         Payload: obj
     }
 
+    /// <summary>The event fields, one per line, with the payload's <c>ToString</c> text.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Seq", string this.Seq
+                "Kind", TraceNames.eventKind this.Kind
+                "Node", string this.Node
+                "Other", string this.Other
+                "Arg", string this.Arg
+                "Flag", string this.Flag
+                "Cause", string this.Cause
+                "Payload", TraceText.value this.Payload
+            ]
+
 /// <summary>A node's creation record.</summary>
 type TraceOrigin =
     {
@@ -314,3 +412,18 @@ type TraceOrigin =
         /// <summary>The creation site, or null when none was captured.</summary>
         Site: obj
     }
+
+    /// <summary>The origin fields, one per line, with the site's <c>ToString</c> text.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Seq", string this.Seq
+                "Node", string this.Node
+                "Kind", TraceNames.nodeKind this.Kind
+                "Label", TraceText.option TraceText.value this.Label
+                "Owner", string this.Owner
+                "Owners", TraceText.list string this.Owners
+                "Path", TraceText.value this.Path
+                "Run", string this.Run
+                "Site", TraceText.value this.Site
+            ]

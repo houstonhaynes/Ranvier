@@ -21,6 +21,14 @@ let private traced () =
 
 exception private Boom
 
+type private PayloadText =
+    {
+        Count: int
+    }
+
+    override this.ToString() =
+        "count=" + string this.Count
+
 [<CustomEquality; NoComparison>]
 type private ThrowingEquals =
     | ThrowingEquals of int
@@ -1284,7 +1292,9 @@ let tests =
 #if !FABLE_COMPILER
                 Expect.equal (TraceModel.valueText (box [| 1; 2 |])) "[|1; 2|]" "an array lists its elements"
                 Expect.equal (TraceModel.valueText (box [ "a"; "b" ])) "[\"a\"; \"b\"]" "a list quotes its strings"
-                Expect.equal (TraceModel.valueText (box (Some 1))) "Some 1" "any other value as its %A text"
+                Expect.equal (TraceModel.valueText (box (Some 1))) "Some(1)" "an option uses its ToString text"
+                Expect.equal (TraceModel.valueText (box { Count = 3 })) "count=3" "a record's custom ToString is respected"
+                Expect.equal (TraceModel.valueText null) "null" "a null payload"
 #endif
                 let long = TraceModel.valueText (box [ 1..100 ])
                 Expect.equal long.Length 60 "a long value is truncated"

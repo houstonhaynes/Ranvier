@@ -9,6 +9,10 @@ let tests =
     testList
         "Texts"
         [
+#if RANVIER_TRACE
+            for name, expected, value in TraceTextCases.cases () do
+                test ("trace text: " + name) { Expect.equal (value.ToString ()) expected "the explicit diagnostic text" }
+#endif
             test "ThreadAffinity and FlightPolicy print their case names" {
                 Expect.equal (Guarded.ToString ()) "Guarded" "Guarded"
                 Expect.equal (Unchecked.ToString ()) "Unchecked" "Unchecked"

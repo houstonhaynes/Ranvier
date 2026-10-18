@@ -122,15 +122,17 @@ local feed. The [Fable guide](../fable/index.md#package-sources-and-ci) explains
 
 ## Native AOT and trimming
 
-The untraced `Ranvier`, `Ranvier.CSharp` and `Ranvier.Elmish` packages support trimming and Native AOT.
-CI publishes smoke applications on .NET 10 for `linux-x64` and treats trim/AOT warnings as errors.
+The `Ranvier`, `Ranvier.CSharp`, `Ranvier.Elmish` and `Ranvier.Query` packages, including their
+`.Traced` variants, support trimming and Native AOT. CI publishes traced and untraced smoke
+applications on .NET 10 for `linux-x64` and treats trim/AOT warnings as errors.
 That validates this configuration; test your own deployment target and dependencies. Publish with
 `<PublishAot>true</PublishAot>`.
 
-:::warning Traced builds and AOT
-Traced packages retain reflection-based `ToString` implementations in their trace types. Their
-trimming and AOT compatibility remains an outstanding issue.
-:::
+Trace types print their fields with explicit formatters. On .NET, payload previews use the
+application value's `ToString` implementation, which must also support Native AOT. Arrays and
+collections preview up to 64 elements and four levels of nesting; previews fit on one line of
+at most 60 characters. An application's records and unions can provide their own `ToString`
+overrides to keep useful diagnostic text after trimming.
 
 ## Traced packages
 

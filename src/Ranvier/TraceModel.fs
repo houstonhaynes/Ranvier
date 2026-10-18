@@ -19,6 +19,16 @@ type WhyRoot =
     /// <summary>An async source's settle or failure: the <c>Settle</c> or <c>Fail</c> seq.</summary>
     | Settled of settle: int
 
+    /// <summary>The root's case name and its event, node or checkpoint.</summary>
+    override this.ToString() =
+        match this with
+        | UserWrite write -> "UserWrite " + string write
+        | Created nodeNew -> "Created " + string nodeNew
+        | Pulled reader -> "Pulled " + string reader
+        | BeforeCheckpoint file -> "BeforeCheckpoint " + TraceText.value file
+        | Unrecorded last -> "Unrecorded " + string last
+        | Settled settle -> "Settled " + string settle
+
 /// <summary>One event of a <c>Trace.why</c> chain.</summary>
 type WhyStep =
     {
@@ -29,6 +39,17 @@ type WhyStep =
         /// <summary>The value or exception recorded by a <c>Write</c>, <c>Moved</c>, <c>Settle</c> or <c>Fail</c>.</summary>
         Value: obj option
     }
+
+    /// <summary>The step fields, one per line, with the value's <c>ToString</c> text.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Seq", string this.Seq
+                "Kind", TraceNames.eventKind this.Kind
+                "Node", string this.Node
+                "Other", string this.Other
+                "Value", TraceText.option TraceText.value this.Value
+            ]
 
 /// <summary>The cause chain of one run, from its <c>RunStart</c> back to a <c>WhyRoot</c>.</summary>
 type Why =
@@ -41,6 +62,16 @@ type Why =
         /// <summary>The chain's end, or <c>None</c> when <c>whyDepth</c> stopped it first.</summary>
         Root: WhyRoot option
     }
+
+    /// <summary>The node, run, steps and root in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Node", string this.Node
+                "Run", string this.Run
+                "Steps", TraceText.list string this.Steps
+                "Root", TraceText.option string this.Root
+            ]
 
 /// <summary>Why a node has not run since its last run ended, in <c>Trace.whyNot</c>.</summary>
 type WhyNotReason =
@@ -59,6 +90,21 @@ type WhyNotReason =
     /// not move.
     /// </summary>
     | NotReached of stopAt: int
+
+    /// <summary>The reason's case name and its event and upstream nodes.</summary>
+    override this.ToString() =
+        match this with
+        | Disposed seq -> "Disposed " + string seq
+        | Queued schedule -> "Queued " + string schedule
+        | Unobserved mark -> "Unobserved " + string mark
+        | CheckedClean (resolvedAt, upstream) ->
+            "CheckedClean ("
+            + string resolvedAt
+            + ", "
+            + TraceText.list string upstream
+            + ")"
+        | SkippedAsRunningReader seq -> "SkippedAsRunningReader " + string seq
+        | NotReached stopAt -> "NotReached " + string stopAt
 
 /// <summary>One run of a node, in <c>Trace.history</c>.</summary>
 type TraceRun =
@@ -79,6 +125,19 @@ type TraceRun =
         Value: obj option
     }
 
+    /// <summary>The run fields, one per line, with the value's <c>ToString</c> text.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Run", string this.Run
+                "Start", string this.Start
+                "Status", TraceText.option TraceNames.runStatus this.Status
+                "Moved", TraceText.value this.Moved
+                "Root", string this.Root
+                "Flush", string this.Flush
+                "Value", TraceText.option TraceText.value this.Value
+            ]
+
 /// <summary>A node's recorded runs, in <c>Trace.history</c>.</summary>
 type TraceHistory =
     {
@@ -86,6 +145,10 @@ type TraceHistory =
         /// <summary>The runs, oldest first.</summary>
         Runs: TraceRun list
     }
+
+    /// <summary>The node and its ordered runs in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record [ "Node", string this.Node; "Runs", TraceText.list string this.Runs ]
 
 /// <summary>A flight's state, in <c>TraceFlight</c>.</summary>
 [<RequireQualifiedAccess>]
@@ -99,6 +162,29 @@ type TraceFlightState =
     /// <summary>The flight's result was discarded at <c>seq</c>.</summary>
     | Dropped of seq: int * reason: TraceDropReason
 
+    /// <summary>The flight state's case name and event details.</summary>
+    override this.ToString() =
+        match this with
+        | TraceFlightState.InFlight -> "InFlight"
+        | TraceFlightState.Settled (seq, held) ->
+            "Settled ("
+            + string seq
+            + ", "
+            + TraceText.value held
+            + ")"
+        | TraceFlightState.Failed (seq, cancelled) ->
+            "Failed ("
+            + string seq
+            + ", "
+            + TraceText.value cancelled
+            + ")"
+        | TraceFlightState.Dropped (seq, reason) ->
+            "Dropped ("
+            + string seq
+            + ", "
+            + TraceNames.dropReason reason
+            + ")"
+
 /// <summary>One flight of an async memo, in <c>TraceWaiting</c>.</summary>
 type TraceFlight =
     {
@@ -111,6 +197,16 @@ type TraceFlight =
         State: TraceFlightState
     }
 
+    /// <summary>The flight fields, one per line, in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Flight", string this.Flight
+                "Start", string this.Start
+                "Run", string this.Run
+                "State", string this.State
+            ]
+
 /// <summary>What a node waits on, in <c>Trace.waitingOn</c>.</summary>
 type TraceWaiting =
     {
@@ -120,6 +216,15 @@ type TraceWaiting =
         /// <summary>The node's flights, newest first.</summary>
         Flights: TraceFlight list
     }
+
+    /// <summary>The node, pending sources and flights in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Node", string this.Node
+                "Sources", TraceText.list string this.Sources
+                "Flights", TraceText.list string this.Flights
+            ]
 
 /// <summary>A node's state in a <c>TraceSnapshot</c>.</summary>
 [<RequireQualifiedAccess>]
@@ -131,6 +236,14 @@ type TraceNodeStatus =
     /// <summary>The last run ended with the <c>RunStatus</c>.</summary>
     | Ended of RunStatus
     | Disposed
+
+    /// <summary>The node state's case name and the run status of an ended run.</summary>
+    override this.ToString() =
+        match this with
+        | TraceNodeStatus.Fresh -> "Fresh"
+        | TraceNodeStatus.Running -> "Running"
+        | TraceNodeStatus.Ended status -> "Ended " + TraceNames.runStatus status
+        | TraceNodeStatus.Disposed -> "Disposed"
 
 /// <summary>A node in a <c>TraceSnapshot</c>.</summary>
 type TraceSnapshotNode =
@@ -162,6 +275,25 @@ type TraceSnapshotNode =
         Value: string option
     }
 
+    /// <summary>The node snapshot's fields, one per line, in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Id", string this.Id
+                "Kind", TraceNames.nodeKind this.Kind
+                "Owner", string this.Owner
+                "Path", TraceText.value this.Path
+                "Incarnation", string this.Incarnation
+                "Label", TraceText.option TraceText.value this.Label
+                "Site", TraceText.value this.Site
+                "Created", string this.Created
+                "Runs", string this.Runs
+                "LastRun", string this.LastRun
+                "PendingMark", string this.PendingMark
+                "Status", string this.Status
+                "Value", TraceText.option TraceText.value this.Value
+            ]
+
 /// <summary>An owner in a <c>TraceSnapshot</c>.</summary>
 type TraceSnapshotOwner =
     {
@@ -177,6 +309,19 @@ type TraceSnapshotOwner =
         Label: string option
         Disposed: bool
     }
+
+    /// <summary>The owner snapshot's fields, one per line, in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Id", string this.Id
+                "Parent", string this.Parent
+                "Host", string this.Host
+                "Root", TraceText.value this.Root
+                "Path", TraceText.value this.Path
+                "Label", TraceText.option TraceText.value this.Label
+                "Disposed", TraceText.value this.Disposed
+            ]
 
 /// <summary>A graph's state folded from its trace events up to <c>Seq</c>.</summary>
 type TraceSnapshot =
@@ -200,6 +345,20 @@ type TraceSnapshot =
         Incarnations: Map<string, int>
     }
 
+    /// <summary>The snapshot fields and ordered maps in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Seq", string this.Seq
+                "Root", string this.Root
+                "Nodes", TraceText.map string string this.Nodes
+                "Owners", TraceText.map string string this.Owners
+                "Sources", TraceText.map string (TraceText.list string) this.Sources
+                "Observers", TraceText.map string (TraceText.set string) this.Observers
+                "Siblings", TraceText.map TraceText.value (TraceText.map TraceText.value string) this.Siblings
+                "Incarnations", TraceText.map TraceText.value string this.Incarnations
+            ]
+
 /// <summary>A parsed JSONL dump: its header, the snapshot at <c>SeqFrom</c> and the events after it.</summary>
 /// <remarks>Parsed event payloads are strings, or null.</remarks>
 type TraceDump =
@@ -214,6 +373,18 @@ type TraceDump =
         Snapshot: TraceSnapshot
         Events: TraceEvent[]
     }
+
+    /// <summary>The dump header, snapshot and events in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record
+            [
+                "Target", TraceText.value this.Target
+                "Graph", string this.Graph
+                "Checkpoint", TraceText.value this.Checkpoint
+                "SeqFrom", string this.SeqFrom
+                "Snapshot", string this.Snapshot
+                "Events", TraceText.array string this.Events
+            ]
 
 /// <summary>Pure queries over an array of trace events, oldest first.</summary>
 /// <remarks>
@@ -237,8 +408,8 @@ module TraceModel =
 
     /// <summary>
     /// A value as one line of at most 60 characters: an exception as its type name and message, a string as itself,
-    /// and any other value as its <c>%A</c> text. On .NET an anonymous record reads <c>{| ... |}</c> under every
-    /// FSharp.Core version.
+    /// and collections as up to 64 elements, nested up to four levels. Other values use <c>ToString</c> on .NET
+    /// and <c>%A</c> under Fable. Application payloads must supply an AOT-compatible <c>ToString</c> for NativeAOT.
     /// </summary>
     let valueText (value: obj) : string =
         let lines (text: string) =
@@ -260,8 +431,23 @@ module TraceModel =
             | :? float as f -> f.ToString ("R", Globalization.CultureInfo.InvariantCulture)
 #endif
             | v ->
-                // %A puts each record field on its own line; the join restores the "; " separator.
-                let parts = lines (sprintf "%A" v)
+                let text =
+#if FABLE_COMPILER
+                    sprintf "%A" v
+#else
+                    let rec preview depth (value: obj) =
+                        match value with
+                        | null -> "null"
+                        | :? string -> TraceText.value value
+                        | _ when depth = 0 -> "..."
+                        | :? System.Array as items -> TraceText.array (preview (depth - 1)) (items |> Seq.cast<obj> |> Seq.truncate 64)
+                        | :? System.Collections.IEnumerable as items ->
+                            TraceText.list (preview (depth - 1)) (items |> Seq.cast<obj> |> Seq.truncate 64)
+                        | value -> value.ToString ()
+
+                    preview 4 v
+#endif
+                let parts = lines text
                 let joined = StringBuilder ()
 
                 for i in 0 .. parts.Length - 1 do
@@ -282,7 +468,8 @@ module TraceModel =
 #else
                 // FSharp.Core releases differ in whether %A brackets an anonymous record with "{|".
                 if
-                    v.GetType().Name.StartsWith("<>f__AnonymousType", StringComparison.Ordinal)
+                    not (Platform.isNull v)
+                    && v.GetType().Name.StartsWith("<>f__AnonymousType", StringComparison.Ordinal)
                     && text.StartsWith ("{ ", StringComparison.Ordinal)
                     && text.EndsWith (" }", StringComparison.Ordinal)
                 then

@@ -21,7 +21,7 @@
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
     </PropertyGroup>
 
-    <!-- `RanvierAotClean` compiles the untraced build reflection-free and marks it trimmable and AOT-compatible
+    <!-- `RanvierAotClean` compiles reflection-free and marks the assembly trimmable and AOT-compatible
          (Directory.Build.targets). tests/Ranvier.AotSmoke checks that claim at publish time. -->
     <PropertyGroup>
         <RanvierAotClean>true</RanvierAotClean>

@@ -34,6 +34,10 @@ let private equals (name: string) (expected: string) (actual: string) =
 
 [<EntryPoint>]
 let main _ =
+#if RANVIER_TRACE
+    for name, expected, value in TraceTextCases.cases () do
+        equals ("trace text: " + name) expected (value.ToString ())
+#endif
     use g = new Graph ()
     use _ = g.Activate ()
 

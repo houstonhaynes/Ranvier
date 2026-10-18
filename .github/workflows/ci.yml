@@ -72,19 +72,22 @@ jobs:
         run: ./tests/check-package-compatibility.ps1
 
   # A NativeAOT publish over both assemblies, rooted: any IL2xxx/IL3xxx warning fails the publish, and the binary
-  # exits non-zero when an exception or a ToString text differs from the JIT build's. Untraced build only.
+  # exits non-zero when an exception or a ToString text differs from the expected text, with tracing on and off.
   aot:
-    name: NativeAOT smoke
+    name: NativeAOT smoke (trace=${{ matrix.trace }})
     needs: changes
     if: needs.changes.outputs.docs != 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        trace: [false, true]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - name: Publish
-        run: dotnet publish tests/Ranvier.AotSmoke -c Release -r linux-x64 -o artifacts/aot
+        run: dotnet publish tests/Ranvier.AotSmoke -c Release -r linux-x64 -p:RanvierTrace=${{ matrix.trace }} -o artifacts/aot
       - name: Run
         run: ./artifacts/aot/Ranvier.AotSmoke
 

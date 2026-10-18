@@ -17,6 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="../TraceTextCases.fs" Link="TraceTextCases.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

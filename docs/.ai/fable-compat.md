@@ -59,7 +59,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
-| Texts.fs | 5 | 5 | 5 | 5 | 5 | 5 | 1 | 0 |
+| Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
 | FailureOrigins.fs | 16 | 16 | 15 | 16 | 16 | 15 | 2 | 0 |
 | NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Editables.fs | 17 | 17 | 17 | 17 | 17 | 17 | 1 | 0 |
@@ -71,7 +71,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryDictionary.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | QueryErgonomics.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 999 | 981 | 917 | 1098 | 1075 | 1001 | 91 | 1 |
+| **Total** | 999 | 981 | 917 | 1136 | 1113 | 1039 | 91 | 1 |
 
 ## Tests.fs
 
@@ -1613,13 +1613,51 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | --- | --- |
 | NotReadyException's message names the exception | Fable gives an F# exception an empty message. |
 
-<details><summary>5 passed in every build and delivery that runs them</summary>
+<details><summary>43 passed in every build and delivery that runs them</summary>
 
 - ThreadAffinity and FlightPolicy print their case names
 - a Reading prints its case and payload, quoting a string
 - GraphOptions prints its fields one per line
 - a missing key's message holds the key's text
 - a duplicate key's message holds the key's text
+- trace text: user write (traced only)
+- trace text: created (traced only)
+- trace text: pulled (traced only)
+- trace text: checkpoint (traced only)
+- trace text: null checkpoint (traced only)
+- trace text: unrecorded (traced only)
+- trace text: settled root (traced only)
+- trace text: disposed reason (traced only)
+- trace text: queued (traced only)
+- trace text: unobserved (traced only)
+- trace text: checked clean (traced only)
+- trace text: skipped reader (traced only)
+- trace text: not reached (traced only)
+- trace text: in flight (traced only)
+- trace text: settled flight (traced only)
+- trace text: unheld flight (traced only)
+- trace text: failed flight (traced only)
+- trace text: cancelled flight (traced only)
+- trace text: dropped flight (traced only)
+- trace text: fresh node (traced only)
+- trace text: running node (traced only)
+- trace text: ended node (traced only)
+- trace text: disposed node (traced only)
+- trace text: event (traced only)
+- trace text: null event payload (traced only)
+- trace text: origin (traced only)
+- trace text: step (traced only)
+- trace text: null step value (traced only)
+- trace text: why (traced only)
+- trace text: run (traced only)
+- trace text: history (traced only)
+- trace text: flight (traced only)
+- trace text: waiting (traced only)
+- trace text: snapshot node (traced only)
+- trace text: snapshot owner (traced only)
+- trace text: snapshot maps (traced only)
+- trace text: dump (traced only)
+- trace text: timing (traced only)
 
 </details>
 
