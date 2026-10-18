@@ -123,6 +123,11 @@ module internal ObserverSlots =
         ObserverSlot Unchecked.defaultof<IComputation>
 #endif
 
+    /// <summary>
+    /// The zero-length list an observer set holds until its first observer.
+    /// </summary>
+    let none: ObserverSlot[] = [||]
+
 /// <summary>
 /// The observers of one source, and the only safe way to notify them.
 /// </summary>
@@ -141,7 +146,7 @@ type internal ObserverSet() =
     [<Literal>]
     let IndexThreshold = 8
 
-    let mutable items: ObserverSlot[] = Array.empty
+    let mutable items: ObserverSlot[] = ObserverSlots.none
     let mutable count = 0
 
     /// <summary>
@@ -206,7 +211,9 @@ type internal ObserverSet() =
                 Platform.refIndexSet index c 0
         elif positionOf c < 0 then
             if count = items.Length then
-                let grown = Array.zeroCreate (max 4 (count * 2))
+                // A first observer gets a single slot: most sources keep exactly one.
+                let grown = Array.zeroCreate (if count = 0 then 1 else max 4 (count * 2))
+
                 Array.blit items 0 grown 0 count
                 items <- grown
 
@@ -380,6 +387,11 @@ module internal SourceSlots =
         SourceSlot Unchecked.defaultof<ISource>
 #endif
 
+    /// <summary>
+    /// The zero-length list a source list holds until its second source.
+    /// </summary>
+    let none: SourceSlot[] = [||]
+
 /// <summary>
 /// The sources one computation read on its last run, in the order it read
 /// them.
@@ -419,7 +431,7 @@ type internal SourceList() =
     /// <summary>
     /// Sources after the first. <c>rest[i - 1]</c> is the source at position <c>i</c>.
     /// </summary>
-    let mutable rest: SourceSlot[] = Array.empty
+    let mutable rest: SourceSlot[] = SourceSlots.none
     let mutable count = 0
 
     /// <summary>
