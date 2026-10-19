@@ -25,10 +25,10 @@ not scenarios with each other.
 ## CI counter history
 
 The chart compares retired instructions per operation across commits and includes engine
-comparisons where the run provides them. Choose a runtime and scenario; .NET and Node.js remain
+comparisons where the run provides them. Choose a runtime, metric and scenario; .NET and Node.js remain
 separate because their measurements are not comparable. Select a commit point or label to inspect its library comparison; open its
 source using the commit link. Hover or focus marks for exact values, toggle libraries in the legend,
-and switch between absolute instructions and values relative to Ranvier. The site builds this history from the `perf-data` branch after each successful
+and switch between absolute values and values relative to Ranvier. The site builds this history from the `perf-data` branch after each successful
 master measurement.
 
 <div class="rv-perf" data-perf-history><p role="status">Loading recorded measurements…</p></div>

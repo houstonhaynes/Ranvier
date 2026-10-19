@@ -469,3 +469,8 @@ A disposed async memo reads as `Failed` with an `ObjectDisposedException`. Its r
 A signal read after an `await` that suspends
 does not start a new flight when it changes. Read it before the first `await`.
 :::
+
+## Performance
+
+Instruction counts for flight policies, failure recompute and async scenarios, compared with other libraries and followed across commits, are on
+[Benchmarks → Suspension](../benchmarks/suspension.md#ci-instruction-counts).

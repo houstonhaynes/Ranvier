@@ -530,6 +530,10 @@ take precedence over `Changed` for the same key, so an added or replaced row nee
 
 :::
 
+## Performance
+
+Instruction counts for projection and keyed-row updates, compared with other libraries and followed across commits, are on
+[Benchmarks → Projections](../benchmarks/projections.md#ci-instruction-counts).
 *)
 (*** hide ***)
 active.Dispose ()

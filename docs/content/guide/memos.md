@@ -501,3 +501,8 @@ Disposal keeps the stored `10`; it does not refresh the memo to `20`.
 
 :::
 ::::
+
+## Performance
+
+Instruction counts for memo chains and diamonds, compared with other libraries and followed across commits, are on
+[Benchmarks → Memos](../benchmarks/memos.md#ci-instruction-counts).

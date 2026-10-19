@@ -31,6 +31,9 @@ type AcceptedRegression =
         Reasons: Compare.AcceptanceEntry list
     }
 
+/// <summary>A project's <c>&lt;Version&gt;</c> at the recorded commit.</summary>
+type PackageVersion = { Name: string; Version: string }
+
 /// <summary>Commit metadata, raw AB artifacts with CPU and versions, timing medians, and scoped acceptance provenance.</summary>
 type RecordedRun =
     {
@@ -38,6 +41,8 @@ type RecordedRun =
         Parent: string
         Date: DateTime
         Subject: string
+        /// <summary>The versions of the projects under <c>src</c>, ordered by name; null in records that predate the field.</summary>
+        Packages: PackageVersion[]
         Accepted: string list
         Reasons: string list
         Overrides: Compare.AcceptanceEntry list
@@ -142,6 +147,7 @@ let create commit parent date subject messages (runs: AbRun[]) =
         Parent = parent
         Date = date
         Subject = subject
+        Packages = [||]
         Accepted =
             regressions
             |> Array.map _.Scenario
@@ -261,7 +267,7 @@ let timeline (runs: RecordedRun[]) =
 
     sb.ToString ()
 
-let private options allowed repeated (args: string list) =
+let private options allowed (repeated: Set<string>) (args: string list) =
     let rec loop acc (remaining: string list) =
         match remaining with
         | [] -> acc
@@ -270,20 +276,29 @@ let private options allowed repeated (args: string list) =
             && (key = "--subject"
                 || not (value.StartsWith ("--", StringComparison.Ordinal)))
             ->
-            require (key = repeated || not (Map.containsKey key acc)) ("Repeated option " + key)
+            require
+                (Set.contains key repeated
+                 || not (Map.containsKey key acc))
+                ("Repeated option " + key)
+
             loop (Map.change key (fun old -> Some (defaultArg old [] @ [ value ])) acc) rest
         | key :: _ -> invalidArg "args" ("Unknown option or missing value: " + key)
 
     loop Map.empty args
 
-// Records that predate `ScenarioFigures.Compiled` read it as false.
+// Records that predate `ScenarioFigures.Compiled` read it as false, and those that predate `RecordedRun.Packages` read it as null.
 let private resolver =
     let r = DefaultJsonTypeInfoResolver ()
 
     r.Modifiers.Add (fun info ->
-        if info.Type = typeof<ScenarioFigures> then
+        let optional =
+            if info.Type = typeof<ScenarioFigures> then "Compiled"
+            elif info.Type = typeof<RecordedRun> then "Packages"
+            else null
+
+        if not (isNull optional) then
             for p in info.Properties do
-                if p.Name = "Compiled" then
+                if p.Name = optional then
                     p.IsRequired <- false)
 
     r
@@ -298,10 +313,10 @@ let private read<'T> path =
 
 /// <summary>Writes a record or timeline; unknown options, repeated singletons, missing values and malformed artifacts raise errors.</summary>
 let main args =
-    let parse keys repeated rest =
-        let o = options (Set.ofList keys) repeated rest
+    let parse required optional repeated rest =
+        let o = options (Set.ofList (required @ optional)) (Set.ofList repeated) rest
 
-        for key in keys do
+        for key in required do
             require (Map.containsKey key o) ("Required option " + key)
 
         o
@@ -309,7 +324,7 @@ let main args =
     match args with
     | "record" :: rest ->
         let o =
-            parse [ "--ab"; "--commit"; "--parent"; "--date"; "--subject"; "--message"; "--out" ] "--ab" rest
+            parse [ "--ab"; "--commit"; "--parent"; "--date"; "--subject"; "--message"; "--out" ] [ "--package" ] [ "--ab"; "--package" ] rest
 
         let one key =
             o[key] |> List.exactlyOne
@@ -320,13 +335,32 @@ let main args =
         let messages = File.ReadAllText(one "--message").Split('\u0000')
         let runs = o["--ab"] |> List.map read<AbRun> |> List.toArray
 
+        let packages =
+            o
+            |> Map.tryFind "--package"
+            |> Option.defaultValue []
+            |> List.map (fun entry ->
+                match entry.Split ('=', 2) with
+                | [| name; version |] when name <> "" && version <> "" -> { Name = name; Version = version }
+                | _ ->
+                    invalidArg
+                        "args"
+                        ("Package entries take the form Name=Version: "
+                         + entry))
+            |> List.sortBy _.Name
+            |> List.toArray
+
+        require ((packages |> Array.distinctBy _.Name).Length = packages.Length) "Duplicate package name."
+
         let record =
-            create (one "--commit") (one "--parent") date (one "--subject") messages runs
+            { create (one "--commit") (one "--parent") date (one "--subject") messages runs with
+                Packages = packages
+            }
 
         File.WriteAllText (one "--out", JsonSerializer.Serialize (record, json))
         0
     | "timeline" :: rest ->
-        let o = parse [ "--runs"; "--out" ] "" rest
+        let o = parse [ "--runs"; "--out" ] [] [] rest
 
         let one key =
             o[key] |> List.exactlyOne

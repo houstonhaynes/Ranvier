@@ -220,3 +220,8 @@ property.
 
 :::
 ::::
+
+## Performance
+
+Instruction counts for effect work, MVU dispatch and editables, compared with other libraries and followed across commits, are on
+[Benchmarks → Effects](../benchmarks/effects.md#ci-instruction-counts).

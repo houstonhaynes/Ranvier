@@ -8,6 +8,16 @@
   font-variant-numeric: tabular-nums;
   container-type: inline-size;
 }
+.rv-perf-tabs { margin: 2rem 0 3rem; }
+.rv-perf-tabs > .rv-perf { margin: 0; }
+.rv-perf-tablist { display: flex; gap: 1.5rem; border-bottom: 1px solid var(--rv-border, #dce0e3); margin-bottom: 1.25rem; font-family: var(--rv-font-display, system-ui, sans-serif); }
+.rv-perf-tab {
+  margin-bottom: -1px; padding: .5rem 0; background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--rv-muted, #777e85); font: inherit; font-size: .875rem; font-weight: 550; cursor: pointer;
+}
+.rv-perf-tab:hover { color: var(--rv-text, #202326); }
+.rv-perf-tab[aria-selected="true"] { color: var(--rv-text, #202326); border-bottom-color: var(--rv-text, #202326); }
+.rv-perf-tab:focus-visible { outline: 2px solid var(--rv-text, #202326); outline-offset: 2px; }
 .rv-perf-heading { border-top: 2px solid var(--perf-ink); padding-top: 1rem; }
 .rv-perf .rv-perf-eyebrow { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .4rem; color: var(--perf-muted); }
 .rv-perf .rv-perf-heading h3 { margin: 0 0 1.5rem; font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 550; letter-spacing: -.045em; line-height: 1.15; }
@@ -60,6 +70,8 @@
 .rv-perf-spark header > span { font-size: .6875rem; }
 .rv-perf-spark header strong { color: var(--perf-ink); font-weight: 650; }
 .rv-perf-crosshair { stroke: var(--perf-muted); stroke-width: 1.5; }
+.rv-perf-spread { opacity: .18; }
+.rv-perf-counter-change { fill: var(--perf-muted); }
 .rv-perf-commit { cursor: pointer; }
 .rv-perf-commit:hover { fill: var(--perf-ink); text-decoration: underline; }
 .rv-perf-commit:focus-visible { fill: var(--perf-ink); text-decoration: underline; outline: 2px solid var(--perf-ink); outline-offset: 3px; }

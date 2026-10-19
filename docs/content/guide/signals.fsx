@@ -135,6 +135,11 @@ A signal stores state; it does not own a computation or cleanup. Dispose the
 
 Writes obey the graph's thread-affinity guard, including equal writes. Use
 `graph.Dispatch` for writes from another thread; see [Threading and dispatch](threading.md).
+
+## Performance
+
+Instruction counts for signal writes and reads, compared with other libraries and followed across commits, are on
+[Benchmarks → Signals](../benchmarks/signals.md#ci-instruction-counts).
 *)
 
 (*** hide ***)

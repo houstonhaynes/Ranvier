@@ -62,3 +62,8 @@ is disposed. Dispose each `createRoot` owner when its work ends. Dispose the gra
 :::
 
 Register subscriptions and other resources with [Cleanup](cleanup.md).
+
+## Performance
+
+Instruction counts for creating and disposing rows, compared with other libraries and followed across commits, are on
+[Benchmarks → Lifetimes](../benchmarks/lifetimes.md#ci-instruction-counts).

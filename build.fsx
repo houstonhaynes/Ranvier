@@ -386,6 +386,40 @@ module private Perf =
         if not condition then
             failwith message
 
+    let private gitOutput (arguments: string list) =
+        let info =
+            Diagnostics.ProcessStartInfo (
+                "git",
+                WorkingDirectory = __REPOSITORY_DIRECTORY__,
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            )
+
+        for argument in arguments do
+            info.ArgumentList.Add argument
+
+        use git = Diagnostics.Process.Start info
+        let output = git.StandardOutput.ReadToEnd ()
+        git.WaitForExit ()
+        require (git.ExitCode = 0) ("git " + String.concat " " arguments + " failed")
+        output
+
+    /// <summary>The <c>--package Name=Version</c> arguments for each <c>src</c> project that declares a <c>&lt;Version&gt;</c> at the revision.</summary>
+    let private packageArguments sha =
+        gitOutput [ "ls-tree"; "-r"; "--name-only"; sha; "--"; "src" ]
+        |> fun listing -> listing.Split ('\n', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+        |> Array.filter (fun file -> file.EndsWith (".fsproj", StringComparison.Ordinal))
+        |> Array.choose (fun file ->
+            let version =
+                Text.RegularExpressions.Regex.Match (gitOutput [ "show"; sha + ":" + file ], @"<Version>\s*([^<\s]+)\s*</Version>")
+
+            if version.Success then
+                Some (Path.GetFileNameWithoutExtension file + "=" + version.Groups[1].Value)
+            else
+                None)
+        |> Array.toList
+        |> List.collect (fun entry -> [ "--package"; entry ])
+
     let private readJson file =
         JsonDocument.Parse (File.ReadAllText file)
 
@@ -707,6 +741,7 @@ module private Perf =
                                                 "--out"
                                                 output
                                             ]
+                                            @ packageArguments sha
                                         )
                                     ))))
                     )
