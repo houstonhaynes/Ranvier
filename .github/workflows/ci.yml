@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 # These steps run the operations provided by the build CLI directly.
-# Partas.Build 0.8.1 also supports redirected output and automatic GitHub stage summaries.
+# Partas.Build 0.8.2 also supports redirected output and automatic GitHub stage summaries.
 
 jobs:
   # Documentation-only changes (see .github/scripts/changes.cjs) skip the build and test jobs; formatting always runs.

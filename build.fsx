@@ -1,4 +1,4 @@
-﻿#r "nuget: Partas.Build, 0.8.1"
+﻿#r "nuget: Partas.Build, 0.8.2"
 #r "nuget: Partas.Build.Baked, 0.3.0"
 #r "nuget: Partas.TypeProvider.BuildHelper, 0.2.5"
 #r "nuget: Fake.IO.FileSystem"
