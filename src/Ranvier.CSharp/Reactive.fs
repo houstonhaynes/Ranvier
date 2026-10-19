@@ -215,6 +215,18 @@ type Reactive =
     static member OwningAsync<'T>(compute: Func<CancellationToken, Task<'T>>) : AsyncMemo<'T> =
         Api.createAsyncWith (fun _ token -> compute.Invoke token)
 
+    /// <summary>An async memo whose flights follow <c>policy</c> instead of the graph's flight policy.</summary>
+    static member Async<'T>(compute: Func<CancellationToken, Task<'T>>, policy: FlightPolicy) : AsyncMemo<'T> =
+        Api.createAsyncWithPolicy policy (fun _ token -> compute.Invoke token)
+
+    /// <summary>An async memo receiving the value last published, whose flights follow <c>policy</c>.</summary>
+    static member Async<'T>(compute: Func<Previous<'T>, CancellationToken, Task<'T>>, policy: FlightPolicy) : AsyncMemo<'T> =
+        Api.createAsyncWithPolicy policy (fun previous token -> compute.Invoke (previous, token))
+
+    /// <summary>An owning async memo whose flights follow <c>policy</c> instead of the graph's flight policy.</summary>
+    static member OwningAsync<'T>(compute: Func<CancellationToken, Task<'T>>, policy: FlightPolicy) : AsyncMemo<'T> =
+        Api.createOwningAsyncWithPolicy policy (fun _ token -> compute.Invoke token)
+
     /// <summary>A source that stays pending until <c>Settle</c> or <c>Fail</c> is called on it.</summary>
     static member AsyncSource<'T>() : AsyncSource<'T> =
         Api.createAsyncSource<'T>()

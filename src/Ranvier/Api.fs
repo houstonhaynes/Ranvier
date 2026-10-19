@@ -381,6 +381,18 @@ module Api =
         AsyncMemo<'T>.Create(Graph.Current, compute, ScopeMode.Owning)
 
     /// <summary>
+    /// <c>createAsync</c>, with flights under <c>policy</c> instead of the graph's <c>GraphOptions.FlightPolicy</c>.
+    /// </summary>
+    let createAsyncWithPolicy (policy: FlightPolicy) (compute: Previous<'T> -> CancellationToken -> Task<'T>) =
+        AsyncMemo<'T>.Create(Graph.Current, compute, ScopeMode.PureAsync, policy)
+
+    /// <summary>
+    /// <c>createAsyncWith</c>, with flights under <c>policy</c> instead of the graph's <c>GraphOptions.FlightPolicy</c>.
+    /// </summary>
+    let createOwningAsyncWithPolicy (policy: FlightPolicy) (compute: Previous<'T> -> CancellationToken -> Task<'T>) =
+        AsyncMemo<'T>.Create(Graph.Current, compute, ScopeMode.Owning, policy)
+
+    /// <summary>
     /// A source whose value arrives later, settled by hand rather than computed.
     /// </summary>
     let createAsyncSource<'T> () =

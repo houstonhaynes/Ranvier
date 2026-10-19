@@ -165,6 +165,23 @@ let private searchView (g: Graph) =
 
         query, replies, results)
 
+/// <summary>
+/// An async memo over <c>s</c> made by <c>create</c>, with one hand-settled <c>Flight</c> and one token per run.
+/// </summary>
+let private flightsOver (create: (Previous<int> -> CancellationToken -> Task<int>) -> AsyncMemo<int>) (s: Signal<int>) =
+    let flights = ResizeArray<Flight<int>>()
+    let tokens = ResizeArray<CancellationToken>()
+
+    let a =
+        create (fun _ token ->
+            s.Value |> ignore
+            tokens.Add token
+            let flight = Flight<int>()
+            flights.Add flight
+            flight.Task)
+
+    a, flights, tokens
+
 [<Tests>]
 let tests =
     testList
@@ -1414,5 +1431,101 @@ let tests =
 
                 replies[0].Settle []
                 Expect.equal (results.Value, results.IsWaiting) (Loaded [], false) "loaded, and empty"
+            }
+            test "async memos with different policies in one graph fly independently" {
+                let g = new Graph ()
+
+                let s, (queued, queuedFlights, queuedTokens), (cancelling, cancellingFlights, cancellingTokens) =
+                    g.Run (fun () ->
+                        let s = createSignal 1
+                        s, flightsOver (createAsyncWithPolicy FlightPolicy.Queue) s, flightsOver (createAsyncWithPolicy CancelPrevious) s)
+
+                queued.TryValue |> ignore
+                cancelling.TryValue |> ignore
+                s.Value <- 2
+                queued.TryValue |> ignore
+                cancelling.TryValue |> ignore
+
+                Expect.isTrue cancellingTokens[0].IsCancellationRequested "CancelPrevious cancels its superseded flight"
+                Expect.isFalse queuedTokens[0].IsCancellationRequested "Queue leaves its earlier flight running"
+
+                queuedFlights[1].Settle 20
+                cancellingFlights[1].Settle 20
+                Expect.equal queued.TryValue Pending "the queued result waits for the flight started before it"
+                Expect.equal cancelling.TryValue (Ready 20) "the newest flight publishes at once"
+
+                queuedFlights[0].Settle 10
+                cancellingFlights[0].Settle 10
+                Expect.equal queued.TryValue (Ready 20) "both queued results applied, in start order"
+                Expect.equal cancelling.TryValue (Ready 20) "the superseded result is discarded"
+            }
+
+            test "a node's policy overrides the graph's" {
+                let g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = FlightPolicy.Queue
+                        }
+                    )
+
+                let s, (a, flights, tokens) =
+                    g.Run (fun () ->
+                        let s = createSignal 1
+                        s, flightsOver (createAsyncWithPolicy CancelPrevious) s)
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                Expect.isTrue tokens[0].IsCancellationRequested "the superseded flight is cancelled"
+
+                flights[1].Settle 20
+                Expect.equal a.TryValue (Ready 20) "the newest flight publishes without waiting for the first"
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 20) "the superseded result is discarded"
+            }
+
+            test "a node without a policy follows the graph's beside one with its own" {
+                let g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            FlightPolicy = FlightPolicy.Queue
+                        }
+                    )
+
+                let s, (a, flights, tokens), (other, _, _) =
+                    g.Run (fun () ->
+                        let s = createSignal 1
+                        s, flightsOver createAsync s, flightsOver (createAsyncWithPolicy CancelPrevious) s)
+
+                a.TryValue |> ignore
+                other.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                other.TryValue |> ignore
+                Expect.isFalse tokens[0].IsCancellationRequested "the graph's Queue leaves the earlier flight running"
+
+                flights[1].Settle 20
+                Expect.equal a.TryValue Pending "the later result waits under the graph's Queue"
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 20) "both results applied, in start order"
+            }
+
+            test "an owning async memo takes its own policy" {
+                let g = new Graph ()
+
+                let s, (a, flights, tokens) =
+                    g.Run (fun () ->
+                        let s = createSignal 1
+                        s, flightsOver (createOwningAsyncWithPolicy FlightPolicy.Queue) s)
+
+                a.TryValue |> ignore
+                s.Value <- 2
+                a.TryValue |> ignore
+                Expect.isFalse tokens[0].IsCancellationRequested "Queue leaves the earlier flight running"
+
+                flights[1].Settle 20
+                Expect.equal a.TryValue Pending "the later result waits for the earlier one"
+                flights[0].Settle 10
+                Expect.equal a.TryValue (Ready 20) "both results applied, in start order"
             }
         ]

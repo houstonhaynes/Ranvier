@@ -4139,9 +4139,10 @@ type Previous<'T> internal (source: IPreviousSource<'T>, position: int) =
 /// Reads are tracked up to the body's first await that suspends; a read after it is untracked. On .NET a continuation run
 /// inline inside another computation's body is detached from that body. Under Fable every await suspends and an outcome
 /// lands on a later microtask. Pure or owning, as a <c>Memo</c> is: an owning scope is discharged before each flight starts.
-/// The body receives the value last published as a <c>Previous</c>.
+/// The body receives the value last published as a <c>Previous</c>. Flights follow the <c>FlightPolicy</c> given at
+/// creation, or the graph's <c>GraphOptions.FlightPolicy</c> when none was given.
 /// </remarks>
-type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationToken -> Task<'T>, mode: ScopeMode) =
+type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationToken -> Task<'T>, mode: ScopeMode, policy: FlightPolicy) =
     let id = graph.NextId ()
     let observers = ObserverSet ()
     do Tracer.Bind (observers, graph, id)
@@ -4286,7 +4287,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// </summary>
     let retireIfQuiet () =
         if running = 0 then
-            match graph.Options.FlightPolicy with
+            match policy with
             | FlightPolicy.Queue
             | FinishCurrent
             | Drop
@@ -4331,7 +4332,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         // `Queue` applies every result in the order the flights started,
         // so it is the one policy that does not discard the superseded.
         let current =
-            match graph.Options.FlightPolicy with
+            match policy with
             | FlightPolicy.Queue ->
                 queued <- queued - 1
                 true
@@ -4392,7 +4393,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             | Platform.FlightOutcome.Faulted _
             | Platform.FlightOutcome.Canceled _ when suspended ->
                 // An older flight's failure is dropped; the node stays pending on the source or the run owed.
-                Tracer.FlightFailureDrop (graph, id, gen, owed, graph.Options.FlightPolicy.IsFinishCurrent)
+                Tracer.FlightFailureDrop (graph, id, gen, owed, policy.IsFinishCurrent)
             | Platform.FlightOutcome.Completed v ->
                 Tracer.FlightSettled (graph, id, gen, 0, 0, box v)
                 write v
@@ -4410,7 +4411,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         else
             Tracer.FlightDrop (graph, id, gen, (if disposed then 2 else 1))
 
-        match graph.Options.FlightPolicy with
+        match policy with
         // Every chained result, dropped or failed included, completes the waiter behind it with the last settled value.
         | FlightPolicy.Queue -> lock observers releaseNext
         // The trailing or replacing run starts at the next read: readers are told the value is stale again.
@@ -4444,7 +4445,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// A pure async memo over <c>compute</c>.
     /// </summary>
     new(graph: Graph, compute: Func<Previous<'T>, CancellationToken, Task<'T>>) as this =
-        new AsyncMemo<'T> (graph, (fun previous token -> compute.Invoke (previous, token)), ScopeMode.PureAsync)
+        new AsyncMemo<'T> (graph, (fun previous token -> compute.Invoke (previous, token)), ScopeMode.PureAsync, graph.Options.FlightPolicy)
         then this.Attach ()
 
     /// <summary>
@@ -4455,7 +4456,8 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         new AsyncMemo<'T> (
             graph,
             (fun previous token -> compute.Invoke (previous, token)),
-            (if owning then ScopeMode.Owning else ScopeMode.PureAsync)
+            (if owning then ScopeMode.Owning else ScopeMode.PureAsync),
+            graph.Options.FlightPolicy
         )
 
         then this.Attach ()
@@ -4465,7 +4467,13 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// An async memo over <c>compute</c>, owned by the current owner.
     /// </summary>
     static member internal Create(graph: Graph, compute: Previous<'T> -> CancellationToken -> Task<'T>, mode: ScopeMode) =
-        let memo = new AsyncMemo<'T> (graph, compute, mode)
+        AsyncMemo<'T>.Create(graph, compute, mode, graph.Options.FlightPolicy)
+
+    /// <summary>
+    /// An async memo over <c>compute</c> under <c>policy</c>, owned by the current owner.
+    /// </summary>
+    static member internal Create(graph: Graph, compute: Previous<'T> -> CancellationToken -> Task<'T>, mode: ScopeMode, policy: FlightPolicy) =
+        let memo = new AsyncMemo<'T> (graph, compute, mode, policy)
         memo.Attach ()
         memo
 
@@ -4485,13 +4493,10 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// <c>Drop</c> and <c>DropWhilePending</c> discards the change and keeps the scope.
     /// </summary>
     member private this.Start() =
-        if
-            queued <> 0
-            && not graph.Options.FlightPolicy.IsQueue
-        then
+        if queued <> 0 && not policy.IsQueue then
             freshness <- Freshness.Clean
             queued <- 2
-            Tracer.RunDeferred (graph, id, generation, graph.Options.FlightPolicy.IsFinishCurrent)
+            Tracer.RunDeferred (graph, id, generation, policy.IsFinishCurrent)
         elif Platform.isNull (box scope) then
             this.Launch ()
         else
@@ -4521,7 +4526,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         generation <- generation + 1
         let gen = generation
 
-        match graph.Options.FlightPolicy with
+        match policy with
         | CancelPrevious ->
             if not (Platform.isNull cts) then
                 cts.Cancel ()
@@ -4552,7 +4557,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         // A synchronous failure is a result like a faulted flight's. Under
         // `Queue` it takes its turn behind the flights started before it.
         let fail (ex: exn) =
-            match graph.Options.FlightPolicy with
+            match policy with
             | FlightPolicy.Queue when queued > 0 ->
                 queued <- queued + 1
                 chained <- chained + 1
@@ -4619,7 +4624,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             launching <- true
 
             try
-                match graph.Options.FlightPolicy with
+                match policy with
                 | FlightPolicy.Queue ->
                     queued <- queued + 1
                     chained <- chained + 1

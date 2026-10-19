@@ -634,6 +634,12 @@ var graph = new Graph(GraphOptions.Default
     .WithDispatcher(new ManualDispatcher()));
 ```
 
+`Async` and `OwningAsync` take a `FlightPolicy` for one async value, which overrides the graph's:
+
+```csharp
+var saved = Async(token => repo.SaveAsync(draft.Value, token), FlightPolicy.Queue);
+```
+
 `graph.Dispatch(() => …)` marshals a write from another thread, as described in
 [Async and pending](threading.md).
 

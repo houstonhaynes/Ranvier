@@ -27,7 +27,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Owners.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
 | ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
-| Async.fs | 52 | 44 | 9 | 52 | 44 | 9 | 4 | 0 |
+| Async.fs | 56 | 45 | 9 | 56 | 45 | 9 | 4 | 0 |
 | Boundaries.fs | 27 | 27 | 23 | 27 | 27 | 23 | 1 | 0 |
 | Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
@@ -74,7 +74,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1117 | 1099 | 1035 | 1257 | 1234 | 1160 | 93 | 1 |
+| **Total** | 1121 | 1100 | 1035 | 1261 | 1235 | 1160 | 93 | 1 |
 
 ## Tests.fs
 
@@ -339,6 +339,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | untraced | pending propagates into a memo and an effect | passed | failed | Async results arrive on a later microtask |
 | untraced | a boundary whose fallback returns its last value shows stale data while refreshing | passed | failed | Async results arrive on a later microtask |
 | untraced | a boundary tells a loaded empty list from a value not yet known | passed | failed | Async results arrive on a later microtask |
+| untraced | async memos with different policies in one graph fly independently | failed | failed | A `Queue` flight applies on a later microtask |
+| untraced | a node's policy overrides the graph's | passed | failed | Async results arrive on a later microtask |
+| untraced | a node without a policy follows the graph's beside one with its own | failed | failed | A `Queue` flight applies on a later microtask |
+| untraced | an owning async memo takes its own policy | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | reading an unsettled flight suspends | passed | failed | Async results arrive on a later microtask |
 | traced | dependencies read before the await are tracked | passed | failed | Async results arrive on a later microtask |
 | traced | a continuation run inside another computation's body leaves that computation's edges alone | failed | failed | Every `await` suspends |
@@ -382,6 +386,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | traced | pending propagates into a memo and an effect | passed | failed | Async results arrive on a later microtask |
 | traced | a boundary whose fallback returns its last value shows stale data while refreshing | passed | failed | Async results arrive on a later microtask |
 | traced | a boundary tells a loaded empty list from a value not yet known | passed | failed | Async results arrive on a later microtask |
+| traced | async memos with different policies in one graph fly independently | failed | failed | A `Queue` flight applies on a later microtask |
+| traced | a node's policy overrides the graph's | passed | failed | Async results arrive on a later microtask |
+| traced | a node without a policy follows the graph's beside one with its own | failed | failed | A `Queue` flight applies on a later microtask |
+| traced | an owning async memo takes its own policy | failed | failed | A `Queue` flight applies on a later microtask |
 
 | Excluded | Reason |
 | --- | --- |

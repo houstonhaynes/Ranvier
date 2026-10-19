@@ -110,6 +110,29 @@ public class AsyncTests
     }
 
     [Fact]
+    public void AnAsyncValueWithItsOwnPolicyOverridesTheGraphs()
+    {
+        var service = new ScriptedSearch();
+        var graph = new Graph(GraphOptions.Default.WithDispatcher(new ManualDispatcher()));
+
+        var (query, results) = graph.Run(() =>
+        {
+            var query = Signal("");
+            var results = Async(token => service.SearchAsync(query.Value, token), FlightPolicy.FinishCurrent);
+            return (query, results);
+        });
+        graph.Run(() => Effect(() => _ = results.TryValue));
+
+        query.Value = "a";
+        query.Value = "ad";
+        Assert.Single(service.Calls);
+        Assert.False(service.Calls[0].Token.IsCancellationRequested);
+
+        service.Calls[0].Reply.SetResult(["stale"]);
+        Assert.Equal(["", "ad"], service.Calls.Select(call => call.Query));
+    }
+
+    [Fact]
     public void DropIgnoresQueriesWhileASearchIsInFlight()
     {
         var service = new ScriptedSearch();
