@@ -65,6 +65,8 @@ new capability.
 
 **Async results arrive on a later microtask.** Under Fable an async flight is a promise. A flight that has already completed when its body returns still reads as Pending on the first read and becomes ready once the microtask queue drains. On .NET the continuation runs inline and the first read is ready. Synchronous rendering, such as server-side rendering, sees the Pending state.
 
+**A stream's end applies on a later microtask.** A stream memo observes the completion or failure of its source's `Run` task one microtask after the task settles. Until then the memo keeps its published state, and an item the source delivers in that window is still folded and published. On .NET a task completed on the graph thread, with continuations run synchronously, ends the stream before `SetResult` or `SetException` returns.
+
 **A `Queue` flight applies on a later microtask.** Under `FlightPolicy.Queue` each result waits on a promise chain, so a flight applies on a later microtask even when it and every earlier flight have settled. On .NET a settled queue applies inline.
 
 **Every `await` suspends.** A Fable `task` continues on a later microtask, outside every computation, so a read after an `await` is untracked even when the awaited promise had already resolved. On .NET a read after awaiting a completed task is tracked.

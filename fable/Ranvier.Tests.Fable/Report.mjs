@@ -1,5 +1,6 @@
 // Runs each compiled build of the suite under both delivery modes and writes docs/.ai/fable-compat.md.
-// Exits non-zero when a test fails under inline delivery and has no entry in `differences`.
+// Exits non-zero when a test fails under inline delivery and has no entry in `differences`, or fails only under
+// promise delivery and has no entry in `microtask`.
 //
 //   node fable/Ranvier.Tests.Fable/Report.mjs
 import { spawnSync } from "node:child_process";
@@ -52,6 +53,84 @@ const differences = {
         "valueText renders a value as one line",
     ],
 };
+
+// Each test, by title, that fails only under promise delivery: it reads the graph before a settle reaches it.
+const microtask = new Set([
+    "createEffect repeats work on each re-flight of an async value",
+    "createEffectOn acts once per settled value of an async value",
+    "createEffect has done its work before a failing read",
+    "createEffectOn keeps the previous action when compute fails",
+    "createEffectOn does not act again when a re-flight settles on the acted value",
+    "reading an unsettled flight suspends",
+    "dependencies read before the await are tracked",
+    "an effect flushed by a write in a continuation keeps its edges",
+    "a re-run is pending again, and Peek keeps the last value",
+    "a superseded flight does not publish",
+    "FinishCurrent folds the changes during a flight into one trailing run",
+    "FinishCurrent discards a failure that settles with a run owed",
+    "FinishCurrent applies a flight with no change during it as KeepLatest does",
+    "FinishCurrent does not hold a run back behind a body suspended on a pending source",
+    "FinishCurrent starts the trailing run for an effect that reads the memo",
+    "Drop discards the changes during a flight and keeps its value",
+    "Drop discards a change no reader pulled during the flight",
+    "Drop runs the first change after the flight settles",
+    "Drop keeps a memo source current across a change discarded at the settle",
+    "Drop keeps a memo source current across a change discarded at a read",
+    "Drop starts an async memo source's flight at the settle and runs on its value",
+    "DropWhilePending starts an async memo source's flight at the settle and runs on its value",
+    "Drop settles a failed flight that discarded a change to its error",
+    "Drop does not hold a run back behind a body suspended on a pending source",
+    "Drop wakes an effect that read the memo while pending",
+    "DropWhilePending keeps a successful flight's value and discards the changes during it",
+    "DropWhilePending discards an unpulled change when the flight succeeds",
+    "DropWhilePending keeps a memo source current across a change discarded at the settle",
+    "DropWhilePending replaces a failed flight that discarded a change with one run",
+    "DropWhilePending replaces a failed flight that discarded an unpulled change",
+    "DropWhilePending settles a failed flight to its error when a memo source resolves unchanged",
+    "DropWhilePending settles a failed flight with no change during it to its error",
+    "DropWhilePending settles a failed replacing run to its error",
+    "DropWhilePending starts the replacing run for an effect that reads the memo",
+    "DropWhilePending does not hold a run back behind a body suspended on a pending source",
+    "a failed flight settles as Failed",
+    "a body suspended on a pending source waits on the node, not a task",
+    "pending propagates into a memo and an effect",
+    "a boundary whose fallback returns its last value shows stale data while refreshing",
+    "a boundary tells a loaded empty list from a value not yet known",
+    "a boundary over an AsyncMemo catches the flight",
+    "an async value created and read in a boundary body restarts its flight on every settle",
+    "an async value created and read in an effect body restarts its flight on every settle",
+    "an async value created and read in an owning memo body restarts its flight on every settle",
+    "an async memo's settle marks its readers with its Moved as cause",
+    "why through an async memo walks past the settle to the flight's run",
+    "FinishCurrent records a deferred run and a settle held for the trailing run",
+    "FinishCurrent drops a failure that settles with a run owed as Trailing",
+    "FinishCurrent's trailing run is notified with the dropped failure as its cause",
+    "Drop records a run dropped at a read and a change dropped at the settle",
+    "Drop names the next change as the cause of the run after a change dropped at a read",
+    "Drop names the next change as the cause of the run after a change dropped at the settle",
+    "DropWhilePending drops a failure that settles after a discarded change as Retried",
+    "waitingOn reports superseded, settled and failed flights",
+    "a flight that is already complete never makes the reader pending",
+    "an effect over an already-complete flight runs once per write",
+    "a memo over an already-complete flight recomputes once per write",
+    "an already-faulted flight is Failed, not pending",
+    "three supersessions deep, only the last one publishes",
+    "a flight that settles from its own cancellation is discarded as superseded",
+    "a flight that faults from its own cancellation does not mark the node failed",
+    "a current flight that cancels itself settles as Failed",
+    "a flight cancelled after its first await keeps the cancellation's exception",
+    "a re-run after a failure clears the Error flag",
+    "a re-run that suspends on a pending source clears the Error flag",
+    "disposing a settled async memo keeps its value",
+    "a boundary over a superseded flight shows the fallback throughout",
+    "Runs counts body runs, including runs that start no flight",
+    "Peek on a flight in progress is the previous value, not the default",
+    "an async memo's cleanup runs before the next flight starts and at its disposal",
+    "an effect created after an await under runWithOwner is disposed with the flight",
+    "N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change",
+    "S1 a per-row fetch settles, and settling one row leaves the others' nodes alone",
+    "a faulted flight originates at the async memo",
+]);
 
 const explained = new Map(Object.entries(differences).flatMap(([why, titles]) => titles.map(t => [t, why])));
 
@@ -141,10 +220,14 @@ for (const [file, keys] of byFile) {
         for (const key of inBuild) {
             const inline = stateOf(build, "inline", key), promise = stateOf(build, "promise", key);
             if (inline === "passed" && promise === "passed") continue;
-            let why = inline === "passed" ? "Async results arrive on a later microtask" : explained.get(key.split(" / ").at(-1));
+            const title = key.split(" / ").at(-1);
+            let why = inline === "passed"
+                ? (microtask.has(title) ? "Async results arrive on a later microtask" : undefined)
+                : explained.get(title);
             if (!why) {
                 why = "**untriaged**";
-                untriaged.push(`${build}: ${key}: ${results[build].inline.get(key)?.message ?? inline}`);
+                const mode = inline === "passed" ? "promise" : "inline";
+                untriaged.push(`${build} ${mode}: ${key}: ${results[build][mode].get(key)?.message ?? stateOf(build, mode, key)}`);
             }
             failures.push(`| ${build} | ${escape(nameOf(key))} | ${inline} | ${promise} | ${why} |`);
         }
@@ -209,6 +292,6 @@ for (const { name } of builds) {
 }
 console.log(`excluded ${excludedTotal}; wrote ${output}`);
 if (untriaged.length > 0) {
-    console.error(`${untriaged.length} untriaged inline failure(s):\n  ${untriaged.join("\n  ")}`);
+    console.error(`${untriaged.length} untriaged failure(s):\n  ${untriaged.join("\n  ")}`);
     process.exit(1);
 }

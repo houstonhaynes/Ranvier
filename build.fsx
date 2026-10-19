@@ -118,7 +118,7 @@ module Stage =
 
                     run (
                         async {
-                            !!"**/**/bin" ++ "temp" -- "bin"
+                            !!"**/**/bin" ++ "temp" -- "bin" -- "**/node_modules/**"
                             |> Shell.cleanDirs
                         }
                     )

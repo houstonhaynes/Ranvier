@@ -58,7 +58,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
 | Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
-| Streams.fs | 26 | 26 | 22 | 26 | 26 | 22 | 1 | 0 |
+| Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
 | FailureOrigins.fs | 16 | 16 | 15 | 16 | 16 | 15 | 2 | 0 |
@@ -74,7 +74,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1117 | 1099 | 1031 | 1257 | 1234 | 1156 | 93 | 1 |
+| **Total** | 1117 | 1099 | 1035 | 1257 | 1234 | 1160 | 93 | 1 |
 
 ## Tests.fs
 
@@ -1659,31 +1659,23 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Streams.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | empty completion gives seed for a fold and InvalidOperationException for createStream | passed | failed | Async results arrive on a later microtask |
-| untraced | a stream failure publishes Failed with the stream memo as origin | passed | failed | Async results arrive on a later microtask |
-| untraced | a misbehaving source's items after completion are ignored | passed | failed | Async results arrive on a later microtask |
-| untraced | a closed stream's items are not folded | passed | failed | Async results arrive on a later microtask |
-| traced | empty completion gives seed for a fold and InvalidOperationException for createStream | passed | failed | Async results arrive on a later microtask |
-| traced | a stream failure publishes Failed with the stream memo as origin | passed | failed | Async results arrive on a later microtask |
-| traced | a misbehaving source's items after completion are ignored | passed | failed | Async results arrive on a later microtask |
-| traced | a closed stream's items are not folded | passed | failed | Async results arrive on a later microtask |
-
 | Excluded | Reason |
 | --- | --- |
 | a failed, superseded or disposed stream's fault is observed | JavaScript has no finalizer thread and no UnobservedTaskException. |
 
-<details><summary>22 passed in every build and delivery that runs them</summary>
+<details><summary>26 passed in every build and delivery that runs them</summary>
 
 - a stream starts on its first read, not at creation
 - an item publishes the latest state; a fold accumulates
 - an effect sees one run per item on the graph thread, and one per batch
 - items delivered while Run has not returned publish when it returns
 - completion keeps the last state
+- empty completion gives seed for a fold and InvalidOperationException for createStream
+- a stream failure publishes Failed with the stream memo as origin
 - a dependency change cancels the stream and restarts it from seed
 - a start that returns the same StreamSource object on every restart
 - a pending read in start keeps the node pending and starts it when the read settles
+- a misbehaving source's items after completion are ignored
 - Run throwing synchronously, and Run returning null, both publish Failed
 - a fold that throws on the second item
 - an equal published state notifies no reader
@@ -1691,6 +1683,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - owner disposal disposes the stream memo
 - an effect that disposes the stream memo while reacting to its publication
 - a pure memo that creates a stream memo fails
+- a closed stream's items are not folded
 - a completion from a replaced stream leaves the running stream alone
 - items awaiting a wake are not published once a dependency change has made the stream stale
 - items folded in a batch publish when a Check upstream resolves clean

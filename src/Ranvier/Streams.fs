@@ -514,7 +514,10 @@ type StreamMemo<'S>
                     && not disposed
                     && run.Received
                 then
-                    this.PublishLatest StreamNotice.InFlush
+                    let count = run.Snapshot ()
+
+                    if count > 0 then
+                        this.Publish (run.Captured, count, StreamNotice.InFlush)
 
     interface IStreamRequester with
         member this.RequestOnGraph() =
