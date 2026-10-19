@@ -11,7 +11,7 @@ permissions:
   contents: read
   actions: read
 
-# Every master push must reach history; no concurrency group drops pending runs.
+# Every measured master push must reach history; no concurrency group drops pending runs.
 jobs:
   find:
     runs-on: ubuntu-latest
@@ -53,13 +53,14 @@ jobs:
             const reason = ignoreReason(context.payload.head_commit?.message);
             if (reason !== null) core.notice(`Perf-Ignore: ${reason}. This commit is not measured or recorded.`);
             core.setOutput('ignored', String(reason !== null));
-      # Pull requests changing only documentation are not measured. Master pushes always are, to keep the history whole.
+      # Pull requests and master commits changing only documentation are not measured. Perf report adds no history
+      # record for such a master commit and still deploys its docs.
       - id: changes
-        if: github.event_name == 'pull_request'
         env:
+          EVENT: ${{ github.event_name }}
           BASE: ${{ steps.refs.outputs.base }}
           HEAD: ${{ steps.refs.outputs.head }}
-        run: node .github/scripts/changes.cjs pull_request "$BASE" "$HEAD" >> "$GITHUB_OUTPUT"
+        run: node .github/scripts/changes.cjs "$EVENT" "$BASE" "$HEAD" >> "$GITHUB_OUTPUT"
       # A completed run that measured the same base and head trees, such as the pull request of a commit now on
       # master, supplies the measurement.
       - id: previous

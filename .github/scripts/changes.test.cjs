@@ -18,3 +18,27 @@ test('ranges need two commits; new branches and manual runs have none', () => {
   assert.equal(range({ eventName: 'pull_request', base: 'master', head: b }), null);
   assert.equal(range({ eventName: 'workflow_dispatch', before: a, after: b }), null);
 });
+test('a master push is classified by its diff against the parent', () => {
+  const { execFileSync } = require('node:child_process');
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'changes-'));
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: dir, encoding: 'utf8' }).trim();
+  const commit = (file) => {
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.appendFileSync(path.join(dir, file), 'x\n');
+    git('add', '-A');
+    git('commit', '-q', '-m', file);
+    return git('rev-parse', 'HEAD');
+  };
+  const classify = (from, to) => execFileSync('node', [path.join(__dirname, 'changes.cjs'), 'push', from, to], { cwd: dir, encoding: 'utf8' }).trim();
+  try {
+    git('init', '-q');
+    const root = commit('src/Core.fs');
+    const docs = commit('docs/guide.md');
+    const code = commit('src/Core.fs');
+    assert.equal(classify(root, docs), 'docs=true');
+    assert.equal(classify(docs, code), 'docs=false');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

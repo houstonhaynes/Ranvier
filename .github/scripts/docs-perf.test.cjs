@@ -5,7 +5,7 @@ const { hasProvenance, resolve, shouldDeploy } = require('./docs-perf.cjs');
 const repo = { owner: 'owner', repo: 'ranvier' };
 const repository = { full_name: 'owner/ranvier' };
 const head = 'a'.repeat(40);
-const provenance = { repository: repository.full_name, run: '123', head };
+const provenance = { repository: repository.full_name, run: '123', head, recorded: true };
 const perf = { id: 123, path: '.github/workflows/perf.yml', event: 'push', status: 'completed',
   conclusion: 'failure', head_branch: 'master', repository, head_repository: repository, head_sha: head };
 const reporter = { id: 456, path: '.github/workflows/perf-report.yml', event: 'workflow_run',
@@ -43,11 +43,18 @@ test('resolve uses the original measured SHA, including completed regression ver
   assert.equal(await resolve({ github: mock(), repo, provenance }), head);
 });
 
+test('resolve uses the head of a run that skipped measurement and recorded nothing', async () => {
+  const unrecorded = { ...provenance, recorded: false };
+  assert.equal(await resolve({ github: mock({ ...perf, conclusion: 'success' }), repo, provenance: unrecorded }), head);
+  await assert.rejects(resolve({ github: mock(), repo, provenance: unrecorded }));
+});
+
 test('reject malformed and malicious provenance before fetching a run', async () => {
   let calls = 0;
   const github = { rest: { actions: { getWorkflowRun: () => { calls++; throw new Error('unexpected API call'); } } } };
   for (const override of [{ repository: 'attacker/fork' }, { run: '123\nref=master' },
-    { run: 123 }, { run: '123\n' }, { head: 'master' }, { head: head + '\n' }]) {
+    { run: 123 }, { run: '123\n' }, { head: 'master' }, { head: head + '\n' },
+    { recorded: undefined }, { recorded: 'false' }]) {
     await assert.rejects(resolve({ github, repo, provenance: { ...provenance, ...override } }));
   }
   assert.equal(calls, 0);

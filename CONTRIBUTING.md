@@ -72,7 +72,8 @@ target branch, not those of the pull request.
 A change is documentation only when every changed path is under `docs/`, `brand/` or `.claude/`,
 is a Markdown file, a `LICENSE` file, or `.github/FUNDING.yml`
 ([`changes.cjs`](.github/scripts/changes.cjs)). CI then runs only Formatting, and Perf measures
-nothing; the required checks pass. Pushes to `master` are always measured.
+nothing; the required checks pass. A documentation-only push to `master` gets no history record, and
+the docs are still redeployed for it.
 
 ## Performance checks
 
@@ -122,19 +123,20 @@ history, with its reason.
 
 ### Performance history
 
-Each push to `master` is measured against its parent. The Perf report workflow then records the run
-on the `perf-data` branch, and the Docs workflow rebuilds the site's benchmark charts from it.
+Each push to `master` that changes more than documentation is measured against its parent. The Perf
+report workflow then records the run on the `perf-data` branch, and the Docs workflow rebuilds the
+site's benchmark charts from it.
 
-A commit that changes nothing measured (documentation, workflows, repository tooling) can stay out
-of that history with a `Perf-Ignore` trailer and a reason in its footer:
+A commit that changes nothing measured beyond documentation (workflows, repository tooling) can
+stay out of that history with a `Perf-Ignore` trailer and a reason in its footer:
 
 ```
-docs: fix typos in the getting started guide
+ci: cache the .NET SDK
 
-Perf-Ignore: documentation only
+Perf-Ignore: workflow change
 ```
 
-CI then skips measuring and recording the commit, and skips redeploying the docs for it. The next
+CI then skips measuring and recording the commit, and still redeploys the docs for it. The next
 commit is measured against it as usual. `Perf-Ignore` applies to `master` pushes only: pull requests
 are always measured, and `Perf-Accepted` is the way to pass an intended regression. An empty reason
 fails the workflow.

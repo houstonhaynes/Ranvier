@@ -46,28 +46,26 @@ jobs:
             const {publish, readReport} = require('./.github/scripts/perf-report.cjs');
             await publish({github, repo: context.repo, run: context.payload.workflow_run, report: readReport(`${process.env.RUNNER_TEMP}/report`)});
 
-  ignore:
+  # A successful master run without a report skipped measurement: a documentation-only or Perf-Ignore commit.
+  measured:
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
     outputs:
-      ignored: ${{ steps.trailer.outputs.ignored }}
+      skipped: ${{ steps.report.outputs.skipped }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          repository: ${{ github.repository }}
-          ref: master
-          persist-credentials: false
-          sparse-checkout: .github/scripts
-      - id: trailer
+      - id: report
         uses: actions/github-script@v8
         with:
           script: |
-            const {ignoreReason} = require('./.github/scripts/perf-ignore.cjs');
-            core.setOutput('ignored', String(ignoreReason(context.payload.workflow_run.head_commit?.message) !== null));
+            const run = context.payload.workflow_run;
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: run.id, per_page: 100});
+            const skipped = run.conclusion === 'success' && !artifacts.some(a => a.name === 'perf-report');
+            if (skipped) core.notice(`Perf skipped measuring ${run.head_sha}. No history record is written.`);
+            core.setOutput('skipped', String(skipped));
 
   history:
-    needs: ignore
-    if: needs.ignore.outputs.ignored != 'true'
+    needs: measured
+    if: needs.measured.outputs.skipped == 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -118,7 +116,29 @@ jobs:
             const run = context.payload.workflow_run;
             fs.mkdirSync(`${process.env.RUNNER_TEMP}/docs-perf`, {recursive: true});
             fs.writeFileSync(`${process.env.RUNNER_TEMP}/docs-perf/provenance.json`, JSON.stringify({
-              repository: process.env.GITHUB_REPOSITORY, run: String(run.id), head: run.head_sha
+              repository: process.env.GITHUB_REPOSITORY, run: String(run.id), head: run.head_sha, recorded: true
+            }));
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-perf-provenance
+          path: ${{ runner.temp }}/docs-perf/provenance.json
+          if-no-files-found: error
+
+  # The docs deploy for a skipped commit, through the same provenance route as a recorded one.
+  unrecorded:
+    needs: measured
+    if: needs.measured.outputs.skipped == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write docs provenance without a history record
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const run = context.payload.workflow_run;
+            fs.mkdirSync(`${process.env.RUNNER_TEMP}/docs-perf`, {recursive: true});
+            fs.writeFileSync(`${process.env.RUNNER_TEMP}/docs-perf/provenance.json`, JSON.stringify({
+              repository: process.env.GITHUB_REPOSITORY, run: String(run.id), head: run.head_sha, recorded: false
             }));
       - uses: actions/upload-artifact@v4
         with:
