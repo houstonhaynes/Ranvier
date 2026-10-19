@@ -171,13 +171,24 @@ module Stage =
         input {
             let! config = Options.config
 
+            // The core builds once, first; the packages then build in parallel against its outputs.
+            let core, packages =
+                Spec.sourceProjects
+                |> List.partition (fun project -> project.Name = "Ranvier")
+
             return
                 stage "build" {
                     quiet
-                    parallel'
 
-                    for { Name = name; Path = project } in Spec.sourceProjects do
+                    for { Name = name; Path = project } in core do
                         stage $"build {name}" { run (cmd $"dotnet build {project} -c {config} -v q") }
+
+                    stage "build packages" {
+                        parallel'
+
+                        for { Name = name; Path = project } in packages do
+                            stage $"build {name}" { run (cmd $"dotnet build {project} -c {config} -v q --no-dependencies") }
+                    }
                 }
         }
 
