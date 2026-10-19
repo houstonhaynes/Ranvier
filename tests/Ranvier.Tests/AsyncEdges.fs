@@ -50,7 +50,8 @@ let tests =
     testList
         "AsyncEdges"
         [
-            test "a flight that is already complete never makes the reader pending" {
+            inlineDeliveryOnly "a completed task settles on a later microtask, so its first read is Pending"
+            <| test "a flight that is already complete never makes the reader pending" {
                 let g = new Graph ()
 
                 let a = Make.AsyncMemo<int>(g, (fun _ _ -> completed 42))
@@ -62,7 +63,8 @@ let tests =
                 Expect.equal a.Value 42 "and the throwing read does not throw"
             }
 
-            test "an effect over an already-complete flight runs once per write" {
+            testCaseAsync "an effect over an already-complete flight runs once per write"
+            <| async {
                 let g = new Graph ()
                 let s = Signal (g, 0)
                 let a = Make.AsyncMemo<int>(g, (fun _ _ -> completed (s.Value * 10)))
@@ -70,13 +72,17 @@ let tests =
 
                 use _reader = new Effect (g, (fun () -> seen.Add a.Value))
 
+                do! drained ()
                 s.Value <- 1
+                do! drained ()
                 s.Value <- 2
+                do! drained ()
 
                 Expect.sequenceEqual seen [ 0; 10; 20 ] "one run per write"
             }
 
-            test "a memo over an already-complete flight recomputes once per write" {
+            inlineDeliveryOnly "a completed task settles on a later microtask, so its first read is Pending"
+            <| test "a memo over an already-complete flight recomputes once per write" {
                 let g = new Graph ()
                 let s = Signal (g, 0)
                 let a = Make.AsyncMemo<int>(g, (fun _ _ -> completed (s.Value * 10)))
@@ -90,7 +96,8 @@ let tests =
                 Expect.equal (m.Runs - before) 1 "once"
             }
 
-            test "an already-faulted flight is Failed, not pending" {
+            inlineDeliveryOnly "a completed task settles on a later microtask, so its first read is Pending"
+            <| test "an already-faulted flight is Failed, not pending" {
                 let g = new Graph ()
 
                 let a =
@@ -101,7 +108,8 @@ let tests =
                 | other -> failtestf "expected Failed, got %A" other
             }
 
-            test "three supersessions deep, only the last one publishes" {
+            testCaseAsync "three supersessions deep, only the last one publishes"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<Flight<int>>()
@@ -131,11 +139,13 @@ let tests =
                 flights[2].Settle 2
                 flights[3].Settle 3
                 flights[0].Settle 0
+                do! drained ()
 
                 Expect.equal a.TryValue (Ready 3) "the value is the newest flight's, not the newest arrival's"
             }
 
-            test "a flight that settles from its own cancellation is discarded as superseded" {
+            testCaseAsync "a flight that settles from its own cancellation is discarded as superseded"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<TaskCompletionSource<int>>()
@@ -167,19 +177,23 @@ let tests =
                     )
 
                 flights[0].SetResult 7
+                do! drained ()
                 trigger.Value <- 1
                 let before = runs.Value
                 trigger.Value <- 2
+                do! drained ()
 
                 Expect.equal a.Peek 7 "the superseded flight's fallback is not published"
                 Expect.equal a.Status Status.Pending "still waiting on the current flight"
                 Expect.equal (runs.Value - before) 1 "one run for the write, none for the fallback"
 
                 flights[2].SetResult 20
+                do! drained ()
                 Expect.equal a.TryValue (Ready 20) "the current flight publishes"
             }
 
-            test "a flight that faults from its own cancellation does not mark the node failed" {
+            testCaseAsync "a flight that faults from its own cancellation does not mark the node failed"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<TaskCompletionSource<int>>()
@@ -202,16 +216,19 @@ let tests =
 
                 a.TryValue |> ignore
                 flights[0].SetResult 7
+                do! drained ()
                 trigger.Value <- 1
                 a.TryValue |> ignore
                 trigger.Value <- 2
                 a.TryValue |> ignore
+                do! drained ()
 
                 Expect.equal a.Status Status.Pending "no Error flag from the superseded flight"
                 Expect.equal a.Peek 7 "the last settled value survives"
             }
 
-            test "a current flight that cancels itself settles as Failed" {
+            testCaseAsync "a current flight that cancels itself settles as Failed"
+            <| async {
                 let g = new Graph ()
                 let flight = Flight<int>()
 
@@ -222,13 +239,15 @@ let tests =
                 // The flight's own IO gave up, as an HttpClient timeout does. The
                 // graph did not cancel it, and nothing will re-run it.
                 flight.Cancel ()
+                do! drained ()
 
                 match a.TryValue with
                 | Failed ex -> Expect.isTrue (ex :? OperationCanceledException) "the cancellation is the reason"
                 | other -> failtestf "expected Failed, got %A" other
             }
 
-            test "a flight cancelled after its first await keeps the cancellation's exception" {
+            testCaseAsync "a flight cancelled after its first await keeps the cancellation's exception"
+            <| async {
                 let g = new Graph ()
                 let gate = TaskCompletionSource<unit>()
 
@@ -244,6 +263,7 @@ let tests =
 
                 Expect.equal a.TryValue Pending "in flight"
                 gate.SetResult ()
+                do! drained ()
 
                 match a.TryValue with
                 | Failed ex -> Expect.equal ex.Message "http timeout" "as a synchronous throw of it would"
@@ -465,7 +485,8 @@ let tests =
             }
 #endif
 
-            test "a re-run after a failure clears the Error flag" {
+            testCaseAsync "a re-run after a failure clears the Error flag"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<Flight<int>>()
@@ -482,6 +503,7 @@ let tests =
 
                 a.TryValue |> ignore
                 flights[0].Fail(InvalidOperationException "x")
+                do! drained ()
                 Expect.equal a.Status Status.Error "failed"
 
                 trigger.Value <- 1
@@ -489,7 +511,8 @@ let tests =
                 Expect.equal a.Status Status.Pending "and the stale failure is gone"
             }
 
-            test "a re-run that suspends on a pending source clears the Error flag" {
+            testCaseAsync "a re-run that suspends on a pending source clears the Error flag"
+            <| async {
                 let g = new Graph ()
                 let upstream = AsyncSource<int> g
                 let fail = Signal (g, true)
@@ -505,6 +528,7 @@ let tests =
                     )
 
                 a.TryValue |> ignore
+                do! drained ()
                 Expect.equal a.Status Status.Error "failed"
 
                 fail.Value <- false
@@ -565,10 +589,13 @@ let tests =
                 Expect.isTrue (isDisposedFailure a.TryValue) "a late settle changes nothing"
             }
 
-            test "disposing a settled async memo keeps its value" {
+            testCaseAsync "disposing a settled async memo keeps its value"
+            <| async {
                 let g = new Graph ()
                 let a = Make.AsyncMemo<int>(g, (fun _ _ -> completed 5))
 
+                a.TryValue |> ignore
+                do! drained ()
                 Expect.equal a.TryValue (Ready 5) "settled"
                 a.Dispose ()
                 Expect.equal a.TryValue (Ready 5) "still readable after disposal"
@@ -590,7 +617,8 @@ let tests =
                 Expect.equal a.Peek unset "the settle landed nowhere, quietly"
             }
 
-            test "a boundary over a superseded flight shows the fallback throughout" {
+            testCaseAsync "a boundary over a superseded flight shows the fallback throughout"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<Flight<int>>()
@@ -613,9 +641,11 @@ let tests =
                 Expect.equal b.TryValue (Ready -1) "and on the second"
 
                 flights[0].Settle 10
+                do! drained ()
                 Expect.equal b.TryValue (Ready -1) "the superseded flight does not release it"
 
                 flights[1].Settle 20
+                do! drained ()
                 Expect.equal b.TryValue (Ready 20) "the current one does"
             }
 
@@ -637,7 +667,8 @@ let tests =
                 Expect.equal m.Runs 1 "with no suspended attempt before it"
             }
 
-            test "Runs counts body runs, including runs that start no flight" {
+            testCaseAsync "Runs counts body runs, including runs that start no flight"
+            <| async {
                 let g = new Graph ()
                 let up = AsyncSource<int> g
                 let failing = Signal (g, true)
@@ -659,6 +690,7 @@ let tests =
                 Expect.equal a.TryValue Pending "the body suspended on the source"
                 Expect.equal (a.Runs, flights) (1, 0) "a suspended run counts, with no flight"
                 up.Settle 1
+                do! drained ()
 
                 match a.TryValue with
                 | Failed _ -> ()
@@ -666,11 +698,14 @@ let tests =
 
                 Expect.equal (a.Runs, flights) (2, 0) "a run that throws before its flight counts"
                 failing.Value <- false
+                a.TryValue |> ignore
+                do! drained ()
                 Expect.equal a.TryValue (Ready 2) "the third run starts a flight"
                 Expect.equal (a.Runs, flights) (3, 1) "one flight in three runs"
             }
 
-            test "Peek on a flight in progress is the previous value, not the default" {
+            testCaseAsync "Peek on a flight in progress is the previous value, not the default"
+            <| async {
                 let g = new Graph ()
                 let trigger = Signal (g, 0)
                 let flights = ResizeArray<Flight<int>>()
@@ -687,6 +722,7 @@ let tests =
 
                 a.TryValue |> ignore
                 flights[0].Settle 7
+                do! drained ()
                 Expect.equal a.TryValue (Ready 7) "settled"
 
                 trigger.Value <- 1

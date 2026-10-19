@@ -22,6 +22,42 @@ let untracedOnly (test: Test) : Test =
 #endif
 #endif
 
+#if FABLE_COMPILER
+[<Fable.Core.Emit("(process.env.RANVIER_FABLE_DELIVERY ?? 'promise') === 'promise'")>]
+let private promiseDelivery: bool = Fable.Core.Util.jsNative
+#endif
+
+/// <summary>
+/// Runs <c>test</c> except under Fable's promise delivery, where each of its cases is reported as pending. The
+/// Fable report lists <c>reason</c> beside the test.
+/// </summary>
+/// <remarks>For a test of a settle that applies before <c>SetResult</c> returns.</remarks>
+let inlineDeliveryOnly (reason: string) (test: Test) : Test =
+    ignore reason
+#if FABLE_COMPILER
+    let rec pending test =
+        match test with
+        | Fable.Mocha.TestCase.SyncTest (name, body, _) -> Fable.Mocha.TestCase.SyncTest (name, body, Fable.Mocha.FocusState.Pending)
+        | Fable.Mocha.TestCase.AsyncTest (name, body, _) -> Fable.Mocha.TestCase.AsyncTest (name, body, Fable.Mocha.FocusState.Pending)
+        | Fable.Mocha.TestCase.TestList (name, tests) -> Fable.Mocha.TestCase.TestList (name, List.map pending tests)
+        | Fable.Mocha.TestCase.TestListSequential (name, tests) -> Fable.Mocha.TestCase.TestListSequential (name, List.map pending tests)
+
+    if promiseDelivery then pending test else test
+#else
+    test
+#endif
+
+/// <summary>
+/// Completes once every settle already delivered to the graph has applied: at once on .NET, after the microtask
+/// queue drains under Fable.
+/// </summary>
+let drained () : Async<unit> =
+#if FABLE_COMPILER
+    Async.Sleep 0
+#else
+    async.Return ()
+#endif
+
 /// <summary>
 /// Memo and async memo construction the suite uses on both platforms. On .NET these are the public constructors;
 /// Fable drops those constructors, so under Fable they call <c>Create</c> with the same mode.

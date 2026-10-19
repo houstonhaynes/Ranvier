@@ -181,7 +181,8 @@ let tests =
                 Expect.equal tick.ObserverCount 0 "disposal disposes the effect"
             }
 
-            test "N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change" {
+            testCaseAsync "N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change"
+            <| async {
                 use g = new Graph ()
                 use _ = g.Activate ()
                 let s = createSignal 1
@@ -201,10 +202,13 @@ let tests =
                         completed n)
 
                 self.TryValue |> ignore
+                do! drained ()
                 s.Value <- 2
                 self.TryValue |> ignore
+                do! drained ()
                 s.Value <- 10
                 self.TryValue |> ignore
+                do! drained ()
                 Expect.equal self.Peek 3 "the async memo serves the cleanup's write"
                 Expect.equal self.Runs 3 "one flight per change"
                 Expect.equal tick.ObserverCount 1 "one generation of effects is alive"

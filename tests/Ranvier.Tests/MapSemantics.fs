@@ -50,7 +50,8 @@ let tests =
     testList
         "MapSemantics"
         [
-            test "S1 a per-row fetch settles, and settling one row leaves the others' nodes alone" {
+            testCaseAsync "S1 a per-row fetch settles, and settling one row leaves the others' nodes alone"
+            <| async {
                 use g = new Graph ()
                 use _ = g.Activate ()
                 let source = createSignal users
@@ -84,11 +85,13 @@ let tests =
                 Expect.equal views[1].Value "loading" "row 1 shows the fallback"
 
                 flights[1].SetResult "one"
+                do! drained ()
                 Expect.equal (proj.Get 1) "one" "row 1 settled"
                 Expect.throwsT<NotReadyException> (fun () -> proj.Get 2 |> ignore) "row 2 still pending"
                 Expect.equal views[2].Value "loading" "row 2 still shows the fallback"
 
                 flights[2].SetResult "two"
+                do! drained ()
                 Expect.equal (proj.Get 2) "two" "row 2 settled"
                 Expect.equal (proj.Get 1) "one" "row 1 still settled"
                 Expect.equal created[1] 1 "row 1's node was created once"

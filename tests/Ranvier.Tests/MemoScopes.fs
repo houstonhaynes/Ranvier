@@ -208,7 +208,8 @@ let tests =
                 Expect.sequenceEqual cleaned [ 1; 2 ] "disposal runs the second run's cleanup"
             }
 
-            test "an async memo's cleanup runs before the next flight starts and at its disposal" {
+            testCaseAsync "an async memo's cleanup runs before the next flight starts and at its disposal"
+            <| async {
                 use g = new Graph ()
                 use _ = g.Activate ()
                 let s = createSignal 1
@@ -221,10 +222,12 @@ let tests =
                         completed n)
 
                 a.TryValue |> ignore
+                do! drained ()
                 Expect.equal a.Peek 1 "first flight settled"
 
                 s.Value <- 2
                 a.TryValue |> ignore
+                do! drained ()
                 Expect.equal a.Peek 2 "second flight settled"
                 Expect.sequenceEqual cleaned [ 1 ] "the first flight's cleanup ran before the second started"
 
@@ -232,7 +235,8 @@ let tests =
                 Expect.sequenceEqual cleaned [ 1; 2 ] "disposal runs the second flight's cleanup"
             }
 
-            test "an effect created after an await under runWithOwner is disposed with the flight" {
+            testCaseAsync "an effect created after an await under runWithOwner is disposed with the flight"
+            <| async {
                 use g = new Graph ()
                 use _ = g.Activate ()
                 let s = createSignal 1
@@ -252,6 +256,7 @@ let tests =
 
                 a.TryValue |> ignore
                 gate.SetResult ()
+                do! drained ()
                 Expect.equal tick.ObserverCount 1 "the effect is live while the flight is current"
 
                 a.Dispose ()

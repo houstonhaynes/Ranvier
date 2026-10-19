@@ -12,7 +12,8 @@ Each build runs in two deliveries:
 - **inline**: a test's `TaskCompletionSource` settles its awaiters before `SetResult` returns, as on .NET.
   A failure here is a difference in behaviour.
 - **promise**: a test's `TaskCompletionSource` is a promise, as in an application. A test that fails only here
-  observes microtask delivery.
+  observes microtask delivery. A test of a settle that applies before `SetResult` returns is skipped here,
+  with its reason.
 
 Each difference named below is described in [the Fable guide](../content/fable/index.md).
 Excluded tests exercise a .NET-only facility and are compiled out with `#if !FABLE_COMPILER`.
@@ -22,19 +23,19 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Tests.fs | 7 | 7 | 7 | 7 | 7 | 7 | 0 | 0 |
 | Effects.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Bindings.fs | 17 | 17 | 17 | 17 | 17 | 17 | 0 | 0 |
-| EffectSplit.fs | 26 | 26 | 21 | 26 | 26 | 21 | 0 | 0 |
+| EffectSplit.fs | 26 | 26 | 26 | 26 | 26 | 26 | 0 | 0 |
 | AmbientGraph.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Owners.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Equality.fs | 25 | 24 | 24 | 25 | 24 | 24 | 8 | 0 |
 | ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
-| Async.fs | 56 | 45 | 9 | 56 | 45 | 9 | 4 | 0 |
-| Boundaries.fs | 27 | 27 | 23 | 27 | 27 | 23 | 1 | 0 |
+| Async.fs | 56 | 45 | 45 | 56 | 45 | 45 | 4 | 0 |
+| Boundaries.fs | 27 | 27 | 27 | 27 | 27 | 27 | 1 | 0 |
 | Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 12 | 0 |
-| Tracing.fs | 2 | 2 | 2 | 82 | 77 | 67 | 1 | 0 |
+| Tracing.fs | 2 | 2 | 2 | 82 | 77 | 77 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
@@ -46,22 +47,22 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Propagation.fs | 12 | 12 | 12 | 12 | 12 | 12 | 0 | 0 |
 | Reads.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
-| AsyncEdges.fs | 25 | 22 | 7 | 25 | 22 | 7 | 4 | 0 |
+| AsyncEdges.fs | 25 | 22 | 19 | 25 | 22 | 19 | 4 | 0 |
 | Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
 | TrimmedPass.fs | 59 | 59 | 59 | 59 | 59 | 59 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
-| MemoScopes.fs | 24 | 24 | 22 | 24 | 24 | 22 | 0 | 0 |
+| MemoScopes.fs | 24 | 24 | 24 | 24 | 24 | 24 | 0 | 0 |
 | MemoPurity.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
 | ScopeContexts.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
-| DischargeReentry.fs | 29 | 29 | 28 | 29 | 29 | 28 | 1 | 0 |
-| MapSemantics.fs | 42 | 42 | 41 | 42 | 42 | 41 | 0 | 1 |
+| DischargeReentry.fs | 29 | 29 | 29 | 29 | 29 | 29 | 1 | 0 |
+| MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
 | Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
-| FailureOrigins.fs | 16 | 16 | 15 | 16 | 16 | 15 | 2 | 0 |
+| FailureOrigins.fs | 16 | 16 | 16 | 16 | 16 | 16 | 2 | 0 |
 | NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Editables.fs | 17 | 17 | 17 | 17 | 17 | 17 | 1 | 0 |
 | MvuBridge.fs | 7 | 7 | 7 | 7 | 7 | 7 | 1 | 0 |
@@ -74,7 +75,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | QueryNavigationTests.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1121 | 1100 | 1035 | 1261 | 1235 | 1160 | 93 | 1 |
+| **Total** | 1121 | 1100 | 1097 | 1261 | 1235 | 1232 | 93 | 1 |
 
 ## Tests.fs
 
@@ -137,20 +138,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## EffectSplit.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | createEffect repeats work on each re-flight of an async value | passed | failed | Async results arrive on a later microtask |
-| untraced | createEffectOn acts once per settled value of an async value | passed | failed | Async results arrive on a later microtask |
-| untraced | createEffect has done its work before a failing read | passed | failed | Async results arrive on a later microtask |
-| untraced | createEffectOn keeps the previous action when compute fails | passed | failed | Async results arrive on a later microtask |
-| untraced | createEffectOn does not act again when a re-flight settles on the acted value | passed | failed | Async results arrive on a later microtask |
-| traced | createEffect repeats work on each re-flight of an async value | passed | failed | Async results arrive on a later microtask |
-| traced | createEffectOn acts once per settled value of an async value | passed | failed | Async results arrive on a later microtask |
-| traced | createEffect has done its work before a failing read | passed | failed | Async results arrive on a later microtask |
-| traced | createEffectOn keeps the previous action when compute fails | passed | failed | Async results arrive on a later microtask |
-| traced | createEffectOn does not act again when a re-flight settles on the acted value | passed | failed | Async results arrive on a later microtask |
-
-<details><summary>21 passed in every build and delivery that runs them</summary>
+<details><summary>26 passed in every build and delivery that runs them</summary>
 
 - createEffect repeats work done before a pending read
 - createEffectOn runs no work before a pending read settles
@@ -158,13 +146,18 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - createEffectOn waits for every pending source
 - createEffect opens a subscription for each aborted attempt
 - createEffectOn opens one subscription per settled value
+- createEffect repeats work on each re-flight of an async value
+- createEffectOn acts once per settled value of an async value
+- createEffect has done its work before a failing read
 - createEffectOn does no work when compute fails
+- createEffectOn keeps the previous action when compute fails
 - createEffect tracks reads made by helpers it calls
 - createEffectOn tracks only what compute reads
 - createEffect re-runs for writes that leave its derived value equal
 - createEffectOn acts only when its derived value changes
 - createEffectOn feeds another through a write in its action
 - createEffectOn runs the action's cleanup when its scope is disposed
+- createEffectOn does not act again when a re-flight settles on the acted value
 - createEffectOn acts with a value written by the previous action's cleanup
 - createEffectOn runs no action once a cleanup disposes its scope
 - createEffectOn disposes the action's nodes before the next action and with its scope
@@ -296,98 +289,26 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 | Build | Failed | Inline | Promise | Difference |
 | --- | --- | --- | --- | --- |
-| untraced | reading an unsettled flight suspends | passed | failed | Async results arrive on a later microtask |
-| untraced | dependencies read before the await are tracked | passed | failed | Async results arrive on a later microtask |
 | untraced | a continuation run inside another computation's body leaves that computation's edges alone | failed | failed | Every `await` suspends |
 | untraced | a cleanup registered in a continuation run inside an effect belongs to the root | failed | failed | Every `await` suspends |
-| untraced | an effect flushed by a write in a continuation keeps its edges | passed | failed | Async results arrive on a later microtask |
 | untraced | a pending read in a continuation run inside an effect does not suspend the effect | failed | failed | Every `await` suspends |
 | untraced | an effect run inside a continuation keeps the edges it reads after settling another flight | failed | failed | Every `await` suspends |
 | untraced | a memo run inside a continuation keeps the edges it reads after settling another flight | failed | failed | Every `await` suspends |
 | untraced | a read after an await on a completed task is tracked | failed | failed | Every `await` suspends |
-| untraced | a re-run is pending again, and Peek keeps the last value | passed | failed | Async results arrive on a later microtask |
-| untraced | a superseded flight does not publish | passed | failed | Async results arrive on a later microtask |
 | untraced | Queue applies every result in the order the flights started | failed | failed | A `Queue` flight applies on a later microtask |
 | untraced | Queue shows an applied outcome while a later flight is in progress | failed | failed | A `Queue` flight applies on a later microtask |
-| untraced | FinishCurrent folds the changes during a flight into one trailing run | passed | failed | Async results arrive on a later microtask |
-| untraced | FinishCurrent discards a failure that settles with a run owed | passed | failed | Async results arrive on a later microtask |
-| untraced | FinishCurrent applies a flight with no change during it as KeepLatest does | passed | failed | Async results arrive on a later microtask |
-| untraced | FinishCurrent does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| untraced | FinishCurrent starts the trailing run for an effect that reads the memo | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop discards the changes during a flight and keeps its value | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop discards a change no reader pulled during the flight | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop runs the first change after the flight settles | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop keeps a memo source current across a change discarded at the settle | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop keeps a memo source current across a change discarded at a read | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop starts an async memo source's flight at the settle and runs on its value | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending starts an async memo source's flight at the settle and runs on its value | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop settles a failed flight that discarded a change to its error | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| untraced | Drop wakes an effect that read the memo while pending | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending keeps a successful flight's value and discards the changes during it | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending discards an unpulled change when the flight succeeds | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending keeps a memo source current across a change discarded at the settle | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending replaces a failed flight that discarded a change with one run | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending replaces a failed flight that discarded an unpulled change | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending settles a failed flight to its error when a memo source resolves unchanged | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending settles a failed flight with no change during it to its error | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending settles a failed replacing run to its error | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending starts the replacing run for an effect that reads the memo | passed | failed | Async results arrive on a later microtask |
-| untraced | DropWhilePending does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| untraced | a failed flight settles as Failed | passed | failed | Async results arrive on a later microtask |
-| untraced | a body suspended on a pending source waits on the node, not a task | passed | failed | Async results arrive on a later microtask |
-| untraced | pending propagates into a memo and an effect | passed | failed | Async results arrive on a later microtask |
-| untraced | a boundary whose fallback returns its last value shows stale data while refreshing | passed | failed | Async results arrive on a later microtask |
-| untraced | a boundary tells a loaded empty list from a value not yet known | passed | failed | Async results arrive on a later microtask |
 | untraced | async memos with different policies in one graph fly independently | failed | failed | A `Queue` flight applies on a later microtask |
-| untraced | a node's policy overrides the graph's | passed | failed | Async results arrive on a later microtask |
 | untraced | a node without a policy follows the graph's beside one with its own | failed | failed | A `Queue` flight applies on a later microtask |
 | untraced | an owning async memo takes its own policy | failed | failed | A `Queue` flight applies on a later microtask |
-| traced | reading an unsettled flight suspends | passed | failed | Async results arrive on a later microtask |
-| traced | dependencies read before the await are tracked | passed | failed | Async results arrive on a later microtask |
 | traced | a continuation run inside another computation's body leaves that computation's edges alone | failed | failed | Every `await` suspends |
 | traced | a cleanup registered in a continuation run inside an effect belongs to the root | failed | failed | Every `await` suspends |
-| traced | an effect flushed by a write in a continuation keeps its edges | passed | failed | Async results arrive on a later microtask |
 | traced | a pending read in a continuation run inside an effect does not suspend the effect | failed | failed | Every `await` suspends |
 | traced | an effect run inside a continuation keeps the edges it reads after settling another flight | failed | failed | Every `await` suspends |
 | traced | a memo run inside a continuation keeps the edges it reads after settling another flight | failed | failed | Every `await` suspends |
 | traced | a read after an await on a completed task is tracked | failed | failed | Every `await` suspends |
-| traced | a re-run is pending again, and Peek keeps the last value | passed | failed | Async results arrive on a later microtask |
-| traced | a superseded flight does not publish | passed | failed | Async results arrive on a later microtask |
 | traced | Queue applies every result in the order the flights started | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | Queue shows an applied outcome while a later flight is in progress | failed | failed | A `Queue` flight applies on a later microtask |
-| traced | FinishCurrent folds the changes during a flight into one trailing run | passed | failed | Async results arrive on a later microtask |
-| traced | FinishCurrent discards a failure that settles with a run owed | passed | failed | Async results arrive on a later microtask |
-| traced | FinishCurrent applies a flight with no change during it as KeepLatest does | passed | failed | Async results arrive on a later microtask |
-| traced | FinishCurrent does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| traced | FinishCurrent starts the trailing run for an effect that reads the memo | passed | failed | Async results arrive on a later microtask |
-| traced | Drop discards the changes during a flight and keeps its value | passed | failed | Async results arrive on a later microtask |
-| traced | Drop discards a change no reader pulled during the flight | passed | failed | Async results arrive on a later microtask |
-| traced | Drop runs the first change after the flight settles | passed | failed | Async results arrive on a later microtask |
-| traced | Drop keeps a memo source current across a change discarded at the settle | passed | failed | Async results arrive on a later microtask |
-| traced | Drop keeps a memo source current across a change discarded at a read | passed | failed | Async results arrive on a later microtask |
-| traced | Drop starts an async memo source's flight at the settle and runs on its value | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending starts an async memo source's flight at the settle and runs on its value | passed | failed | Async results arrive on a later microtask |
-| traced | Drop settles a failed flight that discarded a change to its error | passed | failed | Async results arrive on a later microtask |
-| traced | Drop does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| traced | Drop wakes an effect that read the memo while pending | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending keeps a successful flight's value and discards the changes during it | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending discards an unpulled change when the flight succeeds | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending keeps a memo source current across a change discarded at the settle | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending replaces a failed flight that discarded a change with one run | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending replaces a failed flight that discarded an unpulled change | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending settles a failed flight to its error when a memo source resolves unchanged | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending settles a failed flight with no change during it to its error | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending settles a failed replacing run to its error | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending starts the replacing run for an effect that reads the memo | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending does not hold a run back behind a body suspended on a pending source | passed | failed | Async results arrive on a later microtask |
-| traced | a failed flight settles as Failed | passed | failed | Async results arrive on a later microtask |
-| traced | a body suspended on a pending source waits on the node, not a task | passed | failed | Async results arrive on a later microtask |
-| traced | pending propagates into a memo and an effect | passed | failed | Async results arrive on a later microtask |
-| traced | a boundary whose fallback returns its last value shows stale data while refreshing | passed | failed | Async results arrive on a later microtask |
-| traced | a boundary tells a loaded empty list from a value not yet known | passed | failed | Async results arrive on a later microtask |
 | traced | async memos with different policies in one graph fly independently | failed | failed | A `Queue` flight applies on a later microtask |
-| traced | a node's policy overrides the graph's | passed | failed | Async results arrive on a later microtask |
 | traced | a node without a policy follows the graph's beside one with its own | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | an owning async memo takes its own policy | failed | failed | A `Queue` flight applies on a later microtask |
 
@@ -398,38 +319,63 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Drop hands the settled value to the next run as Previous | reads Settled's completion synchronously, and under Fable it is a promise. |
 | DropWhilePending hands the replacing run the value published before the failed flight | reads Settled's completion synchronously, and under Fable it is a promise. |
 
-<details><summary>9 passed in every build and delivery that runs them</summary>
+<details><summary>45 passed in every build and delivery that runs them</summary>
 
+- reading an unsettled flight suspends
 - a flight starts only when something reads it
+- dependencies read before the await are tracked
+- an effect flushed by a write in a continuation keeps its edges
+- a re-run is pending again, and Peek keeps the last value
+- a superseded flight does not publish
 - CancelPrevious cancels the superseded token
 - KeepLatest leaves the superseded flight running
+- FinishCurrent folds the changes during a flight into one trailing run
+- FinishCurrent discards a failure that settles with a run owed
 - FinishCurrent disposed with a run owed runs nothing more
+- FinishCurrent applies a flight with no change during it as KeepLatest does
+- FinishCurrent does not hold a run back behind a body suspended on a pending source
+- FinishCurrent starts the trailing run for an effect that reads the memo
+- Drop discards the changes during a flight and keeps its value
+- Drop discards a change no reader pulled during the flight
+- Drop runs the first change after the flight settles
+- Drop keeps a memo source current across a change discarded at the settle
+- Drop keeps a memo source current across a change discarded at a read
+- Drop starts an async memo source's flight at the settle and runs on its value
+- DropWhilePending starts an async memo source's flight at the settle and runs on its value
+- Drop settles a failed flight that discarded a change to its error
 - Drop disposed during a flight runs nothing more
+- Drop does not hold a run back behind a body suspended on a pending source
+- Drop wakes an effect that read the memo while pending
+- DropWhilePending keeps a successful flight's value and discards the changes during it
+- DropWhilePending discards an unpulled change when the flight succeeds
+- DropWhilePending keeps a memo source current across a change discarded at the settle
+- DropWhilePending replaces a failed flight that discarded a change with one run
+- DropWhilePending replaces a failed flight that discarded an unpulled change
+- DropWhilePending settles a failed flight to its error when a memo source resolves unchanged
+- DropWhilePending settles a failed flight with no change during it to its error
+- DropWhilePending settles a failed replacing run to its error
 - DropWhilePending disposed with a failure owed runs nothing more
+- DropWhilePending starts the replacing run for an effect that reads the memo
+- DropWhilePending does not hold a run back behind a body suspended on a pending source
+- a failed flight settles as Failed
 - a body that throws before awaiting settles as Failed
+- a body suspended on a pending source waits on the node, not a task
+- pending propagates into a memo and an effect
 - disposing cancels the flight in progress
 - a settle after disposal does not publish
+- a boundary whose fallback returns its last value shows stale data while refreshing
+- a boundary tells a loaded empty list from a value not yet known
+- a node's policy overrides the graph's
 
 </details>
 
 ## Boundaries.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | a boundary over an AsyncMemo catches the flight | passed | failed | Async results arrive on a later microtask |
-| untraced | an async value created and read in a boundary body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-| untraced | an async value created and read in an effect body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-| untraced | an async value created and read in an owning memo body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-| traced | a boundary over an AsyncMemo catches the flight | passed | failed | Async results arrive on a later microtask |
-| traced | an async value created and read in a boundary body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-| traced | an async value created and read in an effect body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-| traced | an async value created and read in an owning memo body restarts its flight on every settle | passed | failed | Async results arrive on a later microtask |
-
 | Excluded | Reason |
 | --- | --- |
 | a signal write whose comparer throws raises to the writer and leaves the value unchanged | the policy is an object expression over a generic interface member. |
 
-<details><summary>23 passed in every build and delivery that runs them</summary>
+<details><summary>27 passed in every build and delivery that runs them</summary>
 
 - a suspense boundary substitutes the fallback
 - the caught wait still wakes on the settle
@@ -443,6 +389,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - the innermost boundary catches
 - a boundary over a memo chain catches the propagated channel
 - a boundary records which source it caught a wait on
+- a boundary over an AsyncMemo catches the flight
 - a clean boundary is not re-run
 - a failure that passes through a suspense boundary reaches its readers with each new exception
 - an error boundary whose recover rethrows reaches its readers with each new exception
@@ -451,6 +398,9 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - IsWaiting before any read reflects the body
 - an effect reading only IsWaiting wakes when the body settles
 - Caught before any read reflects the body, and a reader of Caught alone wakes
+- an async value created and read in a boundary body restarts its flight on every settle
+- an async value created and read in an effect body restarts its flight on every settle
+- an async value created and read in an owning memo body restarts its flight on every settle
 - a failure reaches a boundary through two memos as the same exception, and a settle recovers every level
 - re-reading a failed memo serves the failure without re-running it, and a source change re-runs it
 - a failed effect runs again when a source it read changes, and the success clears its error
@@ -560,27 +510,17 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 | Build | Failed | Inline | Promise | Difference |
 | --- | --- | --- | --- | --- |
-| traced | an async memo's settle marks its readers with its Moved as cause | passed | failed | Async results arrive on a later microtask |
 | traced | a node reports the test's file:line | failed | failed | Trace records carry less |
 | traced | a node created through a combinator reports the user's line | failed | failed | Trace records carry less |
-| traced | why through an async memo walks past the settle to the flight's run | passed | failed | Async results arrive on a later microtask |
 | traced | why steps, history runs and snapshot nodes carry recorded values | failed | failed | Trace records carry less |
 | traced | valueText renders a value as one line | failed | failed | Trace records carry less |
-| traced | FinishCurrent records a deferred run and a settle held for the trailing run | passed | failed | Async results arrive on a later microtask |
-| traced | FinishCurrent drops a failure that settles with a run owed as Trailing | passed | failed | Async results arrive on a later microtask |
 | traced | Queue drops a failure that settles while the newest run waits on a source as Suspended | failed | failed | A `Queue` flight applies on a later microtask |
-| traced | FinishCurrent's trailing run is notified with the dropped failure as its cause | passed | failed | Async results arrive on a later microtask |
-| traced | Drop records a run dropped at a read and a change dropped at the settle | passed | failed | Async results arrive on a later microtask |
-| traced | Drop names the next change as the cause of the run after a change dropped at a read | passed | failed | Async results arrive on a later microtask |
-| traced | Drop names the next change as the cause of the run after a change dropped at the settle | passed | failed | Async results arrive on a later microtask |
-| traced | DropWhilePending drops a failure that settles after a discarded change as Retried | passed | failed | Async results arrive on a later microtask |
-| traced | waitingOn reports superseded, settled and failed flights | passed | failed | Async results arrive on a later microtask |
 
 | Excluded | Reason |
 | --- | --- |
 | an Unchecked graph creating nodes from two threads records every NodeNew | JavaScript has one thread. |
 
-<details><summary>67 passed in every build and delivery that runs them</summary>
+<details><summary>77 passed in every build and delivery that runs them</summary>
 
 - the assembly is traced exactly when RANVIER_TRACE is defined
 - named returns the thunk's result
@@ -612,6 +552,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - RunStart Cause is the first dirty mark (traced only)
 - a re-run after a discharge write is two RunStarts in one flush (traced only)
 - a projection whose keys change ends its run with Flag 1 (traced only)
+- an async memo's settle marks its readers with its Moved as cause (traced only)
 - a throwing comparer closes its run with Error (traced only)
 - a run left open ends Abandoned (traced only)
 - a run left open inside another run ends Abandoned (traced only)
@@ -639,7 +580,16 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - history lists each run with its status, movement, root and flush (traced only)
 - waitingOn names the pending source the last run read (traced only)
 - why through an async source ends at its settle (traced only)
+- why through an async memo walks past the settle to the flight's run (traced only)
+- FinishCurrent records a deferred run and a settle held for the trailing run (traced only)
+- FinishCurrent drops a failure that settles with a run owed as Trailing (traced only)
+- FinishCurrent's trailing run is notified with the dropped failure as its cause (traced only)
+- Drop records a run dropped at a read and a change dropped at the settle (traced only)
 - Drop records one run dropped for a change discarded at a read and settled with no later change (traced only)
+- Drop names the next change as the cause of the run after a change dropped at a read (traced only)
+- Drop names the next change as the cause of the run after a change dropped at the settle (traced only)
+- DropWhilePending drops a failure that settles after a discarded change as Retried (traced only)
+- waitingOn reports superseded, settled and failed flights (traced only)
 - a binding is traced as a binding (traced only)
 - Rerun guard / an effect that writes its own dependency on every run raises, naming the effect (traced only)
 - Rerun guard / a keyOf that writes its projection's source on every call raises once an effect reads the projection (traced only)
@@ -975,42 +925,21 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 | Build | Failed | Inline | Promise | Difference |
 | --- | --- | --- | --- | --- |
-| untraced | a flight that is already complete never makes the reader pending | passed | failed | Async results arrive on a later microtask |
-| untraced | an effect over an already-complete flight runs once per write | passed | failed | Async results arrive on a later microtask |
-| untraced | a memo over an already-complete flight recomputes once per write | passed | failed | Async results arrive on a later microtask |
-| untraced | an already-faulted flight is Failed, not pending | passed | failed | Async results arrive on a later microtask |
-| untraced | three supersessions deep, only the last one publishes | passed | failed | Async results arrive on a later microtask |
-| untraced | a flight that settles from its own cancellation is discarded as superseded | passed | failed | Async results arrive on a later microtask |
-| untraced | a flight that faults from its own cancellation does not mark the node failed | passed | failed | Async results arrive on a later microtask |
-| untraced | a current flight that cancels itself settles as Failed | passed | failed | Async results arrive on a later microtask |
-| untraced | a flight cancelled after its first await keeps the cancellation's exception | passed | failed | Async results arrive on a later microtask |
 | untraced | the Queue policy applies a failure in the middle without losing what follows | failed | failed | A `Queue` flight applies on a later microtask |
 | untraced | the Queue policy applies a synchronous failure after the flight started before it | failed | failed | A `Queue` flight applies on a later microtask |
 | untraced | the Queue policy keeps a run suspended on a source pending when an older flight lands | failed | failed | A `Queue` flight applies on a later microtask |
-| untraced | a re-run after a failure clears the Error flag | passed | failed | Async results arrive on a later microtask |
-| untraced | a re-run that suspends on a pending source clears the Error flag | passed | failed | Async results arrive on a later microtask |
-| untraced | disposing a settled async memo keeps its value | passed | failed | Async results arrive on a later microtask |
-| untraced | a boundary over a superseded flight shows the fallback throughout | passed | failed | Async results arrive on a later microtask |
-| untraced | Runs counts body runs, including runs that start no flight | passed | failed | Async results arrive on a later microtask |
-| untraced | Peek on a flight in progress is the previous value, not the default | passed | failed | Async results arrive on a later microtask |
-| traced | a flight that is already complete never makes the reader pending | passed | failed | Async results arrive on a later microtask |
-| traced | an effect over an already-complete flight runs once per write | passed | failed | Async results arrive on a later microtask |
-| traced | a memo over an already-complete flight recomputes once per write | passed | failed | Async results arrive on a later microtask |
-| traced | an already-faulted flight is Failed, not pending | passed | failed | Async results arrive on a later microtask |
-| traced | three supersessions deep, only the last one publishes | passed | failed | Async results arrive on a later microtask |
-| traced | a flight that settles from its own cancellation is discarded as superseded | passed | failed | Async results arrive on a later microtask |
-| traced | a flight that faults from its own cancellation does not mark the node failed | passed | failed | Async results arrive on a later microtask |
-| traced | a current flight that cancels itself settles as Failed | passed | failed | Async results arrive on a later microtask |
-| traced | a flight cancelled after its first await keeps the cancellation's exception | passed | failed | Async results arrive on a later microtask |
 | traced | the Queue policy applies a failure in the middle without losing what follows | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | the Queue policy applies a synchronous failure after the flight started before it | failed | failed | A `Queue` flight applies on a later microtask |
 | traced | the Queue policy keeps a run suspended on a source pending when an older flight lands | failed | failed | A `Queue` flight applies on a later microtask |
-| traced | a re-run after a failure clears the Error flag | passed | failed | Async results arrive on a later microtask |
-| traced | a re-run that suspends on a pending source clears the Error flag | passed | failed | Async results arrive on a later microtask |
-| traced | disposing a settled async memo keeps its value | passed | failed | Async results arrive on a later microtask |
-| traced | a boundary over a superseded flight shows the fallback throughout | passed | failed | Async results arrive on a later microtask |
-| traced | Runs counts body runs, including runs that start no flight | passed | failed | Async results arrive on a later microtask |
-| traced | Peek on a flight in progress is the previous value, not the default | passed | failed | Async results arrive on a later microtask |
+
+| Build | Skipped under promise delivery | Reason |
+| --- | --- | --- |
+| untraced | a flight that is already complete never makes the reader pending | a completed task settles on a later microtask, so its first read is Pending |
+| untraced | a memo over an already-complete flight recomputes once per write | a completed task settles on a later microtask, so its first read is Pending |
+| untraced | an already-faulted flight is Failed, not pending | a completed task settles on a later microtask, so its first read is Pending |
+| traced | a flight that is already complete never makes the reader pending | a completed task settles on a later microtask, so its first read is Pending |
+| traced | a memo over an already-complete flight recomputes once per write | a completed task settles on a later microtask, so its first read is Pending |
+| traced | an already-faulted flight is Failed, not pending | a completed task settles on a later microtask, so its first read is Pending |
 
 | Excluded | Reason |
 | --- | --- |
@@ -1019,14 +948,26 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | the harness reports a faulted task that nothing observes | JavaScript has no finalizer thread and no UnobservedTaskException. |
 | a late fault is observed: %A{policy}, %A{fault} | JavaScript has no finalizer thread and no UnobservedTaskException. |
 
-<details><summary>7 passed in every build and delivery that runs them</summary>
+<details><summary>19 passed in every build and delivery that runs them</summary>
 
+- an effect over an already-complete flight runs once per write
+- three supersessions deep, only the last one publishes
+- a flight that settles from its own cancellation is discarded as superseded
+- a flight that faults from its own cancellation does not mark the node failed
+- a current flight that cancels itself settles as Failed
+- a flight cancelled after its first await keeps the cancellation's exception
 - a superseded flight's cancellation publishes nothing
+- a re-run after a failure clears the Error flag
+- a re-run that suspends on a pending source clears the Error flag
 - a flight settling after its node is disposed changes nothing
 - disposing an async memo mid-flight fails its readers
+- disposing a settled async memo keeps its value
 - a flight settling after the whole graph is disposed changes nothing
+- a boundary over a superseded flight shows the fallback throughout
 - AsyncSource.Fail rejects a null reason and stays pending
 - an AsyncSource settled before anything reads it is never pending
+- Runs counts body runs, including runs that start no flight
+- Peek on a flight in progress is the previous value, not the default
 - a flight started inside a root is cancelled when that root is torn down
 
 </details>
@@ -1273,14 +1214,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## MemoScopes.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | an async memo's cleanup runs before the next flight starts and at its disposal | passed | failed | Async results arrive on a later microtask |
-| untraced | an effect created after an await under runWithOwner is disposed with the flight | passed | failed | Async results arrive on a later microtask |
-| traced | an async memo's cleanup runs before the next flight starts and at its disposal | passed | failed | Async results arrive on a later microtask |
-| traced | an effect created after an await under runWithOwner is disposed with the flight | passed | failed | Async results arrive on a later microtask |
-
-<details><summary>22 passed in every build and delivery that runs them</summary>
+<details><summary>24 passed in every build and delivery that runs them</summary>
 
 - a memo's cleanup runs before its re-run and at its disposal
 - a node a memo returns is disposed when the memo re-runs
@@ -1291,6 +1225,8 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a memo body that creates nothing allocates no scope, and a cleanup-free re-run is unchanged
 - a memo cleanup that writes a signal wakes its effects once, and the memo runs once
 - a boundary's cleanup runs before its re-run and at its disposal
+- an async memo's cleanup runs before the next flight starts and at its disposal
+- an effect created after an await under runWithOwner is disposed with the flight
 - a node created under runWithOwner on a disposed owner is disposed at once
 - runWithOwner inside a pure memo raises
 - a projection's source owns the nodes it creates, and discharges them before the next pass
@@ -1347,22 +1283,18 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## DischargeReentry.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change | passed | failed | Async results arrive on a later microtask |
-| traced | N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change | passed | failed | Async results arrive on a later microtask |
-
 | Excluded | Reason |
 | --- | --- |
 | a scope created and disposed by a cleanup is released at once | JavaScript exposes no forced collection. |
 
-<details><summary>28 passed in every build and delivery that runs them</summary>
+<details><summary>29 passed in every build and delivery that runs them</summary>
 
 - N2e a memo cleanup that writes a source and reads the memo runs the body once per change
 - a memo cleanup that writes a source without reading the memo still re-runs it with the write
 - a memo cleanup that writes a source after reading the memo leaves the memo stale for the next read
 - N2e an error boundary cleanup that writes a source and reads the boundary runs the body once per change
 - N2e a projection source cleanup that writes a source and reads the projection runs one pass per change
+- N2e an async memo cleanup that writes a source and reads the async memo starts one flight per change
 - an effect cleanup read during a disposal from a pure memo is not tracked by the memo
 - a pure memo that disposes a root is not blamed for a node created by an effect's cleanup
 - a pure memo that disposes a root gains no edge from the root's own cleanup
@@ -1391,17 +1323,13 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## MapSemantics.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | S1 a per-row fetch settles, and settling one row leaves the others' nodes alone | passed | failed | Async results arrive on a later microtask |
-| traced | S1 a per-row fetch settles, and settling one row leaves the others' nodes alone | passed | failed | Async results arrive on a later microtask |
-
 | Excluded | Reason |
 | --- | --- |
 | part of: a row that catches the creation's exception on its first run is absent from Snapshot | ObservableCollection is a .NET collection type. |
 
-<details><summary>41 passed in every build and delivery that runs them</summary>
+<details><summary>42 passed in every build and delivery that runs them</summary>
 
+- S1 a per-row fetch settles, and settling one row leaves the others' nodes alone
 - S2 an item changed under its key reaches the row without re-creating it
 - S3 a reorder wakes Keys alone
 - S4 editing one row wakes that row alone
@@ -1795,23 +1723,19 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## FailureOrigins.fs
 
-| Build | Failed | Inline | Promise | Difference |
-| --- | --- | --- | --- | --- |
-| untraced | a faulted flight originates at the async memo | passed | failed | Async results arrive on a later microtask |
-| traced | a faulted flight originates at the async memo | passed | failed | Async results arrive on a later microtask |
-
 | Excluded | Reason |
 | --- | --- |
 | a throwing comparer is the origin of the failure | a custom comparer policy and stack traces. |
 | every reader rethrows with the origin's frames and its own | a custom comparer policy and stack traces. |
 
-<details><summary>15 passed in every build and delivery that runs them</summary>
+<details><summary>16 passed in every build and delivery that runs them</summary>
 
 - a memo whose body throws is its own origin
 - the origin passes unchanged through every reader
 - the origin is null while the node is not failed, and clears on recovery
 - a wrapping exception originates at the wrapper
 - a failed async source is the origin of its readers' failure
+- a faulted flight originates at the async memo
 - an effect reports the origin of the failure it read
 - an error boundary reports where the caught failure came from
 - a boundary body that throws is the origin of what it catches

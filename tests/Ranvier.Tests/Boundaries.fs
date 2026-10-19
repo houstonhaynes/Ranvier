@@ -212,7 +212,8 @@ let tests =
                     "catching a channel must not lose what was waited on"
             }
 
-            test "a boundary over an AsyncMemo catches the flight" {
+            testCaseAsync "a boundary over an AsyncMemo catches the flight"
+            <| async {
                 let g = new Graph ()
                 let source = TaskCompletionSource<int>()
                 let query = Make.AsyncMemo<int>(g, (fun _ _ -> source.Task))
@@ -223,6 +224,7 @@ let tests =
                 Expect.equal query.Runs 1 "and the read started it"
 
                 source.SetResult 7
+                do! drained ()
                 Expect.equal b.TryValue (Ready 7) "the landing wakes the boundary"
             }
 
@@ -332,7 +334,8 @@ let tests =
                 Expect.equal m.TryValue (Ready true) "the reader wakes when the body succeeds"
             }
 
-            test "an async value created and read in a boundary body restarts its flight on every settle" {
+            testCaseAsync "an async value created and read in a boundary body restarts its flight on every settle"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let flights = ResizeArray<TaskCompletionSource<int>>()
@@ -348,6 +351,7 @@ let tests =
 
                 for i in 1..3 do
                     flights[flights.Count - 1].SetResult i
+                    do! drained ()
                     Expect.equal inside.TryValue (Ready -1) "the settle re-ran the body, which started a new flight"
 
                 Expect.equal flights.Count 4 "one flight per settle, and none lands"
@@ -357,11 +361,13 @@ let tests =
                 let settles = createSuspense (fun _ -> -1) (fun () -> outside.Value)
                 Expect.equal settles.TryValue (Ready -1) "the flight is pending"
                 flights[0].SetResult 7
+                do! drained ()
                 Expect.equal settles.TryValue (Ready 7) "created outside the body, the value settles the boundary"
                 Expect.equal flights.Count 1 "with one flight"
             }
 
-            test "an async value created and read in an effect body restarts its flight on every settle" {
+            testCaseAsync "an async value created and read in an effect body restarts its flight on every settle"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let flights = ResizeArray<TaskCompletionSource<int>>()
@@ -377,12 +383,15 @@ let tests =
                     seen.Add a.Value)
 
                 flights[0].SetResult 1
+                do! drained ()
                 flights[1].SetResult 2
+                do! drained ()
                 Expect.isEmpty seen "the effect never runs past the read"
                 Expect.equal flights.Count 3 "one flight per settle"
             }
 
-            test "an async value created and read in an owning memo body restarts its flight on every settle" {
+            testCaseAsync "an async value created and read in an owning memo body restarts its flight on every settle"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let flights = ResizeArray<TaskCompletionSource<int>>()
@@ -399,6 +408,7 @@ let tests =
 
                 Expect.equal m.TryValue Pending "the first flight is pending"
                 flights[0].SetResult 1
+                do! drained ()
                 Expect.equal m.TryValue Pending "the settle re-ran the body, which started a new flight"
                 Expect.equal flights.Count 2 "a second flight"
             }

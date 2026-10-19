@@ -1,8 +1,9 @@
 // A Mocha reporter writing one JSON array of { path, state, message } to the file named by the
-// `output` reporter option. `path` is the test's title path below the "Ranvier" root.
+// `output` reporter option. `path` is the test's title path below the "Ranvier" root, and `state` is
+// "passed", "failed" or "skipped".
 const fs = require("fs");
 const Mocha = require("mocha");
-const { EVENT_TEST_PASS, EVENT_TEST_FAIL, EVENT_RUN_END } = Mocha.Runner.constants;
+const { EVENT_TEST_PASS, EVENT_TEST_FAIL, EVENT_TEST_PENDING, EVENT_RUN_END } = Mocha.Runner.constants;
 
 class Reporter extends Mocha.reporters.Base {
     constructor(runner, options) {
@@ -17,6 +18,7 @@ class Reporter extends Mocha.reporters.Base {
             });
         runner.on(EVENT_TEST_PASS, test => record(test, "passed"));
         runner.on(EVENT_TEST_FAIL, (test, err) => record(test, "failed", err));
+        runner.on(EVENT_TEST_PENDING, test => record(test, "skipped"));
         runner.once(EVENT_RUN_END, () => fs.writeFileSync(output, JSON.stringify(results)));
     }
 }

@@ -129,11 +129,14 @@ let tests =
                 Expect.isTrue (isNull (box source.ErrorOrigin)) "a settled source reports no origin"
             }
 
-            test "a faulted flight originates at the async memo" {
+            testCaseAsync "a faulted flight originates at the async memo"
+            <| async {
                 let g = new Graph ()
                 let a = Make.AsyncMemo<int>(g, (fun _ _ -> faulted<int>(exn "flight")))
                 let reader = Make.Memo (g, (fun _ -> a.Value + 1))
 
+                a.TryValue |> ignore
+                do! drained ()
                 failedWith a.TryValue |> ignore
                 failedWith reader.TryValue |> ignore
                 Expect.isTrue (isNode a a.ErrorOrigin) "the async memo's flight faulted"

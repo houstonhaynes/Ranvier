@@ -130,7 +130,8 @@ let tests =
                 Expect.equal (opened.Value, closed.Value) (1, 0) "no subscription churn"
             }
 
-            test "createEffect repeats work on each re-flight of an async value" {
+            testCaseAsync "createEffect repeats work on each re-flight of an async value"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let key = Signal (g, 1)
@@ -153,8 +154,10 @@ let tests =
                         log.Add $"show {user.Value}"))
 
                 flights[1].Settle "ada"
+                do! drained ()
                 key.Value <- 2
                 flights[2].Settle "grace"
+                do! drained ()
 
                 Expect.sequenceEqual
                     log
@@ -162,7 +165,8 @@ let tests =
                     "each flight start and settle reached the work"
             }
 
-            test "createEffectOn acts once per settled value of an async value" {
+            testCaseAsync "createEffectOn acts once per settled value of an async value"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let key = Signal (g, 1)
@@ -185,15 +189,18 @@ let tests =
                         onCleanup (fun () -> log.Add $"hide {name}")))
 
                 flights[1].Settle "ada"
+                do! drained ()
                 key.Value <- 2
                 let whilePending = List.ofSeq log
                 flights[2].Settle "grace"
+                do! drained ()
 
                 Expect.sequenceEqual whilePending [ "show ada" ] "the previous action stays in place during the re-flight"
                 Expect.sequenceEqual log [ "show ada"; "hide ada"; "show grace" ] "and is replaced once the new value settles"
             }
 
-            test "createEffect has done its work before a failing read" {
+            testCaseAsync "createEffect has done its work before a failing read"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let flight = Flight<int>()
@@ -206,6 +213,7 @@ let tests =
                         log.Add $"saw {a.Value}"))
 
                 flight.Fail (InvalidOperationException "offline")
+                do! drained ()
 
                 Expect.sequenceEqual log [ "request"; "request" ] "both attempts did the work, and neither finished"
             }
@@ -224,7 +232,8 @@ let tests =
                 Expect.isEmpty log "the failure stops before the action"
             }
 
-            test "createEffectOn keeps the previous action when compute fails" {
+            testCaseAsync "createEffectOn keeps the previous action when compute fails"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let key = Signal (g, 1)
@@ -247,8 +256,10 @@ let tests =
                         onCleanup (fun () -> log.Add $"hide {name}"))
 
                 flights[1].Settle "ada"
+                do! drained ()
                 key.Value <- 2
                 flights[2].Fail(InvalidOperationException "offline")
+                do! drained ()
 
                 Expect.sequenceEqual log [ "show ada" ] "the failed re-flight leaves ada shown"
             }
@@ -358,7 +369,8 @@ let tests =
                 Expect.sequenceEqual log [ "show 1"; "hide 1" ] "disposal runs the cleanup and stops the effect"
             }
 
-            test "createEffectOn does not act again when a re-flight settles on the acted value" {
+            testCaseAsync "createEffectOn does not act again when a re-flight settles on the acted value"
+            <| async {
                 let g = new Graph ()
                 use _ = g.Activate ()
                 let key = Signal (g, 1)
@@ -381,12 +393,16 @@ let tests =
                         onCleanup (fun () -> log.Add $"hide {name}"))
 
                 flights[1].Settle "ada"
+                do! drained ()
                 key.Value <- 2
                 flights[2].Settle "ada"
+                do! drained ()
                 key.Value <- 3
                 flights[3].Fail(InvalidOperationException "offline")
+                do! drained ()
                 key.Value <- 4
                 flights[4].Settle "ada"
+                do! drained ()
 
                 Expect.sequenceEqual log [ "show ada" ] "the cutoff compares with the last acted value"
             }
