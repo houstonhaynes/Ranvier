@@ -84,6 +84,7 @@ Dispatchers move work from other threads onto the graph thread.
 
 - [Installation](installation.md): preview packages, supported targets and Native AOT.
 - [Getting started](getting-started.md): a short walkthrough of a reactive graph.
+- [Examples](examples.md): complete F# and C# console and Avalonia applications for real workflows.
 - [Ranvier or Adaptive for a desktop app?](../blog/desktop-adaptive.md): a blog walkthrough with a complete F# window and comparisons of state, bindings, collections, async work and lifetime.
 - [Graphs](graph.fsx), [Signals](signals.fsx), [Memos](memos.md) and [Effects](effects.md): the core primitives.
 - [Fixed-dependency bindings](bindings.md): copy one signal or memo into a target, with batching and owner disposal.

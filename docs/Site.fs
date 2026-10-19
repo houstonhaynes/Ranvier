@@ -47,6 +47,7 @@ let theme =
                         Menu.page "guide/getting-started.md"
                         Menu.page "guide/csharp.md"
                         Menu.page "guide/blazor-server.md"
+                        Menu.page "guide/examples.md"
                     ]
                 Menu.section
                     "Core"

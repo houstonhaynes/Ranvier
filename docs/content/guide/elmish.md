@@ -13,6 +13,9 @@ Keep your Elmish `init` and `update`, and move views to Ranvier one at a time.
 that trigger their readers only when the selected value changes. The rest of the application can
 keep its Elmish loop.
 
+The [Elmish expense review](examples.md#workflows) example applies this to a complete
+application with commands, undo/redo and revision-aware saves.
+
 ## Setup
 
 `Mvu` ships in its own package, `Ranvier.Elmish`, which depends on `Ranvier`:

@@ -11,6 +11,7 @@ that state to your application.
 
 Starting a desktop app, or comparing this with FSharp.Data.Adaptive? Read
 [Ranvier or Adaptive for a desktop app?](../blog/desktop-adaptive.md) for a complete window and practical workflows.
+[Examples](examples.md) lists complete F# and C# applications to clone and run.
 
 ## A first graph
 

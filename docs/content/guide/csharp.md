@@ -14,6 +14,9 @@ The `Reactive` factories take familiar `Func` and `Action` delegates. They retur
 nodes, including `Signal<T>`, `Memo<T>`, `AsyncMemo<T>` and `Projection<K, V>`. Extension methods
 provide `Graph.Run`, `Signal.Update` and the collection operators.
 
+The [examples](examples.md) include a C# file-processing workflow and a C# Avalonia desktop
+workbench.
+
 ## At a glance
 
 A city drives an async temperature request; a computed property formats the result for a XAML view.

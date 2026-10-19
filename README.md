@@ -67,6 +67,19 @@ Read the full documentation at **https://shayanhabibi.github.io/Ranvier/**.
 - [Queries and mutations](docs/content/guide/queries.md) share acquired remote data, retain accepted data during refresh, and reconcile loaded queries in one batch.
 - [Fable](docs/content/fable/index.md) compiles the same model to JavaScript. Package builds include standalone Fable source projects, and CI checks package consumers. The guide documents target differences.
 
+## Examples
+
+[Ranvier.Examples](https://github.com/shayanhabibi/Ranvier.Examples) holds complete F# and C# applications
+built on Ranvier, each as a console scenario and as a tab of an Avalonia desktop workbench:
+
+- **Support workbench** (F#): a local HTTP ticket service with drafts, version conflicts, reconnection and saves that outlive the editor.
+- **File processing** (C#): SHA-256 hashing of real files with bounded concurrency, keyed lists, cancellation, retry and throttled progress.
+- **Data quality** (F#): CSV import, repair of malformed measurements, unit conversion, drafts across reloads and export.
+- **Elmish expense review** (F#, `Ranvier.Elmish`): an immutable model with commands, selectors, validation and undo/redo.
+
+The repository references Ranvier through a git submodule, so clone it with `git clone --recurse-submodules`.
+See [Examples](docs/content/guide/examples.md) in the guide for each workflow and how to run it.
+
 ## Origin
 
 Ranvier began as experiments in a repository called [Partas.Signals](https://github.com/shayanhabibi/Partas.Signals).
