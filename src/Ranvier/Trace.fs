@@ -79,6 +79,9 @@ type internal TraceLog(locked: bool) =
 
     // Node id to the `Settle` or `Fail` seq its next `Moved` takes as cause.
     let settles = Dictionary<int, int>()
+
+    // Stream node id to the `StreamStarted` seq of its latest stream.
+    let streams = Dictionary<int, int>()
     let timedCaptures = Dictionary<int, struct (int * int)>()
     let timedPublications = Dictionary<int, int>()
     let timedWinners = Dictionary<int, int>()
@@ -284,6 +287,20 @@ type internal TraceLog(locked: bool) =
     member _.SettleOf(node: int) =
         sync (fun () -> lookup settles node)
 
+    /// <summary>Records <c>seq</c> as the <c>StreamStarted</c> of <c>node</c>'s latest stream.</summary>
+    member _.NoteStream(node: int, seq: int) =
+        sync (fun () -> streams[node] <- seq)
+
+    /// <summary>
+    /// The cause of a stream event of <c>node</c>: the <c>RunStart</c> seq of its open run, else the
+    /// <c>StreamStarted</c> seq of its latest stream, or 0.
+    /// </summary>
+    member _.StreamCause(node: int) =
+        sync (fun () ->
+            match lookup openRuns node with
+            | 0 -> lookup streams node
+            | run -> run)
+
     /// <summary>Whether <c>node</c>'s open run moved its value.</summary>
     member _.MovedInRun(node: int) =
         sync (fun () -> movedRuns.Contains node)
@@ -449,6 +466,7 @@ type internal TraceLog(locked: bool) =
                             | TraceNodeKind.LookupCell -> "lookup cell"
                             | TraceNodeKind.Timed -> "timed node"
                             | TraceNodeKind.Binding -> "binding"
+                            | TraceNodeKind.Stream -> "stream memo"
                             | _ -> "node"
                     elif
                         e.Kind = TraceEventKind.Label
@@ -1194,6 +1212,49 @@ type internal Tracer =
         Tracer.Node (graph, id, TraceNodeKind.Timed, owner)
 
         (Tracer.LogOf graph).TimedTime(clock, clock.NowMilliseconds)
+        |> ignore
+#else
+        ()
+#endif
+
+    [<Conditional("RANVIER_TRACE")>]
+    static member StreamNew(graph: obj, id: int, owner: obj) =
+#if RANVIER_TRACE
+        Tracer.Node (graph, id, TraceNodeKind.Stream, owner)
+#else
+        ()
+#endif
+
+    [<Conditional("RANVIER_TRACE")>]
+    static member StreamStarted(graph: obj, id: int, generation: int) =
+#if RANVIER_TRACE
+        let log = Tracer.LogOf graph
+
+        let seq =
+            log.Append (TraceEventKind.StreamStarted, id, 0, generation, 0, log.OpenRun id, null)
+
+        log.NoteStream (id, seq)
+#else
+        ()
+#endif
+
+    [<Conditional("RANVIER_TRACE")>]
+    static member StreamPublished(graph: obj, id: int, status: int, count: int, payload: obj) =
+#if RANVIER_TRACE
+        let log = Tracer.LogOf graph
+
+        log.Append (TraceEventKind.StreamPublished, id, 0, status, count, log.StreamCause id, payload)
+        |> ignore
+#else
+        ()
+#endif
+
+    [<Conditional("RANVIER_TRACE")>]
+    static member StreamEnded(graph: obj, id: int, reason: int) =
+#if RANVIER_TRACE
+        let log = Tracer.LogOf graph
+
+        log.Append (TraceEventKind.StreamEnded, id, 0, reason, 0, log.StreamCause id, null)
         |> ignore
 #else
         ()

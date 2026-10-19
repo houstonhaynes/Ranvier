@@ -25,6 +25,7 @@
 
     <ItemGroup>
         <Compile Include="Bindings.fs" />
+        <Compile Include="StreamSources.fs" />
         <Compile Include="Reactive.fs" />
         <Compile Include="Extensions.fs" />
         <Compile Include="Tracing.fs" />

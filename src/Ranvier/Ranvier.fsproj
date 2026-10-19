@@ -59,6 +59,7 @@
         <Compile Include="Core.fs" />
         <Compile Include="Bindings.fs" />
         <Compile Include="Timed.fs" />
+        <Compile Include="Streams.fs" />
         <Compile Include="Deltas.fs" />
         <Compile Include="ValueReaders.fs" />
         <Compile Include="Projections.fs" />

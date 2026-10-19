@@ -54,6 +54,7 @@ read it. The value above a node is its latest value.
 | Dashed circle | Async source or async memo |
 | Rounded rectangle | Memo, boundary or projection |
 | Thick rounded rectangle | Debounce or throttle |
+| Dashed rounded rectangle | Stream memo |
 | Diamond | Effect |
 
 | Look | State |
@@ -64,6 +65,7 @@ read it. The value above a node is its latest value.
 | Dotted outline, dimmed value | Waiting on a pending source |
 | Red outline and value | Failed; the value is the error |
 | Dashed thick outline, clock caption | A timed admission window is open; the value above stays published output |
+| Doubled outline | A stream is open |
 
 A dot travelling an edge is a mark: the source tells its observer it may be stale. A bright dot means
 the source's value moved. A ring that fades is a dropped flight.
@@ -174,6 +176,10 @@ factories also receive their names. Their final graph argument can use `Graph.Cu
 map fence. `MapClock()` supplies a manual clock for deterministic examples: a control calling
 `clock.Advance milliseconds` runs due callbacks in deadline order. It replaces wall-clock waits
 for replay; playback speed does not change these example deadlines.
+
+`Feed<'T>()` supplies a stream source for examples: `feed.Push item`, `feed.Burst items` (one
+publication), `feed.Complete ()`, `feed.Fail message`. Return `feed.Source` from the start function of
+`createStream` or `createStreamFold`; see [Streams](streams.md).
 
 Top-level projection aggregates also receive their binding's name: `Projection.sumBy`, `countBy`,
 `exists`, `forall`, `fold` and `foldGroup`, called directly or at the end of a pipeline. For example:

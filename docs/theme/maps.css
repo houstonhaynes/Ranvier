@@ -55,6 +55,9 @@
 .rv-map-node.is-timing .rv-map-node__shape { stroke-dasharray: 6 2; }
 .rv-map-node.is-timing .rv-map-node__timing { fill: var(--rv-violet); }
 .rv-map-node--async .rv-map-node__shape { stroke: var(--rv-pending); stroke-dasharray: 4 3; }
+.rv-map-node--stream .rv-map-node__shape { stroke: var(--rv-pending); stroke-dasharray: 4 3; }
+.rv-map-node__open { fill: none; stroke: var(--rv-pending); stroke-width: 1.75; opacity: 0; transition: opacity .2s ease-out; }
+.rv-map-node.is-open .rv-map-node__open { opacity: 1; }
 .rv-map-node--effect .rv-map-node__shape { stroke: var(--rv-accent-text); }
 .rv-map-node__flight {
   fill: none; stroke: var(--rv-pending); stroke-width: 1.5; stroke-dasharray: 3 5; opacity: 0;

@@ -88,7 +88,6 @@ SignalsDotnet and CommunityToolkit.Mvvm.
 *Exploratory.* The following ideas from the design research have not been built:
 
 - an `Async<'T>` adapter for cold, restartable F# async workflows
-- a streaming memo over `IAsyncEnumerable<'T>`, inspired by async-iterable reactive results
 - a coalescing policy that publishes the finished flight's result before the trailing run (SignalsDotnet
   `ScheduleNext`, R3 `ThrottleFirstLast`); `FinishCurrent` keeps the memo pending until the trailing run settles
 
@@ -96,9 +95,8 @@ Debounce and throttle are implemented as [timed values](../guide/timing.md), wit
 publication. Read a timed value from an async memo to control when requests start, and choose its flight
 policy separately. They are no longer exploratory flight-policy proposals.
 
-Streaming lifetime, restart policies and empty-stream behavior remain design questions. No streaming API
-or contract is shipped. In particular, applying start-order `Queue` semantics to infinite streams would
-prevent later streams from publishing until earlier streams completed.
+Stream memos fold a stream's items into a state and restart when `start`'s reads change; see
+[Streams](../guide/streams.md).
 
 ## Threads and dispatch
 

@@ -144,6 +144,30 @@ module internal Platform =
 #endif
 
     /// <summary>
+    /// Calls <c>settle</c> with the outcome of <c>work</c>: inline on the completing thread on .NET, on a microtask
+    /// under Fable. Observes <c>work</c> at once, so a rejection is handled.
+    /// </summary>
+    let whenDone (work: Task) (settle: FlightOutcome<unit> -> unit) : unit =
+#if FABLE_COMPILER
+        thenBoth (unbox<Task<unit>> work) (fun _ -> settle (FlightOutcome.Completed ())) (fun reason -> settle (rejected reason))
+        |> ignore
+#else
+        work.ContinueWith (
+            Action<Task>(fun t ->
+                settle (
+                    if t.IsCanceled then
+                        FlightOutcome.Canceled (cancellation t)
+                    elif t.IsFaulted then
+                        FlightOutcome.Faulted (t.Exception.GetBaseException ())
+                    else
+                        FlightOutcome.Completed ()
+                )),
+            TaskContinuationOptions.ExecuteSynchronously
+        )
+        |> ignore
+#endif
+
+    /// <summary>
     /// The outcome of <c>flight</c>, as a task that always completes successfully.
     /// Observes the flight at once, so a rejection is handled even when the
     /// outcome is read later.
@@ -214,6 +238,45 @@ module internal Platform =
     /// <summary>Completes <c>d</c> with <c>value</c>. A second call has no effect.</summary>
     let resolve (d: Deferred<'T>) (value: 'T) =
         d.TrySetResult value |> ignore
+#endif
+
+    /// <summary>A task completed or faulted by hand, once.</summary>
+    type Completion<'T> =
+        {
+            Task: Task<'T>
+            Resolve: 'T -> unit
+            Reject: exn -> unit
+        }
+
+#if FABLE_COMPILER
+    [<Emit("new Promise((resolve, reject) => $0(resolve, reject))")>]
+    let private promiseWith (executor: ('T -> unit) -> (exn -> unit) -> unit) : Task<'T> = jsNative
+
+    /// <summary>A task that completes or faults when <c>Resolve</c> or <c>Reject</c> is called. Awaiters resume on a later microtask.</summary>
+    let completion<'T> () : Completion<'T> =
+        let mutable resolver = Unchecked.defaultof<'T -> unit>
+        let mutable rejecter = Unchecked.defaultof<exn -> unit>
+
+        let task =
+            promiseWith (fun resolve reject ->
+                resolver <- resolve
+                rejecter <- reject)
+
+        {
+            Task = task
+            Resolve = resolver
+            Reject = rejecter
+        }
+#else
+    /// <summary>A task that completes or faults when <c>Resolve</c> or <c>Reject</c> is called. Continuations run inline on the calling thread.</summary>
+    let completion<'T> () : Completion<'T> =
+        let source = TaskCompletionSource<'T>()
+
+        {
+            Task = source.Task
+            Resolve = source.TrySetResult >> ignore
+            Reject = source.TrySetException >> ignore
+        }
 #endif
 
     /// <summary>A task already completed with <c>value</c>.</summary>

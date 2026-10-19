@@ -72,6 +72,10 @@ These are implemented and covered by tests.
   projects in package builds. CI runs traced/untraced compatibility checks and compiles consumers from
   built packages. Fable omits .NET thread/inbox/continuation bookkeeping and uses direct slot references;
   the .NET implementations are preserved. See [Fable (JavaScript) target](../fable/index.md).
+- **Stream memos.** `createStream` publishes a stream's latest item and `createStreamFold` folds its
+  items into a state. Both restart when the values read by `start` change. `StreamSource.create`,
+  `ofAsyncEnumerable`, `ofObservable`, `ofChannel` and `ofAsyncIterable` build the sources. See
+  [Streams](../guide/streams.md).
 
 ## Under consideration
 
@@ -83,9 +87,8 @@ None of these is available. Each one is an open question about whether and how i
 - **More incremental collection views.** Map membership consumes upstream key deltas. Filter, sort,
   grouping and some aggregate membership paths still scan keys; further delta processing remains
   under consideration.
-- **Additional async adapters.** F# `Async<'T>` and streaming `IAsyncEnumerable<'T>` adapters remain
-  exploratory; their lifetime and restart contracts are not shipped. See
-  [The async graph](async-graph.md#not-implemented).
+- **Additional async adapters.** An F# `Async<'T>` adapter remains exploratory; its lifetime and
+  restart contracts are not shipped. See [The async graph](async-graph.md#not-implemented).
 - **Reusable lenses and prisms.** Deep write paths can be expressed in application code today; reusable
   focus values over collections remain under consideration.
 

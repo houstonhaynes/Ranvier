@@ -219,6 +219,14 @@ type Reactive =
     static member AsyncSource<'T>() : AsyncSource<'T> =
         Api.createAsyncSource<'T>()
 
+    /// <summary>The latest item of the stream <c>start</c> returns; a change to a value read by <c>start</c> restarts it.</summary>
+    static member Stream<'T>(start: Func<CancellationToken, StreamSource<'T>>) : StreamMemo<'T> =
+        Api.createStream start.Invoke
+
+    /// <summary>The fold of the stream's items into <c>seed</c>; a restart begins again from <c>seed</c>.</summary>
+    static member StreamFold<'S, 'T>(seed: 'S, fold: Func<'S, 'T, 'S>, start: Func<CancellationToken, StreamSource<'T>>) : StreamMemo<'S> =
+        Api.createStreamFold seed (fun state item -> fold.Invoke (state, item)) start.Invoke
+
     /// <summary>A value that shows <c>fallback ()</c> while <c>body</c> reads a pending source.</summary>
     /// <remarks>An error in <c>body</c> propagates to the boundary's readers.</remarks>
     static member Suspense<'T>(body: Func<'T>, fallback: Func<'T>) : Boundary<'T> =

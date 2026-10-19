@@ -145,6 +145,66 @@ let tests =
                 |> Async.RunSynchronously
             }
 
+            test "a stream map's replay plays back the restart in order" {
+                let scenario (graph: Graph) =
+                    let feed = Feed<int>()
+                    let topic = createSignal "a"
+                    Trace.label (graph, topic, "topic")
+
+                    let news =
+                        Trace.named "news" (fun () ->
+                            createStreamFold 0 (+) (fun _ ->
+                                topic.Value |> ignore
+                                feed.Source))
+
+                    createEffect (fun () -> news.TryValue |> ignore)
+
+                    controls
+                        [
+                            button "Burst" (fun () -> feed.Burst [ 1; 2; 3 ])
+                            |> expect "three items folded" (fun () -> news.Peek = 6)
+
+                            button "Switch topic" (fun () -> topic.Value <- "b")
+                            |> expect "a second stream opened" (fun () -> feed.Starts = 2)
+
+                            button "Finish" feed.Complete
+                        ]
+
+                Replay.verify "stream example" FlightPolicy.CancelPrevious scenario
+                |> Async.RunSynchronously
+
+                use graph = new Graph ()
+                use _ = graph.Activate ()
+
+                for control in scenario graph do
+                    for step in control.Steps do
+                        step.Run ()
+                        graph.Pump () |> ignore
+
+                let lines =
+                    MapModel.frames MapModel.start (Trace.events graph)
+                    |> Array.map _.Log
+                    |> List.ofArray
+
+                let order =
+                    [
+                        "start news (stream 1)"
+                        "publish news = 6 (3 items)"
+                        "drop news (restarted)"
+                        "start news (stream 2)"
+                        "end news (completed)"
+                    ]
+
+                let positions =
+                    order
+                    |> List.map (fun line ->
+                        match List.tryFindIndex ((=) line) lines with
+                        | Some i -> i
+                        | None -> failtestf "missing log line: %s" line)
+
+                Expect.equal positions (List.sort positions) "the lines play in order"
+            }
+
             test "replay verification reports setup failures at the source fence" {
                 Expect.throwsC
                     (fun () ->

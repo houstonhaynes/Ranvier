@@ -172,6 +172,19 @@ type TraceEventKind =
     | TimedPublished = 54
     /// <summary>A captured/published timing snapshot with offsets from this clock's first timed node in the graph.</summary>
     | TimedState = 55
+    /// <summary>A stream memo started a stream. <c>Arg</c>: the generation, from 1. <c>Cause</c>: the run's <c>RunStart</c>.</summary>
+    | StreamStarted = 60
+    /// <summary>
+    /// A stream memo published. <c>Arg</c>: its <c>Status</c> byte. <c>Flag</c>: the items folded since the previous
+    /// publication. <c>Payload</c>: the state, or the exception. <c>Cause</c>: the node's open <c>RunStart</c>, else the
+    /// latest <c>StreamStarted</c>.
+    /// </summary>
+    | StreamPublished = 61
+    /// <summary>
+    /// A stream ended. <c>Arg</c>: a <c>TraceStreamEnd</c>. <c>Cause</c>: the node's open <c>RunStart</c>, else the
+    /// latest <c>StreamStarted</c>.
+    /// </summary>
+    | StreamEnded = 62
 
 /// <summary>The node type a <c>NodeNew</c> event records.</summary>
 type TraceNodeKind =
@@ -187,6 +200,7 @@ type TraceNodeKind =
     | LookupCell = 10
     | Timed = 11
     | Binding = 12
+    | Stream = 13
 
 /// <summary>The captured and published state of a timed node at the query or recorded event.</summary>
 type TraceTiming =
@@ -267,6 +281,13 @@ type TraceDropReason =
     /// </summary>
     | Retried = 5
 
+/// <summary>Why a stream ended, in <c>StreamEnded.Arg</c>.</summary>
+type TraceStreamEnd =
+    | Completed = 0
+    | Failed = 1
+    | Restarted = 2
+    | Disposed = 3
+
 /// <summary>The case names of the trace enums, on .NET and under Fable. A value outside the cases gives its number.</summary>
 module internal TraceNames =
     /// <summary>The run-status case name, or its number for an unknown value.</summary>
@@ -321,6 +342,9 @@ module internal TraceNames =
         | TraceEventKind.TimedCancelled -> "TimedCancelled"
         | TraceEventKind.TimedPublished -> "TimedPublished"
         | TraceEventKind.TimedState -> "TimedState"
+        | TraceEventKind.StreamStarted -> "StreamStarted"
+        | TraceEventKind.StreamPublished -> "StreamPublished"
+        | TraceEventKind.StreamEnded -> "StreamEnded"
         | other -> string (int other)
 #else
         string value
@@ -341,6 +365,7 @@ module internal TraceNames =
         | TraceNodeKind.LookupCell -> "LookupCell"
         | TraceNodeKind.Timed -> "Timed"
         | TraceNodeKind.Binding -> "Binding"
+        | TraceNodeKind.Stream -> "Stream"
         | other -> string (int other)
 #else
         string value

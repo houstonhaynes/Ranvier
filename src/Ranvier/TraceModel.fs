@@ -1122,7 +1122,10 @@ module TraceModel =
                             Status =
                                 (if n.Status = TraceNodeStatus.Disposed then
                                      TraceNodeStatus.Disposed
-                                 elif n.Kind = TraceNodeKind.Timed then
+                                 elif
+                                     n.Kind = TraceNodeKind.Timed
+                                     || n.Kind = TraceNodeKind.Stream
+                                 then
                                      n.Status
                                  else
                                      TraceNodeStatus.Running)
@@ -1139,13 +1142,15 @@ module TraceModel =
                     if
                         n.Status = TraceNodeStatus.Disposed
                         || n.Kind = TraceNodeKind.Timed
+                        || n.Kind = TraceNodeKind.Stream
                     then
                         n
                     else
                         { n with
                             Status = TraceNodeStatus.Ended (enum<RunStatus> e.Arg)
                         })
-            | TraceEventKind.TimedPublished ->
+            | TraceEventKind.TimedPublished
+            | TraceEventKind.StreamPublished ->
                 updateNode e.Node (fun n ->
                     if n.Status = TraceNodeStatus.Disposed then
                         n

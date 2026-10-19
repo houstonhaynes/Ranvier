@@ -17,6 +17,10 @@ type Cue =
     | Rest of int
     | Flight of int
     | Drop of int
+    /// <summary>A stream started.</summary>
+    | Opened of int
+    /// <summary>A stream ended without a restart.</summary>
+    | Closed of int
     | Settled of int
     | Failed of int
     | Waits of node: int * source: int
@@ -57,6 +61,10 @@ type Scene =
         Snapshot: TraceSnapshot
         /// <summary>The newest open flight number of each async node in flight.</summary>
         Flights: Map<int, int>
+        /// <summary>The stream nodes whose stream is open.</summary>
+        OpenStreams: Set<int>
+        /// <summary>The newest stream generation of each stream node.</summary>
+        Generations: Map<int, int>
         /// <summary>The pending source each suspended reader waits on.</summary>
         Waiting: Map<int, int>
         /// <summary>The last recorded timing gate state of each timed node.</summary>
@@ -90,6 +98,8 @@ module MapModel =
         {
             Snapshot = TraceModel.emptySnapshot
             Flights = Map.empty
+            OpenStreams = Set.empty
+            Generations = Map.empty
             Waiting = Map.empty
             Timing = Map.empty
             Captured = Map.empty
@@ -197,6 +207,7 @@ module MapModel =
             | TraceNodeKind.Projection -> "projection"
             | TraceNodeKind.Timed -> "timed"
             | TraceNodeKind.Binding -> "binding"
+            | TraceNodeKind.Stream -> "stream memo"
             | _ -> "#" + string node
         | None -> "#" + string node
 
@@ -315,6 +326,11 @@ module MapModel =
         | TraceEventKind.TimedCancelled -> Said
         | TraceEventKind.TimedPublished when e.Arg = int (byte Status.Error) -> Failed node
         | TraceEventKind.TimedPublished -> Said
+        | TraceEventKind.StreamStarted -> Opened node
+        | TraceEventKind.StreamPublished when e.Arg = int (byte Status.Error) -> Failed node
+        | TraceEventKind.StreamPublished -> Surge (node, observers ())
+        | TraceEventKind.StreamEnded when e.Arg = int TraceStreamEnd.Restarted -> Drop node
+        | TraceEventKind.StreamEnded -> Closed node
         | _ -> Quiet
 
     let private logOf (scene: Scene) (e: TraceEvent) =
@@ -351,6 +367,20 @@ module MapModel =
         | TraceEventKind.TimedPublished when e.Arg = int (byte Status.Pending) -> $"publish %s{node} pending"
         | TraceEventKind.TimedPublished when e.Arg = int (byte Status.Error) -> $"publish %s{node} failed: %s{payload e}"
         | TraceEventKind.TimedPublished -> $"publish %s{node} = %s{payload e}"
+        | TraceEventKind.StreamStarted -> $"start %s{node} (stream %d{e.Arg})"
+        | TraceEventKind.StreamPublished when e.Arg = int (byte Status.Error) -> $"fail %s{node}: %s{payload e}"
+        | TraceEventKind.StreamPublished when e.Flag = 1 -> $"publish %s{node} = %s{payload e} (1 item)"
+        | TraceEventKind.StreamPublished -> $"publish %s{node} = %s{payload e} (%d{e.Flag} items)"
+        | TraceEventKind.StreamEnded when e.Arg = int TraceStreamEnd.Restarted -> $"drop %s{node} (restarted)"
+        | TraceEventKind.StreamEnded ->
+            let reason =
+                match enum<TraceStreamEnd> e.Arg with
+                | TraceStreamEnd.Completed -> "completed"
+                | TraceStreamEnd.Failed -> "failed"
+                | TraceStreamEnd.Disposed -> "disposed"
+                | _ -> "ended"
+
+            $"end %s{node} (%s{reason})"
         | TraceEventKind.NodeNew -> $"new %s{node}"
         | TraceEventKind.Part when e.Flag = 1 -> $"%s{name e.Other}[%s{payload e}] opens"
         | TraceEventKind.Part -> $"%s{node} joins %s{name e.Other}"
@@ -419,6 +449,15 @@ module MapModel =
                 Flights = scene.Flights.Add (e.Node, e.Arg)
             }
         | TraceEventKind.FlightDrop -> settle scene e
+        | TraceEventKind.StreamStarted ->
+            { scene with
+                OpenStreams = scene.OpenStreams.Add e.Node
+                Generations = scene.Generations.Add (e.Node, e.Arg)
+            }
+        | TraceEventKind.StreamEnded ->
+            { scene with
+                OpenStreams = scene.OpenStreams.Remove e.Node
+            }
         | TraceEventKind.Settle ->
             { settle scene e with
                 Errors = scene.Errors.Remove e.Node

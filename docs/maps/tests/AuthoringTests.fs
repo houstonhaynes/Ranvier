@@ -155,6 +155,24 @@ let tests =
                 Expect.contains bindings ("subtotal", 4, 6) "the binding spans its lines"
             }
 
+            test "createStream and createStreamFold bindings are named" {
+                let code, _, _ =
+                    scenario (
+                        String.concat
+                            "
+"
+                            [
+                                "let feed = Feed<int>()"
+                                "let news = createStream (fun _ -> feed.Source)"
+                                "let total = createStreamFold 0 (+) (fun _ -> feed.Source)"
+                                "controls []"
+                            ]
+                    )
+
+                Expect.stringContains code "Trace.label (graph', news, \"news\")" "the stream is labelled"
+                Expect.stringContains code "Trace.label (graph', total, \"total\")" "the fold is labelled"
+            }
+
             test "a one-line lookup binding runs in Trace.named" {
                 let code, _, bindings =
                     scenario (

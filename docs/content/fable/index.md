@@ -22,7 +22,8 @@ both inline and promise delivery. It exercises these APIs and records the target
 - scope disposal and error boundaries;
 - the equality cutoff;
 - keyed projections, selectors and index projections;
-- `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all four flight policies.
+- `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all four flight policies;
+- stream memos through `createStream` and `createStreamFold`, with `StreamSource.create`, `ofObservable` and `ofAsyncIterable`. `ofAsyncEnumerable` and `ofChannel` are .NET only; `ofAsyncIterable` is Fable only. See [Streams](../guide/streams.md).
 
 Ranvier's engine compiles under Fable in this repository, and the .NET test suite runs against it under Node.js (`dotnet fsi build.fsx test-fable`), once untraced and once with the trace log compiled in. Tests that exercise a .NET-only facility, such as threads, garbage collection or `ObservableCollection`, are compiled out. The run writes `docs/.ai/fable-compat.md`: the tests that pass, fail and are excluded, in each file. Every failure listed there is one of the differences below.
 

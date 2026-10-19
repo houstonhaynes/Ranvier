@@ -733,7 +733,7 @@ let tests =
 /// <c>scenario</c> must leave every faulted task unreachable. <c>marker</c> separates its reports from those of tests
 /// running in parallel.
 /// </remarks>
-let private unobservedDuring (marker: string) (scenario: unit -> unit) : exn list =
+let internal unobservedDuring (marker: string) (scenario: unit -> unit) : exn list =
     let seen = Collections.Concurrent.ConcurrentQueue<exn>()
 
     let handler =

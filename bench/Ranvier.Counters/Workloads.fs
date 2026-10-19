@@ -5,6 +5,8 @@
 module CounterBench.Workloads
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open Ranvier
 
 type private TimedWorkloadClock() =
@@ -348,6 +350,177 @@ let asyncRecover (n: int) =
                     let settled = AsyncSource<int> graph
                     slot.Value <- settled
                     settled.Settle op
+        Teardown = teardown owner graph
+    }
+
+/// <summary>Delivers <c>burst</c> items per round into a stream fold read by a memo and an effect, inside one batch.</summary>
+let streamBurst (burst: int) (n: int) =
+    let graph = newGraph ()
+    let sink = ref Unchecked.defaultof<StreamSink<int>>
+
+    let source =
+        StreamSource.create (fun s _ ->
+            sink.Value <- s
+            TaskCompletionSource<unit>().Task :> Task)
+
+    let seen = ref 0
+
+    let owner =
+        graph.CreateRoot (fun owner ->
+            use _ = graph.Activate ()
+            let memo = Api.createStreamFold 0 (+) (fun _ -> source)
+            let doubled = createMemo (fun _ -> memo.Value * 2)
+            createEffect (fun () -> seen.Value <- doubled.Value)
+            owner)
+
+    sink.Value.Next 0
+    let expected = ref 0
+
+    {
+        Run =
+            fun () ->
+                for _ in 1..n do
+                    graph.Batch (fun () ->
+                        for i in 1..burst do
+                            sink.Value.Next i)
+
+                    expected.Value <- expected.Value + burst * (burst + 1) / 2
+
+                if seen.Value <> 2 * expected.Value then
+                    failwith $"stream-burst folded %d{seen.Value / 2}, expected %d{expected.Value}"
+        Teardown = teardown owner graph
+    }
+
+/// <summary>The baseline for <c>streamBurst</c>: <c>burst</c> async-source settles per round, batched or not.</summary>
+let settleBurst (batched: bool) (burst: int) (n: int) =
+    let graph = newGraph ()
+    let source = AsyncSource<int>(graph)
+    let seen = ref 0
+
+    let owner =
+        graph.CreateRoot (fun owner ->
+            use _ = graph.Activate ()
+            let doubled = createMemo (fun _ -> source.Value * 2)
+            createEffect (fun () -> seen.Value <- doubled.Value)
+            owner)
+
+    source.Settle 0
+    let total = ref 0
+
+    let round () =
+        for i in 1..burst do
+            total.Value <- total.Value + i
+            source.Settle total.Value
+
+    {
+        Run =
+            fun () ->
+                for _ in 1..n do
+                    if batched then
+                        graph.Batch (fun () -> round ())
+                    else
+                        round ()
+
+                if seen.Value <> 2 * total.Value then
+                    failwith $"settle-burst saw %d{seen.Value / 2}, expected %d{total.Value}"
+        Teardown = teardown owner graph
+    }
+
+/// <summary>A dependency write restarts an open stream, which then receives one item.</summary>
+let streamRestart (n: int) =
+    let graph = newGraph ()
+    let trigger = Signal (graph, 0)
+    let sink = ref Unchecked.defaultof<StreamSink<int>>
+    let last = ref -1
+
+    let source =
+        StreamSource.create (fun s _ ->
+            sink.Value <- s
+            TaskCompletionSource<unit>().Task :> Task)
+
+    let owner =
+        graph.CreateRoot (fun owner ->
+            use _ = graph.Activate ()
+
+            let memo =
+                Api.createStream (fun _ ->
+                    trigger.Value |> ignore
+                    source)
+
+            createEffect (fun () ->
+                last.Value <-
+                    match memo.TryValue with
+                    | Ready v -> v
+                    | _ -> -1)
+
+            owner)
+
+    let next = ref 0
+
+    {
+        Run =
+            fun () ->
+                for _ in 1..n do
+                    next.Value <- next.Value + 1
+                    trigger.Value <- next.Value
+                    sink.Value.Next next.Value
+
+                if last.Value <> next.Value then
+                    failwith $"stream-restart ended at %d{last.Value}, expected %d{next.Value}"
+        Teardown = teardown owner graph
+    }
+
+/// <summary>
+/// The baseline for <c>streamRestart</c>: a dependency write restarts an async memo's open flight under
+/// <c>CancelPrevious</c>, read by an effect. The flights stay open.
+/// </summary>
+let flightRestart (n: int) =
+    let graph = newGraph ()
+
+    if graph.Options.FlightPolicy <> CancelPrevious then
+        failwith "flight-restart expects the default CancelPrevious policy"
+
+    let trigger = Signal (graph, 0)
+    let flights = ref 0
+    let previous = ref CancellationToken.None
+    let latest = ref CancellationToken.None
+    let pending = ref false
+
+    let owner =
+        graph.CreateRoot (fun owner ->
+            use _ = graph.Activate ()
+
+            let memo =
+                Api.createAsync (fun _ token ->
+                    trigger.Value |> ignore
+                    flights.Value <- flights.Value + 1
+                    previous.Value <- latest.Value
+                    latest.Value <- token
+                    TaskCompletionSource<int>().Task)
+
+            createEffect (fun () ->
+                pending.Value <-
+                    match memo.TryValue with
+                    | Pending -> true
+                    | _ -> false)
+
+            owner)
+
+    let started = ref 0
+
+    {
+        Run =
+            fun () ->
+                for _ in 1..n do
+                    started.Value <- started.Value + 1
+                    trigger.Value <- started.Value
+
+                if
+                    flights.Value <> started.Value + 1
+                    || not previous.Value.IsCancellationRequested
+                    || not pending.Value
+                then
+                    failwith $"flight-restart started %d{flights.Value} flights, expected %d{started.Value + 1}"
         Teardown = teardown owner graph
     }
 

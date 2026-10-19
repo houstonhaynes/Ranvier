@@ -177,6 +177,60 @@ type Desk<'T>(?queued: bool) =
     /// <summary>The requests awaiting an answer.</summary>
     member _.Pending = pending.Count
 
+/// <summary>A stream source that controls drive. Each start opens a new stream; a restart cancels the previous one.</summary>
+type Feed<'T>() =
+    let mutable sink: StreamSink<'T> option = None
+    let mutable finished: TaskCompletionSource<unit> option = None
+    let mutable completed = false
+    let mutable starts = 0
+
+    let finish (complete: TaskCompletionSource<unit> -> unit) =
+        match finished with
+        | Some source when not completed ->
+            completed <- true
+            complete source
+        | _ -> ()
+
+    /// <summary>The source to return from <c>createStream</c>'s or <c>createStreamFold</c>'s start function.</summary>
+    member val Source =
+        StreamSource.create (fun s token ->
+            starts <- starts + 1
+            sink <- Some s
+            completed <- false
+            let source = TaskCompletionSource<unit>()
+            finished <- Some source
+
+            token.Register (fun () ->
+                match finished with
+                | Some current when obj.ReferenceEquals (current, source) -> finish (fun c -> c.SetResult ())
+                | _ -> ())
+            |> ignore
+
+            source.Task :> Task)
+
+    /// <summary>Delivers one item to the open stream.</summary>
+    member _.Push(item: 'T) =
+        match sink with
+        | Some s when not completed -> s.Next item
+        | _ -> ()
+
+    /// <summary>Delivers several items inside one batch, so the map shows one publication for them.</summary>
+    member this.Burst(items: 'T list) =
+        batch (fun () ->
+            for item in items do
+                this.Push item)
+
+    /// <summary>Completes the open stream.</summary>
+    member _.Complete() =
+        finish (fun c -> c.SetResult ())
+
+    /// <summary>Fails the open stream with <c>message</c>.</summary>
+    member _.Fail(message: string) =
+        finish (fun c -> c.SetException (Exception message))
+
+    /// <summary>The streams started.</summary>
+    member _.Starts = starts
+
 /// <summary>Where a map's events come from.</summary>
 type MapSource =
     /// <summary>A scenario run against a live traced graph; it returns the map's controls.</summary>

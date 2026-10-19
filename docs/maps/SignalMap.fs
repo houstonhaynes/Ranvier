@@ -106,6 +106,7 @@ module private Look =
         | TraceNodeKind.Projection -> "projection"
         | TraceNodeKind.Timed -> "timed"
         | TraceNodeKind.Binding -> "binding"
+        | TraceNodeKind.Stream -> "stream"
         | _ -> "node"
 
     let shapeOf (kind: TraceNodeKind) =
@@ -116,6 +117,7 @@ module private Look =
         | TraceNodeKind.Timed -> "timed"
         | TraceNodeKind.AsyncMemo
         | TraceNodeKind.AsyncSource -> "async"
+        | TraceNodeKind.Stream -> "stream"
         | _ -> "memo"
 
     let statusName (status: TraceNodeStatus) =
@@ -317,6 +319,11 @@ module SignalMapComponent =
                     | Some v -> "= " + v
                     | None -> ()
                     $"runs {n.Runs}"
+                    match shown.Generations.TryFind n.Id with
+                    | Some generation ->
+                        $"stream {generation}"
+                        if shown.OpenStreams.Contains n.Id then "open" else "closed"
+                    | None -> ()
                     match shown.Waiting.TryFind n.Id with
                     | Some s -> "waiting on " + TraceModel.pathOf shown.Snapshot s
                     | None -> ()
@@ -413,6 +420,13 @@ module SignalMapComponent =
                     Dom.attrs r [ "x", "-23"; "y", "-15"; "width", "46"; "height", "30"; "rx", "9" ]
                     r
 
+            let outline = Dom.svg "rect" "rv-map-node__open"
+
+            if small then
+                Dom.attrs outline [ "x", "-17"; "y", "-13"; "width", "34"; "height", "26"; "rx", "9" ]
+            else
+                Dom.attrs outline [ "x", "-26"; "y", "-18"; "width", "52"; "height", "36"; "rx", "12" ]
+
             let name = Dom.svg "text" "rv-map-node__name"
             let value = Dom.svg "text" "rv-map-node__value"
             let timing = Dom.svg "text" "rv-map-node__timing"
@@ -426,7 +440,7 @@ module SignalMapComponent =
                 Dom.attrs name [ "y", "36"; "text-anchor", "middle" ]
                 Dom.attrs value [ "y", "-26"; "text-anchor", "middle" ]
 
-            for e in [ ring; body; name; value; timing ] do
+            for e in [ ring; outline; body; name; value; timing ] do
                 group.appendChild e |> ignore
 
             let id = n.Id
@@ -804,6 +818,7 @@ module SignalMapComponent =
                      && n.Kind <> TraceNodeKind.AsyncSource)
 
                 Dom.toggle view.Group "is-flight" (scene.Flights.ContainsKey id)
+                Dom.toggle view.Group "is-open" (scene.OpenStreams.Contains id)
                 Dom.toggle view.Group "is-waiting" (scene.Waiting.ContainsKey id)
                 Dom.toggle view.Group "is-failed" (scene.Errors.ContainsKey id)
                 view.Group.setAttribute ("aria-label", describe n)
