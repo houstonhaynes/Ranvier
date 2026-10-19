@@ -35,9 +35,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `ty
 for example `perf(core): trim Fable output while preserving .NET code`. The type is one of `build`,
 `bench`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style` or `test`; the
 optional scope is lower case; `!` before the colon marks a breaking change. The **Conventional
-commits** check applies this to the pull-request title, which becomes the squash commit's subject,
-and to every commit in the pull request except merge commits. Pull requests opened by bots are
-exempt.
+commits** check applies this to the pull-request title, which becomes the squash commit's subject.
+Pull requests opened by bots are exempt.
 
 CI reads two trailers. Write them in the footer (the last paragraph of the message); `Perf-Ignore`
 counts only there, and `Perf-Accepted` on any line of the message:

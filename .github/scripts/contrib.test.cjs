@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { headerProblem, commitProblems } = require('./contrib.cjs');
+const { headerProblem, check } = require('./contrib.cjs');
 
 test('conventional headers pass', () => {
   for (const s of ['feat: x', 'fix(core): x', 'chore!: drop net8', 'perf(fable/core): x\n\nbody', 'bench(counters): add a variant', 'ci(perf-report): x']) {
@@ -12,16 +12,16 @@ test('other headers fail', () => {
     assert.notEqual(headerProblem(s), null, String(s));
   }
 });
-test('merge commits are exempt and the title is checked', () => {
-  const problems = commitProblems({
-    title: 'Update stuff',
-    commits: [
-      { sha: '1'.repeat(40), message: 'fix: x', parents: [{}] },
-      { sha: '2'.repeat(40), message: "Merge branch 'master' into feat", parents: [{}, {}] },
-      { sha: '3'.repeat(40), message: 'wip', parents: [{}] },
-    ],
-  });
-  assert.equal(problems.length, 2);
-  assert.match(problems[0], /^Title /);
-  assert.match(problems[1], /^Commit 3333333 /);
+test('only the title is checked, and bots are exempt', async () => {
+  const run = async (title, type = 'User') => {
+    const failed = [];
+    const core = { setFailed: m => failed.push(m), notice: () => {} };
+    await check({ context: { payload: { pull_request: { title, user: { type, login: 'x' } } } }, core });
+    return failed;
+  };
+  assert.deepEqual(await run('fix(ci): x'), []);
+  const failed = await run('Update stuff');
+  assert.equal(failed.length, 1);
+  assert.match(failed[0], /^Title "Update stuff"/);
+  assert.deepEqual(await run('Update stuff', 'Bot'), []);
 });
