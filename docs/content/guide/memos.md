@@ -171,7 +171,8 @@ release grace
 ::::
 
 Construct `Memo (graph, compute)` directly for a pure memo, and `Memo (graph, compute, true)` for
-an owning one. `createAsync` and `createAsyncWith` split the same way, and a boundary always owns
+an owning one. `createAsync` and `createAsyncWith` split the same way, as do `createAsyncWithPolicy` and
+`createOwningAsyncWithPolicy`, and a boundary always owns
 the nodes its body creates.
 
 An owning computation replaces the nodes its body creates on every re-run. An async value created and

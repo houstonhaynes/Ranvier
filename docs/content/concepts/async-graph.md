@@ -59,8 +59,10 @@ flight starts until the source settles.
 
 *Implemented.*
 
-A new flight supersedes one that is still in progress. `GraphOptions.FlightPolicy` controls what happens to
-the older flight:
+A new flight supersedes one that is still in progress. The async memo's flight policy controls what happens to
+the older flight. `GraphOptions.FlightPolicy` sets it for the graph; `createAsyncWithPolicy` and
+`createOwningAsyncWithPolicy` set it for one async memo, and memos with different policies in one graph fly
+independently:
 
 | Policy | Old token cancelled | Superseded result discarded | Every result applied |
 | --- | --- | --- | --- |

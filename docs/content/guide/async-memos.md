@@ -12,6 +12,8 @@ the next read.
 
 `createAsync` is pure; `createAsyncWith` owns the nodes and cleanups created before its first
 suspending await. Their scopes follow the same rules as [pure and owning memos](memos.md#pure-and-owning-memos).
+`createAsyncWithPolicy` and `createOwningAsyncWithPolicy` are the same pair with their own
+[flight policy](#flight-policy).
 
 Examples using tasks import the .NET types and construct a graph with a manual dispatcher:
 

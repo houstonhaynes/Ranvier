@@ -22,7 +22,7 @@ both inline and promise delivery. It exercises these APIs and records the target
 - scope disposal and error boundaries;
 - the equality cutoff;
 - keyed projections, selectors and index projections;
-- `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all six flight policies;
+- `AsyncSource`, and `AsyncMemo` through `createAsync`, `createAsyncWith`, `createAsyncWithPolicy` and `createOwningAsyncWithPolicy`, under all six flight policies, set for the graph or for one async memo;
 - debounce and throttle through timed values;
 - the Elmish bridge (`Mvu`) and the query layer;
 - stream memos through `createStream` and `createStreamFold`, with `StreamSource.create`, `ofObservable` and `ofAsyncIterable`. `ofAsyncEnumerable` and `ofChannel` are .NET only; `ofAsyncIterable` is Fable only. See [Streams](../guide/streams.md).

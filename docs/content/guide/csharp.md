@@ -168,7 +168,9 @@ The remaining factories cover async values, boundaries, scopes and collections.
 | `Effect(() => …)`, returning the `Effect`: dispose it to stop the effect early | `createEffect` |
 | `EffectOn(() => …, value => …)` | `createEffectOn` |
 | `Async(token => …)`, `Async((previous, token) => …)` | `createAsync` |
+| `Async(token => …, policy)`, `Async((previous, token) => …, policy)` | `createAsyncWithPolicy`; see [Options and threads](#options-and-threads) |
 | `OwningAsync(token => …)` | `createAsyncWith` |
+| `OwningAsync(token => …, policy)` | `createOwningAsyncWithPolicy` |
 | `AsyncSource<T>()` | `createAsyncSource` |
 | `Stream(token => …)`, `StreamFold(seed, fold, token => …)` | `createStream`, `createStreamFold`; see [Streams](streams.md#sources) for `StreamSources` |
 | `Debounce`, `Throttle`, `ThrottleFirst`, `ThrottleLast` | `debounce`, `throttle`, `throttleFirst`, `throttleLast`; see [Debounce and throttle](timing.md) |

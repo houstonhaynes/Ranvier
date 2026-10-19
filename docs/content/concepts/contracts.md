@@ -211,7 +211,7 @@ owner**:
 | Inside `createRoot body` | The new scope |
 | Inside `runWithOwner owner body` | `owner` |
 | Inside the body of an effect, `createMemoWith`, boundary or `createEffectOn`'s `act` | The current run of that computation |
-| Inside `createAsyncWith`'s body, before its first `await` that suspends | The current flight |
+| Inside the body of `createAsyncWith` or `createOwningAsyncWithPolicy`, before its first `await` that suspends | The current flight |
 | Inside a projection's factory | The key's scope |
 | Inside a projection's `source` or `keyOf`, or a lookup's `source` | The current pass |
 
@@ -226,7 +226,7 @@ run: an owning memo first read by an effect keeps its nodes when the effect re-r
 | API | Owner | Disposed |
 | --- | --- | --- |
 | `createSignal`, `createAsyncSource` | Unowned | Collected like any object once unreferenced. A reader drops its edge when it is disposed, or re-runs without reading the source. |
-| `createMemo`, `createMemoWith`, `createAsync`, `createAsyncWith`, `createOptionMemo` | Current owner | With the owner, or by `Dispose`. |
+| `createMemo`, `createMemoWith`, `createAsync`, `createAsyncWith`, `createAsyncWithPolicy`, `createOwningAsyncWithPolicy`, `createOptionMemo` | Current owner | With the owner, or by `Dispose`. |
 | `createEffect`, `createEffectOn` | Current owner | With the owner. Construct `Effect` directly for a handle. |
 | `createStream`, `createStreamFold` | Current owner | With the owner, or by `Dispose`, cancelling the stream. |
 | `bindSignal`, `bindMemo` | Current owner | With the owner. The source is the only dependency; `write` runs untracked in the flush and must not create reactive nodes. |
@@ -248,8 +248,8 @@ run: an owning memo first read by an effect keeps its nodes when the effect re-r
 | A `createMemo` body | The run fails with `InvalidOperationException`: *A memo created by createMemo created an owned node in its body*. The run fails even when the body catches the exception, and `untrack` blocks are included. Use `createMemoWith`. |
 | A `createMemoWith` body | Owned by the run. Disposed before the next run and with the memo. |
 | An effect or boundary body | Owned by the run. Disposed before the next run and with the effect or boundary. |
-| A `createAsync` body | The run fails, and the message names `createAsyncWith`. |
-| A `createAsyncWith` body, before the first `await` that suspends | Owned by the flight. Disposed before the next flight starts and with the async value. |
+| A `createAsync` or `createAsyncWithPolicy` body | The run fails, and the message names `createAsyncWith`. |
+| A `createAsyncWith` or `createOwningAsyncWithPolicy` body, before the first `await` that suspends | Owned by the flight. Disposed before the next flight starts and with the async value. |
 | An async body, after that `await` | On the owning thread, owned by `graph.Root`. To keep it in the flight, capture `getOwner ()` before the `await` and create it inside `runWithOwner`. |
 | A projection factory | Owned by the key. Disposed when the key leaves or the projection is disposed. |
 | A projection row reader, or `createProjection`'s `map` | The row fails with `InvalidOperationException`. Create the node in the factory. |
