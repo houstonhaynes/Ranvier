@@ -67,6 +67,9 @@ jobs:
       # The trace log and its queries compile in only with RanvierTrace, and their tests with them.
       - name: Test Ranvier.Tests, traced
         run: dotnet test tests/Ranvier.Tests -c Release -p:RanvierTrace=true
+      # The signal map model reads the trace log, so its tests compile only in a traced build.
+      - name: Test Ranvier.Docs.Maps.Tests, traced
+        run: dotnet test docs/maps/tests -c Release -p:RanvierTrace=true
       - name: Check package compatibility
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1

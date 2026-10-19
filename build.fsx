@@ -34,6 +34,9 @@ module Spec =
         projects
         |> List.filter _.RelativePath.StartsWith("tests")
 
+    /// The signal map model reads the trace log, so its tests compile only in a traced build.
+    let mapsTests = "docs/maps/tests"
+
     let sourceProjectsMap =
         sourceProjects
         |> List.map (_.Name >> Str.replaceChar '.' '-' >> Str.toLower)
@@ -235,6 +238,10 @@ module Stage =
 
                         for { Name = name; Path = path } in Spec.testProjects do
                             stage $"test traced {name}" { run (cmd $"dotnet test {path} -c {config} -p:RanvierTrace=true -v q") }
+
+                        stage "test traced Ranvier.Docs.Maps.Tests" {
+                            run (cmd $"dotnet test {Spec.mapsTests} -c {config} -p:RanvierTrace=true -v q")
+                        }
                     }
 
                     projects
@@ -276,6 +283,20 @@ module Stage =
 
                     for { Name = name; Path = path } in Spec.testProjects do
                         stage $"run {name}" { run (cmd $"dotnet test {path} -c {config} -v q") }
+                }
+        }
+
+    /// Rebuilds Ranvier traced into the output directory the untraced pack reads; it must not run between `build` and `pack`.
+    let runMapsTests =
+        input {
+            let! config = Options.config
+            and! skipTests = Options.skipTests
+
+            return
+                stage "run Ranvier.Docs.Maps.Tests" {
+                    quiet
+                    when' (not skipTests)
+                    run (cmd $"dotnet test {Spec.mapsTests} -c {config} -p:RanvierTrace=true -v q")
                 }
         }
 
@@ -848,6 +869,7 @@ exit
         Stage.fableClean
         Stage.format (InputSpec.ofInput Options.format) (InputSpec.ofInput Options.dryFormat)
         Stage.runTests
+        Stage.runMapsTests
     }
 
     command "test-fable" {

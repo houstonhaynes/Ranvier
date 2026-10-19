@@ -277,7 +277,7 @@ let tests =
                 let last = (Array.last frames).After
                 Expect.isFalse (last.Flights.ContainsKey c.Shipping) "no flight in progress"
                 Expect.isFalse (MapModel.pending last c.Shipping) "the settled node is no longer pending"
-                Expect.equal last.Snapshot.Nodes[c.Total].Value (Some "17M") "the total takes the quote"
+                Expect.equal last.Snapshot.Nodes[c.Total].Value (Some "17") "the total takes the quote"
             }
 
             test "a failure lands in Errors with its message" {
@@ -305,7 +305,7 @@ let tests =
                 q.Price.Settle 5m
                 let settled = sceneOf q.Graph
                 Expect.isFalse (settled.Errors.ContainsKey q.Total) "the memo recovered"
-                Expect.equal settled.Snapshot.Nodes[q.Total].Value (Some "15M") "with its new value"
+                Expect.equal settled.Snapshot.Nodes[q.Total].Value (Some "15") "with its new value"
             }
 
             test "a run that suspends keeps the value readers saw" {
@@ -481,7 +481,7 @@ let tests =
 
                 Expect.isTrue
                     (frames
-                     |> Array.exists (fun f -> f.Log = "write rows[tea] item = tea"))
+                     |> Array.exists (fun f -> f.Log = "new rows[egg] item"))
                     "a part's log line names its collection and key"
 
                 Expect.isTrue

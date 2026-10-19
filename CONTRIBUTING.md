@@ -68,10 +68,11 @@ target branch, not those of the pull request.
 
 ### Documentation-only changes
 
-A change is documentation only when every changed path is under `docs/`, `brand/` or `.claude/`,
-is a Markdown file, a `LICENSE` file, or `.github/FUNDING.yml`
-([`changes.cjs`](.github/scripts/changes.cjs)). CI then runs only Formatting, and Perf measures
-nothing; the required checks pass. A documentation-only push to `master` gets no history record, and
+A change is documentation only when every changed path is under `docs/` (outside `docs/maps/`, the
+signal map model and its tests), `brand/` or `.claude/`, is a Markdown file, a `LICENSE` file, or
+`.github/FUNDING.yml` ([`changes.cjs`](.github/scripts/changes.cjs)). CI then runs only Formatting,
+and Perf measures nothing; the required checks pass. A change under `docs/maps/` runs every CI job
+and Perf measures it. A documentation-only push to `master` gets no history record, and
 the docs are still redeployed for it.
 
 ## Performance checks
