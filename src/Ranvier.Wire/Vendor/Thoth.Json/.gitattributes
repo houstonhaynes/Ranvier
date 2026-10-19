@@ -1,0 +1,2 @@
+# Patch context lines keep the trailing spaces of the files they apply to.
+*.patch eol=lf -whitespace

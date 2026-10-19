@@ -53,7 +53,7 @@ squash commit message.
 
 | Workflow | Job | Fails when |
 |----------|-----|------------|
-| CI | .NET tests | a test fails in `Ranvier.Tests` (untraced and traced) or `Ranvier.CSharp.Tests`, or the package compatibility check fails |
+| CI | .NET tests | a test fails in `Ranvier.Tests` (untraced and traced), `Ranvier.CSharp.Tests` or `Ranvier.Wire.Tests`, the vendored Thoth.Json differs from its pin plus patches, or the package compatibility check fails |
 | CI | NativeAOT smoke | the AOT publish or the smoke executable fails |
 | CI | Packages | `build.fsx -- publish --dry-publish --skip-tests` fails, or a package it would push is missing, unexpected, untraced under a `.Traced` id (traced otherwise), or differs from its project in id, version or lib frameworks |
 | CI | Formatting | `fantomas --check` reports an unformatted `.fs` file |

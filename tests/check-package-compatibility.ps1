@@ -25,7 +25,7 @@ try {
     $fableEntries = @()
     foreach ($traced in @($false, $true)) {
         $references = @()
-        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query')) {
+        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query', 'Ranvier.Wire')) {
             $project = Join-Path $repo "src/$name/$name.fsproj"
             Invoke-DotNet pack $project -c Release "-p:RanvierTrace=$($traced.ToString().ToLowerInvariant())" -o $feed
             $id = if ($traced) { "$name.Traced" } else { $name }

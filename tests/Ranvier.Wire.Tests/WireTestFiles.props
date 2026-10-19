@@ -1,0 +1,12 @@
+<Project>
+    <!-- The wire suite, in compile order. Ranvier.Wire.Tests and fable/Ranvier.Tests.Fable both compile it. -->
+    <ItemGroup>
+        <Compile Include="$(MSBuildThisFileDirectory)WireSupport.fs" Link="WireSupport.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)VendoredThoth.fs" Link="VendoredThoth.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)WireDecoding.fs" Link="WireDecoding.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)NumericDecoding.fs" Link="NumericDecoding.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)DateTimeOffsetCodec.fs" Link="DateTimeOffsetCodec.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)NumberText.fs" Link="NumberText.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Conformance.fs" Link="Conformance.fs" />
+    </ItemGroup>
+</Project>

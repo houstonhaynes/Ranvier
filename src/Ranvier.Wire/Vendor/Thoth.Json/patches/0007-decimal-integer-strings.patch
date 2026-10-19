@@ -1,0 +1,50 @@
+diff --git a/packages/Thoth.Json.Core/Decode.fs b/packages/Thoth.Json.Core/Decode.fs
+index 1257a94..41db303 100644
+--- a/packages/Thoth.Json.Core/Decode.fs
++++ b/packages/Thoth.Json.Core/Decode.fs
+@@ -221,6 +221,27 @@ module Decode =
+                     ("", BadPrimitive("null", value)) |> Error
+         }
+ 
++    /// <summary>
++    /// The result of <c>tryParse</c> when the text is optional ASCII whitespace, an optional sign, decimal digits and
++    /// optional ASCII whitespace, and a failure otherwise, on both targets. fable-library's integer parse also reads
++    /// <c>0x</c>, <c>0o</c> and <c>0b</c> prefixes, <c>_</c> separators and other whitespace, and wraps signed
++    /// values; .NET's also reads trailing NUL characters and, for <c>int64</c> and <c>uint64</c>, exponents.
++    /// </summary>
++    let private tryParseDecimal
++        (tryParse: string -> bool * 'T)
++        (text: string)
++        : bool * 'T
++        =
++        if
++            System.Text.RegularExpressions.Regex.IsMatch(
++                text,
++                @"^[\t\n\v\f\r ]*[+-]?[0-9]+[\t\n\v\f\r ]*$"
++            )
++        then
++            tryParse text
++        else
++            false, Unchecked.defaultof<'T>
++
+     let inline private integral
+         (name: string)
+         (tryParse: (string -> bool * 'T))
+@@ -256,7 +277,7 @@ module Decode =
+                          ))
+                         |> Error
+                 elif helpers.isString value then
+-                    match tryParse (helpers.asString value) with
++                    match tryParseDecimal tryParse (helpers.asString value) with
+                     | true, x -> Ok x
+                     | _ -> ("", BadPrimitive(name, value)) |> Error
+                 else
+@@ -277,7 +298,7 @@ module Decode =
+                     | true, x -> Ok x
+                     | _ -> ("", BadPrimitive(name, value)) |> Error
+                 elif helpers.isString value then
+-                    match tryParse (helpers.asString value) with
++                    match tryParseDecimal tryParse (helpers.asString value) with
+                     | true, x -> Ok x
+                     | _ -> ("", BadPrimitive(name, value)) |> Error
+                 else

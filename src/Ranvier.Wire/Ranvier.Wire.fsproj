@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Tailcalls>false</Tailcalls>
+    <RootNamespace>Ranvier.Wire</RootNamespace>
+    <AssemblyName>Ranvier.Wire</AssemblyName>
+    <PackageId>Ranvier.Wire</PackageId>
+    <PackageId Condition="'$(RanvierTrace)' == 'true'">Ranvier.Wire.Traced</PackageId>
+    <Title>Ranvier.Wire</Title>
+    <Description>The JSON wire codec of Ranvier's transports: the same wire text on .NET (including NativeAOT) and Fable, decoding that reports an error instead of raising, and depth and item limits.</Description>
+    <PackageTags>json;codec;wire;rpc;fable;fsharp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>0.1.0-preview.1</Version>
+    <AssemblyVersion>0.0.0.0</AssemblyVersion>
+    <RanvierAotClean>true</RanvierAotClean>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarnOn>$(WarnOn);3390</WarnOn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Vendored Thoth.Json (Vendor/Thoth.Json/README.md). The System.Text.Json files compile on .NET only, the
+         JavaScript files under Fable only. -->
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Types.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Decode.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Encode.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/DecoderCE.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Codec.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Object.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.Core/Variant.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.System.Text.Json/Decode.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.System.Text.Json/Encode.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.JavaScript/Decode.fs" />
+    <Compile Include="Vendor/Thoth.Json/Thoth.Json.JavaScript/Encode.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Prescan.fs" />
+    <Compile Include="Numbers.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Backend.fs" />
+    <Compile Include="WireCodec.fs" />
+    <Compile Include="Codecs.fs" />
+    <None Include="Vendor/Thoth.Json/LICENSE.txt" Pack="true" PackagePath="licenses/Thoth.Json/" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- A package dependency on both targets, as in src/Ranvier. Only the Fable build uses it: Helpers.fs,
+         Backend.fs and the vendored JavaScript backend call its JS interop behind `#if FABLE_COMPILER`. -->
+    <PackageReference Include="Fable.Core" Version="5.3.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+    <AssemblyMetadata Include="RanvierTrace" Value="true" />
+  </ItemGroup>
+</Project>

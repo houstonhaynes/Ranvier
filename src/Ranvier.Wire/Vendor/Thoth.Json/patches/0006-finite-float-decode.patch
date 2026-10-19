@@ -1,0 +1,54 @@
+diff --git a/packages/Thoth.Json.Core/Decode.fs b/packages/Thoth.Json.Core/Decode.fs
+index 7357e42..1257a94 100644
+--- a/packages/Thoth.Json.Core/Decode.fs
++++ b/packages/Thoth.Json.Core/Decode.fs
+@@ -426,12 +426,29 @@ module Decode =
+                             )
+ #endif
+                         with
++                        | true, f when Double.IsInfinity f ->
++                            ("",
++                             BadPrimitiveExtra(
++                                 "a float",
++                                 value,
++                                 "Value is outside the float range"
++                             ))
++                            |> Error
+                         | true, f -> Ok f
+                         | false, _ ->
+                             ("", BadPrimitive("a float", value)) |> Error
+ 
+                 if helpers.isNumber value then
+-                    decodeString (helpers.anyToString value)
++                    if Double.IsInfinity(helpers.asFloat value) then
++                        ("",
++                         BadPrimitiveExtra(
++                             "a float",
++                             value,
++                             "Value is outside the float range"
++                         ))
++                        |> Error
++                    else
++                        decodeString (helpers.anyToString value)
+                 elif helpers.isString value then
+                     decodeString (helpers.asString value)
+                 else
+@@ -444,7 +461,17 @@ module Decode =
+         { new Decoder<float32> with
+             member _.Decode(helpers, value) =
+                 if helpers.isNumber value then
+-                    Ok(helpers.asFloat32 value)
++                    // A number whose double value has this magnitude or more rounds to ±∞ as a float32.
++                    if abs (helpers.asFloat value) >= 3.4028235677973366e38 then
++                        ("",
++                         BadPrimitiveExtra(
++                             "a float32",
++                             value,
++                             "Value is outside the float32 range"
++                         ))
++                        |> Error
++                    else
++                        Ok(helpers.asFloat32 value)
+                 elif helpers.isString value then
+                     match helpers.asString value with
+                     | "NaN" -> Ok System.Single.NaN

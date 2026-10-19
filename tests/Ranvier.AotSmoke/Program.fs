@@ -147,6 +147,9 @@ let main _ =
     query.Dispose ()
     equals "remaining query lease" "10" (string shared.Value)
 
+    for name, ok, detail in WireSmoke.checks () do
+        report name ok detail
+
     if failures = 0 then
         Console.WriteLine "all checks passed"
         0

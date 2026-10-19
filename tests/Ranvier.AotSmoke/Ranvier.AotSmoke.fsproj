@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <!--
-    A NativeAOT app over Ranvier, Ranvier.CSharp and Ranvier.Elmish. `dotnet publish -c Release -r linux-x64` fails on any
-    IL2xxx/IL3xxx warning: the assemblies are rooted, so ILC analyses their whole public surface. The published
-    binary exits non-zero when an exception or a ToString text differs from the JIT build's.
+    A NativeAOT app over Ranvier, Ranvier.CSharp, Ranvier.Elmish, Ranvier.Query and Ranvier.Wire.
+    `dotnet publish -c Release -r linux-x64` fails on any IL2xxx/IL3xxx warning: the assemblies are rooted, so ILC
+    analyses their whole public surface. The published binary exits non-zero when an exception or a ToString text
+    differs from the JIT build's.
     -->
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -18,6 +19,7 @@
 
     <ItemGroup>
         <Compile Include="../TraceTextCases.fs" Link="TraceTextCases.fs" />
+        <Compile Include="WireSmoke.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
@@ -26,6 +28,7 @@
         <ProjectReference Include="../../src/Ranvier.CSharp/Ranvier.CSharp.fsproj" />
         <ProjectReference Include="../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
         <ProjectReference Include="../../src/Ranvier.Query/Ranvier.Query.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.Wire/Ranvier.Wire.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -33,6 +36,7 @@
         <TrimmerRootAssembly Include="Ranvier.CSharp" />
         <TrimmerRootAssembly Include="Ranvier.Elmish" />
         <TrimmerRootAssembly Include="Ranvier.Query" />
+        <TrimmerRootAssembly Include="Ranvier.Wire" />
     </ItemGroup>
 
 </Project>

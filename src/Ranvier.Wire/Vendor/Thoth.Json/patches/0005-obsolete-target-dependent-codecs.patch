@@ -1,0 +1,123 @@
+diff --git a/packages/Thoth.Json.Core/Codec.fs b/packages/Thoth.Json.Core/Codec.fs
+index ce5327e..de1eb69 100644
+--- a/packages/Thoth.Json.Core/Codec.fs
++++ b/packages/Thoth.Json.Core/Codec.fs
+@@ -1,6 +1,8 @@
+ ﻿namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ open System
++// The obsolete codecs below are built from the obsolete Encode and Decode members.
++#nowarn "44"
+ 
+ [<RequireQualifiedAccess>]
+ [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+@@ -59,6 +61,7 @@ module Codec =
+     let uint64: Codec<uint64> = create Encode.uint64 Decode.uint64
+ 
+     /// <summary>A codec for bigint, using the same representation as <c>Encode.bigint</c> and <c>Decode.bigint</c>.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.bigint, which writes and reads the same wire text on .NET and Fable.")>]
+     let bigint: Codec<bigint> = create Encode.bigint Decode.bigint
+ 
+     /// <summary>A codec for bool, using the same representation as <c>Encode.bool</c> and <c>Decode.bool</c>.</summary>
+@@ -71,13 +74,16 @@ module Codec =
+     let float32: Codec<float32> = create Encode.float32 Decode.float32
+ 
+     /// <summary>A codec for decimal, using the same representation as <c>Encode.decimal</c> and <c>Decode.decimal</c>.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.decimal, which writes and reads the same wire text on .NET and Fable.")>]
+     let decimal: Codec<decimal> = create Encode.decimal Decode.decimal
+ 
+     /// <summary>A codec for DateTimeOffset, using the same representation as <c>Encode.datetimeOffset</c> and <c>Decode.datetimeOffset</c>.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let datetimeOffset: Codec<DateTimeOffset> =
+         create Encode.datetimeOffset Decode.datetimeOffset
+ 
+     /// <summary>A codec for TimeSpan, using the same representation as <c>Encode.timespan</c> and <c>Decode.timespan</c>.</summary>
++    [<Obsolete("Ranvier.Wire: Thoth's timespan text is target-dependent; see the section Differences between .NET and Fable in the Ranvier.Wire README.")>]
+     let timespan: Codec<TimeSpan> = create Encode.timespan Decode.timespan
+ 
+     /// <summary>
+diff --git a/packages/Thoth.Json.Core/Decode.fs b/packages/Thoth.Json.Core/Decode.fs
+index 4f042c4..6385315 100644
+--- a/packages/Thoth.Json.Core/Decode.fs
++++ b/packages/Thoth.Json.Core/Decode.fs
+@@ -369,6 +369,7 @@ module Decode =
+         bigIntegral "an uint64" tryParse
+ 
+     /// <summary>Decode a JSON string or number into a bigint.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.bigint, which writes and reads the same wire text on .NET and Fable.")>]
+     let bigint: Decoder<bigint> =
+         { new Decoder<bigint> with
+             member _.Decode(helpers, value) =
+@@ -455,6 +456,7 @@ module Decode =
+         }
+ 
+     /// <summary>Decode a JSON string or number into a decimal.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.decimal, which writes and reads the same wire text on .NET and Fable.")>]
+     let decimal: Decoder<decimal> =
+         { new Decoder<decimal> with
+             member _.Decode(helpers, value) =
+@@ -475,6 +477,7 @@ module Decode =
+         }
+ 
+     /// Decode a System.DateTime value using Sytem.DateTime.TryParse, then convert it to UTC.
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let datetimeUtc: Decoder<System.DateTime> =
+         { new Decoder<System.DateTime> with
+             member _.Decode(helpers, value) =
+@@ -487,6 +490,7 @@ module Decode =
+         }
+ 
+     /// Decode a System.DateTime with DateTime.TryParse; uses default System.DateTimeStyles.
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let datetimeLocal: Decoder<System.DateTime> =
+         { new Decoder<System.DateTime> with
+             member _.Decode(helpers, value) =
+@@ -499,6 +503,7 @@ module Decode =
+         }
+ 
+     /// <summary>Decode a JSON string into a DateTimeOffset.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let datetimeOffset: Decoder<System.DateTimeOffset> =
+         { new Decoder<System.DateTimeOffset> with
+             member _.Decode(helpers, value) =
+@@ -514,6 +519,7 @@ module Decode =
+         }
+ 
+     /// <summary>Decode a JSON string into a TimeSpan.</summary>
++    [<Obsolete("Ranvier.Wire: Thoth's timespan text is target-dependent; see the section Differences between .NET and Fable in the Ranvier.Wire README.")>]
+     let timespan: Decoder<System.TimeSpan> =
+         { new Decoder<System.TimeSpan> with
+             member _.Decode(helpers, value) =
+diff --git a/packages/Thoth.Json.Core/Encode.fs b/packages/Thoth.Json.Core/Encode.fs
+index 0a297ca..91c6486 100644
+--- a/packages/Thoth.Json.Core/Encode.fs
++++ b/packages/Thoth.Json.Core/Encode.fs
+@@ -47,6 +47,7 @@ module Encode =
+     let float32 (value: float32) = float (Operators.float value)
+ 
+     /// <summary>Encode a decimal as a string, so no precision is lost.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.decimal, which writes and reads the same wire text on .NET and Fable.")>]
+     let inline decimal (value: decimal) =
+         value.ToString(CultureInfo.InvariantCulture) |> string
+ 
+@@ -135,16 +136,20 @@ module Encode =
+         values |> Map.toSeq |> object
+ 
+     /// <summary>Encode a bigint as a string.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.bigint, which writes and reads the same wire text on .NET and Fable.")>]
+     let inline bigint (value: bigint) = value.ToString() |> string
+ 
+     /// <summary>Encode a DateTimeOffset as an ISO 8601 string.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let inline datetimeOffset (value: DateTimeOffset) =
+         value.ToString("O", CultureInfo.InvariantCulture) |> string
+ 
+     /// <summary>Encode a TimeSpan as a string.</summary>
++    [<Obsolete("Ranvier.Wire: Thoth's timespan text is target-dependent; see the section Differences between .NET and Fable in the Ranvier.Wire README.")>]
+     let inline timespan value = value.ToString() |> string
+ 
+     /// <summary>Encode a DateTime as an ISO 8601 string.</summary>
++    [<Obsolete("Ranvier.Wire: use Ranvier.Wire.Codecs.dateTimeOffset, which writes and reads the same wire text on .NET and Fable.")>]
+     let inline datetime (value: DateTime) =
+         value.ToString("O", CultureInfo.InvariantCulture) |> string
+ 

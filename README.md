@@ -119,7 +119,9 @@ src/Ranvier/                   the library
 src/Ranvier.CSharp/            the C# façade
 src/Ranvier.Elmish/            the MVU bridge (Mvu)
 src/Ranvier.Query/             shared remote queries and mutation reconciliation
+src/Ranvier.Wire/              the JSON wire codec (vendors Thoth.Json)
 tests/Ranvier.Tests/           the Expecto suite
+tests/Ranvier.Wire.Tests/      the wire suite, also run under Fable
 tests/Ranvier.CSharp.Tests/    the xUnit suite, written in C#
 docs/docs.fsproj               the Nacara site (net10.0)
 docs/content/                  the pages

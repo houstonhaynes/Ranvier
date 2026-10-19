@@ -1,0 +1,22 @@
+diff --git a/packages/Thoth.Json.Core/Decode.fs b/packages/Thoth.Json.Core/Decode.fs
+index 6991877..10f4c7d 100644
+--- a/packages/Thoth.Json.Core/Decode.fs
++++ b/packages/Thoth.Json.Core/Decode.fs
+@@ -767,7 +767,7 @@ module Decode =
+                         let value = tokens.[i]
+ 
+                         match decoder.Decode(helpers, value) with
+-                        | Ok value -> result <- result @ [ value ]
++                        | Ok value -> result <- value :: result
+                         | Error er ->
+                             let x =
+                                 Some(
+@@ -782,7 +782,7 @@ module Decode =
+                         i <- i + 1
+ 
+                     if error.IsNone then
+-                        Ok result
++                        Ok(List.rev result)
+                     else
+                         Error error.Value
+                 else

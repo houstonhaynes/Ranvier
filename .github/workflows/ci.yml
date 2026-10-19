@@ -64,6 +64,12 @@ jobs:
         run: dotnet test tests/Ranvier.Tests -c Release
       - name: Test Ranvier.CSharp.Tests
         run: dotnet test tests/Ranvier.CSharp.Tests -c Release
+      - name: Test Ranvier.Wire.Tests
+        run: dotnet test tests/Ranvier.Wire.Tests -c Release
+      # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.
+      - name: Check the vendored Thoth.Json
+        shell: pwsh
+        run: ./src/Ranvier.Wire/Vendor/Thoth.Json/refresh.ps1 -Check
       # The trace log and its queries compile in only with RanvierTrace, and their tests with them.
       - name: Test Ranvier.Tests, traced
         run: dotnet test tests/Ranvier.Tests -c Release -p:RanvierTrace=true
@@ -74,8 +80,9 @@ jobs:
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1
 
-  # A NativeAOT publish over both assemblies, rooted: any IL2xxx/IL3xxx warning fails the publish, and the binary
-  # exits non-zero when an exception or a ToString text differs from the expected text, with tracing on and off.
+  # A NativeAOT publish over the library assemblies, Ranvier.Wire included, rooted: any IL2xxx/IL3xxx warning fails
+  # the publish, and the binary exits non-zero when an exception or a ToString text differs from the expected text,
+  # with tracing on and off.
   aot:
     name: NativeAOT smoke (trace=${{ matrix.trace }})
     needs: changes
@@ -127,7 +134,7 @@ jobs:
         run: dotnet tool restore
       # Tracked F# sources only: `build.fsx --dry-format` also globs untracked output such as dist/.
       - name: Check formatting
-        run: dotnet fantomas --check $(git ls-files '*.fs')
+        run: dotnet fantomas --check $(git ls-files '*.fs' ':(exclude)src/Ranvier.Wire/Vendor/**')
 
   fable:
     name: Fable tests

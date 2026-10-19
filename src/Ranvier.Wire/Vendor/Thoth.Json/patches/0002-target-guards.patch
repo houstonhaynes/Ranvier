@@ -1,0 +1,60 @@
+diff --git a/packages/Thoth.Json.JavaScript/Decode.fs b/packages/Thoth.Json.JavaScript/Decode.fs
+index a5c89ed..bd7162b 100644
+--- a/packages/Thoth.Json.JavaScript/Decode.fs
++++ b/packages/Thoth.Json.JavaScript/Decode.fs
+@@ -1,4 +1,5 @@
+ namespace Thoth.Json.JavaScript
++#if FABLE_COMPILER
+ 
+ open Fable.Core
+ open Fable.Core.JsInterop
+@@ -251,3 +252,4 @@ type Decode =
+         (options: DecodeOptions, codec: Codec<'T>)
+         =
+         Decode.unsafeFromStringWithOptions (options, Decode.codec codec)
++#endif
+diff --git a/packages/Thoth.Json.JavaScript/Encode.fs b/packages/Thoth.Json.JavaScript/Encode.fs
+index 598bd2b..ba3673d 100644
+--- a/packages/Thoth.Json.JavaScript/Encode.fs
++++ b/packages/Thoth.Json.JavaScript/Encode.fs
+@@ -1,4 +1,5 @@
+ namespace Thoth.Json.JavaScript
++#if FABLE_COMPILER
+ 
+ open Fable.Core
+ open Fable.Core.JsInterop
+@@ -51,3 +52,4 @@ module Encode =
+     /// </summary>
+     let fromCodec (space: int) (codec: Codec<'T>) (value: 'T) : string =
+         value |> Encode.codec codec |> toString space
++#endif
+diff --git a/packages/Thoth.Json.System.Text.Json/Decode.fs b/packages/Thoth.Json.System.Text.Json/Decode.fs
+index ea29e8a..c7677d5 100644
+--- a/packages/Thoth.Json.System.Text.Json/Decode.fs
++++ b/packages/Thoth.Json.System.Text.Json/Decode.fs
+@@ -1,4 +1,5 @@
+ namespace Thoth.Json.System.Text.Json
++#if !FABLE_COMPILER
+ 
+ open Thoth.Json.Core
+ open System.IO
+@@ -198,3 +199,4 @@ type Decode =
+     /// </summary>
+     static member unsafeFromString(codec: Codec<'T>) =
+         codec |> Decode.codec |> Decode.unsafeFromString
++#endif
+diff --git a/packages/Thoth.Json.System.Text.Json/Encode.fs b/packages/Thoth.Json.System.Text.Json/Encode.fs
+index 3522031..e2ec847 100644
+--- a/packages/Thoth.Json.System.Text.Json/Encode.fs
++++ b/packages/Thoth.Json.System.Text.Json/Encode.fs
+@@ -1,4 +1,5 @@
+ namespace Thoth.Json.System.Text.Json
++#if !FABLE_COMPILER
+ 
+ open Thoth.Json.Core
+ open System.Text
+@@ -92,3 +93,4 @@ module Encode =
+             )
+ 
+         toStringWithOptions options value
++#endif

@@ -1,0 +1,175 @@
+diff --git a/packages/Thoth.Json.Core/Codec.fs b/packages/Thoth.Json.Core/Codec.fs
+index 93fafef..ce5327e 100644
+--- a/packages/Thoth.Json.Core/Codec.fs
++++ b/packages/Thoth.Json.Core/Codec.fs
+@@ -1,4 +1,4 @@
+-﻿namespace Thoth.Json.Core
++﻿namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ open System
+ 
+diff --git a/packages/Thoth.Json.Core/Decode.fs b/packages/Thoth.Json.Core/Decode.fs
+index 10f4c7d..4f042c4 100644
+--- a/packages/Thoth.Json.Core/Decode.fs
++++ b/packages/Thoth.Json.Core/Decode.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ open System
+ open System.Globalization
+@@ -1040,7 +1040,7 @@ module Decode =
+                 else
+                     Error("", BadPrimitive("any", value))
+ 
+-    /// <summary>Decode any JSON into a <see cref="T:Thoth.Json.Core.Json"/> tree.</summary>
++    /// <summary>Decode any JSON into a <see cref="T:Ranvier.Wire.Thoth.Json.Core.Json"/> tree.</summary>
+     let value: Decoder<Json> = ValueDecoder()
+ 
+     /// <summary>Always succeed with the given value, whatever the JSON.</summary>
+@@ -1302,7 +1302,7 @@ module Decode =
+         }
+ 
+     /// <summary>
+-    /// Decode the object written by <see cref="M:Thoth.Json.Core.Encode.losslessOption"/> into an
++    /// Decode the object written by <see cref="M:Ranvier.Wire.Thoth.Json.Core.Encode.losslessOption"/> into an
+     /// option.
+     /// </summary>
+     /// <remarks>
+diff --git a/packages/Thoth.Json.Core/DecoderCE.fs b/packages/Thoth.Json.Core/DecoderCE.fs
+index f38093b..89e7640 100644
+--- a/packages/Thoth.Json.Core/DecoderCE.fs
++++ b/packages/Thoth.Json.Core/DecoderCE.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ [<AutoOpen>]
+ module DecoderCE =
+diff --git a/packages/Thoth.Json.Core/Encode.fs b/packages/Thoth.Json.Core/Encode.fs
+index 21fcc24..0a297ca 100644
+--- a/packages/Thoth.Json.Core/Encode.fs
++++ b/packages/Thoth.Json.Core/Encode.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ open System.Globalization
+ open System
+@@ -421,7 +421,7 @@ module Encode =
+                     "$case", string "none"
+                 ]
+ 
+-    /// <summary>Encode a <see cref="T:Thoth.Json.Core.Json"/> value as it stands.</summary>
++    /// <summary>Encode a <see cref="T:Ranvier.Wire.Thoth.Json.Core.Json"/> value as it stands.</summary>
+     let rec value: Encoder<Json> =
+         fun json ->
+             match json with
+diff --git a/packages/Thoth.Json.Core/Object.fs b/packages/Thoth.Json.Core/Object.fs
+index bd87a5f..7c27fb8 100644
+--- a/packages/Thoth.Json.Core/Object.fs
++++ b/packages/Thoth.Json.Core/Object.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ [<AutoOpen>]
+ module ObjectCodecComputationExpression =
+@@ -56,7 +56,7 @@ module ObjectCodecComputationExpression =
+             ObjectCodecFieldSet.complete f m
+ 
+     /// <summary>
+-    /// Build a codec for a record, one <see cref="M:Thoth.Json.Core.Codec.field"/> per property.
++    /// Build a codec for a record, one <see cref="M:Ranvier.Wire.Thoth.Json.Core.Codec.field"/> per property.
+     /// </summary>
+     /// <example>
+     /// <code lang="fsharp">
+diff --git a/packages/Thoth.Json.Core/Types.fs b/packages/Thoth.Json.Core/Types.fs
+index 4358c7d..f8e27f9 100644
+--- a/packages/Thoth.Json.Core/Types.fs
++++ b/packages/Thoth.Json.Core/Types.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ /// <summary>
+ /// Reads and tests a JSON value of the runtime's own type.
+@@ -49,7 +49,7 @@ type IDecoderHelpers<'JsonValue> =
+ /// Builds a JSON value of the runtime's own type.
+ /// </summary>
+ /// <remarks>
+-/// Implemented once per runtime package. An <see cref="T:Thoth.Json.Core.IEncodable"/> goes through
++/// Implemented once per runtime package. An <see cref="T:Ranvier.Wire.Thoth.Json.Core.IEncodable"/> goes through
+ /// it so that the same encoder works on every runtime.
+ /// </remarks>
+ type IEncoderHelpers<'JsonValue> =
+diff --git a/packages/Thoth.Json.Core/Variant.fs b/packages/Thoth.Json.Core/Variant.fs
+index 8e05620..20dc768 100644
+--- a/packages/Thoth.Json.Core/Variant.fs
++++ b/packages/Thoth.Json.Core/Variant.fs
+@@ -1,4 +1,4 @@
+-namespace Thoth.Json.Core
++namespace Ranvier.Wire.Thoth.Json.Core
+ 
+ [<AutoOpen>]
+ module VariantCodecBuilder =
+diff --git a/packages/Thoth.Json.JavaScript/Decode.fs b/packages/Thoth.Json.JavaScript/Decode.fs
+index bd7162b..729cb49 100644
+--- a/packages/Thoth.Json.JavaScript/Decode.fs
++++ b/packages/Thoth.Json.JavaScript/Decode.fs
+@@ -1,9 +1,9 @@
+-namespace Thoth.Json.JavaScript
++namespace Ranvier.Wire.Thoth.Json.JavaScript
+ #if FABLE_COMPILER
+ 
+ open Fable.Core
+ open Fable.Core.JsInterop
+-open Thoth.Json.Core
++open Ranvier.Wire.Thoth.Json.Core
+ 
+ /// <summary>Controls how a JSON string is parsed before the decoder runs.</summary>
+ type DecodeOptions =
+diff --git a/packages/Thoth.Json.JavaScript/Encode.fs b/packages/Thoth.Json.JavaScript/Encode.fs
+index ba3673d..7e2be0f 100644
+--- a/packages/Thoth.Json.JavaScript/Encode.fs
++++ b/packages/Thoth.Json.JavaScript/Encode.fs
+@@ -1,9 +1,9 @@
+-namespace Thoth.Json.JavaScript
++namespace Ranvier.Wire.Thoth.Json.JavaScript
+ #if FABLE_COMPILER
+ 
+ open Fable.Core
+ open Fable.Core.JsInterop
+-open Thoth.Json.Core
++open Ranvier.Wire.Thoth.Json.Core
+ open System.Globalization
+ 
+ [<RequireQualifiedAccess>]
+diff --git a/packages/Thoth.Json.System.Text.Json/Decode.fs b/packages/Thoth.Json.System.Text.Json/Decode.fs
+index c7677d5..df192e4 100644
+--- a/packages/Thoth.Json.System.Text.Json/Decode.fs
++++ b/packages/Thoth.Json.System.Text.Json/Decode.fs
+@@ -1,7 +1,7 @@
+-namespace Thoth.Json.System.Text.Json
++namespace Ranvier.Wire.Thoth.Json.System.Text.Json
+ #if !FABLE_COMPILER
+ 
+-open Thoth.Json.Core
++open Ranvier.Wire.Thoth.Json.Core
+ open System.IO
+ open System.Text
+ open System.Text.Json
+diff --git a/packages/Thoth.Json.System.Text.Json/Encode.fs b/packages/Thoth.Json.System.Text.Json/Encode.fs
+index e2ec847..0acd72c 100644
+--- a/packages/Thoth.Json.System.Text.Json/Encode.fs
++++ b/packages/Thoth.Json.System.Text.Json/Encode.fs
+@@ -1,7 +1,7 @@
+-namespace Thoth.Json.System.Text.Json
++namespace Ranvier.Wire.Thoth.Json.System.Text.Json
+ #if !FABLE_COMPILER
+ 
+-open Thoth.Json.Core
++open Ranvier.Wire.Thoth.Json.Core
+ open System.Text
+ open System.Text.Json
+ open System.Text.Json.Nodes

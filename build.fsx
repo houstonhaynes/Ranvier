@@ -23,6 +23,7 @@ module Spec =
         -- "**/obj/**/*.*"
         -- "**/AssemblyInfo.fs"
         -- "**/fable-modules/**/*.*"
+        -- "src/Ranvier.Wire/Vendor/**/*.*"
 
     let projects = Repo.Project.AllProjects ()
 

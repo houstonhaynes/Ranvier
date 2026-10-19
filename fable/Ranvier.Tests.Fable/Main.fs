@@ -111,6 +111,12 @@ let all =
             testList "QueryDictionary.fs" [ Ranvier.Tests.QueryDictionary.tests ]
             testList "QueryErgonomics.fs" [ Ranvier.Tests.QueryErgonomics.tests ]
             testList "QueryNavigationTests.fs" [ Ranvier.Tests.QueryNavigationTests.tests ]
+            testList "VendoredThoth.fs" [ Ranvier.Wire.Tests.VendoredThoth.tests ]
+            testList "WireDecoding.fs" [ Ranvier.Wire.Tests.WireDecoding.tests ]
+            testList "NumericDecoding.fs" [ Ranvier.Wire.Tests.NumericDecoding.tests ]
+            testList "DateTimeOffsetCodec.fs" [ Ranvier.Wire.Tests.DateTimeOffsetCodec.tests ]
+            testList "NumberText.fs" [ Ranvier.Wire.Tests.NumberText.tests ]
+            testList "Conformance.fs" [ Ranvier.Wire.Tests.Conformance.tests ]
         ]
 
 Mocha.runTests all |> ignore
