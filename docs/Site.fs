@@ -135,6 +135,7 @@ let theme =
                         Menu.page "benchmarks/lifetimes.md"
                         Menu.page "benchmarks/projections.md"
                         Menu.page "benchmarks/suspension.md"
+                        Menu.page "benchmarks/streams.md"
                         Menu.page "benchmarks/counters.md"
                     ]
                 Menu.section "Ranvier.Query" [ Menu.page "benchmarks/queries.md" ]

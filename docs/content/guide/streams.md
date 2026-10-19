@@ -237,3 +237,8 @@ item and returns the next state.
 | Disposal | Cancels the stream; a pending node fails with `ObjectDisposedException`. |
 | `Peek` | The last published state, read without starting the stream. |
 | `Runs` | The number of stream starts. |
+
+## Performance
+
+Instruction counts for item bursts and restarts, compared with async sources and async memos and followed across commits, are on
+[Benchmarks → Streams](../benchmarks/streams.md#ci-instruction-counts).

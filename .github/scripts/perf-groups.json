@@ -4,5 +4,6 @@
   "effects": ["work-", "mvu-dispatch", "editable-"],
   "lifetimes": ["create", "dispose"],
   "projections": ["project-", "keyed-"],
-  "suspension": ["flight", "fail-recompute", "async-"]
+  "suspension": ["flight", "fail-recompute", "async-"],
+  "streams": ["stream-"]
 }

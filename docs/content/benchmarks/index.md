@@ -5,7 +5,7 @@ order: 1
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
-Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetimes, projections and suspension. Its purpose is **tracking**: a number here is meaningful against another number from the same machine and the same configuration, typically the previous commit. It is not a statement of how fast Ranvier will be on your hardware. The primitive pages track Ranvier itself; the instruction-count and keyed-list reports include comparisons with other libraries, subject to their workload and measurement caveats.
+Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetimes, projections and suspension. Streams are tracked by CI instruction counts. Its purpose is **tracking**: a number here is meaningful against another number from the same machine and the same configuration, typically the previous commit. It is not a statement of how fast Ranvier will be on your hardware. The primitive pages track Ranvier itself; the instruction-count and keyed-list reports include comparisons with other libraries, subject to their workload and measurement caveats.
 
 | Area | What it covers |
 | --- | --- |
@@ -15,6 +15,7 @@ Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetime
 | [Lifetimes](lifetimes.md) | Construction and disposal of nodes, fan-out on one source, scopes with children, observer removal and relinking on a wide source, and the shallow size of each node type. |
 | [Projections](projections.md) | Keyed projection reads, single-item edits, reorders, key churn with and without key readers, and selector (`Lookup`) reads. |
 | [Suspension](suspension.md) | The cost of the pending and error channels: throwing through a chain, boundaries, settling a source, flights under each `FlightPolicy`, and failing recomputations. |
+| [Streams](streams.md) | Delivering bursts of items into a stream fold, against async-source settles, and restarting a stream against restarting an async memo. CI instruction counts only. |
 | [Instruction counts](counters.md) | Whole scenarios by instructions per operation, against FSharp.Data.Adaptive, R3 and Fable.Ripple, on .NET and Node.js. |
 
 ## Results

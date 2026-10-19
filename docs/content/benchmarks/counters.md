@@ -1,6 +1,6 @@
 ---
 title: Instruction counts
-order: 8
+order: 9
 ---
 
 > **Preview** — Ranvier is pre-release; its APIs and these figures may change.
@@ -100,8 +100,8 @@ These scenarios postdate `e13f159` and appear only in the CI charts. Each measur
 | Scenario | One operation | Variants | Runtimes |
 | --- | --- | --- | --- |
 | `keyed-remove`, `keyed-swap`, `keyed-insert` | Alternately apply and undo one edit of a 1000-row projection: remove the middle row, swap the second and second-to-last rows, or prepend a row. | Fresh items; stable items; memo-free rows | .NET, Node.js |
-| `stream-burst-1`, `stream-burst-16`, `stream-burst-256` | Deliver 1, 16 or 256 items per round into a stream fold read by a memo and an effect. | A stream, batched; an `AsyncSource`, batched and unbatched | .NET, Node.js |
-| `stream-restart` | Write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight. | A stream; an async memo under `CancelPrevious` | .NET, Node.js |
+| [`stream-burst-1`, `stream-burst-16`, `stream-burst-256`](streams.md#stream-burst) | Deliver 1, 16 or 256 items per round into a stream fold read by a memo and an effect. | A stream, batched; an `AsyncSource`, batched and unbatched | .NET, Node.js |
+| [`stream-restart`](streams.md#stream-restart) | Write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight. | A stream; an async memo under `CancelPrevious` | .NET, Node.js |
 | `control` | Refill a 256-entry closure table, sum it and sort a copy of its array. | — | .NET, Node.js |
 
 `control` runs no Ranvier code. Every worker process measures it last, as a reference for the state of the

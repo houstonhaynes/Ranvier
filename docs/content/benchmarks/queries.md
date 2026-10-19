@@ -1,6 +1,6 @@
 ---
 title: Query reconciliation
-order: 9
+order: 10
 ---
 
 > **Preview** — Ranvier is pre-release; its APIs may change.
