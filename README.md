@@ -101,7 +101,7 @@ dotnet fsi build.fsx -- --help
 | `test-fable` | Compiles and runs traced and untraced Fable suites, then writes the compatibility report |
 | `format` | Formats every source file with Fantomas (`--dry-format` checks instead) |
 | `compile` | Compiles the Fable projects to JavaScript (`--watch` to stay resident) |
-| `publish` | Builds, tests, packs and pushes to NuGet (`--api-key`, or the `NUGET_API_KEY` env var) |
+| `publish` | Builds, tests, packs and pushes to NuGet (`--api-key`, or the `NUGET_API_KEY` env var; `--dry-publish` lists the packages instead of pushing) |
 | `bump` | Bumps the version of a project |
 | `docs` | Builds the Nacara site from `docs/docs.fsproj` (`--watch` to serve it) |
 

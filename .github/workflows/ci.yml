@@ -94,6 +94,27 @@ jobs:
       - name: Run
         run: ./artifacts/aot/Ranvier.AotSmoke
 
+  # The publish command's release pipeline with the push replaced by a listing: builds, packs every source project
+  # untraced and traced, then checks each package's id, version, lib frameworks and trace build. The .NET tests job
+  # runs the suites, so --skip-tests leaves them out here.
+  packages:
+    name: Packages
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Pack and dry-publish
+        run: dotnet fsi build.fsx -- publish --dry-publish --skip-tests
+      - name: Check the packages
+        run: node .github/scripts/packages.cjs bin src
+
   format:
     name: Formatting
     runs-on: ubuntu-latest
@@ -141,7 +162,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, format, fable]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable]
     if: always()
     runs-on: ubuntu-latest
     steps:

@@ -55,6 +55,7 @@ squash commit message.
 |----------|-----|------------|
 | CI | .NET tests | a test fails in `Ranvier.Tests` (untraced and traced) or `Ranvier.CSharp.Tests`, or the package compatibility check fails |
 | CI | NativeAOT smoke | the AOT publish or the smoke executable fails |
+| CI | Packages | `build.fsx -- publish --dry-publish --skip-tests` fails, or a package it would push is missing, unexpected, untraced under a `.Traced` id (traced otherwise), or differs from its project in id, version or lib frameworks |
 | CI | Formatting | `fantomas --check` reports an unformatted `.fs` file |
 | CI | Fable tests | the Fable suites fail under Node.js, or the Fable package compatibility check fails |
 | CI | Workflow scripts | a `node --test` suite under `.github/scripts` fails |

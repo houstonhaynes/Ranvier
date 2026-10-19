@@ -74,6 +74,10 @@ module Options =
         |> Input.alias "--ci"
         |> Input.description "Runs npm install with --ci"
 
+    let dryPublish =
+        Input.option<bool> "--dry-publish"
+        |> Input.description "Lists the packages publish would push, and pushes none"
+
     let apiKey =
         Baked.NuGet.apiKey.option
         |> Input.alias "--api-key"
@@ -255,19 +259,44 @@ module Stage =
                 }
         }
 
+    /// Pushes every package in the output directory to NuGet, with the key masked in every printed form of the step.
+    /// `--dry-publish` lists them instead, fails when there are none, and pushes nothing, whatever key is set. Without
+    /// a key or `--dry-publish`, the stage is inactive and fails the pipeline.
     let publish =
         input {
             let! apiKey = Options.apiKey
+            and! dryPublish = Options.dryPublish
 
-            let packages =
-                System.IO.Path.Combine (Repo.VirtualFileSystem.bin.ToString (), "*.nupkg")
+            let directory = Repo.VirtualFileSystem.bin.ToString ()
+            let packages = System.IO.Path.Combine (directory, "*.nupkg")
 
             return
                 stage "publish" {
                     quiet
                     failIfIgnored
-                    when' apiKey.IsSome
-                    run (cmd $"dotnet nuget push {packages} -k {apiKey.Value} -s https://api.nuget.org/v3/index.json --skip-duplicate")
+                    when' (dryPublish || apiKey.IsSome)
+
+                    if dryPublish then
+                        stage "dry publish" {
+                            run (fun _ ->
+                                let files =
+                                    System.IO.Directory.GetFiles (directory, "*.nupkg")
+                                    |> Array.sort
+
+                                if Array.isEmpty files then
+                                    failwith $"No package matches {packages}."
+
+                                for file in files do
+                                    printfn $"Would push {System.IO.Path.GetFileName file}")
+                        }
+                    else
+                        whenSome apiKey (fun key ->
+                            stage "push" {
+                                run (
+                                    cmd $"dotnet nuget push {packages} -s https://api.nuget.org/v3/index.json --skip-duplicate"
+                                    |> Cmd.secretOption "-k" key
+                                )
+                            })
                 }
         }
 
