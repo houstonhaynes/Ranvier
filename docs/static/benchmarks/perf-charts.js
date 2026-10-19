@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const roots = [...document.querySelectorAll('[data-perf-compare], [data-perf-history]')].filter(root => !root.dataset.perfReady);
+  const roots = [...document.querySelectorAll('[data-perf-compare], [data-perf-history], [data-perf-trends]')].filter(root => !root.dataset.perfReady);
   if (!roots.length) return;
   roots.forEach(root => { root.dataset.perfReady = 'true'; });
   const NS = 'http://www.w3.org/2000/svg';
@@ -213,6 +213,159 @@
     if (!values.some(series => series.values.some(value => value !== null))) body.append(element('p', { class: 'rv-perf-empty' }, 'No visible measurements for this scenario.'));
   }
 
+  function mountTrends(root, commits) {
+    const group = (root.dataset.perfGroup || '').split(',').filter(Boolean);
+    const hidden = new Set();
+    root.className = 'rv-perf';
+    root.replaceChildren();
+    const heading = element('div', { class: 'rv-perf-heading' });
+    heading.append(element('p', { class: 'rv-perf-eyebrow' }, 'Across commits'), element('h3', {}, 'Instruction trends'));
+    const controls = element('div', { class: 'rv-perf-controls' });
+    const runtimes = [...new Set(commits.flatMap(commit => commit.Medians.filter(row => row.Leg === 'arm64-counters' && row.Metric === 'instructions').map(row => row.Runtime)))].sort();
+    if (!runtimes.length) throw new Error('No instruction measurements are available yet.');
+    const runtime = selectControl('Runtime', runtimes.map(key => [key, names[key] || key]), runtimes.includes('dotnet') ? 'dotnet' : runtimes[0]);
+    const mode = selectControl('Values', [['change', 'Change since first record'], ['absolute', 'Instructions / op']], 'change');
+    controls.append(runtime.wrapper, mode.wrapper);
+    const legend = element('div', { class: 'rv-perf-legend', 'aria-label': 'Reference libraries' });
+    const provenance = element('div', { class: 'rv-perf-provenance' });
+    const body = element('div', { class: 'rv-perf-panels' });
+    const detail = element('p', { class: 'rv-perf-inspect', role: 'status', 'aria-live': 'polite' });
+    root.append(heading, controls, legend, provenance, body, detail);
+    let previousRuntime;
+
+    function update() {
+      const perCommit = commits.map(commit => measurements(commit, runtime.select.value));
+      const inGroup = name => !group.length || group.some(prefix => name.startsWith(prefix));
+      const rows = perCommit.flat().filter(row => inGroup(row.Scenario));
+      if (previousRuntime !== runtime.select.value) hidden.clear();
+      previousRuntime = runtime.select.value;
+      const references = [...new Set(enginesIn(rows).map(family))].filter(name => name !== 'Ranvier');
+      if (JSON.stringify(references) !== legend.dataset.families) {
+        legend.replaceChildren(...references.map(engine => engineToggle(engine, hidden, update)));
+        legend.dataset.families = JSON.stringify(references);
+      }
+      [...legend.children].forEach((button, index) => button.setAttribute('aria-pressed', String(!hidden.has(references[index]))));
+      const date = commit => new Date(commit.Date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      provenance.replaceChildren(document.createTextNode(`${commits.length} recorded commits · ${short(commits[0])} (${date(commits[0])}) to `),
+        element('a', { href: `https://github.com/shayanhabibi/Ranvier/commit/${commits.at(-1).Commit}`, class: 'rv-perf-sha' }, short(commits.at(-1))),
+        document.createTextNode(` (${date(commits.at(-1))})`));
+      body.replaceChildren();
+      for (const scenario of [...new Set(rows.map(row => row.Scenario))].sort()) {
+        const engines = enginesIn(rows.filter(row => row.Scenario === scenario));
+        const others = engines.filter(engine => family(engine) !== 'Ranvier' && !hidden.has(family(engine)));
+        for (const subject of engines.filter(engine => family(engine) === 'Ranvier'))
+          body.append(trendPanel(scenario, subject, others, commits, perCommit, mode.select.value === 'change', detail));
+      }
+      if (!body.children.length) body.append(element('p', { class: 'rv-perf-empty' }, 'No recorded measurements for these scenarios on this runtime.'));
+      detail.textContent = 'Hover a panel, or focus it and use the arrow keys, to read each commit. Each panel scales to its own range.';
+    }
+    for (const control of [runtime.select, mode.select]) control.addEventListener('change', update);
+    update();
+  }
+
+  function trendPanel(scenario, subject, others, commits, perCommit, change, output) {
+    const percent = value => {
+      const rounded = Math.round(value * 10) / 10;
+      return `${rounded > 0 ? '+' : rounded < 0 ? '−' : '±'}${Math.abs(rounded).toFixed(1)}%`;
+    };
+    const series = [subject, ...others].map(engine => {
+      const raw = perCommit.map(rows => {
+        const value = rows.find(row => row.Scenario === scenario && row.Engine === engine)?.Value;
+        return value >= 0 ? value : null;
+      });
+      const base = raw.find(value => value !== null);
+      return { engine, raw, plotted: change ? raw.map(value => value !== null && base > 0 ? (value / base - 1) * 100 : null) : raw };
+    }).filter(item => item.raw.some(value => value !== null));
+    const variant = subject.includes(' (') ? subject.slice(subject.indexOf(' (') + 2, -1) : '';
+    const name = variant ? `${scenario} · ${variant}` : scenario;
+    const panel = element('section', { class: 'rv-perf-panel rv-perf-spark' });
+    const header = element('header');
+    header.append(element('h4', {}, name));
+    const recorded = (series[0]?.engine === subject ? series[0].raw : []).map((value, index) => ({ value, index })).filter(point => point.value !== null);
+    if (recorded.length) {
+      const first = recorded[0], last = recorded.at(-1), previous = recorded.at(-2);
+      const sinceFirst = (last.value / first.value - 1) * 100;
+      const summary = element('span');
+      summary.append(document.createTextNode(`${Math.round(last.value).toLocaleString('en-US')} instr/op · `),
+        element(Math.abs(sinceFirst) >= 5 ? 'strong' : 'span', {}, `${percent(sinceFirst)} since ${short(commits[first.index])}`));
+      if (previous) summary.append(document.createTextNode(` · ${percent((last.value / previous.value - 1) * 100)} latest`));
+      header.append(summary);
+    }
+    panel.append(header);
+    const left = 96, right = 628, top = 16, bottom = 172;
+    const plotted = series.flatMap(item => item.plotted.filter(value => value !== null));
+    let low = 0, high = Math.max(1, ...plotted) * 1.1;
+    if (change) {
+      low = Math.min(-2, ...plotted);
+      high = Math.max(2, ...plotted);
+      const pad = (high - low) * 0.1;
+      low -= pad;
+      high += pad;
+    }
+    const x = index => commits.length === 1 ? (left + right) / 2 : left + index / (commits.length - 1) * (right - left);
+    const y = value => bottom - (value - low) / (high - low) * (bottom - top);
+    const svg = makeSvg(`${name}: ${change ? 'change in instructions per operation since its first record' : 'instructions per operation'} across ${commits.length} commits`, 212);
+    svg.setAttribute('tabindex', '0');
+    svg.setAttribute('role', 'img');
+    const compact = value => Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+    for (const tick of change ? [low, 0, high].filter(tick => tick === 0 || Math.abs(y(tick) - y(0)) >= 24) : [0, high / 2, high]) {
+      svg.append(svgElement('line', { x1: left, x2: right, y1: y(tick), y2: y(tick), class: change && tick === 0 ? 'rv-perf-reference' : 'rv-perf-grid' }));
+      svg.append(svgElement('text', { x: left - 10, y: y(tick) + 7, 'text-anchor': 'end', class: 'rv-perf-spark-tick' }, change ? percent(tick) : compact(tick)));
+    }
+    [...series].reverse().forEach(({ engine, plotted: points }) => {
+      const isSubject = engine === subject;
+      let path = '', connected = false;
+      points.forEach((value, index) => {
+        if (value === null) { connected = false; return; }
+        path += `${connected ? 'L' : 'M'}${x(index)},${y(value)} `;
+        connected = true;
+      });
+      svg.append(svgElement('path', { d: path, stroke: colour(engine), fill: 'none', 'stroke-width': isSubject ? 2.5 : 1.75, 'stroke-linejoin': 'round', opacity: isSubject ? 1 : 0.7 }));
+      const lastIndex = points.findLastIndex(value => value !== null);
+      if (isSubject && lastIndex >= 0) svg.append(svgElement('circle', { cx: x(lastIndex), cy: y(points[lastIndex]), r: 4.5, fill: colour(engine), class: 'rv-perf-dot' }));
+    });
+    svg.append(svgElement('text', { x: left, y: bottom + 32, class: 'rv-perf-spark-tick' }, short(commits[0])));
+    svg.append(svgElement('text', { x: right, y: bottom + 32, 'text-anchor': 'end', class: 'rv-perf-spark-tick' }, short(commits.at(-1))));
+    const crosshair = svgElement('line', { y1: top, y2: bottom, class: 'rv-perf-crosshair', visibility: 'hidden' });
+    const markers = svgElement('g', { visibility: 'hidden' });
+    svg.append(crosshair, markers);
+    let current = commits.length - 1;
+    const show = index => {
+      current = Math.max(0, Math.min(commits.length - 1, index));
+      crosshair.setAttribute('x1', x(current));
+      crosshair.setAttribute('x2', x(current));
+      crosshair.setAttribute('visibility', 'visible');
+      markers.replaceChildren(...series.filter(item => item.plotted[current] !== null)
+        .map(item => svgElement('circle', { cx: x(current), cy: y(item.plotted[current]), r: 5, fill: colour(item.engine), class: 'rv-perf-dot' })));
+      markers.setAttribute('visibility', 'visible');
+      const values = series.map(item => item.raw[current] === null ? `${item.engine}: not recorded`
+        : `${item.engine}: ${number(item.raw[current])} instr/op${change ? ` (${percent(item.plotted[current])})` : ''}`);
+      output.textContent = `${name} · ${short(commits[current])} · ${commits[current].Subject} — ${values.join(' · ')}`;
+    };
+    const hide = () => {
+      crosshair.setAttribute('visibility', 'hidden');
+      markers.setAttribute('visibility', 'hidden');
+    };
+    const indexAt = event => {
+      const bounds = svg.getBoundingClientRect();
+      const viewX = (event.clientX - bounds.left) / bounds.width * 640;
+      return commits.length === 1 ? 0 : Math.round((viewX - left) / (right - left) * (commits.length - 1));
+    };
+    svg.addEventListener('pointermove', event => show(indexAt(event)));
+    svg.addEventListener('pointerdown', event => show(indexAt(event)));
+    svg.addEventListener('pointerleave', () => { if (document.activeElement !== svg) hide(); });
+    svg.addEventListener('focus', () => show(current));
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('keydown', event => {
+      const target = { ArrowLeft: current - 1, ArrowRight: current + 1, Home: 0, End: commits.length - 1 }[event.key];
+      if (target === undefined) return;
+      event.preventDefault();
+      show(target);
+    });
+    panel.append(svg);
+    return panel;
+  }
+
   const source = new URL('../perf-data/index.json', document.currentScript.src);
   fetch(source).then(response => {
     if (!response.ok) throw new Error(`History request failed (${response.status})`);
@@ -221,7 +374,7 @@
     if (!Array.isArray(history.commits) || !history.commits.length) throw new Error('No recorded measurements yet.');
     const commits = [...history.commits].sort((a, b) => Date.parse(a.Date) - Date.parse(b.Date) || a.Commit.localeCompare(b.Commit));
     for (const root of roots) {
-      try { mount(root, commits); }
+      try { root.hasAttribute('data-perf-trends') ? mountTrends(root, commits) : mount(root, commits); }
       catch (error) { root.replaceChildren(element('p', { role: 'status', class: 'rv-perf-empty' }, error.message)); }
     }
   }).catch(error => {

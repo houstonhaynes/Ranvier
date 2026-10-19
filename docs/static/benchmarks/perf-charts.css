@@ -54,6 +54,12 @@
 .rv-perf-point { cursor: pointer; }
 .rv-perf-dot { stroke: var(--rv-canvas, #fff); stroke-width: 1.5; }
 .rv-perf-point:hover .rv-perf-dot, .rv-perf-point:focus .rv-perf-dot { r: 6; }
+.rv-perf-spark-tick { fill: var(--perf-muted); font-family: var(--nacara-font-mono, monospace); font-size: 20px; }
+.rv-perf-spark svg { cursor: crosshair; touch-action: pan-y; }
+.rv-perf-spark svg:focus-visible { outline: 2px solid var(--perf-ink); outline-offset: 4px; }
+.rv-perf-spark header > span { font-size: .6875rem; }
+.rv-perf-spark header strong { color: var(--perf-ink); font-weight: 650; }
+.rv-perf-crosshair { stroke: var(--perf-muted); stroke-width: 1.5; }
 .rv-perf-commit { cursor: pointer; }
 .rv-perf-commit:hover { fill: var(--perf-ink); text-decoration: underline; }
 .rv-perf-commit:focus-visible { fill: var(--perf-ink); text-decoration: underline; outline: 2px solid var(--perf-ink); outline-offset: 3px; }

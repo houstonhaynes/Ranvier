@@ -9,7 +9,12 @@ order: 5
 The chart compares retired instructions per operation across engines for the latest CI measurement.
 Choose a runtime or recorded commit, filter scenarios by name, and toggle libraries in the legend.
 
+The trend panels follow each scenario across every recorded commit, one panel per Ranvier variant.
+By default each line shows its change since its first record; libraries other than Ranvier are pinned
+versions, so their lines mark the run-to-run noise floor. A change since the first record of 5 % or more is set in bold.
+
 <div class="rv-perf" data-perf-compare data-perf-group="create,dispose"><p role="status">Loading recorded measurements…</p></div>
+<div class="rv-perf" data-perf-trends data-perf-group="create,dispose"><p role="status">Loading recorded measurements…</p></div>
 <link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">
 <script src="/Ranvier/benchmarks/perf-charts.js"></script>
 
