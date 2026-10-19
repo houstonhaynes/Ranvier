@@ -1438,7 +1438,10 @@ let traceTests =
                 graph.Run (fun () -> memo.TryValue) |> ignore
                 feed.Push 5
                 feed.Complete ()
+#if FABLE_COMPILER
+                // Completion arrives on a microtask; a macrotask follows all of them.
                 do! Async.Sleep 0
+#endif
 
                 let summary =
                     Trace.events graph
