@@ -15,6 +15,8 @@ type internal RowEntry<'K, 'V>(key: 'K) =
     member val Settled = false with get, set
     /// <summary>Whether the pending row is observed by the projection's row watcher.</summary>
     member val Watched = false with get, set
+    /// <summary>The row's edge to the projection's row watcher, created by the row's first pending report.</summary>
+    member val WatchEdge: ForwardingEdge = Unchecked.defaultof<_> with get, set
     /// <summary>False after key removal or projection disposal.</summary>
     member val Live = true with get, set
 
@@ -26,6 +28,7 @@ type internal ValueRow<'K, 'V>(graph: Graph, entry: RowEntry<'K, 'V>, touched: V
     member val Attached = true with get, set
     member val HasValue = false with get, set
     member val Value = Unchecked.defaultof<'V> with get, set
+    member val Handle = EdgeHandle.Unlinked with get, set
 
     interface INode with
         member _.Id = id
@@ -33,6 +36,9 @@ type internal ValueRow<'K, 'V>(graph: Graph, entry: RowEntry<'K, 'V>, touched: V
 
     interface IComputation with
         member _.AddSource _ = ()
+
+        member this.MovedIn(_, handle) =
+            this.Handle <- handle
 
         member this.MarkDirty() =
             touched this
@@ -63,7 +69,8 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
 
     member private _.Detach(row: ValueRow<'K, 'V>) =
         row.Attached <- false
-        (row.Entry.Row :> ISource).RemoveObserver(row :> IComputation)
+        (row.Entry.Row :> ISource).RemoveObserverAt(row :> IComputation, row.Handle)
+        row.Handle <- EdgeHandle.Unlinked
 
     member private this.Sync(current: 'K[]) =
         if not (obj.ReferenceEquals (keys, current)) then
@@ -90,7 +97,7 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
                         row.Value <- entry.Row.Peek
 
                     rows.Set (key, row)
-                    (entry.Row :> ISource).AddObserver(row :> IComputation)
+                    row.Handle <- (entry.Row :> ISource).AddObserver(row :> IComputation, 0)
                     touched row
 
             rows.Iterate (fun key _ ->
@@ -184,11 +191,14 @@ type internal ProjectionValues<'K, 'V when 'K: equality>(graph: Graph, find: 'K 
         member _.Status = Status.None
 
     interface ISource with
-        member _.AddObserver c =
-            observers.Add c
+        member _.AddObserver(c, slot) =
+            observers.Add (c, slot)
 
-        member _.RemoveObserver c =
-            observers.Remove c
+        member _.TryAddObserver(c, slot) =
+            observers.TryAdd (c, slot)
+
+        member _.RemoveObserverAt(c, handle) =
+            observers.RemoveAt (c, handle)
 
         member this.UpdateIfNecessary() =
             if not disposed then

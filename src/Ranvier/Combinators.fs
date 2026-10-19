@@ -535,6 +535,9 @@ type internal FoldReads(graph: Graph, changed: unit -> unit) =
     let id = graph.NextId ()
     let read = System.Collections.Generic.HashSet<ISource>(HashIdentity.Reference)
     let order = ResizeArray<ISource>()
+
+    /// <summary>The edge handle of each source in <c>order</c>.</summary>
+    let handles = ResizeArray<int>()
     let mutable dirty = false
     let mutable check = false
 
@@ -554,11 +557,13 @@ type internal FoldReads(graph: Graph, changed: unit -> unit) =
 
     /// <summary>Drops every read edge.</summary>
     member this.Clear() =
-        for source in order do
-            source.RemoveObserver (this :> IComputation)
+        for i in 0 .. order.Count - 1 do
+            (Platform.entryAt i order).RemoveObserverAt(this :> IComputation, Platform.entryAt i handles)
+            Platform.setEntryAt i handles EdgeHandle.Unlinked
 
         read.Clear ()
         order.Clear ()
+        handles.Clear ()
         check <- false
         dirty <- false
 
@@ -570,7 +575,10 @@ type internal FoldReads(graph: Graph, changed: unit -> unit) =
         member this.AddSource source =
             if read.Add source then
                 order.Add source
-                source.AddObserver (this :> IComputation)
+                handles.Add (source.AddObserver (this :> IComputation, order.Count - 1))
+
+        member _.MovedIn(slot, handle) =
+            Platform.setEntryAt slot handles handle
 
         member _.MarkDirty() =
             dirty <- true
@@ -613,12 +621,17 @@ type internal FoldRow<'K, 'V>(graph: Graph, entry: RowEntry<'K, 'V>, touched: Fo
     /// <summary>The last membership diff containing the key.</summary>
     member val Generation = 0 with get, set
 
+    member val Handle = EdgeHandle.Unlinked with get, set
+
     interface INode with
         member _.Id = id
         member _.Status = Status.None
 
     interface IComputation with
         member _.AddSource _ = ()
+
+        member this.MovedIn(_, handle) =
+            this.Handle <- handle
 
         member this.MarkDirty() =
             touched this
@@ -760,7 +773,8 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
     /// <summary>Stops observing the row and removes its contribution.</summary>
     member private this.Detach(row: FoldRow<'K, 'V>) =
         row.Attached <- false
-        (row.Entry.Row :> ISource).RemoveObserver(row :> IComputation)
+        (row.Entry.Row :> ISource).RemoveObserverAt(row :> IComputation, row.Handle)
+        row.Handle <- EdgeHandle.Unlinked
         this.Unfail row
 
         if row.HasValue then
@@ -817,7 +831,7 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
         for row in added do
             row.Queued <- true
             row.Attached <- true
-            (row.Entry.Row :> ISource).AddObserver(row :> IComputation)
+            row.Handle <- (row.Entry.Row :> ISource).AddObserver(row :> IComputation, 0)
             this.Read row
 
         added.Clear ()
@@ -920,7 +934,8 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
 
             rows.Iterate (fun _ row ->
                 row.Attached <- false
-                (row.Entry.Row :> ISource).RemoveObserver(row :> IComputation))
+                (row.Entry.Row :> ISource).RemoveObserverAt(row :> IComputation, row.Handle)
+                row.Handle <- EdgeHandle.Unlinked)
 
             rows.Clear ()
             queue.Clear ()
@@ -934,11 +949,14 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
         member _.Status = Status.None
 
     interface ISource with
-        member _.AddObserver c =
-            observers.Add c
+        member _.AddObserver(c, slot) =
+            observers.Add (c, slot)
 
-        member _.RemoveObserver c =
-            observers.Remove c
+        member _.TryAddObserver(c, slot) =
+            observers.TryAdd (c, slot)
+
+        member _.RemoveObserverAt(c, handle) =
+            observers.RemoveAt (c, handle)
 
         member this.UpdateIfNecessary() =
             if not disposed && not (Platform.isNull lastKeys) then

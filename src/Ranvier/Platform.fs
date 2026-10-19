@@ -493,6 +493,25 @@ module internal Platform =
 #endif
 
     /// <summary>
+    /// An <c>int</c> array of <c>length</c> positions, each read only after it is written. Under Fable a plain
+    /// JavaScript array: a typed array costs a backing store per allocation and a view per copy.
+    /// </summary>
+#if FABLE_COMPILER
+    [<Emit("new Array($0)")>]
+    let positions (length: int) : int[] = jsNative
+#else
+    let positions (length: int) : int[] =
+        Array.zeroCreate length
+#endif
+
+    /// <summary>
+    /// Copies the first <c>count</c> positions of <c>source</c> into <c>target</c>, element by element.
+    /// </summary>
+    let copyPositions (source: int[]) (target: int[]) (count: int) =
+        for i in 0 .. count - 1 do
+            setItemAt i target (itemAt i source)
+
+    /// <summary>
     /// <c>slots[index]</c> for a <c>ResizeArray</c>, without the bounds check. Same
     /// contract, same reason, same caller obligation as <c>itemAt</c>.
     /// </summary>

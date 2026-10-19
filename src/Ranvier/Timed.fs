@@ -267,17 +267,23 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
         member _.Status = status
 
     interface ISource with
-        member _.AddObserver observer =
-            observers.Add observer
+        member _.AddObserver(observer, slot) =
+            observers.Add (observer, slot)
 
-        member _.RemoveObserver observer =
-            observers.Remove observer
+        member _.TryAddObserver(observer, slot) =
+            observers.TryAdd (observer, slot)
+
+        member _.RemoveObserverAt(observer, handle) =
+            observers.RemoveAt (observer, handle)
 
         member _.UpdateIfNecessary() = ()
 
     interface IComputation with
         member this.AddSource source =
             sources.Add (this :> IComputation, source)
+
+        member _.MovedIn(slot, handle) =
+            sources.MovedIn (slot, handle)
 
         member this.MarkDirty() =
             if not disposed then

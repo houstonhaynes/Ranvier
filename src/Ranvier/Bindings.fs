@@ -21,6 +21,7 @@ type internal Binding<'Target, 'T>
     let mutable disposed = false
     let mutable link: OwnerLink = null
     let mutable runs = 0
+    let mutable handle = EdgeHandle.Unlinked
 #if RANVIER_TRACE
     let mutable traceLog: TraceLog = null
     let mutable traceId = 0
@@ -47,7 +48,7 @@ type internal Binding<'Target, 'T>
         if not disposed then
             Tracer.Bind (this, graph, id)
             Tracer.EdgeAdd (this, source, 0)
-            source.AddObserver (this :> IComputation)
+            handle <- source.AddObserver (this :> IComputation, 0)
             (this :> IComputation).MarkDirty()
             graph.RequestFlush ()
 
@@ -101,7 +102,8 @@ type internal Binding<'Target, 'T>
                         link.Detach ()
                         link <- null
 
-                    source.RemoveObserver (this :> IComputation)
+                    source.RemoveObserverAt (this :> IComputation, handle)
+                    handle <- EdgeHandle.Unlinked
         )
 
     interface IDisposable with
@@ -119,6 +121,9 @@ type internal Binding<'Target, 'T>
 
     interface IComputation with
         member _.AddSource _ = ()
+
+        member _.MovedIn(_, moved) =
+            handle <- moved
 
         member this.MarkDirty() =
             if not disposed then

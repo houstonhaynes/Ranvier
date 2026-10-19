@@ -187,15 +187,17 @@ type private DummyComputation(id: int) =
         member _.MarkDirty() = ()
         member _.MarkCheck() = ()
         member _.AddSource _ = ()
+        member _.MovedIn(_, _) = ()
 
 /// <summary>
-/// <c>AddObserver</c> and <c>RemoveObserver</c> on their own: the exact pair a
+/// <c>AddObserver</c> and <c>RemoveObserverAt</c> on their own: the exact pair a
 /// recomputation performs per edge, with nothing else in the frame.
 /// </summary>
 [<MemoryDiagnoser; BenchmarkCategory "Probe">]
 type EdgeChurnProbe() =
     let graph = new Graph ()
     let mutable sources: ISource[] = Array.empty
+    let mutable handles: int[] = Array.empty
     let observer = DummyComputation 0 :> IComputation
 
     [<Params(1, 8)>]
@@ -205,19 +207,18 @@ type EdgeChurnProbe() =
     member this.Setup() =
         sources <- Array.init this.Sources (fun i -> Signal (graph, i) :> ISource)
 
-        for s in sources do
-            s.AddObserver observer
+        handles <- Array.init sources.Length (fun i -> sources[i].AddObserver(observer, i))
 
     /// <summary>
     /// Detach then re-attach, once per source.
     /// </summary>
     [<Benchmark>]
     member _.RemoveThenAdd() =
-        for s in sources do
-            s.RemoveObserver observer
+        for i in 0 .. sources.Length - 1 do
+            sources[i].RemoveObserverAt(observer, handles[i])
 
-        for s in sources do
-            s.AddObserver observer
+        for i in 0 .. sources.Length - 1 do
+            handles[i] <- sources[i].AddObserver(observer, i)
 
 /// <summary>
 /// The shallow size of each node type: the <c>Allocated</c> column of an uninitialised instance, fields only.

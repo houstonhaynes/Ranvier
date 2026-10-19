@@ -44,6 +44,9 @@ type internal RowWatch(graph: Graph, refresh: unit -> unit, touched: unit -> uni
     interface IComputation with
         member _.AddSource _ = ()
 
+        /// <summary>Rows link through a <c>ForwardingEdge</c> each, and the watch holds no edge of its own.</summary>
+        member _.MovedIn(_, _) = ()
+
         member this.MarkDirty() =
             touched ()
             this.Request ()
@@ -90,11 +93,14 @@ type internal ProjectionBeacon(graph: Graph, host: IBeaconHost) =
         member _.Status = Status.None
 
     interface ISource with
-        member _.AddObserver c =
-            observers.Add c
+        member _.AddObserver(c, slot) =
+            observers.Add (c, slot)
 
-        member _.RemoveObserver c =
-            observers.Remove c
+        member _.TryAddObserver(c, slot) =
+            observers.TryAdd (c, slot)
+
+        member _.RemoveObserverAt(c, handle) =
+            observers.RemoveAt (c, handle)
 
         member _.UpdateIfNecessary() =
             host.Refresh ()
@@ -647,14 +653,24 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             entry.Watched <- pending
 
             if pending then
-                (entry.Row :> ISource).AddObserver watch
+                if Platform.isNull (box entry.WatchEdge) then
+                    entry.WatchEdge <- ForwardingEdge watch
+
+                let edge = entry.WatchEdge
+                edge.Handle <- (entry.Row :> ISource).AddObserver(edge, 0)
                 inFlight.Add entry.Key |> ignore
             else
-                (entry.Row :> ISource).RemoveObserver watch
+                this.Unwatch entry
                 inFlight.Remove entry.Key
 
             this.MoveSummary ()
             watch.Request ()
+
+    /// <summary>Removes the row's edge to <c>watch</c>.</summary>
+    member private _.Unwatch(entry: RowEntry<'K, 'V>) =
+        let edge = entry.WatchEdge
+        (entry.Row :> ISource).RemoveObserverAt(edge, edge.Handle)
+        edge.Handle <- EdgeHandle.Unlinked
 
     /// <summary>
     /// Records a change to <c>inFlight</c>: marks the summary readers for a check and schedules the summary write.
@@ -726,7 +742,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
         if entry.Watched then
             entry.Watched <- false
-            (entry.Row :> ISource).RemoveObserver watch
+            this.Unwatch entry
             inFlight.Remove entry.Key
             this.MoveSummary ()
 
@@ -1183,6 +1199,9 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
         member this.AddSource s =
             trackedReads <- trackedReads + 1
             sources.Add (this :> IComputation, s)
+
+        member _.MovedIn(slot, handle) =
+            sources.MovedIn (slot, handle)
 
         member this.MarkDirty() =
             if not disposed then
@@ -2596,11 +2615,14 @@ type internal LookupCell<'V>(graph: Graph, equal: IEqualityComparer<'V>, orphane
             else Status.None
 
     interface ISource with
-        member _.AddObserver c =
-            observers.Add c
+        member _.AddObserver(c, slot) =
+            observers.Add (c, slot)
 
-        member _.RemoveObserver c =
-            observers.Remove c
+        member _.TryAddObserver(c, slot) =
+            observers.TryAdd (c, slot)
+
+        member _.RemoveObserverAt(c, handle) =
+            observers.RemoveAt (c, handle)
 
             if observers.Count = 0 then
                 orphaned ()
