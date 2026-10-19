@@ -165,11 +165,13 @@ The remaining factories cover async values, boundaries, scopes and collections.
 | `Memo(previous => …, seed)` | `createMemo`, with the previous value or `seed` |
 | `OwningMemo(() => …)` | `createMemoWith` |
 | `Editable(() => …)`, `Draft(() => …)` | `createEditable`, `createDraft` |
-| `Effect(() => …)` | `createEffect`, returning the `Effect`: dispose it to stop the effect early |
+| `Effect(() => …)`, returning the `Effect`: dispose it to stop the effect early | `createEffect` |
 | `EffectOn(() => …, value => …)` | `createEffectOn` |
 | `Async(token => …)`, `Async((previous, token) => …)` | `createAsync` |
 | `OwningAsync(token => …)` | `createAsyncWith` |
 | `AsyncSource<T>()` | `createAsyncSource` |
+| `Stream(token => …)`, `StreamFold(seed, fold, token => …)` | `createStream`, `createStreamFold`; see [Streams](streams.md#sources) for `StreamSources` |
+| `Debounce`, `Throttle`, `ThrottleFirst`, `ThrottleLast` | `debounce`, `throttle`, `throttleFirst`, `throttleLast`; see [Debounce and throttle](timing.md) |
 | `Suspense(body, fallback)`, `Suspense(body, previous => …, seed)` | `createSuspense` |
 | `ErrorBoundary(body, error => …)`, `ErrorBoundary(body, (error, previous) => …, seed)` | `createErrorBoundary` |
 | `Boundary(body, fallback, error => …)`, `Boundary(body, previous => …, (error, previous) => …, seed)` | `createBoundary` |
@@ -292,7 +294,7 @@ var total = Async<int>(async (previous, token) =>
 });
 ```
 
-Both return a `ValueTask` that is already complete under `CancelPrevious` and `KeepLatest`. Under `Queue` it
+Both return a `ValueTask` that is already complete under every flight policy except `Queue`. Under `Queue` it
 completes once the flight started before this one is applied.
 
 :::

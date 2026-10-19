@@ -208,13 +208,16 @@ the caller: a view, a message or a number.
 
 | Constructor | Body pending | Body failed |
 | --- | --- | --- |
-| `createSuspense fallback body` | Shows `fallback ()` | Passes through as Failed |
-| `createErrorBoundary recover body` | Passes through as Pending | Shows `recover ex` |
-| `createBoundary fallback recover body` | Shows `fallback ()` | Shows `recover ex` |
+| `createSuspense fallback body` | Shows `fallback last` | Passes through as Failed |
+| `createErrorBoundary recover body` | Passes through as Pending | Shows `recover ex last` |
+| `createBoundary fallback recover body` | Shows `fallback last` | Shows `recover ex last` |
+
+`last` is the boundary's last value, `ValueNone` before its first. Returning it keeps the last value shown
+while the body reloads.
 
 ```fsharp
 let data = createAsyncSource<string> ()
-let view = createSuspense (fun () -> "loading") (fun () -> "loaded " + data.Value)
+let view = createSuspense (fun _ -> "loading") (fun () -> "loaded " + data.Value)
 
 view.TryValue, view.IsWaiting   // Ready "loading", true
 data.Settle "report"
@@ -228,8 +231,9 @@ All three constructors return a `Boundary<'T>`:
 
 - `IsWaiting` is true while the fallback stands in for the body. A caught channel is invisible to the
   boundary's readers by design, so this is the only way to tell a fallback from a real value.
-- `Caught` holds the exception that `recover` handled on the current run, or `null`.
-- Both are tracked reads, so an effect that reads only `IsWaiting` still wakes when the body settles.
+- `Caught` holds the exception that `recover` handled on the current run, or `null`. `CaughtFrom` holds
+  the node it originated in.
+- `IsWaiting`, `Caught` and `CaughtFrom` are tracked reads, so an effect that reads only `IsWaiting` still wakes when the body settles.
 
 Boundary rules:
 
@@ -275,7 +279,7 @@ controls [
 ```
 
 Recovery is driven by re-reads, and no reset call exists. A failed async source can be settled later, which
-clears its Error flag. An error boundary shows `recover ex` while its body fails, and shows the body's value
+clears its Error flag. An error boundary shows `recover ex last` while its body fails, and shows the body's value
 again once a source the body read changes and the re-run succeeds. A throwing effect does not stop a flush:
 every effect queued behind it still runs, and the failure is recorded on that effect's `Status` and `Error`.
 
@@ -294,7 +298,7 @@ API behaviour.
 | **Retained value** | Pending, but `Peek` still returns the last settled value. |
 | **Fallback** | A boundary is showing its fallback. `IsWaiting` is true. |
 | **Failed** | `TryValue` returns `Failed`. |
-| **Recovered** | A boundary is showing `recover ex`. `Caught` holds the error. |
+| **Recovered** | A boundary is showing `recover ex last`. `Caught` holds the error. |
 
 ## Open questions
 

@@ -106,7 +106,7 @@ most on experiments that would otherwise need a rebuild per attempt.
 `runTestsInAssemblyWithCLIArgs` finds no tests in a session. Pass the test values directly:
 
 ```fsharp
-Expecto.Tests.runTestsWithCLIArgs [] [| "--filter-test-case"; "hello greets by name" |] Ranvier.Tests.Say.tests;;
+Expecto.Tests.runTestsWithCLIArgs [] [| "--filter-test-case"; "a signal binding writes the current value on creation" |] Ranvier.Tests.Bindings.tests;;
 ```
 
 The result is the exit code plus Expecto's console output, colour codes included. To read which
@@ -118,7 +118,7 @@ let printer =
     { Expecto.Impl.TestPrinters.silent with
         failed = (fun name msg _ -> async { lock failures (fun () -> failures.Add $"{name}: {msg.Trim()}") })
         exn = (fun name e _ -> async { lock failures (fun () -> failures.Add $"{name}: {e.GetType().Name}: {e.Message}") }) };;
-Expecto.Impl.runEval { Expecto.Impl.ExpectoConfig.defaultConfig with printer = printer; runInParallel = false } Ranvier.Tests.Say.tests
+Expecto.Impl.runEval { Expecto.Impl.ExpectoConfig.defaultConfig with printer = printer; runInParallel = false } Ranvier.Tests.Bindings.tests
 |> Async.RunSynchronously;;
 String.concat "\n" failures;;
 ```

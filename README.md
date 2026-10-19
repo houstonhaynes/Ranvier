@@ -62,6 +62,7 @@ Read the full documentation at **https://shayanhabibi.github.io/Ranvier/**.
 
 - [Owners and cleanup](docs/content/guide/roots.md) release child computations and cleanups together in reverse acquisition order.
 - [Fixed-dependency bindings](docs/content/guide/bindings.md) copy one signal or memo into a target without dynamic dependency tracking.
+- [Stream memos](docs/content/guide/streams.md) fold the items of a running stream into one node and restart the stream when its inputs change.
 - [Debounce and throttle](docs/content/guide/timing.md) control when captured values reach downstream readers and async requests.
 - [Collections](docs/content/guide/collections.fsx) provide editable keyed sources, per-row projections, change readers, views and aggregates.
 - [Queries and mutations](docs/content/guide/queries.md) share acquired remote data, retain accepted data during refresh, and reconcile loaded queries in one batch.

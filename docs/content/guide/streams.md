@@ -88,8 +88,9 @@ controls [
 Play the replay. The count reaches 1, **Switch room** returns the node to pending, and the next
 message counts from 0 again. A replaced stream's later items are ignored.
 
-Only reads made while `start` runs are dependencies. The source's `Run` method executes untracked,
-and reading a pending source there fails the stream.
+Only reads made while `start` runs are dependencies. A pending read in `start` keeps the node
+pending, and the stream starts when that source settles. The source's `Run` method executes
+untracked, and reading a pending source there fails the stream.
 
 ## Failure and empty completion
 
@@ -99,6 +100,7 @@ failure. These conditions fail the node:
 - the source's task faults, or an observable reports an error;
 - `fold` throws, which also closes the stream;
 - `start` throws or returns null;
+- the source's `Run` throws or returns null;
 - a `createStream` stream completes without an item, with `InvalidOperationException`.
 
 A `createStreamFold` stream that completes without an item publishes its seed.
@@ -224,14 +226,14 @@ item and returns the next state.
 | --- | --- |
 | Start | On the first read. `start` runs with its reads tracked. |
 | Restart | A change to a value read by `start` restarts the stream on the next read, from the seed. |
-| Pending | From each start until the first item or completion. |
+| Pending | From each start until the first item or completion, and while `start` waits on a pending read. |
 | Cancellation | A restart, completion, a failure and disposal cancel the token. |
 | Latest item | `createStream` publishes each item as the state. |
 | Fold | `createStreamFold` publishes `fold state item`, beginning from the seed. |
 | Publication | At most once per graph pass. The trace and the map report the items folded since the previous publication. |
 | Cutoff | A state equal to the published one does not notify readers. |
 | Completion | The last state stays published. Without an item, `createStream` fails and `createStreamFold` publishes the seed. |
-| Failure | A faulted source, a throwing `fold` or `start`, and a null source fail the node. |
+| Failure | A faulted source, a throwing `fold`, `start` or `Run`, and a null source or task fail the node. |
 | Disposal | Cancels the stream; a pending node fails with `ObjectDisposedException`. |
 | `Peek` | The last published state, read without starting the stream. |
 | `Runs` | The number of stream starts. |

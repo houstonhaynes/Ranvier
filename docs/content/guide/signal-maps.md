@@ -55,7 +55,7 @@ read it. The value above a node is its latest value.
 | Rounded rectangle | Memo, boundary or projection |
 | Thick rounded rectangle | Debounce or throttle |
 | Dashed rounded rectangle | Stream memo |
-| Diamond | Effect |
+| Diamond | Effect or binding |
 
 | Look | State |
 | --- | --- |

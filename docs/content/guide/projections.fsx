@@ -208,6 +208,8 @@ let duplicated =
 The read raises `InvalidOperationException` with the message
 `The projection produced the key 1 twice in one pass. Keys must be unique; check the keyOf function.`
 `Projection.Error` holds the same exception for a pass that the scheduler ran with no reader to raise to.
+`Projection.ensureUniqueKeys keyOf items` raises the same exception for the first repeated key, so a
+collection can be checked before it is published.
 
 ## The factory form
 
@@ -376,8 +378,8 @@ rows are still in flight. A failed row re-raises its reader's exception from `Ge
 
 - `AnyPending` wakes its reader only when the answer changes. A read is O(1) while no row is pending, and
   costs a pass over the pending rows otherwise.
-- `PendingKeys` lists the pending rows in key order, and costs a pass over them on every read while any
-  row is pending.
+- `PendingKeys` lists the pending rows in key order, and costs a pass over the keys on every read while
+  any row is pending.
 - Both count only rows that have been read: an unread row is absent from the summary.
 - A read of either brings the pending rows current first, so a reader of the summary and of a row sees
   them agree, and runs once when a row settles. A row the reader's own run makes pending shows only in
@@ -529,6 +531,32 @@ take precedence over `Changed` for the same key, so an added or replaced row nee
   `ObjectDisposedException`.
 
 :::
+
+### Changed key windows
+
+`KeysVersion` identifies the current key array: every new key array has a new version, and a pass
+that publishes an equal key sequence keeps the version. `ChangedSince version` returns the positions
+of `Keys` that can differ from the keys at `version`, as `ValueSome struct (start, previousEnd, end)`.
+The keys before `start` are unchanged, and the keys after `end` equal the keys after `previousEnd` at
+`version`, in order. A renderer that stores the version can patch that window of its list.
+
+*)
+let steps = createSignal [ "plan"; "write"; "test"; "ship" ]
+let stepKeys = createProjection id id (fun () -> steps.Value)
+let seen = stepKeys.KeysVersion
+
+steps.Value <- [ "plan"; "write"; "review"; "edit"; "ship" ]
+stepKeys.ChangedSince seen
+(**
+
+```text
+ValueSome struct (2, 2, 3)
+```
+
+Positions 2 to 2 of the previous keys became positions 2 to 3. At the current version the window is
+empty, with `start` equal to the key count. After a keyed pass that changed one window of positions,
+the window is available against the version before that pass. Any other version gives `ValueNone`:
+rebuild from `Keys`. Both members are tracked reads of `Keys`, and O(1) after it.
 
 ## Performance
 

@@ -56,12 +56,12 @@ squash commit message.
 | CI | .NET tests | a test fails in `Ranvier.Tests` (untraced and traced) or `Ranvier.CSharp.Tests`, or the package compatibility check fails |
 | CI | NativeAOT smoke | the AOT publish or the smoke executable fails |
 | CI | Formatting | `fantomas --check` reports an unformatted `.fs` file |
-| CI | Fable | the Fable suites fail under Node.js, or the Fable package compatibility check fails |
+| CI | Fable tests | the Fable suites fail under Node.js, or the Fable package compatibility check fails |
 | CI | Workflow scripts | a `node --test` suite under `.github/scripts` fails |
 | CI | **CI result** | any CI job above failed or was cancelled |
 | Perf | verdict | a scenario's instruction count regresses on arm64 and the regression is not accepted |
 | Perf | **Perf result** | measuring or the verdict failed or was cancelled |
-| Contribution | **Conventional commits** | the title or a commit is not a conventional commit header |
+| Contribution | **Conventional commits** | the pull-request title is not a conventional commit header |
 
 The branch rules require the three checks in bold. The Contribution check runs the scripts of the
 target branch, not those of the pull request.

@@ -44,9 +44,9 @@ These are implemented and covered by tests.
   `Move` and `Replace` changes after population; initial population and reset recovery use `Reset`.
   Value-only updates consume settled-value deltas. Previous values reach C# through a seed or
   `SettledOr`/`TrySettled`, without `ValueOption`. See [C#](../guide/csharp.md).
-- **Native AOT and trimming.** CI publishes untraced package smoke applications under .NET 10 for
-  `linux-x64` with no trim or AOT warnings. This covers that configuration, not every traced build or
-  deployment target. See [Installation](../guide/installation.md#native-aot-and-trimming).
+- **Native AOT and trimming.** CI publishes traced and untraced smoke applications over the four packages
+  under .NET 10 for `linux-x64`, and a trim or AOT warning fails the publish. This covers that
+  configuration, not every deployment target. See [Installation](../guide/installation.md#native-aot-and-trimming).
 - **F# application patterns.** `createEditable` and `createDraft` for values seeded from upstream and edited
   locally, and forms as records of signals. See [Editable values and forms](../guide/forms.md).
 - **MVU bridge.** The `Ranvier.Elmish` package: `Mvu`, which reads an Elmish-style model through selector memos. See
@@ -56,7 +56,9 @@ These are implemented and covered by tests.
   [Direct edits](../guide/collection-updates.fsx#direct-edits).
 - **Projection change readers.** `NewKeyReader` reports membership and order; `NewValueReader` also
   reports unequal settled row values. Readers have independent bounded cursors and return a reset
-  on their first read or after overflow. See [Reading changes](../guide/projections.fsx#reading-changes).
+  on their first read or after overflow. `KeysVersion` versions the key array, and `ChangedSince` returns
+  the window of positions the latest keyed pass changed. See
+  [Reading changes](../guide/projections.fsx#reading-changes).
 - **Serialised thread affinity.** `ThreadAffinity.Serialised` admits one thread at a time on the construction
   context, for hosts such as Blazor Server. See [Serialised hosts](contracts.md#serialised-hosts) and
   [Blazor Server](../guide/blazor-server.md).
@@ -74,16 +76,13 @@ These are implemented and covered by tests.
   the .NET implementations are preserved. See [Fable (JavaScript) target](../fable/index.md).
 - **Stream memos.** `createStream` publishes a stream's latest item and `createStreamFold` folds its
   items into a state. Both restart when the values read by `start` change. `StreamSource.create`,
-  `ofAsyncEnumerable`, `ofObservable`, `ofChannel` and `ofAsyncIterable` build the sources. See
-  [Streams](../guide/streams.md).
+  `ofAsyncEnumerable`, `ofObservable`, `ofChannel` and `ofAsyncIterable` build the sources; C# uses
+  `Stream`, `StreamFold` and `StreamSources`. See [Streams](../guide/streams.md).
 
 ## Under consideration
 
 None of these is available. Each one is an open question about whether and how it fits.
 
-- **A drop-while-running flight policy.** A policy that ignores a new run while one is in progress,
-  analogous to [R3's `AwaitOperation.Drop`](https://github.com/Cysharp/R3#asyncawait-support).
-  Command gating through `CanExecute` is a separate feature already available in `ReactiveCommand`.
 - **More incremental collection views.** Map membership consumes upstream key deltas. Filter, sort,
   grouping and some aggregate membership paths still scan keys; further delta processing remains
   under consideration.
@@ -91,5 +90,14 @@ None of these is available. Each one is an open question about whether and how i
   restart contracts are not shipped. See [The async graph](async-graph.md#not-implemented).
 - **Reusable lenses and prisms.** Deep write paths can be expressed in application code today; reusable
   focus values over collections remain under consideration.
+- **Event-sourcing adapters for traced builds.** Adapters or hooks that write the trace log to an
+  event store, keeping its replay ([#65](https://github.com/shayanhabibi/Ranvier/issues/65)).
+- **Persistent graph state.** Storage adapters, such as Redis or PostgreSQL, that keep a graph's state
+  ([#68](https://github.com/shayanhabibi/Ranvier/issues/68)).
+- **Traced and untraced primitives in one build.** Generated variants of each primitive, so a branch of a
+  graph can pay for tracing while the rest runs untraced
+  ([#69](https://github.com/shayanhabibi/Ranvier/issues/69)).
+- **MCP tooling.** An MCP server that reads and writes a graph's nodes, with an Elmish variant limited to
+  dispatching messages ([#66](https://github.com/shayanhabibi/Ranvier/issues/66)).
 
 The [Ecosystem](ecosystem.md) page lists the current gaps these items address.

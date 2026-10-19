@@ -163,7 +163,7 @@ let price, total, label =
     shopGraph.Run (fun () ->
         let price = createAsyncSource<int> ()
         let total = createMemo (fun _ -> price.Value * 3)
-        let label = createSuspense (fun () -> "loading") (fun () -> string total.Value)
+        let label = createSuspense (fun _ -> "loading") (fun () -> string total.Value)
         price, total, label)
 
 let before = total.TryValue, label.Value
@@ -566,7 +566,7 @@ let reportFlight = TaskCompletionSource<string> ()
 let report = new AsyncMemo<string> (fetchGraph, fun _ _ -> reportFlight.Task)
 
 let reportView =
-    Boundary<string>.Suspense (fetchGraph, (fun () -> "report: " + report.Value), (fun () -> "loading"))
+    Boundary<string>.Suspense (fetchGraph, (fun () -> "report: " + report.Value), (fun _ -> "loading"))
 
 let beforeReport = reportView.TryValue
 reportFlight.SetResult "ready"

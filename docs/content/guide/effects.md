@@ -81,7 +81,7 @@ outer write returns.
 :::
 
 `createEffect` returns `unit`. Its lifetime is managed by the enclosing scope; see
-[Scopes and disposal](roots.md).
+[Roots and owners](roots.md).
 
 :::tip Keep a handle when you need one
 Construct `new Effect (graph, body)` to inspect its `Status`, `Runs` or `Error`, or to dispose it
@@ -172,7 +172,7 @@ The binding writes `"Ada"` on the next flush and again after every change to `na
   value writes nothing.
 - A throwing `write` leaves other queued work running, and the next change writes again.
 - The binding belongs to the current owner and is disposed with it; see
-  [Scopes and disposal](roots.md).
+  [Roots and owners](roots.md).
 
 See [Fixed-dependency bindings](bindings.md) for flush timing, equality and lifetime, and the
 [binding benchmarks](../benchmarks/effects.md#bindingbenchmarks) for measurements and limitations.

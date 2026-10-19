@@ -20,8 +20,8 @@ let newGraph () =
     new Graph ({ GraphOptions.Default with Dispatcher = Some (ManualDispatcher () :> IGraphDispatcher) })
 ```
 
-When a completion arrives from another thread, pump the graph on its owning thread. See
-[Threading and dispatch](threading.md) and the `pumpUntil` helper in [Testing async state](testing.md).
+When a completion arrives from another thread, pump the graph on its owning thread. See the `pumpUntil`
+helper in [Async memos](async-memos.md) and [Work on other threads](testing.md#work-on-other-threads).
 
 Under the default `Guarded` affinity, the constructing thread owns the graph. Use
 `graph.Dispatch` for work from another thread. Async completions already use it.
@@ -35,6 +35,7 @@ to wake that thread. With a manual dispatcher, call `graph.Pump ()` to apply que
 |-----------|----------|
 | `Signal.Value <- v` | Guarded. Under `ThreadAffinity = Guarded` (the default) a write from another thread raises `InvalidOperationException` and the value is unchanged. An equal write raises too. |
 | `AsyncSource.Settle` / `Fail`, a completing `AsyncMemo` flight | Marshalled through `Graph.Dispatch`. Under `ImmediateDispatcher` and `Guarded` affinity, an off-thread call raises `Pump ran on thread` instead (see [Dispatcher selection](#dispatcher-selection)). |
+| `StreamSink.Next` from another thread | Folds the item under a lock on the delivering thread, then requests one wake through `Graph.Dispatch` while none is outstanding. The graph publishes the latest state once per inbox drain; see [Streams](streams.md#threads). |
 | `Graph.Dispatch work` | Runs `work` inline on the graph thread. From another thread, queues it in the graph's inbox and asks the dispatcher to wake the graph thread. |
 | `Graph.Pump ()` | Guarded. Runs the inbox in arrival order, then flushes effects, and returns the number of items run. An item that throws is recorded in `graph.Root.Errors`, and the rest still run. |
 | `Graph.PendingWork` | The number of inbox items waiting for a pump. |

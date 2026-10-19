@@ -57,7 +57,7 @@ Recorded 2026-09-28. Source: `Ranvier.Benchmarks.Lifetimes.ReadingNodeBenchmarks
 
 ## FanOutLifecycleBenchmarks
 
-`Nodes` computations (1, 64 or 1024) on one source, created in a scope and torn down with it. The larger cases cross the observer list's indexing threshold, so they include building and draining that index. Divide by `Nodes` for the cost per node.
+`Nodes` computations (1, 64 or 1024) on one source, created in a scope and torn down with it. At `d87920f`, the larger cases crossed the observer list's indexing threshold, so the table includes building and draining that index; [#98](https://github.com/shayanhabibi/Ranvier/pull/98) removed the index. Divide by `Nodes` for the cost per node.
 
 | Method | What it measures |
 | --- | --- |
@@ -94,6 +94,22 @@ Recorded 2026-09-28. Source: `Ranvier.Benchmarks.Lifetimes.ScopeBenchmarks` at c
 | DisposeChildrenIndividually | 8        |   391.09 ns |  4.925 ns |  4.607 ns |  2,556,979.7 | 0.1464 | 0.0010 |    2456 B |
 | **CreateAndDisposeScope**       | **64**       | **3,961.65 ns** | **38.597 ns** | **34.215 ns** |    **252,420.3** | **1.1406** | **0.0687** |   **19136 B** |
 | DisposeChildrenIndividually | 64       | 4,581.74 ns | 40.383 ns | 35.799 ns |    218,257.8 | 1.1597 | 0.0610 |   19480 B |
+
+## Observer removal
+
+Three classes in the `ObserverRemoval` category measure removing and relinking observers of one wide source, at `Nodes` or `Sources` 8, 64 or 1024. Divide by `Nodes` for the cost per node.
+
+| Method | What it measures |
+| --- | --- |
+| `ObserverRemovalBenchmarks.DisposeRoot` | `Nodes` effects on one signal created under a root, then the root disposed. |
+| `ObserverRemovalBenchmarks.DisposeInCreationOrder` | `Nodes` effects created, then disposed oldest first. |
+| `ObserverRemovalBenchmarks.DisposeScattered` | `Nodes` effects created, then disposed in one fixed shuffled order. |
+| `OutOfOrderReadBenchmarks.RotateReads` | One effect re-reading `Sources` signals in an order rotated by one from its previous run. |
+| `ObserverChurnBenchmarks.RelinkAll` | Every one of `Nodes` effects drops its edge to the wide source, then links it again. |
+| `ObserverChurnBenchmarks.RelinkOne` | One effect drops its edge and links it again, cycling through the effects. |
+| `ObserverChurnBenchmarks.WriteWide` | One write notifying all `Nodes` effects, over an observer list with earlier removals from its middle. |
+
+These classes have no published figure. The [observer-removal report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/observer-removal-benchmark.md) records the runs behind #98. They are in the suite for local runs: `dotnet run --project bench/Ranvier.Benchmarks -c Release -- --anyCategories ObserverRemoval`.
 
 ## SizeOfProbe
 

@@ -22,7 +22,9 @@ both inline and promise delivery. It exercises these APIs and records the target
 - scope disposal and error boundaries;
 - the equality cutoff;
 - keyed projections, selectors and index projections;
-- `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all four flight policies;
+- `AsyncSource`, and `AsyncMemo` through `createAsync` and `createAsyncWith`, under all six flight policies;
+- debounce and throttle through timed values;
+- the Elmish bridge (`Mvu`) and the query layer;
 - stream memos through `createStream` and `createStreamFold`, with `StreamSource.create`, `ofObservable` and `ofAsyncIterable`. `ofAsyncEnumerable` and `ofChannel` are .NET only; `ofAsyncIterable` is Fable only. See [Streams](../guide/streams.md).
 
 Ranvier's engine compiles under Fable in this repository, and the .NET test suite runs against it under Node.js (`dotnet fsi build.fsx test-fable`), once untraced and once with the trace log compiled in. Tests that exercise a .NET-only facility, such as threads, garbage collection or `ObservableCollection`, are compiled out. The run writes `docs/.ai/fable-compat.md`: the tests that pass, fail and are excluded, in each file. Every failure listed there is one of the differences below.
@@ -89,7 +91,7 @@ new capability.
 
 - A node's creation site is not captured: `Trace.origin` gives a null `Site`, and a path falls back to the node's kind.
 - A failure is recorded by its message alone, without the exception's type name.
-- A value is rendered with Fable's `%A`, so an anonymous record reads `{ Qty = 2 }` rather than `{| Qty = 2 |}`.
+- A value is rendered with Fable's `%A` in place of the .NET build's `ToString`, so an anonymous record reads `{ Qty = 2 }` rather than `{| Qty = 2 |}`.
 
 **Loop bounds.** Fable re-evaluates the upper bound of `for i in a .. b` on every iteration. A bound that reads a signal, or anything else that can change inside the loop, iterates a different number of times under Fable. Bind the bound first.
 
@@ -113,6 +115,7 @@ The snippet uses only functions that exist on both targets, which is the style t
 
 - `Projection.AsObservableCollection`, since `ObservableCollection` is a .NET collection type.
 - `Trace.dump`, which writes a file, and `TraceModel.parseDump`. `Trace.dumpText` gives the same text.
+- `TimedClock.ofTimeProvider`, which adapts the .NET `TimeProvider`.
 - `SynchronizationContextDispatcher`. There is no synchronisation context to capture and no other thread to marshal to.
 
 ## UI integration

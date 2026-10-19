@@ -118,6 +118,7 @@ Dispatchers move work from other threads onto the graph thread.
 | Per-node typed comparers | Implemented for signals, memos, split effects and boundaries; see [Equality](equality.md). |
 | Editable keyed collections and value readers | Implemented, with direct row edits and bounded change cursors; see [Direct edits](collection-updates.fsx#direct-edits) and [Reading changes](projections.fsx#reading-changes). |
 | Async and boundaries | Implemented. A pending `.Value` read throws `NotReadyException`; `TryValue` reads without throwing. |
+| Stream memos (`createStream`, `createStreamFold`) | Implemented and tested; see [Streams](streams.md). |
 | Projections, lookups and selectors | Implemented, including memo-free factory rows, opt-in create-first passes and trimmed reconciliation; see [Projections](projections.fsx). |
 | Fable/JavaScript | Implemented; package builds contain standalone Fable source projects. CI checks repository tests and packed consumers. See [Fable (JavaScript) target](../fable/index.md). |
 | Collection combinators (`Projection.filter`, `choose`, `map`, `mapWith`, `sortBy`, `groupBy`) | Implemented and tested, including pending and error behaviour; see [Collections](collection-views.fsx). |

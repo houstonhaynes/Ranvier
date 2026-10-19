@@ -47,8 +47,9 @@ writing each other's dependencies, raises too. An untraced build has no limit.
 
 ### From NuGet
 
-The traced build ships as `Ranvier.Traced`, and the C# façade's as `Ranvier.CSharp.Traced`. Each holds
-the same assembly, namespaces and version as its untraced package; only the package id differs. Reference
+The traced build ships as `Ranvier.Traced`, the C# façade's as `Ranvier.CSharp.Traced`, and likewise
+`Ranvier.Elmish.Traced` and `Ranvier.Query.Traced`. Each holds the same assembly, namespaces and version as
+its untraced package; only the package id differs. Reference
 one or the other behind a switch of your own, and define `RANVIER_TRACE` with it:
 
 ```xml
@@ -137,10 +138,10 @@ Trace.why graph banner |> Trace.render graph |> printfn "%s"
 why /banner run 2
   #49 RunStart /banner (Cart.fsx:13)
   #46 Mark /banner <- /total (Cart.fsx:13)
-  #45 Moved /total (Cart.fsx:12) = 8M
+  #45 Moved /total (Cart.fsx:12) = 8
   #44 RunStart /total <- /banner (Cart.fsx:12)
   #41 Mark /total <- /subtotal (Cart.fsx:12)
-  #40 Moved /subtotal (Cart.fsx:11) = 8M
+  #40 Moved /subtotal (Cart.fsx:11) = 8
   #39 RunStart /subtotal <- /total (Cart.fsx:11)
   #32 Mark /subtotal <- /lines (Cart.fsx:11)
   #31 Write /lines (Cart.fsx:9) = [{ Sku = "tea"; Price = 4M; Qty = 2 }]
@@ -149,7 +150,8 @@ why /banner run 2
 
 Read it from the bottom: a write to `lines` marked `subtotal`; the banner's check pulled `total`,
 which pulled `subtotal`; each value moved, so the banner ran. `#n` is the event's position in the
-log, and `= value` is the value a write, move or settle recorded. The chain ends at a root: a user
+log, and `= value` is the value a write, move or settle recorded, as one line of at most 60 characters:
+its `ToString` text on .NET, its `%A` text under Fable. The chain ends at a root: a user
 write, the node's creation, a pull by a reader, an async source's settle, or a cause older than the
 log (`unrecorded after #n`).
 
@@ -210,7 +212,7 @@ Trace.history graph total |> Trace.render graph |> printfn "%s"
 history /total
   run 1 #15 pending moved flush 1 root: created #8
   run 2 #55 pending flush 2 root: user write #38
-  run 3 #71 ok moved flush 3 = 11M root: user write #38
+  run 3 #71 ok moved flush 3 = 11 root: user write #38
 ```
 
 Each line gives the run number, its `RunStart`, how it ended, whether it moved the value, the flush
@@ -258,8 +260,8 @@ and 1 when the flight's settle did.
 `Trace.why` follows a settle back to the run that started the flight:
 
 ```text
-  #65 Moved /shipping (Cart.fsx:10) = 3M
-  #64 Settle /shipping (Cart.fsx:10) = 3M
+  #65 Moved /shipping (Cart.fsx:10) = 3
+  #64 Settle /shipping (Cart.fsx:10) = 3
   #57 FlightStart /shipping (Cart.fsx:10)
   #56 RunStart /shipping <- /banner (Cart.fsx:10)
 ```
@@ -375,8 +377,12 @@ Ship against the untraced `Ranvier` package.
 - **Payloads retain values.** Writes, transitions and settlements can retain values or exceptions in
   event payloads. These are object references, not immutable historical snapshots: later mutation can
   affect their formatting. Retention can keep application objects alive for the log's lifetime.
+- **Native AOT uses the payload's `ToString`.** Traced packages support trimming and Native AOT; see
+  [Installation](installation.md#native-aot-and-trimming). An application type needs an AOT-compatible
+  `ToString` for useful payload text in a trimmed build.
 - **Flights are async memo flights.** `waitingOn` lists the flights of an `AsyncMemo`. An
-  `AsyncSource` has no flights: its settles appear as `Settle` and `Fail` events.
+  `AsyncSource` has no flights: its settles appear as `Settle` and `Fail` events. A
+  [stream memo](streams.md) records `StreamStarted`, `StreamPublished` and `StreamEnded` events instead.
 - **Combinator nodes carry the site of the combinator call.** Rows and internal nodes of `filter`,
   `sortBy` and the other views share the call's file and line, told apart by `#n`, not by key.
 - **Sites follow the JIT.** An inlined method can report its caller's line. `Trace.named` is the
@@ -399,14 +405,18 @@ Ship against the untraced `Ranvier` package.
 The repository provides `tools/verify-trace.fsx` to check trace changes:
 
 - The untraced Release IL references no trace type and equals the IL of the merge base, method by
-  method. The packed DLL's public surface equals a committed baseline plus `Trace.named` and
-  `Trace.label`.
+  method. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
+  `Trace.label` and the timed-value members in `docs/.ai/debounce-throttle-api-additions.txt`.
 - A sample using `Trace.named` or `Trace.label` compiles to the same IL as the sample without it.
-- The traced test suite passes, and a sample dump is byte-identical over five runs.
+- A lint checks the hook sites and `#if RANVIER_TRACE` blocks in the engine sources.
+- The untraced Fable output imports nothing from the trace module.
+- A sample dump is byte-identical over five runs.
 - For each counter-bench scenario, the log's run, edge, observer and flush counts equal the
   library's own counters, and the edges folded from the log equal the live graph.
 - With elevated rights, the counter bench shows equal allocations and instruction counts between
   the merge base and the change.
+
+CI also runs the test suite traced, and publishes the NativeAOT smoke application traced and untraced.
 
 :::
 

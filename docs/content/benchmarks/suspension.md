@@ -102,7 +102,7 @@ The counter scenario `flight` runs the same shape at one write during a flight, 
 | `Queue` | 15,065 | 3,184 | 0 |
 | `FinishCurrent` | 7,655 | 1,744 | 0 |
 
-`CancelPrevious`, `KeepLatest` and `FinishCurrent` cost the same within about 4 %. `Queue` costs about twice as much in instructions and bytes. The timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*FlightBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+`CancelPrevious`, `KeepLatest` and `FinishCurrent` cost the same within about 4 %. `Queue` costs about twice as much in instructions and bytes. The `Drop` and `DropWhilePending` variants postdate this run; the CI charts above include them. The timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*FlightBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 ## FailureBenchmarks
 

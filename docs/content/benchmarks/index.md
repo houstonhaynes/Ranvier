@@ -12,7 +12,7 @@ Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetime
 | [Signals](signals.md) | Reads, writes with 0 to 64 observers, the equality cutoff, `StructuralPolicy` against identity comparison, and each `ThreadAffinity`. |
 | [Memos](memos.md) | Cache hits, one recomputation under each `ThreadAffinity`, propagation through chains of 1 to 64 memos, and a diamond. |
 | [Effects](effects.md) | Write-and-flush with 1 to 64 effects, a batch of ten writes, one-field writes to a model, and editable values. |
-| [Lifetimes](lifetimes.md) | Construction and disposal of nodes, fan-out on one source, scopes with children, and the shallow size of each node type. |
+| [Lifetimes](lifetimes.md) | Construction and disposal of nodes, fan-out on one source, scopes with children, observer removal and relinking on a wide source, and the shallow size of each node type. |
 | [Projections](projections.md) | Keyed projection reads, single-item edits, reorders, key churn with and without key readers, and selector (`Lookup`) reads. |
 | [Suspension](suspension.md) | The cost of the pending and error channels: throwing through a chain, boundaries, settling a source, flights under each `FlightPolicy`, and failing recomputations. |
 | [Instruction counts](counters.md) | Whole scenarios by instructions per operation, against FSharp.Data.Adaptive, R3 and Fable.Ripple, on .NET and Node.js. |
@@ -32,7 +32,7 @@ The dated tables below are historical measurements, not a rerun of current `mast
 - **Keyed projections** gained prefix/suffix trimming and nested-pass fixes in [#55](https://github.com/shayanhabibi/Ranvier/pull/55), then a full-visit fallback for passes that cannot trim in [#56](https://github.com/shayanhabibi/Ranvier/pull/56). [Projections](projections.md#keyed-pass-follow-ups) links the paired timing and hardware-counter evidence, including its limitations.
 - **Fable core output** sheds redundant affinity/inbox work, slot wrappers, async continuation/lock callbacks and checked scheduler stores in [#57](https://github.com/shayanhabibi/Ranvier/pull/57). The existing .NET executable implementation is preserved. [Instruction counts](counters.md#fable-core-follow-up) distinguishes the earlier experiment's timings from hardware-counter results; no fresh instruction-count acceptance run is available for this commit.
 
-The charts still show `e13f159`. The repository also retains the broader [2026-10-04 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md), and the targeted [2026-10-15 keyed-pass comparison](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md). None is a whole-suite measurement of `2ce4b7d`.
+The static charts on [Instruction counts](counters.md) still show `e13f159`. The CI instruction-count charts on each benchmark page follow every measured `master` commit, including the later engine changes. The repository also retains the broader [2026-10-04 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md), and the targeted [2026-10-15 keyed-pass comparison](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md). None is a whole-suite measurement of `2ce4b7d`.
 
 The BenchmarkDotNet comparison runs against other .NET reactive libraries are not published here; [Instruction counts](counters.md) compares engines by instructions instead. The engine-internal diagnostic probes in the suite are not published either; they compare candidate implementations of internal data structures rather than measure a public operation.
 
@@ -72,7 +72,7 @@ dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*"
 # One area
 dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*Memo*"
 
-# By category: Signal, Memo, Effect, Lifetime, Projection, Suspension, Commands, Model, Editable
+# By category: Signal, Memo, Effect, Lifetime, ObserverRemoval, Projection, Suspension, Commands, Model, Editable, Binding, Query
 dotnet run --project bench/Ranvier.Benchmarks -c Release -- --anyCategories Memo
 
 # Smoke run: short job, not for publishing

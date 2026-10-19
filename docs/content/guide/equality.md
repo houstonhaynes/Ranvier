@@ -110,7 +110,7 @@ The opt-in factories are `createSignalWithComparer`, `createMemoWithComparer`,
 `createOwningMemoWithComparer`, `createEffectOnWithComparer`, `createSuspenseWithComparer`,
 `createErrorBoundaryWithComparer` and `createBoundaryWithComparer`. Their ownership, purity and
 previous-value rules match the ordinary factories. Comparers are selected once at construction.
-Async sources, async memos and collection value cutoffs continue to use the graph policy.
+Async sources, async memos, stream memos and collection value cutoffs continue to use the graph policy.
 
 [Bindings](bindings.md) use their source's cutoff. Give the signal or memo a comparer when a
 target should ignore equivalent values; the binding has no separate equality policy. Projection

@@ -25,9 +25,9 @@ source settling wakes the boundary.
 
 | Constructor | Pending body | Failed body |
 |-------------|--------------|-------------|
-| `createSuspense fallback body` | shows `fallback ()` | propagates as `Failed` |
-| `createErrorBoundary recover body` | propagates as `Pending` | shows `recover ex` |
-| `createBoundary fallback recover body` | shows `fallback ()` | shows `recover ex` |
+| `createSuspense fallback body` | shows `fallback last` | propagates as `Failed` |
+| `createErrorBoundary recover body` | propagates as `Pending` | shows `recover ex last` |
+| `createBoundary fallback recover body` | shows `fallback last` | shows `recover ex last` |
 
 :::details Which failures a boundary catches
 
@@ -124,7 +124,7 @@ let viewGraph = newGraph ()
 let data = viewGraph.Run (fun () -> createAsyncSource<string> ())
 
 let view =
-    viewGraph.Run (fun () -> createSuspense (fun () -> "loading") (fun () -> "loaded " + data.Value))
+    viewGraph.Run (fun () -> createSuspense (fun _ -> "loading") (fun () -> "loaded " + data.Value))
 
 let waiting = view.TryValue, view.IsWaiting, view.Status
 data.Settle "report"
@@ -163,7 +163,7 @@ and a fallback that throws leaves it `Failed`.
 
 ### createErrorBoundary
 
-The boundary shows `recover ex` when the body throws, and shows the body's value again when a source
+The boundary shows `recover ex last` when the body throws, and shows the body's value again when a source
 the body read changes and the re-run succeeds. A pending body passes through as `Pending`.
 
 Enter an invalid integer, then a valid one. The boundary displays its recovery value and
@@ -191,7 +191,7 @@ let parseGraph = newGraph ()
 let input = parseGraph.Run (fun () -> createSignal "42")
 
 let parsed =
-    parseGraph.Run (fun () -> createErrorBoundary (fun _ -> -1) (fun () -> int input.Value))
+    parseGraph.Run (fun () -> createErrorBoundary (fun _ _ -> -1) (fun () -> int input.Value))
 
 input.Value <- "forty-two"
 let recovered = parsed.TryValue, parsed.Caught.GetType().Name
@@ -217,7 +217,7 @@ re-raising narrows the boundary to the errors it handles.
 
 ### createBoundary
 
-The boundary catches both channels: `fallback ()` while the body is pending, `recover ex` when it
+The boundary catches both channels: `fallback last` while the body is pending, `recover ex last` when it
 throws, and the body's value once it succeeds.
 
 ::::details Test your understanding
@@ -229,7 +229,7 @@ let bothGraph = newGraph ()
 let feed = bothGraph.Run (fun () -> createAsyncSource<int> ())
 
 let panel =
-    bothGraph.Run (fun () -> createBoundary (fun () -> 0) (fun _ -> -1) (fun () -> feed.Value))
+    bothGraph.Run (fun () -> createBoundary (fun _ -> 0) (fun _ _ -> -1) (fun () -> feed.Value))
 
 let loading = panel.TryValue
 feed.Fail (exn "offline")

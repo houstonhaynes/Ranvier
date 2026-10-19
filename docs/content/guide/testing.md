@@ -235,7 +235,8 @@ and decide when its armed one-shot timers fire. Advancing that clock and deliver
 the test check admission at a deadline without sleeping. The timing guide's signal maps demonstrate this
 with a manual clock.
 
-On .NET 10, `TimedClock.ofTimeProvider` adapts a host or test `TimeProvider`. A timer callback
+The `net10.0` build adds `TimedClock.ofTimeProvider`, which adapts a host or test `TimeProvider`; .NET 8
+and 9 apps use the `netstandard2.1` build, which omits it. A timer callback
 delivered from another thread still uses the graph's dispatcher; pump manual dispatch on the graph's
 thread before checking the admitted value. The same timing options are available under Fable, where
 callback delivery is governed by the JavaScript event loop.

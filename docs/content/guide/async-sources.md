@@ -22,7 +22,8 @@ When a completion arrives from another thread, pump the graph on its owning thre
 
 `Settle value` publishes a value, and `Fail exn` publishes a failure. Both can be called more than
 once. Neither returns the source to pending; use an [async memo](async-memos.md) for requests
-that start again when tracked inputs change.
+that start again when tracked inputs change, and a [stream memo](streams.md) for a producer of
+many items.
 
 Under [Fable](../fable/index.md), `Settle` and `Fail` dispatch inline on the JavaScript thread;
 no graph pump is needed. A callback supplied by a promise still runs on that promise's later

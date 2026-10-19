@@ -9,11 +9,13 @@ The counter bench measures whole scenarios rather than single primitives: creati
 rows, propagating writes, projections, application-shaped workloads, graph shapes and async
 boundaries. Each figure is retired processor instructions per operation, `(m(2N) − m(N)) / N`,
 read from hardware counters. Under matched, stable measurement conditions, differences below
-about 5 % are treated as run-to-run noise. Larger differences still need measurement-state checks,
-particularly under Node, where V8 compilation and deoptimisation can occur inside a measured region.
+about 5 % are treated as run-to-run noise. Larger differences still need measurement-state checks.
+Under Node, the harness settles each case under full tiering and keeps tier-up disabled across its
+measured regions; a region in which V8 compiles is reported as compiled.
 
 The static .NET and Node charts below are the historical `e13f159` run. The interactive
-views use recorded arm64 CI measurements and identify the selected commit explicitly.
+views use recorded CI measurements (hardware counters and allocations on arm64, CPU time on x64)
+and identify the selected commit explicitly.
 The broader [October 4 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md)
 includes timed operators and additional derived/effect scenarios. The later
 [keyed-pass report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md)
@@ -24,12 +26,13 @@ not scenarios with each other.
 
 ## CI counter history
 
-The chart compares retired instructions per operation across commits and includes engine
+The chart compares the selected metric per operation across commits and includes engine
 comparisons where the run provides them. Choose a runtime, metric and scenario; .NET and Node.js remain
 separate because their measurements are not comparable. Select a commit point or label to inspect its library comparison; open its
 source using the commit link. Hover or focus marks for exact values, toggle libraries in the legend,
 and switch between absolute values and values relative to Ranvier. The site builds this history from the `perf-data` branch after each successful
-master measurement.
+master measurement. Perf skips documentation-only commits and commits whose final message paragraph
+carries a `Perf-Ignore:` trailer, so the history holds measured commits only.
 
 <div class="rv-perf" data-perf-history><p role="status">Loading recorded measurements…</p></div>
 
@@ -87,7 +90,23 @@ Seven scenarios measure Ranvier alone, on .NET only. A scenario with variants re
 | `editable-upstream` | Write the seed source of every 10th of 1000 editables. | — |
 | `mvu-dispatch` | Change one field of a 64-field model with one reader per field. | A signal per field; `Mvu.Dispatch` with a `Select` per field |
 
-The .NET chart includes these scenarios. Bars are colored by engine, and a scenario's variants share their engine's color.
+The static .NET chart includes these scenarios at `e13f159`, which predates the `Drop` and
+`DropWhilePending` variants of `flight`; the CI charts include every variant. Bars are colored by engine, and a scenario's variants share their engine's color.
+
+## Later scenarios
+
+These scenarios postdate `e13f159` and appear only in the CI charts. Each measures Ranvier alone.
+
+| Scenario | One operation | Variants | Runtimes |
+| --- | --- | --- | --- |
+| `keyed-remove`, `keyed-swap`, `keyed-insert` | Alternately apply and undo one edit of a 1000-row projection: remove the middle row, swap the second and second-to-last rows, or prepend a row. | Fresh items; stable items; memo-free rows | .NET, Node.js |
+| `stream-burst-1`, `stream-burst-16`, `stream-burst-256` | Deliver 1, 16 or 256 items per round into a stream fold read by a memo and an effect. | A stream, batched; an `AsyncSource`, batched and unbatched | .NET, Node.js |
+| `stream-restart` | Write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight. | A stream; an async memo under `CancelPrevious` | .NET, Node.js |
+| `control` | Refill a 256-entry closure table, sum it and sort a copy of its array. | — | .NET, Node.js |
+
+`control` runs no Ranvier code. Every worker process measures it last, as a reference for the state of the
+process and the machine. When `control` moves on a runtime, the perf verdict reports that runtime's regressions as
+inconclusive.
 
 ## Reading the charts
 

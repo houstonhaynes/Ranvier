@@ -7,7 +7,8 @@ The memo stays pending until the task completes. A tracked input change starts a
 the next read.
 
 `Peek` returns the last settled value without starting a flight. The compute function takes
-`Previous<'T>` and a `CancellationToken`, and returns `Task<'T>`.
+`Previous<'T>` and a `CancellationToken`, and returns `Task<'T>`. For a producer of many items, use a
+[stream memo](streams.md).
 
 `createAsync` is pure; `createAsyncWith` owns the nodes and cleanups created before its first
 suspending await. Their scopes follow the same rules as [pure and owning memos](memos.md#pure-and-owning-memos).

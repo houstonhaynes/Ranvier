@@ -39,7 +39,7 @@ workstation GC. BenchmarkDotNet 0.15.8, full configuration, `UnrollFactor=16`,
 the separately compiled Release measurement process.
 
 ```shell
-rtk proxy dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*QueryReconciliationBenchmarks*" --join
+dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*QueryReconciliationBenchmarks*" --join
 ```
 
 Harness: `bench/Ranvier.Benchmarks/Queries.fs`. Raw Markdown and full JSON:

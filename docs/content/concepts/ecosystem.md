@@ -190,7 +190,8 @@ recipes, not framework-specific renderer packages.
   existing view model. A pending memo maps to a loading property, a failure maps to `INotifyDataErrorInfo`, and
   the bindings' `IsLoading` and `HasErrors` give one loading and error state covering several sources. The
   dispatcher follows the UI thread's `SynchronizationContext`, and each handler runs on the context it subscribed
-  from. No framework-specific package ships yet.
+  from. No framework-specific package ships yet. The Avalonia workbench in
+  [Ranvier.Examples](../guide/examples.md) binds its tabs this way.
 - **Models shared between server and browser.** The same F# model code can run on .NET (tests, desktop,
   server) and through Fable, with Ranvier's pending and failure channels. Package builds include Fable
   source projects and CI checks package consumers. Read the target differences in
@@ -212,8 +213,6 @@ recipes, not framework-specific renderer packages.
 - No framework-specific UI packages yet. The .NET UI bindings are `ReactiveBindings` (`INotifyPropertyChanged` and
   `INotifyDataErrorInfo`), `ReactiveCommand` (`ICommand` with a derived `CanExecute`) and
   `Projection.AsObservableCollection`.
-- No flight policy that drops a new run while one is in progress. Debounce and throttle are available as
-  timed values controlling admission before a request, separately from its flight policy.
 - Further collection incrementality: the scanning and sorting paths described above remain. Readers
   coalesce changes between reads and use bounded logs with reset recovery; they describe current state,
   not an event history. Coalescing is a state-delta contract, not evidence of absent incrementality.

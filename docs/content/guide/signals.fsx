@@ -126,7 +126,8 @@ Mutating an object in place and writing the same reference back is cut off. Pref
 immutable updates that create a new value; see [Deep and keyed updates](collection-updates.fsx).
 
 [Equality](equality.md) covers custom policies, NaN and differences between .NET and Fable.
-The policy is graph-wide; individual nodes do not accept their own comparers.
+The policy is graph-wide. `createSignalWithComparer comparer initial`{fsharp} gives one signal its
+own `IEqualityComparer<'T>`; see [Per-node comparers](equality.md#per-node-comparers).
 
 ## Lifetime and threads
 
