@@ -76,6 +76,7 @@ let theme =
                                 Menu.page "guide/pending.md"
                                 Menu.page "guide/async-sources.md"
                                 Menu.page "guide/async-memos.md"
+                                Menu.page "guide/streams.md"
                                 Menu.page "guide/boundaries.md"
                                 Menu.page "guide/threading.md"
                                 Menu.page "guide/testing.md"
