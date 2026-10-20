@@ -31,6 +31,11 @@ module Spec =
         projects
         |> List.filter _.RelativePath.StartsWith("src")
 
+    /// The source projects that pack: every one except those with `<IsPackable>false</IsPackable>`.
+    let packableProjects =
+        sourceProjects
+        |> List.filter (fun project -> not ((System.IO.File.ReadAllText project.Path).Contains "<IsPackable>false</IsPackable>"))
+
     let testProjects =
         projects
         |> List.filter _.RelativePath.StartsWith("tests")
@@ -126,7 +131,9 @@ module Stage =
 
                     run (
                         async {
-                            !!"**/**/bin" ++ "temp" -- "bin" -- "**/node_modules/**"
+                            !!"**/**/bin" ++ "temp"
+                            -- "bin"
+                            -- "**/node_modules/**"
                             |> Shell.cleanDirs
                         }
                     )
@@ -228,7 +235,7 @@ module Stage =
 
                     projects
                     |> function
-                        | [] -> Spec.sourceProjects |> List.map _.Path
+                        | [] -> Spec.packableProjects |> List.map _.Path
                         | projects -> projects
                     |> List.map (fun project ->
                         stage $"pack {project}" {
@@ -262,7 +269,7 @@ module Stage =
 
                     projects
                     |> function
-                        | [] -> Spec.sourceProjects |> List.map _.Path
+                        | [] -> Spec.packableProjects |> List.map _.Path
                         | projects -> projects
                     |> List.map (fun project ->
                         stage $"pack traced {project}" {
@@ -450,12 +457,7 @@ module private Perf =
 
     let private gitOutput (arguments: string list) =
         let info =
-            Diagnostics.ProcessStartInfo (
-                "git",
-                WorkingDirectory = __REPOSITORY_DIRECTORY__,
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            )
+            Diagnostics.ProcessStartInfo ("git", WorkingDirectory = __REPOSITORY_DIRECTORY__, RedirectStandardOutput = true, UseShellExecute = false)
 
         for argument in arguments do
             info.ArgumentList.Add argument
@@ -469,14 +471,23 @@ module private Perf =
     /// <summary>The <c>--package Name=Version</c> arguments for each <c>src</c> project that declares a <c>&lt;Version&gt;</c> at the revision.</summary>
     let private packageArguments sha =
         gitOutput [ "ls-tree"; "-r"; "--name-only"; sha; "--"; "src" ]
-        |> fun listing -> listing.Split ('\n', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+        |> fun listing ->
+            listing.Split (
+                '\n',
+                StringSplitOptions.RemoveEmptyEntries
+                ||| StringSplitOptions.TrimEntries
+            )
         |> Array.filter (fun file -> file.EndsWith (".fsproj", StringComparison.Ordinal))
         |> Array.choose (fun file ->
             let version =
                 Text.RegularExpressions.Regex.Match (gitOutput [ "show"; sha + ":" + file ], @"<Version>\s*([^<\s]+)\s*</Version>")
 
             if version.Success then
-                Some (Path.GetFileNameWithoutExtension file + "=" + version.Groups[1].Value)
+                Some (
+                    Path.GetFileNameWithoutExtension file
+                    + "="
+                    + version.Groups[1].Value
+                )
             else
                 None)
         |> Array.toList

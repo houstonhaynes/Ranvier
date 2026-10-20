@@ -98,6 +98,8 @@ test('a directory must hold exactly the expected packages and their symbols', ()
     fs.mkdirSync(bin);
     fs.writeFileSync(path.join(src, 'Lib', 'Lib.fsproj'), project);
     fs.writeFileSync(path.join(src, 'Directory.Build.props'), '<Project />');
+    fs.mkdirSync(path.join(src, 'Tool'));
+    fs.writeFileSync(path.join(src, 'Tool', 'Tool.fsproj'), '<Project><PropertyGroup><IsPackable>false</IsPackable><Version>0.1.0</Version></PropertyGroup></Project>');
     for (const id of ['Lib', 'Lib.Traced']) {
       fs.writeFileSync(path.join(bin, `${id}.0.1.0-preview.2.nupkg`), nupkg(id));
       fs.writeFileSync(path.join(bin, `${id}.0.1.0-preview.2.snupkg`), '');

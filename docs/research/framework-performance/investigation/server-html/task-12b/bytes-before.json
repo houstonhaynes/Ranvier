@@ -1,0 +1,5 @@
+{"fixture":"component","rows":1,"bytes":141,"bytesPerRow":141.000000}
+{"fixture":"component","rows":16,"bytes":1497,"bytesPerRow":93.562500}
+{"fixture":"component","rows":128,"bytes":11888,"bytesPerRow":92.875000}
+{"fixture":"keyed","rows":1000,"bytes":203863,"bytesPerRow":203.863000}
+{"fixture":"keyed","rows":10000,"bytes":2057865,"bytesPerRow":205.786500}

@@ -25,6 +25,8 @@
         <Compile Include="LinuxPmc.fs" />
         <Compile Include="Workloads.fs" />
         <Compile Include="OnceWorkloads.fs" />
+        <Compile Include="..\..\experiments\Ranvier.View.Portable\Checks\ServerFixtures.fs" Link="ServerFixtures.fs" />
+        <Compile Include="ServerWorkloads.fs" />
         <Compile Include="Control.fs" />
         <Compile Include="Scenarios.fs" />
         <Compile Include="Reconcile.fs" />
@@ -50,6 +52,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Ranvier\Ranvier.fsproj" />
         <ProjectReference Include="..\..\src\Ranvier.Elmish\Ranvier.Elmish.fsproj" />
+        <ProjectReference Include="..\..\experiments\Ranvier.View.Portable\Ranvier.View.Portable.fsproj" />
     </ItemGroup>
 
 </Project>

@@ -515,8 +515,8 @@ The delayed-service flow was dominated by timers/scheduling and supports no spee
 benchmark does not determine performance for expensive, shared derived computations or larger
 dependency graphs. It supports a coordination/diagnostics pitch for this example, not a speed pitch.
 
-Evidence: [benchmark report](../../experiments/csharp-viewmodel-bench/report.md),
-[harness and commands](../../experiments/csharp-viewmodel-bench/README.md).
+Evidence: [benchmark report](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/experiments/csharp-viewmodel-bench/report.md),
+[harness and commands](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/experiments/csharp-viewmodel-bench/README.md).
 
 ### Positioning that the evidence supports
 

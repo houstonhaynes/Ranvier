@@ -29,11 +29,12 @@ tasks:
 type Task = { Id: int; Estimate: int; Done: bool }
 
 let tasks =
-    createSignal [
-        { Id = 1; Estimate = 3; Done = false }
-        { Id = 2; Estimate = 5; Done = true }
-        { Id = 3; Estimate = 2; Done = false }
-    ]
+    createSignal
+        [
+            { Id = 1; Estimate = 3; Done = false }
+            { Id = 2; Estimate = 5; Done = true }
+            { Id = 3; Estimate = 2; Done = false }
+        ]
 
 let rows = createProjection _.Id id (fun () -> tasks.Value)
 
@@ -83,14 +84,21 @@ let estimateTotal = estimateRows |> Projection.sumBy id
 let estimateCount = estimateRows |> Projection.countBy (fun _ -> true)
 createEffect (fun () -> printfn "estimate = %d, tasks = %d" estimateTotal.Value estimateCount.Value)
 
-controls [
-    button "Estimate task 1 at 8" (fun () -> estimates.Value <- estimates.Value |> List.map (fun (key, estimate) -> key, (if key = 1 then 8 else estimate)))
-    |> describe "One contribution grows by 5; membership stays at three tasks."
-    |> expect "One contribution grows by 5; membership stays at three tasks." (fun () -> estimateTotal.Peek = 15 && estimateCount.Peek = 3)
-    button "Remove task 2" (fun () -> estimates.Value <- estimates.Value |> List.filter (fun (key, _) -> key <> 2))
-    |> describe "Removing the estimate of 5 leaves a total of 10 across two tasks."
-    |> expect "Removing the estimate of 5 leaves a total of 10 across two tasks." (fun () -> estimateTotal.Peek = 10 && estimateCount.Peek = 2)
-]
+controls
+    [
+        button "Estimate task 1 at 8" (fun () ->
+            estimates.Value <-
+                estimates.Value
+                |> List.map (fun (key, estimate) -> key, (if key = 1 then 8 else estimate)))
+        |> describe "One contribution grows by 5; membership stays at three tasks."
+        |> expect "One contribution grows by 5; membership stays at three tasks." (fun () -> estimateTotal.Peek = 15 && estimateCount.Peek = 3)
+        button "Remove task 2" (fun () ->
+            estimates.Value <-
+                estimates.Value
+                |> List.filter (fun (key, _) -> key <> 2))
+        |> describe "Removing the estimate of 5 leaves a total of 10 across two tasks."
+        |> expect "Removing the estimate of 5 leaves a total of 10 across two tasks." (fun () -> estimateTotal.Peek = 10 && estimateCount.Peek = 2)
+    ]
 
 (**
 ## Folds with an inverse
@@ -104,11 +112,16 @@ controls [
 `subtract` must undo `add`: `subtract (add s v) v` must equal `s`.
 *)
 
-let totalEstimate = rows |> Projection.foldGroup (fun s t -> s + t.Estimate) (fun s t -> s - t.Estimate) 0
+let totalEstimate =
+    rows
+    |> Projection.foldGroup (fun s t -> s + t.Estimate) (fun s t -> s - t.Estimate) 0
 
 totalEstimate.Value // 10
 
-tasks.Value <- tasks.Value |> List.map (fun t -> if t.Id = 1 then { t with Estimate = 8 } else t)
+tasks.Value <-
+    tasks.Value
+    |> List.map (fun t -> if t.Id = 1 then { t with Estimate = 8 } else t)
+
 totalEstimate.Value // 15
 
 (**
@@ -148,14 +161,20 @@ Each is `Projection.foldGroupBy`: a `Projection.map` view and a `foldGroup` that
 :::
 *)
 
-let remaining = rows |> Projection.sumBy (fun t -> if t.Done then 0 else t.Estimate)
+let remaining =
+    rows
+    |> Projection.sumBy (fun t -> if t.Done then 0 else t.Estimate)
+
 let doneCount = rows |> Projection.countBy _.Done
 let anyDone = rows |> Projection.exists _.Done
 let allDone = rows |> Projection.forall _.Done
 
 (remaining.Value, doneCount.Value, anyDone.Value, allDone.Value) // (10, 1, true, false)
 
-tasks.Value <- tasks.Value |> List.map (fun t -> { t with Done = true })
+tasks.Value <-
+    tasks.Value
+    |> List.map (fun t -> { t with Done = true })
+
 (remaining.Value, doneCount.Value, anyDone.Value, allDone.Value) // (0, 3, true, true)
 
 (**
@@ -177,8 +196,14 @@ It folds cached values in `Keys` order after any key or value change. This costs
 but reads only the changed rows again.
 *)
 
-let longest = rows |> Projection.fold (fun best t -> max best t.Estimate) 0
-let order = rows |> Projection.sortBy _.Estimate |> Projection.fold (fun ids t -> ids @ [ t.Id ]) []
+let longest =
+    rows
+    |> Projection.fold (fun best t -> max best t.Estimate) 0
+
+let order =
+    rows
+    |> Projection.sortBy _.Estimate
+    |> Projection.fold (fun ids t -> ids @ [ t.Id ]) []
 
 (longest.Value, order.Value) // (8, [ 3; 2; 1 ])
 
@@ -190,7 +215,10 @@ cached value with the new reading.
 *)
 
 let rate = createSignal 2
-let cost = rows |> Projection.foldGroup (fun s t -> s + t.Estimate * rate.Value) (fun s t -> s - t.Estimate * rate.Value) 0
+
+let cost =
+    rows
+    |> Projection.foldGroup (fun s t -> s + t.Estimate * rate.Value) (fun s t -> s - t.Estimate * rate.Value) 0
 
 cost.Value // 30
 rate.Value <- 3
@@ -242,7 +270,12 @@ the position is empty, so every reader needs a boundary or `TryValue`; prefer th
 *)
 
 let firstScore = scoreRows |> Projection.tryHead
-let topScore = scoreRows |> Projection.sortBy (fun score -> -score) |> Projection.tryHead
+
+let topScore =
+    scoreRows
+    |> Projection.sortBy (fun score -> -score)
+    |> Projection.tryHead
+
 let secondScore = scoreRows |> Projection.tryItem (fun () -> 1)
 
 (firstScore.Value, topScore.Value, secondScore.Value) // (Some (1, 40), Some (2, 75), Some (2, 75))
@@ -267,7 +300,9 @@ throwing predicate skips its key, and a pending one keeps the key's last members
 raise `KeyNotFoundException` while nothing matches.
 *)
 
-let firstPass = scoreRows |> Projection.tryFindKey (fun score -> score >= 50)
+let firstPass =
+    scoreRows
+    |> Projection.tryFindKey (fun score -> score >= 50)
 
 firstPass.Value // Some 2
 

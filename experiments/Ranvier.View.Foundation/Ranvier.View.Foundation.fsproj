@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="DomEvents.fs" />
+        <Compile Include="Scheduling.fs" />
+        <Compile Include="Binding.fs" />
+        <Compile Include="Microtask.fs" />
+        <Compile Include="Generated/Html.fs" />
+        <Compile Include="Prepared.fs" />
+        <Compile Include="Placement.fs" />
+        <Compile Include="TemplateDom.fs" />
+        <Compile Include="DocumentHead.fs" />
+        <Compile Include="Mounting.fs" />
+        <Compile Include="Hydration.fs" />
+        <Compile Include="Components.fs" />
+        <Compile Include="Authoring.fs" />
+        <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
+        <ProjectReference Include="../Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
+        <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    </ItemGroup>
+</Project>

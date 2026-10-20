@@ -1,0 +1,1689 @@
+{
+  "measuredAt": "2026-10-20T08:06:24.510Z",
+  "commit": "ab9e92435a33989ce77d68909d8ff5bb47981537",
+  "dirty": [],
+  "node": "v26.7.0",
+  "chromium": "153.0.8010.12",
+  "cpu": "AMD Ryzen 9 9900X 12-Core Processor            ",
+  "cores": 24,
+  "memoryGb": 62,
+  "platform": "win32 10.0.26200",
+  "production": true,
+  "minified": true,
+  "fable": "5.18.0",
+  "packages": {
+    "solid": "2.0.0-rc.14",
+    "solidWeb": "2.0.0-rc.14",
+    "solidCompiler": "2.0.0-rc.14"
+  },
+  "processes": 3,
+  "warmups": 3,
+  "rounds": 15,
+  "shuffle": false,
+  "pin": false,
+  "unit": "milliseconds per operation",
+  "notes": [
+    "Each sample mounts a fresh list, runs the untimed setup, forces GC through CDP, then times one synchronous operation including its DOM commit; layout and paint are excluded.",
+    "Modes alternate within each round and the starting mode rotates per round and process; ratios divide each Ranvier sample by the Solid sample of the same round.",
+    "Rows follow js-framework-benchmark keyed: id text, label signal in an anchor, a remove anchor with a span, an empty cell; two click handlers per row. Solid's For keys by row identity, Ranvier's t.each by row id.",
+    "Retained heap is GC-stabilized JavaScript heap per row of a mounted list, excluding DOM node memory outside the V8 heap."
+  ],
+  "sourceHashes": {
+    "benchmarks/frameworks/keyed-rows.mjs": "0f65b91f2fdf8971ae4abd6020955a0e4c3cddf2e3edb716d132b4a6af9484a2",
+    "benchmarks/frameworks/keyed-page.mjs": "99b4c7541ee823e12e018d9d2c19072f8124b0bcb1f46fb2452f59e57a975fc2",
+    "benchmarks/frameworks/keyed-solid.jsx": "e3a0db90ead42a76089806409b064a4a142fb78dd73d1edef38a75be39c9ad10",
+    "benchmarks/frameworks/vite.config.mjs": "b09bd3985edc37edaf2a89f7f1df964c572a47c253193b2a30c1cfcee9d73a89",
+    "tests/KeyedRowsPerf.fs": "6a2a355dda401139995b9c4249e0ed26780a227b07a36cc1a80087373b9ddd61",
+    "package-lock.json": "7d60e45b5fb7c43be37abb2219218bfc68f2aa67716514fd79d8286af555b23e",
+    "../../experiments/Ranvier.View.Portable/Lifetime.fs": "0b77045dfd7dbd7f93ec73afe685d75d6402808de9eb9e6c3eb84dbe3100644c",
+    "../../experiments/Ranvier.View.Portable/Representation.fs": "3c55050c22e05d7099247ce15b3155684b9127509c9ebe1518d625a19964eb6f",
+    "../../experiments/Ranvier.View.Portable/Template.fs": "e197757809268da946941dc1a9ef57e2aaa627899915797ca3d5d2dfe5538984",
+    "../../experiments/Ranvier.View.Foundation/TemplateDom.fs": "ad9182d172c08aee6c7d55789047c91342ff92e2a9f3a1adbd2fde7ed00e4d4f",
+    "../../experiments/Ranvier.View.Foundation/Mounting.fs": "1e19e5173ddd760921e856c7b05888cfdd30ba8fdcc8694dcf73332e2851d1ab",
+    "../../src/Ranvier/Core.fs": "03203520e46f2634db702ca442be89608a545631e19e81155b68fa8130906bd1",
+    "../../src/Ranvier/Projections.fs": "24ca5196b22e133271cf9b0f5b4a3667c97eb603dba83d2cb143474104158188",
+    "../../src/Ranvier/Api.fs": "2d2bda885ac5baf40441ba4d2169e00b44f1639c8beaf1a40101cc3d9b67ffaf",
+    "../../src/Ranvier/Combinators.fs": "518dafed24cd97678f442364f4d566bea5fa74f62b5cc8d313492f5706bf27d4"
+  },
+  "modes": [
+    "ranvier",
+    "solid"
+  ],
+  "operations": [
+    "create1k",
+    "create10k"
+  ],
+  "summaries": [
+    {
+      "operation": "create1k",
+      "mode": "ranvier",
+      "medianMs": 6.5950000286102295,
+      "byProcessMs": [
+        7.340000033378601,
+        6.445000052452087,
+        6.534999966621399
+      ]
+    },
+    {
+      "operation": "create1k",
+      "mode": "solid",
+      "medianMs": 4.429999947547913,
+      "byProcessMs": [
+        4.754999995231628,
+        4.100000023841858,
+        4.379999995231628
+      ]
+    },
+    {
+      "operation": "create10k",
+      "mode": "ranvier",
+      "medianMs": 53.889999985694885,
+      "byProcessMs": [
+        53.27999997138977,
+        53.8199999332428,
+        54.264999985694885
+      ]
+    },
+    {
+      "operation": "create10k",
+      "mode": "solid",
+      "medianMs": 38.20999991893768,
+      "byProcessMs": [
+        38.20999991893768,
+        38.2150000333786,
+        37.84500002861023
+      ]
+    }
+  ],
+  "ratios": [
+    {
+      "operation": "create1k",
+      "mode": "ranvier",
+      "medianRatioToSolid": 1.5428893904888155,
+      "byProcess": [
+        1.442982457516266,
+        1.57369059413445,
+        1.5428893904888155
+      ]
+    },
+    {
+      "operation": "create10k",
+      "mode": "ranvier",
+      "medianRatioToSolid": 1.4143950568449024,
+      "byProcess": [
+        1.4030358578392685,
+        1.40177389672197,
+        1.4326985369945358
+      ]
+    }
+  ],
+  "pairRatios": [],
+  "heaps": [
+    {
+      "mode": "ranvier",
+      "count": 1000,
+      "replicate": 0,
+      "retainedBytesPerRow": 1080.048,
+      "releasedDeltaBytes": 789228
+    },
+    {
+      "mode": "solid",
+      "count": 1000,
+      "replicate": 0,
+      "retainedBytesPerRow": 1048.696,
+      "releasedDeltaBytes": 0
+    },
+    {
+      "mode": "ranvier",
+      "count": 10000,
+      "replicate": 0,
+      "retainedBytesPerRow": 964.1644,
+      "releasedDeltaBytes": -816
+    },
+    {
+      "mode": "solid",
+      "count": 10000,
+      "replicate": 0,
+      "retainedBytesPerRow": 1047.82,
+      "releasedDeltaBytes": 16
+    },
+    {
+      "mode": "solid",
+      "count": 1000,
+      "replicate": 1,
+      "retainedBytesPerRow": 1056.98,
+      "releasedDeltaBytes": 395760
+    },
+    {
+      "mode": "ranvier",
+      "count": 1000,
+      "replicate": 1,
+      "retainedBytesPerRow": 1087.5,
+      "releasedDeltaBytes": 0
+    },
+    {
+      "mode": "solid",
+      "count": 10000,
+      "replicate": 1,
+      "retainedBytesPerRow": 1044.3088,
+      "releasedDeltaBytes": 16
+    },
+    {
+      "mode": "ranvier",
+      "count": 10000,
+      "replicate": 1,
+      "retainedBytesPerRow": 973.506,
+      "releasedDeltaBytes": -1532
+    },
+    {
+      "mode": "ranvier",
+      "count": 1000,
+      "replicate": 2,
+      "retainedBytesPerRow": 1082.492,
+      "releasedDeltaBytes": 791184
+    },
+    {
+      "mode": "solid",
+      "count": 1000,
+      "replicate": 2,
+      "retainedBytesPerRow": 1051.072,
+      "releasedDeltaBytes": -592
+    },
+    {
+      "mode": "ranvier",
+      "count": 10000,
+      "replicate": 2,
+      "retainedBytesPerRow": 964.148,
+      "releasedDeltaBytes": -1336
+    },
+    {
+      "mode": "solid",
+      "count": 10000,
+      "replicate": 2,
+      "retainedBytesPerRow": 1049.864,
+      "releasedDeltaBytes": 552
+    }
+  ],
+  "domCalls": [
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "calls": {
+        "cloneNode": 1000,
+        "addEventListener": 1,
+        "appendChild": 1000,
+        "insertBefore": 1
+      }
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "calls": {
+        "cloneNode": 1000,
+        "insertBefore": 1000
+      }
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "calls": {
+        "cloneNode": 10000,
+        "addEventListener": 1,
+        "appendChild": 10000,
+        "insertBefore": 1
+      }
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "calls": {
+        "cloneNode": 10000,
+        "insertBefore": 10000
+      }
+    }
+  ],
+  "samples": [
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 0,
+      "previous": "solid",
+      "ms": 6.3450000286102295
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 0,
+      "previous": "solid",
+      "ms": 7.340000033378601
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 6.894999980926514
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 6.725000023841858
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 2,
+      "previous": "solid",
+      "ms": 5.330000042915344
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 2,
+      "previous": "solid",
+      "ms": 10.134999990463257
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 10.815000057220459
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 4.754999995231628
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 4,
+      "previous": "solid",
+      "ms": 6.675000071525574
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 4,
+      "previous": "solid",
+      "ms": 8.059999942779541
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 8.784999966621399
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 6.440000057220459
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 6,
+      "previous": "solid",
+      "ms": 5.699999928474426
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 6,
+      "previous": "solid",
+      "ms": 8.224999904632568
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 7.149999976158142
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 4.620000004768372
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 8,
+      "previous": "solid",
+      "ms": 4.060000061988831
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 8,
+      "previous": "solid",
+      "ms": 7.680000066757202
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 7.485000014305115
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 4.414999961853027
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 10,
+      "previous": "solid",
+      "ms": 3.6699999570846558
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 10,
+      "previous": "solid",
+      "ms": 7.334999918937683
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 5.514999985694885
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 4.585000038146973
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 12,
+      "previous": "solid",
+      "ms": 4.709999918937683
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 12,
+      "previous": "solid",
+      "ms": 6.649999976158142
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 5.8450000286102295
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 5.064999938011169
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 14,
+      "previous": "solid",
+      "ms": 4.050000071525574
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 0,
+      "round": 14,
+      "previous": "solid",
+      "ms": 6.460000038146973
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 0,
+      "previous": "solid",
+      "ms": 40.13499999046326
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 0,
+      "previous": "solid",
+      "ms": 52.22499990463257
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 52.46999990940094
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 39.75499999523163
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 2,
+      "previous": "solid",
+      "ms": 38.05999994277954
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 2,
+      "previous": "solid",
+      "ms": 56.04000008106232
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 52.669999957084656
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 40.204999923706055
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 4,
+      "previous": "solid",
+      "ms": 38.20999991893768
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 4,
+      "previous": "solid",
+      "ms": 53.610000014305115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 54.63499999046326
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 37.580000042915344
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 6,
+      "previous": "solid",
+      "ms": 38.37000000476837
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 6,
+      "previous": "solid",
+      "ms": 55.894999980926514
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 57.53999996185303
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 36.12000000476837
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 8,
+      "previous": "solid",
+      "ms": 42.36999988555908
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 8,
+      "previous": "solid",
+      "ms": 60.580000042915344
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 42.59499990940094
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 37.47500002384186
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 10,
+      "previous": "solid",
+      "ms": 39.85000002384186
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 10,
+      "previous": "solid",
+      "ms": 52.169999957084656
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 53.27999997138977
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 32.75
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 12,
+      "previous": "solid",
+      "ms": 37.485000014305115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 12,
+      "previous": "solid",
+      "ms": 51.24500000476837
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 54.43999993801117
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 33.75
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 14,
+      "previous": "solid",
+      "ms": 38.89999997615814
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 0,
+      "round": 14,
+      "previous": "solid",
+      "ms": 52.4650000333786
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 0,
+      "previous": "ranvier",
+      "ms": 6.989999890327454
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 0,
+      "previous": "ranvier",
+      "ms": 4.540000081062317
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 1,
+      "previous": "solid",
+      "ms": 4.039999961853027
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 1,
+      "previous": "solid",
+      "ms": 7.394999980926514
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 2,
+      "previous": "ranvier",
+      "ms": 6.614999890327454
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 2,
+      "previous": "ranvier",
+      "ms": 3.950000047683716
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 3,
+      "previous": "solid",
+      "ms": 4.235000014305115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 3,
+      "previous": "solid",
+      "ms": 7.0950000286102295
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 4,
+      "previous": "ranvier",
+      "ms": 5.424999952316284
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 4,
+      "previous": "ranvier",
+      "ms": 4.475000023841858
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 5,
+      "previous": "solid",
+      "ms": 3.9049999713897705
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 5,
+      "previous": "solid",
+      "ms": 6.480000019073486
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 6,
+      "previous": "ranvier",
+      "ms": 5.465000033378601
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 6,
+      "previous": "ranvier",
+      "ms": 4.100000023841858
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 7,
+      "previous": "solid",
+      "ms": 3.6700000762939453
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 7,
+      "previous": "solid",
+      "ms": 6.445000052452087
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 8,
+      "previous": "ranvier",
+      "ms": 5.430000066757202
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 8,
+      "previous": "ranvier",
+      "ms": 3.9850000143051147
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 9,
+      "previous": "solid",
+      "ms": 3.534999966621399
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 9,
+      "previous": "solid",
+      "ms": 6.350000023841858
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 10,
+      "previous": "ranvier",
+      "ms": 6.375
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 10,
+      "previous": "ranvier",
+      "ms": 4.625
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 11,
+      "previous": "solid",
+      "ms": 4.519999980926514
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 11,
+      "previous": "solid",
+      "ms": 6.139999985694885
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 12,
+      "previous": "ranvier",
+      "ms": 6.534999966621399
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 12,
+      "previous": "ranvier",
+      "ms": 3.509999990463257
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 13,
+      "previous": "solid",
+      "ms": 4.105000019073486
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 13,
+      "previous": "solid",
+      "ms": 6.459999918937683
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 14,
+      "previous": "ranvier",
+      "ms": 6.240000009536743
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 1,
+      "round": 14,
+      "previous": "ranvier",
+      "ms": 4.435000061988831
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 0,
+      "previous": "ranvier",
+      "ms": 53.62999999523163
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 0,
+      "previous": "ranvier",
+      "ms": 33.205000042915344
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 1,
+      "previous": "solid",
+      "ms": 39.71000003814697
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 1,
+      "previous": "solid",
+      "ms": 52.60000002384186
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 2,
+      "previous": "ranvier",
+      "ms": 52.94500005245209
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 2,
+      "previous": "ranvier",
+      "ms": 37.769999980926514
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 3,
+      "previous": "solid",
+      "ms": 37.235000014305115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 3,
+      "previous": "solid",
+      "ms": 52.66499996185303
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 4,
+      "previous": "ranvier",
+      "ms": 53.8199999332428
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 4,
+      "previous": "ranvier",
+      "ms": 40.25999999046326
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 5,
+      "previous": "solid",
+      "ms": 38.5550000667572
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 5,
+      "previous": "solid",
+      "ms": 64.67500007152557
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 6,
+      "previous": "ranvier",
+      "ms": 44.49500000476837
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 6,
+      "previous": "ranvier",
+      "ms": 38.105000019073486
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 7,
+      "previous": "solid",
+      "ms": 38.28999996185303
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 7,
+      "previous": "solid",
+      "ms": 53.6599999666214
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 8,
+      "previous": "ranvier",
+      "ms": 56.05499994754791
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 8,
+      "previous": "ranvier",
+      "ms": 34.3050000667572
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 9,
+      "previous": "solid",
+      "ms": 40.22499990463257
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 9,
+      "previous": "solid",
+      "ms": 55.81000006198883
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 10,
+      "previous": "ranvier",
+      "ms": 58.29000008106232
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 10,
+      "previous": "ranvier",
+      "ms": 35.37999999523163
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 11,
+      "previous": "solid",
+      "ms": 44.38499999046326
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 11,
+      "previous": "solid",
+      "ms": 57.99500000476837
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 12,
+      "previous": "ranvier",
+      "ms": 44.644999980926514
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 12,
+      "previous": "ranvier",
+      "ms": 38.2150000333786
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 13,
+      "previous": "solid",
+      "ms": 38.50499999523163
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 13,
+      "previous": "solid",
+      "ms": 54.674999952316284
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 14,
+      "previous": "ranvier",
+      "ms": 53.97000002861023
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 1,
+      "round": 14,
+      "previous": "ranvier",
+      "ms": 32.49500000476837
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 0,
+      "previous": "solid",
+      "ms": 3.9199999570846558
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 0,
+      "previous": "solid",
+      "ms": 6.25
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 4.925000071525574
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 4.8450000286102295
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 2,
+      "previous": "solid",
+      "ms": 4.5899999141693115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 2,
+      "previous": "solid",
+      "ms": 6.170000076293945
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 5.559999942779541
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 3.8550000190734863
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 4,
+      "previous": "solid",
+      "ms": 4.379999995231628
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 4,
+      "previous": "solid",
+      "ms": 6.495000004768372
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 6.519999980926514
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 4.019999980926514
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 6,
+      "previous": "solid",
+      "ms": 4.040000081062317
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 6,
+      "previous": "solid",
+      "ms": 6.534999966621399
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 7.199999928474426
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 4.375
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 8,
+      "previous": "solid",
+      "ms": 4.090000033378601
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 8,
+      "previous": "solid",
+      "ms": 6.5950000286102295
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 7.564999938011169
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 4.444999933242798
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 10,
+      "previous": "solid",
+      "ms": 5.129999995231628
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 10,
+      "previous": "solid",
+      "ms": 6.789999961853027
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 6.815000057220459
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 4.764999985694885
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 12,
+      "previous": "solid",
+      "ms": 4.429999947547913
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 12,
+      "previous": "solid",
+      "ms": 6.834999918937683
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 6.185000061988831
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 4.679999947547913
+    },
+    {
+      "mode": "solid",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 14,
+      "previous": "solid",
+      "ms": 3.6649999618530273
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "replicate": 2,
+      "round": 14,
+      "previous": "solid",
+      "ms": 6.960000038146973
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 0,
+      "previous": "solid",
+      "ms": 44.2150000333786
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 0,
+      "previous": "solid",
+      "ms": 54.610000014305115
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 54.105000019073486
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 1,
+      "previous": "ranvier",
+      "ms": 33.140000104904175
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 2,
+      "previous": "solid",
+      "ms": 41.80499994754791
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 2,
+      "previous": "solid",
+      "ms": 60.9650000333786
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 48.41499996185303
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 3,
+      "previous": "ranvier",
+      "ms": 39.4300000667572
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 4,
+      "previous": "solid",
+      "ms": 38.9650000333786
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 4,
+      "previous": "solid",
+      "ms": 56.704999923706055
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 55.12000000476837
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 5,
+      "previous": "ranvier",
+      "ms": 33.24500000476837
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 6,
+      "previous": "solid",
+      "ms": 37.47000002861023
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 6,
+      "previous": "solid",
+      "ms": 53.72000002861023
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 53.43500006198883
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 7,
+      "previous": "ranvier",
+      "ms": 37.83499991893768
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 8,
+      "previous": "solid",
+      "ms": 38.825000047683716
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 8,
+      "previous": "solid",
+      "ms": 54.605000019073486
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 55.295000076293945
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 9,
+      "previous": "ranvier",
+      "ms": 38.59500002861023
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 10,
+      "previous": "solid",
+      "ms": 38.85000002384186
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 10,
+      "previous": "solid",
+      "ms": 54.264999985694885
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 52.84500002861023
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 11,
+      "previous": "ranvier",
+      "ms": 37.54000008106232
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 12,
+      "previous": "solid",
+      "ms": 37.84500002861023
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 12,
+      "previous": "solid",
+      "ms": 54.34999990463257
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 53.47000002861023
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 13,
+      "previous": "ranvier",
+      "ms": 33.610000014305115
+    },
+    {
+      "mode": "solid",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 14,
+      "previous": "solid",
+      "ms": 37.75499999523163
+    },
+    {
+      "mode": "ranvier",
+      "operation": "create10k",
+      "replicate": 2,
+      "round": 14,
+      "previous": "solid",
+      "ms": 53.889999985694885
+    }
+  ],
+  "profiles": [],
+  "allocations": []
+}

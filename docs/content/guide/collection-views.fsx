@@ -99,7 +99,10 @@ comes last, and `None` comes after `Some`.
 
 
 *)
-let longestFirst = orderedTitles |> Projection.sortByDescending String.length
+let longestFirst =
+    orderedTitles
+    |> Projection.sortByDescending String.length
+
 longestFirst.Keys
 (**
 
@@ -218,7 +221,10 @@ predicate view: the predicate runs once per changed row for both halves. A raisi
 both halves; a pending one keeps the key on its last side. Each half can be disposed on its own.
 
 *)
-let shortTitles, longerTitles = orderedTitles |> Projection.partition (fun title -> title.Length < 2)
+let shortTitles, longerTitles =
+    orderedTitles
+    |> Projection.partition (fun title -> title.Length < 2)
+
 (shortTitles.Keys, longerTitles.Keys)
 (**
 
@@ -240,7 +246,10 @@ key. When the holder leaves or changes value, the next key with the value takes 
 old key removed and the new one added. Pending and raising functions follow the predicate rules above.
 
 *)
-let oneTitlePerLength = orderedTitles |> Projection.distinctBy String.length
+let oneTitlePerLength =
+    orderedTitles
+    |> Projection.distinctBy String.length
+
 oneTitlePerLength.Keys
 (**
 
@@ -263,8 +272,13 @@ such as a total. The memo is created once per group, in the group's scope, so an
 
 
 *)
-let titleCountByLength = byLengthGroup |> Grouping.aggregate Projection.length
-[ for length in titleCountByLength.Keys -> length, titleCountByLength.Get length ]
+let titleCountByLength =
+    byLengthGroup
+    |> Grouping.aggregate Projection.length
+
+[
+    for length in titleCountByLength.Keys -> length, titleCountByLength.Get length
+]
 (**
 
 ```text

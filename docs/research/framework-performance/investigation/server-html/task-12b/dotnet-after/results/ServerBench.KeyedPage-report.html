@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>ServerBench.KeyedPage-20261020-084511</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.9711/25H2/2025Update/HudsonValley2)
+AMD Ryzen 9 9900X 4.40GHz, 1 CPU, 24 logical and 12 physical cores
+.NET SDK 10.0.402
+  [Host]     : .NET 10.0.13 (10.0.13, 10.0.1326.50504), X64 RyuJIT x86-64-v4 DEBUG
+  DefaultJob : .NET 10.0.13 (10.0.13, 10.0.1326.50504), X64 RyuJIT x86-64-v4
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method</th><th>Rows</th><th>Mean </th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Gen1</th><th>Gen2</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>Render</td><td>1000</td><td>341.3 &mu;s</td><td>6.82 &mu;s</td><td>7.01 &mu;s</td><td>124.5117</td><td>124.5117</td><td>124.5117</td><td>1.81 MB</td>
+</tr><tr><td>Render</td><td>10000</td><td>14,605.1 &mu;s</td><td>290.80 &mu;s</td><td>367.77 &mu;s</td><td>1843.7500</td><td>1828.1250</td><td>984.3750</td><td>18.2 MB</td>
+</tr></tbody></table>
+</body>
+</html>

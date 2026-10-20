@@ -416,6 +416,14 @@ module private Ripple =
             Teardown = noTeardown
         }
 
+/// <summary>
+/// <c>ServerWorkloads.serverRender</c>, loading its module and the server-render modules it imports on the first
+/// call. The process of any other scenario then holds the heap of a harness without them.
+/// </summary>
+[<Fable.Core.Emit("process.getBuiltinModule('node:module').createRequire(import.meta.url)('./bench/Ranvier.Counters/ServerWorkloads.fs.js').serverRender($0)")>]
+let private serverRender (n: int) : Workloads.Workload =
+    Fable.Core.Util.jsNative
+
 let private workload (prepare: int -> Workloads.Workload) (n: int) : Prepared =
     let prepared = prepare n
 
@@ -538,6 +546,7 @@ let all (scale: int) : Case list =
                         "Ranvier (fresh items)", workload (Workloads.keyedPass true edit)
                         "Ranvier (stable items)", workload (Workloads.keyedPass false edit)
                     ]
+        yield! scenario "server-render" "render a 100-row keyed table as one request" (5 * scale) [ "Ranvier", workload serverRender ]
         yield!
             scenario
                 "app-table"

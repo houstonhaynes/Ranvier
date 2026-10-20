@@ -83,12 +83,14 @@ function checkPackage(buffer, expected) {
   return problems;
 }
 
-// The problems of a package directory against the projects under src; empty when it holds exactly the expected
+// The problems of a package directory against the packable projects under src; empty when it holds exactly the expected
 // packages, each with its symbol package.
 function check(packagesDirectory, sourceDirectory) {
   const projects = fs.readdirSync(sourceDirectory, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`)))
-    .map(entry => projectPackage(fs.readFileSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`), 'utf8'), entry.name));
+    .map(entry => ({ name: entry.name, xml: fs.readFileSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`), 'utf8') }))
+    .filter(({ xml }) => property(xml, 'IsPackable') !== 'false')
+    .map(({ name, xml }) => projectPackage(xml, name));
   if (projects.length === 0) return [`no project under ${sourceDirectory}`];
   const expected = expectedPackages(projects);
   const files = fs.existsSync(packagesDirectory) ? fs.readdirSync(packagesDirectory) : [];
