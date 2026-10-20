@@ -79,6 +79,7 @@ let all =
                     Ranvier.Tests.Combinators.chooseTests
                     Ranvier.Tests.Combinators.mapTests
                     Ranvier.Tests.Combinators.sortByTests
+                    Ranvier.Tests.Combinators.sortKeyOrderTests
                     Ranvier.Tests.Combinators.sliceTests
                     Ranvier.Tests.Combinators.chainTests
                     Ranvier.Tests.Combinators.mapWithTests

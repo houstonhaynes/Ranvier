@@ -1151,6 +1151,199 @@ let sortByTests =
             }
         ]
 
+type private Ranked = { Name: string; Rank: int }
+
+type private Shape =
+    | Circle of float
+    | Square of string
+    | Dot
+
+/// <summary>An <c>IComparable</c> ordering its values from greatest to least.</summary>
+[<CustomEquality; CustomComparison>]
+type private Reversed =
+    {
+        Value: int
+    }
+
+    override this.Equals other =
+        match other with
+        | :? Reversed as other -> this.Value = other.Value
+        | _ -> false
+
+    override this.GetHashCode() =
+        this.Value
+
+    interface IComparable with
+        member this.CompareTo other =
+            match other with
+            | :? Reversed as other -> compare other.Value this.Value
+            | _ -> invalidArg "other" "not a Reversed"
+
+let private isNaNRank (rank: 'S) =
+    match box rank with
+    | :? float as f -> Double.IsNaN f
+    | :? float32 as f -> Single.IsNaN f
+    | _ -> false
+
+/// <summary>The order of <c>sortBy</c>: <c>compare</c>, with a NaN equal to NaN and after every other rank.</summary>
+let private ascendingRank (a: 'S) (b: 'S) =
+    match isNaNRank a, isNaNRank b with
+    | true, true -> 0
+    | true, false -> 1
+    | false, true -> -1
+    | false, false -> compare a b
+
+/// <summary>The order of <c>sortByDescending</c>: <c>compare</c> reversed, with a NaN after every other rank.</summary>
+let private descendingRank (a: 'S) (b: 'S) =
+    match isNaNRank a, isNaNRank b with
+    | true, true -> 0
+    | true, false -> 1
+    | false, true -> -1
+    | false, false -> compare b a
+
+/// <summary>The keys of <c>rows</c> under <c>order</c>, ties in upstream order, by <c>List.sortWith</c>.</summary>
+let private sortedWith (order: 'S -> 'S -> int) (rows: (int * 'S) list) =
+    rows
+    |> List.indexed
+    |> List.sortWith (fun (i, (_, a)) (j, (_, b)) ->
+        match order a b with
+        | 0 -> compare i j
+        | c -> c)
+    |> List.map (fun (_, (key, _)) -> key)
+
+/// <summary>
+/// Checks <c>sortBy</c>, <c>sortByDescending</c>, <c>tryMinBy</c> and <c>tryMaxBy</c> over <c>ranks</c> against
+/// <c>List.sortWith compare</c>, before and after reversing the upstream.
+/// </summary>
+let private keyOrderCase (name: string) (ranks: 'S list) =
+    test name {
+        use g = new Graph ()
+        use _ = g.Activate ()
+        let source = createSignal (List.indexed ranks)
+        let up = createProjection fst id (fun () -> source.Value)
+        let ascending = up |> Projection.sortBy snd
+        let descending = up |> Projection.sortByDescending snd
+        let least = up |> Projection.tryMinBy snd
+        let most = up |> Projection.tryMaxBy snd
+
+        let check (stage: string) =
+            let rows = source.Value
+            let ranks = List.map snd rows
+
+            let leastRank =
+                ranks
+                |> List.reduce (fun best r -> if ascendingRank r best < 0 then r else best)
+
+            let mostRank =
+                ranks
+                |> List.reduce (fun best r -> if ascendingRank r best > 0 then r else best)
+
+            Expect.sequenceEqual ascending.Keys (sortedWith ascendingRank rows) $"%s{stage}: sortBy orders as compare"
+            Expect.sequenceEqual descending.Keys (sortedWith descendingRank rows) $"%s{stage}: sortByDescending orders as compare"
+
+            Expect.isTrue
+                (least.Value
+                 |> Option.exists (fun (_, r) -> ascendingRank r leastRank = 0))
+                $"%s{stage}: tryMinBy holds the least rank under compare"
+
+            Expect.isTrue
+                (most.Value
+                 |> Option.exists (fun (_, r) -> ascendingRank r mostRank = 0))
+                $"%s{stage}: tryMaxBy holds the greatest rank under compare"
+
+        check "initial"
+        source.Value <- List.rev source.Value
+        check "reversed upstream"
+    }
+
+[<Tests>]
+let sortKeyOrderTests =
+    testList
+        "sort key order"
+        [
+            keyOrderCase "string, ordinal" [ "b"; "B"; "a"; "A"; "é"; "e"; "-a"; "a-"; ""; "Z"; "z"; "ä"; "a" ]
+            keyOrderCase "float with NaN" [ 3.0; nan; -0.0; 0.0; infinity; -infinity; nan; 1.5; -2.0; Double.Epsilon ]
+            keyOrderCase "float32 with NaN" [ 3.0f; nanf; -0.0f; 0.0f; infinityf; -infinityf; nanf; 1.5f; -2.0f ]
+            keyOrderCase "int64" [ Int64.MaxValue; Int64.MinValue; 0L; -1L; 1L; 42L; 0L ]
+            keyOrderCase "tuple" [ 1, "b"; 0, "z"; 1, "B"; 1, "a"; 0, "A"; 1, "b" ]
+            keyOrderCase
+                "record"
+                [
+                    { Name = "b"; Rank = 1 }
+                    { Name = "B"; Rank = 2 }
+                    { Name = "a"; Rank = 3 }
+                    { Name = "b"; Rank = 0 }
+                    { Name = "A"; Rank = 1 }
+                ]
+            keyOrderCase "option" [ Some "b"; None; Some "B"; Some "a"; None; Some "" ]
+            keyOrderCase "tuple with NaN" [ 0.0, 1; nan, 1; -1.0, 2; nan, 0; infinity, 0; nan, 1 ]
+            keyOrderCase "option with NaN" [ Some 0.0; Some nan; None; Some -infinity; Some nan; Some 1.0 ]
+            keyOrderCase "union" [ Square "b"; Dot; Circle 2.0; Square "B"; Circle -1.0; Dot; Square "a" ]
+            keyOrderCase "decimal" [ 1.10M; 1.1M; -0.5M; 0M; Decimal.MaxValue; Decimal.MinValue; 0.001M ]
+            keyOrderCase "char" [ 'b'; 'B'; 'a'; 'é'; 'A'; '-'; 'ä' ]
+            keyOrderCase
+                "DateTime"
+                [
+                    DateTime (2020, 1, 1)
+                    DateTime.MinValue
+                    DateTime.MaxValue
+                    DateTime (2019, 12, 31, 23, 59, 59)
+                    DateTime (2020, 1, 1)
+                ]
+            keyOrderCase "custom IComparable" [ { Value = 1 }; { Value = 3 }; { Value = 2 }; { Value = 3 } ]
+            keyOrderCase "string list" [ [ "b" ]; [ "B"; "a" ]; []; [ "a" ]; [ "B" ] ]
+
+#if !FABLE_COMPILER
+            // .NET only: JavaScript exposes no allocation counter.
+            untracedOnly
+            <| test "a sort pass over int keys allocates no box per comparison" {
+                // A Debug build of Ranvier allocates in its sort path at every JIT tier.
+                match Attribute.GetCustomAttribute (typeof<Graph>.Assembly, typeof<Diagnostics.DebuggableAttribute>) with
+                | :? Diagnostics.DebuggableAttribute as debuggable when debuggable.IsJITOptimizerDisabled ->
+                    skiptest "Ranvier is built without optimisation"
+                | _ -> ()
+
+                let rowCount = 1000
+
+                // Bytes per pass of `shape` over an upstream alternating between two orders of the same rows.
+                let bytesPerPass (shape: Projection<int, int> -> Projection<int, int>) =
+                    use g = new Graph ()
+                    use _ = g.Activate ()
+                    let forward = [ for i in 0 .. rowCount - 1 -> i, (i * 7919) % rowCount ]
+                    let backward = List.rev forward
+                    let source = createSignal forward
+
+                    let view =
+                        createProjection fst snd (fun () -> source.Value)
+                        |> shape
+
+                    let passes count =
+                        for i in 1..count do
+                            source.Value <- if i % 2 = 0 then backward else forward
+                            view.Keys |> ignore
+
+                    // The first passes compile the code and size the buffers.
+                    passes 4
+                    let before = GC.GetAllocatedBytesForCurrentThread ()
+                    passes 20
+
+                    (GC.GetAllocatedBytesForCurrentThread () - before)
+                    / 20L
+
+                // A filter pass reconciles the same upstream rows without comparing ranks. The difference is the sort's
+                // own allocation, at any JIT tier: unoptimised code boxes in the reconciliation, in both views alike.
+                let sorted = bytesPerPass (Projection.sortBy id)
+                let filtered = bytesPerPass (Projection.filter (fun _ -> true))
+
+                // A boxing comparer allocates 48 bytes per comparison, about 500,000 bytes per pass here.
+                Expect.isLessThan
+                    (sorted - filtered)
+                    (int64 (32 * rowCount))
+                    $"a sort pass over %d{rowCount} rows allocated %d{sorted} bytes, a filter pass %d{filtered}"
+            }
+#endif
+        ]
+
 [<Tests>]
 let sliceTests =
     testList

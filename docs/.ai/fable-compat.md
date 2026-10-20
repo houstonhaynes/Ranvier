@@ -57,7 +57,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | DischargeReentry.fs | 29 | 29 | 29 | 29 | 29 | 29 | 1 | 0 |
 | MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
-| Combinators.fs | 227 | 227 | 227 | 227 | 227 | 227 | 2 | 0 |
+| Combinators.fs | 242 | 242 | 242 | 242 | 242 | 242 | 3 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1530 | 1509 | 1506 | 1672 | 1646 | 1643 | 105 | 1 |
+| **Total** | 1545 | 1524 | 1521 | 1687 | 1661 | 1658 | 106 | 1 |
 
 ## Tests.fs
 
@@ -1438,10 +1438,11 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 | Excluded | Reason |
 | --- | --- |
+| a sort pass over int keys allocates no box per comparison | JavaScript exposes no allocation counter. |
 | foldGroup rejects a null subtract | Fable wraps a null function argument in a closure, so it is never null. |
 | a read through a memo of another graph publishes the current mean under a custom policy | the policy is an object expression over a generic interface member. |
 
-<details><summary>227 passed in every build and delivery that runs them</summary>
+<details><summary>242 passed in every build and delivery that runs them</summary>
 
 - 200 single edits at N=1000 make 200 predicate calls
 - a Keys reader wakes only when membership flips
@@ -1491,6 +1492,21 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - tests reading the shared comparison counter / a pass whose sort keys and upstream order are unchanged does not re-sort
 - tests reading the shared comparison counter / a sortByDescending pass whose sort keys and upstream order are unchanged does not re-sort
 - tests reading the shared comparison counter / removing a non-extreme row costs no comparison; removing the extreme re-folds once
+- string, ordinal
+- float with NaN
+- float32 with NaN
+- int64
+- tuple
+- record
+- option
+- tuple with NaN
+- option with NaN
+- union
+- decimal
+- char
+- DateTime
+- custom IComparable
+- string list
 - take, skip and sub select positions and clamp counts as List.truncate and a clamped skip do
 - the window follows signals read by offset and count, and a reader runs once per change
 - a key that stays in a shifted window keeps its row

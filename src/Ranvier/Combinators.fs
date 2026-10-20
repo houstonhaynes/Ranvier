@@ -305,7 +305,12 @@ module internal Ranks =
         | true, true -> 0
         | true, false -> 1
         | false, true -> -1
-        | false, false -> compare a b
+        | false, false ->
+#if FABLE_COMPILER
+            compare a b
+#else
+            LanguagePrimitives.FastGenericComparer<'S>.Compare(a, b)
+#endif
 
 /// <summary>
 /// The keys of <c>sortKeys</c> whose sort key has settled, ascending by sort key, or descending when <c>descending</c> is
@@ -341,12 +346,31 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>
     /// <summary>Whether <c>order</c> holds the result of a completed sort.</summary>
     let mutable sorted = false
 
+#if !FABLE_COMPILER
+    // The order of compare, unboxed for value types.
+    let comparer = LanguagePrimitives.FastGenericComparer<'S>
+
+    // True when a rank can hold a float or float32. isNaN boxes its rank only when true, at every JIT tier.
+    let floatRanks =
+        typeof<'S>.IsAssignableFrom typeof<float>
+        || typeof<'S>.IsAssignableFrom typeof<float32>
+#endif
+
     // Local copies of the Ranks orders: a call into Ranks, direct or through a closure, costs 5-15% per sorting pass.
+#if FABLE_COMPILER
     let isNaN (rank: 'S) =
         match box rank with
         | :? float as f -> System.Double.IsNaN f
         | :? float32 as f -> System.Single.IsNaN f
         | _ -> false
+#else
+    let isNaN (rank: 'S) =
+        floatRanks
+        && (match box rank with
+            | :? float as f -> System.Double.IsNaN f
+            | :? float32 as f -> System.Single.IsNaN f
+            | _ -> false)
+#endif
 
     /// <summary>The order of <c>sortByDescending</c> when <c>descending</c> is set, of <c>sortBy</c> otherwise.</summary>
     let compareRanks (a: 'S) (b: 'S) =
@@ -354,7 +378,15 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>
         | true, true -> 0
         | true, false -> 1
         | false, true -> -1
-        | false, false -> if descending then compare b a else compare a b
+        | false, false ->
+#if FABLE_COMPILER
+            if descending then compare b a else compare a b
+#else
+            if descending then
+                comparer.Compare (b, a)
+            else
+                comparer.Compare (a, b)
+#endif
 
     /// <summary>
     /// Whether <c>order</c> applies to this pass: the last sort completed, and this pass placed the keys and sort keys of the
