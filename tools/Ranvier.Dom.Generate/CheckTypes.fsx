@@ -485,7 +485,7 @@ let failures =
         File.WriteAllText (check, prefix + cases.Head.Body + "\n")
 
         let restored, restoreOutput =
-            dotnet [ "restore"; fsproj; "--configfile"; Path.Combine (root, "NuGet.Config") ]
+            dotnet [ "restore"; fsproj; "--configfile"; Path.Combine (root, "nuget.config") ]
 
         if restored <> 0 then
             fail restoreOutput

@@ -97,7 +97,7 @@ let code, output =
         )
 
         let restored, restoreOutput =
-            dotnet [ "restore"; fsproj; "--configfile"; Path.Combine (root, "NuGet.Config") ]
+            dotnet [ "restore"; fsproj; "--configfile"; Path.Combine (root, "nuget.config") ]
 
         if restored <> 0 then
             restored, restoreOutput
@@ -109,13 +109,24 @@ let code, output =
         with _ ->
             ()
 
-for line in
+let diagnostics =
     output.Split '\n'
     |> Array.filter (fun line ->
         line.Contains "error FS"
         || line.Contains "warning FS")
-    |> Array.distinct do
+    |> Array.distinct
+
+for line in diagnostics do
     printfn "%s" (line.Trim ())
+
+// A failure without FS diagnostics (restore, SDK or project errors) prints the tail of the dotnet output.
+if code <> 0 && diagnostics.Length = 0 then
+    for line in
+        output.Split '\n'
+        |> Array.rev
+        |> Array.truncate 40
+        |> Array.rev do
+        printfn "%s" (line.TrimEnd ())
 
 if code = 0 then
     printfn "PASS: %d section files compile" sections.Length
