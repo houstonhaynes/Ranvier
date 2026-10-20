@@ -1227,7 +1227,6 @@ and private RowBuilder(state: MountState, hydration: unit -> TemplateDom.Hydrati
         placement <- target
         cursor <- hydration ()
         let adopted = not (isNull cursor)
-        roots.Clear ()
         setupFailure <- None
         settingUp <- true
 
@@ -1245,6 +1244,7 @@ and private RowBuilder(state: MountState, hydration: unit -> TemplateDom.Hydrati
                     for index in 0 .. roots.Count - 1 do
                         remove (roots[index] :?> ChildNode)
 
+                roots.Clear ()
                 reraise ()
         finally
             settingUp <- false
@@ -1256,7 +1256,10 @@ and private RowBuilder(state: MountState, hydration: unit -> TemplateDom.Hydrati
             this.Staging.appendChild marker |> ignore
             roots.Add marker
 
-        Row (roots[0], roots[roots.Count - 1], Adopted = adopted)
+        let built = Row (roots[0], roots[roots.Count - 1], Adopted = adopted)
+        // Cleared once the row is built, so a removed row's nodes become collectable.
+        roots.Clear ()
+        built
 
     interface TemplateDom.MountServices with
         member this.Append(node) =

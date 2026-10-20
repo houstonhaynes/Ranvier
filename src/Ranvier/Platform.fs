@@ -496,20 +496,14 @@ module internal Platform =
     /// but the list itself is being reused rather than cleared.
     /// </summary>
     /// <remarks>
-    /// A no-op under Fable, and the one platform difference here that is about
-    /// cost rather than capability. Storing null beside object references in a
-    /// JavaScript array is something V8 charges for: measured on the scheduler
-    /// queue it was ~10% of a 64-observer write, against a retention window
-    /// bounded by the longest queue seen so far and closed by the next turn
-    /// that reaches the same length. That is the trade Solid makes too. On
-    /// .NET the store is a covariant array write, costs nothing measurable,
-    /// and keeps a disposed node from being held alive by a spent slot.
+    /// The caller must have established <c>index &lt; slots.Count</c>. Under Fable it is a raw
+    /// <c>slots[index] = null</c>, without fable-library's bounds check.
     /// </remarks>
-    let inline releaseSlot (slots: ResizeArray<'T>) (index: int) =
 #if FABLE_COMPILER
-        ignore slots
-        ignore index
+    [<Emit("$0[$1] = null")>]
+    let releaseSlot (slots: ResizeArray<'T>) (index: int) : unit = jsNative
 #else
+    let inline releaseSlot (slots: ResizeArray<'T>) (index: int) =
         slots[index] <- Unchecked.defaultof<'T>
 #endif
 

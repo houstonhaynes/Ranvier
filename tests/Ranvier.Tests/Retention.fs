@@ -201,6 +201,48 @@ let tests =
 
 #if !FABLE_COMPILER
             // .NET only: JavaScript exposes no forced collection.
+            test "effects disposed after a flush ran them are not retained by the graph's queue" {
+                let g = new Graph ()
+                let s = Signal (g, 1)
+                let refs = ResizeArray<WeakReference>()
+
+                let owner =
+                    g.CreateRoot (fun owner ->
+                        for _ in 1..200 do
+                            refs.Add (WeakReference (new Effect (g, (fun () -> s.Value |> ignore))))
+
+                        owner)
+
+                s.Value <- 2
+                owner.Dispose ()
+                Expect.isLessThan (aliveOf refs) 20 "a drained queue holds none of the effects it ran"
+                s.Value <- 3
+            }
+
+            test "projections disposed after a flush ran their passes are not retained by the graph's pass queue" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2; 3 ]
+                let refs = ResizeArray<WeakReference>()
+
+                let owner =
+                    createRoot (fun owner ->
+                        for _ in 1..200 do
+                            let projection = createProjection id id (fun () -> source.Value)
+                            createEffect (fun () -> projection.Keys |> ignore)
+                            refs.Add (WeakReference projection)
+
+                        owner)
+
+                source.Value <- [ 4; 5 ]
+                owner.Dispose ()
+                Expect.isLessThan (aliveOf refs) 20 "a drained pass queue holds none of the passes it ran"
+                source.Value <- [ 6 ]
+            }
+#endif
+
+#if !FABLE_COMPILER
+            // .NET only: JavaScript exposes no forced collection.
             test "a torn-down subtree is released even while its signal lives on" {
                 let g = new Graph ()
                 let s = Signal (g, 1)

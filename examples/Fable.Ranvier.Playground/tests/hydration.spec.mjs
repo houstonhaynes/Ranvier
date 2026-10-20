@@ -16,7 +16,7 @@ for (const [label, key] of [["hydration checks in Chromium", "hydrationCases"], 
   });
 }
 
-// Each case hydrates in one task; its check runs in a later task, after a full garbage collection.
+// Each case mounts or hydrates in one task; its check runs in a later task, after a full garbage collection.
 test("hydration retention checks in Chromium", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));

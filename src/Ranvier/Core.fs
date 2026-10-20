@@ -2353,9 +2353,8 @@ type Graph(options: GraphOptions) =
                     let item = Platform.entryAt queueHead queue
                     Tracer.Dequeue (this, item)
 
-                    // Released as it is consumed, so a disposed effect is not
-                    // kept alive by a spent slot until a later turn overwrites
-                    // it. A no-op under Fable; see `Platform.releaseSlot`.
+                    // Released as it is consumed, so a spent slot leaves a
+                    // disposed effect collectable.
                     Platform.releaseSlot queue queueHead
                     queueHead <- queueHead + 1
                     item.Execute ()

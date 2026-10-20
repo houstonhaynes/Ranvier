@@ -3542,24 +3542,6 @@ let private weakRef (target: obj) : obj = jsNative
 let private collected (reference: obj) : bool = jsNative
 
 /// <summary>
-/// Runs one flush of 64 effects in <c>graph</c>. Under Fable a spent slot of the graph's queue keeps its last effect
-/// until a flush of the same length overwrites it.
-/// </summary>
-let private overwriteSpentSlots (graph: Graph) =
-    graph.Run (fun () ->
-        let signal = Api.createSignal 0
-
-        let owner =
-            Api.createRoot (fun owner ->
-                for _ in 1..64 do
-                    Api.createEffect (fun () -> signal.Value |> ignore)
-
-                owner)
-
-        signal.Value <- 1
-        owner.Dispose ())
-
-/// <summary>
 /// Hydrates <c>definition</c> for <c>client</c> over its server HTML for <c>served</c>, and returns the check to run
 /// after a garbage collection: the first server node matching <c>selector</c>, removed by the hydration, is collected
 /// while the mount is live, and <c>shown host</c> is <c>expected</c>.
@@ -3577,7 +3559,6 @@ let private removedNodeCollected
     let host = serve definition served
     let removed = weakRef (host.querySelector selector)
     let mounted = Hydration.hydrate graph None ignore options host definition client
-    overwriteSpentSlots graph
 
     fun () ->
         let result = collected removed, shown host
@@ -3585,9 +3566,195 @@ let private removedNodeCollected
         graph.Dispose ()
         equal (true, expected) result
 
+/// <summary>The sources a retention fixture reads.</summary>
+type private Shared =
+    {
+        Label: Signal<string>
+        Items: Signal<Listed array>
+        Loaded: AsyncSource<string>
+    }
+
+/// <summary>Sources showing "label", the items a and b, and "loaded" once <c>Loaded</c> settles.</summary>
+let private sharedSources (loaded: bool) =
+    let source = Api.createAsyncSource<string>()
+
+    if loaded then
+        source.Settle "loaded"
+
+    {
+        Label = Api.createSignal "label"
+        Items = Api.createSignal [| a; b |]
+        Loaded = source
+    }
+
+/// <summary>The sources of the retention case being set up; null while serving.</summary>
+let mutable private shared: Shared = Unchecked.defaultof<_>
+
+/// <summary>The case's sources, or new settled sources while serving.</summary>
+let private currentSources () =
+    if isNull (box shared) then sharedSources true else shared
+
 /// <summary>
-/// Retention checks for Chromium: each case hydrates and returns the check that tests/hydration.spec.mjs runs after a
-/// forced garbage collection.
+/// A div titled and labelled by <c>Label</c>, with a click listener, over a list of <c>Items</c> and a boundary whose
+/// content is a span showing <c>Loaded</c>.
+/// </summary>
+let private readingPage =
+    let pending =
+        Component.define (fun _ () -> ()) (fun t -> t.i [||] [| t.text "loading" |])
+
+    let content =
+        Component.define (fun _ (_: BoundaryStatus) -> (currentSources ()).Loaded) (fun t ->
+            t.span [||] [| t.text (fun (source: AsyncSource<string>) -> source.Value) |])
+
+    Component.define (fun _ () -> currentSources ()) (fun t ->
+        t.div
+            [|
+                t.Attrs.title (fun (sources: Shared) -> sources.Label.Value)
+                t.Events.onClick (fun (sources: Shared) _ -> sources.Label.Value <- "clicked")
+            |]
+            [|
+                t.text (fun (sources: Shared) -> sources.Label.Value)
+                t.ul
+                    [||]
+                    [|
+                        t.each (fun (item: Listed) -> item.Id) (fun (sources: Shared) -> sources.Items.Value) listedRow
+                    |]
+                t.boundary pending failedMessage content
+            |])
+
+let private retentionCycles = 32
+
+/// <summary>
+/// Runs <c>cycle</c> <c>retentionCycles</c> times on one graph, with the case's sources created on it and settled when
+/// <c>loaded</c>. Each cycle mounts <c>readingPage</c>, disposes the mount and returns two objects the mount held. The
+/// check, run after a garbage collection, requires all of them collected while the graph and the sources stay alive.
+/// </summary>
+let private disposedMountsCollected (loaded: bool) (cycle: Graph -> obj array) : unit -> unit =
+    let graph = new Graph ()
+    let sources = graph.Run (fun () -> sharedSources loaded)
+
+    let held =
+        [|
+            for _ in 1..retentionCycles do
+                shared <- sources
+                let targets = cycle graph
+                shared <- Unchecked.defaultof<_>
+
+                for target in targets -> weakRef target
+        |]
+
+    fun () ->
+        let alive =
+            held
+            |> Array.filter (collected >> not)
+            |> Array.length
+
+        graph.Run (fun () ->
+            sources.Label.Value <- "after"
+            sources.Items.Value <- [| c |])
+
+        graph.Dispose ()
+        equal (0, retentionCycles * 2) (alive, held.Length)
+
+/// <summary>
+/// A client mount of <c>readingPage</c>, with queued commits when <c>queued</c>, disposed; returns its div and the mount.
+/// </summary>
+let private clientCycle (queued: bool) (graph: Graph) : obj array =
+    let target = host ()
+
+    let mounted =
+        mountTemplate queued graph strict target (Component.render readingPage ())
+
+    if queued then
+        mounted.Flush ()
+
+    let div = target.querySelector "div"
+    mounted.Dispose ()
+    [| div; mounted |]
+
+/// <summary>
+/// A hydration of <c>readingPage</c>'s server HTML, disposed; returns the server node at <c>selector</c> and the mount.
+/// </summary>
+let private hydratedCycle (selector: string) (graph: Graph) : obj array =
+    let sources = shared
+    shared <- Unchecked.defaultof<_>
+    let target = serve readingPage ()
+    shared <- sources
+    let served = target.querySelector selector
+    let mounted = hydrate graph strictOptions target readingPage ()
+    mounted.Dispose ()
+    [| served; mounted |]
+
+/// <summary>
+/// Mounts <c>liveList</c> for a and b, hydrating its server HTML when <c>hydrated</c>, then empties the list. The check
+/// requires the removed rows' nodes collected while the mount is live.
+/// </summary>
+let private emptiedRowsCollected (hydrated: bool) : unit -> unit =
+    let graph = new Graph ()
+    let target = if hydrated then serve liveList [| a; b |] else host ()
+
+    let mounted =
+        if hydrated then
+            hydrate graph strictOptions target liveList [| a; b |]
+        else
+            mount graph target (Component.render liveList [| a; b |])
+
+    let rows = [| for node in all target "li" -> weakRef node |]
+    let items = liveItems
+    graph.Run (fun () -> items.Value <- [||])
+
+    fun () ->
+        let alive =
+            rows
+            |> Array.filter (collected >> not)
+            |> Array.length
+
+        let shown = (element target "ul").textContent
+        mounted.Dispose ()
+        graph.Dispose ()
+        equal (0, 2, "") (alive, rows.Length, shown)
+
+/// <summary>
+/// Creates <c>retentionCycles</c> projections of a list signal under a root, each read by an effect, writes the list so a
+/// flush runs their passes, and disposes the root. The check requires every projection collected while the graph and
+/// the signal stay alive.
+/// </summary>
+let private passedProjectionsCollected () : unit -> unit =
+    let graph = new Graph ()
+
+    let source, held =
+        graph.Run (fun () ->
+            let source = Api.createSignal [| a; b |]
+            let held = ResizeArray<obj>()
+
+            let owner =
+                Api.createRoot (fun owner ->
+                    for _ in 1..retentionCycles do
+                        let projection =
+                            Api.createProjection (fun (item: Listed) -> item.Id) id (fun () -> source.Value :> seq<_>)
+
+                        Api.createEffect (fun () -> projection.Keys |> ignore)
+                        held.Add (weakRef projection)
+
+                    owner)
+
+            source.Value <- [| c |]
+            owner.Dispose ()
+            source, held.ToArray ())
+
+    fun () ->
+        let alive =
+            held
+            |> Array.filter (collected >> not)
+            |> Array.length
+
+        graph.Run (fun () -> source.Value <- [| a |])
+        graph.Dispose ()
+        equal (0, retentionCycles) (alive, held.Length)
+
+/// <summary>
+/// Retention checks for Chromium: each case mounts or hydrates and returns the check that tests/hydration.spec.mjs runs
+/// after a forced garbage collection.
 /// </summary>
 let retentionCases: (string * (unit -> (unit -> unit))) array =
     [|
@@ -3595,6 +3762,19 @@ let retentionCases: (string * (unit -> (unit -> unit))) array =
         fun () -> removedNodeCollected strictOptions holed servedEm clientEm "em" (fun host -> (element host "div").textContent) "Aclient"
         "a recovered list's removed server rows are collected while the hydrated mount is live",
         fun () -> removedNodeCollected lenientOptions liveList [| a; b |] [| a; b; c |] "li" (fun host -> (element host "ul").textContent) "abc"
+        "disposed client mounts are collected while their graph and the settled sources they read live",
+        fun () -> disposedMountsCollected true (clientCycle false)
+        "disposed client mounts are collected while their graph and the pending source they read live",
+        fun () -> disposedMountsCollected false (clientCycle false)
+        "disposed client mounts with queued commits are collected while their graph and the settled sources they read live",
+        fun () -> disposedMountsCollected true (clientCycle true)
+        "disposed ready hydrations are collected while their graph and the settled sources they read live",
+        fun () -> disposedMountsCollected true (hydratedCycle "div")
+        "the detached server nodes of disposed hydrations with pending content are collected while their graph and source live",
+        fun () -> disposedMountsCollected false (hydratedCycle "span")
+        "projections disposed after a flush ran their passes are collected while their graph and source live", passedProjectionsCollected
+        "a client mount's removed rows are collected while the mount is live", fun () -> emptiedRowsCollected false
+        "a hydrated mount's removed server rows are collected while the mount is live", fun () -> emptiedRowsCollected true
     |]
 
 let cases: (string * (unit -> unit)) array =
