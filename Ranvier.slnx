@@ -61,5 +61,6 @@
     <Project Path="docs/maps/model/Ranvier.Docs.MapModel.fsproj" />
     <Project Path="docs/maps/Ranvier.Docs.Maps.fsproj" />
     <Project Path="docs/maps/tests/Ranvier.Docs.Maps.Tests.fsproj" />
+    <Project Path="docs/samples/view/Ranvier.Docs.ViewSamples.fsproj" />
   </Folder>
 </Solution>

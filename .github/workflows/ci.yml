@@ -196,6 +196,14 @@ jobs:
       - name: Run the view layer representation checks
         run: dotnet run --project experiments/Ranvier.View.Foundation/RepresentationChecks.fsproj -c Release
         working-directory: .
+      # Compiles every F# sample of the Views and Server docs sections and checks the HTML the pages quote.
+      - name: Run the docs view samples
+        run: dotnet run --project docs/samples/view/Ranvier.Docs.ViewSamples.fsproj -c Release
+        working-directory: .
+      # Fails when a committed sample differs from the fsharp blocks of its page.
+      - name: Check the docs view samples against their pages
+        run: dotnet fsi docs/samples/view/Generate.fsx --check
+        working-directory: .
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       # npm test runs the package's whole test chain: the jsdom suites (test:dom, with the view counters defined)

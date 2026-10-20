@@ -29,6 +29,8 @@ let theme =
         Theme.navbar
             [
                 NavbarSection ("Guide", "guide", "/guide/")
+                NavbarSection ("Views", "view", "/view/")
+                NavbarSection ("Server", "server", "/server/")
                 NavbarSection ("Concepts", "concepts", "/concepts/")
                 NavbarSection ("Blog", "blog", "/blog/")
                 NavbarSection ("Benchmarks", "benchmarks", "/benchmarks/")
@@ -106,6 +108,46 @@ let theme =
                         Menu.page "guide/tracing.md"
                         Menu.page "guide/signal-maps.md"
                         Menu.page "guide/troubleshooting.md"
+                    ]
+            ]
+        >> Theme.menu
+            "view"
+            [
+                Menu.section "Introduction" [ Menu.page "view/index.md"; Menu.page "view/getting-started.md" ]
+                Menu.section
+                    "Authoring"
+                    [
+                        Menu.page "view/templates.md"
+                        Menu.page "view/components.md"
+                        Menu.page "view/collections.md"
+                        Menu.page "view/arms.md"
+                        Menu.page "view/boundaries.md"
+                        Menu.page "view/events.md"
+                        Menu.page "view/document-head.md"
+                        Menu.page "view/sugar.md"
+                        Menu.page "view/authored.md"
+                    ]
+                Menu.section
+                    "Running views"
+                    [
+                        Menu.page "view/lifetimes.md"
+                        Menu.page "view/elmish.md"
+                        Menu.page "view/testing.md"
+                    ]
+                Menu.section "Reference" [ Menu.page "view/troubleshooting.md"; Menu.page "view/reference.md" ]
+            ]
+        >> Theme.menu
+            "server"
+            [
+                Menu.section
+                    "Server"
+                    [
+                        Menu.page "server/index.md"
+                        Menu.page "server/rendering.md"
+                        Menu.page "server/hydration.md"
+                        Menu.page "server/state-transfer.md"
+                        Menu.page "server/deployment.md"
+                        Menu.page "server/performance.md"
                     ]
             ]
         >> Theme.menu
@@ -252,7 +294,8 @@ let site =
     |> OgImage.registerWith ogImages
     |> AgentFriendly.registerWith (
         AgentFriendly.summary "Fine-grained reactive computation for .NET, with a Fable target"
-        >> AgentFriendly.details "Start with the guide. Concepts explains the engine's model; Benchmarks holds measured results."
+        >> AgentFriendly.details
+            "Start with the guide. Views covers the experimental template components, Server their server rendering and hydration; Concepts explains the engine's model; Benchmarks holds measured results."
     )
     |> LightningCss.register
     |> Esbuild.register
