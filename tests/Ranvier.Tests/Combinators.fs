@@ -1671,6 +1671,28 @@ let groupByTests =
                 once runs source "reorder" List.rev
             }
 
+            test "an effect reading the Keys and folds over two groups runs once per write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal (items [ for i in 1..6 -> i, i ])
+                let view = rows source |> Projection.groupBy (fun n -> n % 2)
+                let odd = Projection.sumBy id (view.Get 1)
+                let even = Projection.sumBy id (view.Get 0)
+                let runs = ref 0
+
+                createEffect (fun () ->
+                    runs.Value <- runs.Value + 1
+                    view.Keys |> ignore
+                    odd.Value |> ignore
+                    even.Value |> ignore)
+
+                once runs source "move a key across" (setN 3 4)
+                Expect.equal (odd.Value, even.Value) (6, 16) "both totals follow the move"
+                once runs source "edit a value" (setN 2 8)
+                once runs source "remove a key" (List.filter (fun x -> x.Id <> 1))
+                once runs source "add a key" (fun xs -> xs @ items [ 7, 7 ])
+            }
+
             test "a pending group key keeps the key's group; a never-settled key is in no group" {
                 use g = new Graph ()
                 use _ = g.Activate ()
@@ -3939,6 +3961,7 @@ let groupingAggregateTests =
                 let runs = keysAndRows totals
 
                 once runs source "edit a value" (setN 2 8)
+                once runs source "move a key across" (setN 3 4)
                 once runs source "remove a key" (List.filter (fun x -> x.Id <> 4))
                 once runs source "add a key" (fun xs -> xs @ items [ 7, 7 ])
             }

@@ -1213,7 +1213,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
                     if observed && not queued then
                         queued <- true
-                        graph.Schedule (this :> IScheduled)
+                        graph.SchedulePass (this :> IScheduled)
 
         member this.MarkCheck() =
             if not disposed then
@@ -1227,7 +1227,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
                     if observed && not queued then
                         queued <- true
-                        graph.Schedule (this :> IScheduled)
+                        graph.SchedulePass (this :> IScheduled)
 
     interface IScheduled with
         member this.Execute() =
@@ -1267,7 +1267,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             && not disposed
         then
             queued <- true
-            graph.Schedule (this :> IScheduled)
+            graph.SchedulePass (this :> IScheduled)
 
     /// <summary>
     /// Links the reader of an absent key to the keys cell, so it wakes when
@@ -3082,6 +3082,7 @@ type internal LookupOf<'S, 'K, 'V when 'K: equality>(graph: Graph, f: 'S -> 'K -
                     )
             )
 
+        refresh.Publishes <- true
         Tracer.Part (graph, (refresh :> INode).Id, (state :> INode).Id, null)
 
     do Tracer.Host (this, (state :> INode).Id)

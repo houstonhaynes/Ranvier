@@ -301,4 +301,98 @@ let tests =
                 source.Value <- 1
                 Expect.equal runs.Value 2 "a twenty-link chain is still one invalidation"
             }
+
+            test "an effect reading a memo over a projection's keys, then the source, sees one state per write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal [ 1; 2; 3 ]
+                let p = createProjection id id (fun () -> s.Value)
+                let m = createMemo (fun _ -> p.Keys.Length)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (m.Value, s.Value.Length))
+                s.Value <- [ 1; 2; 3; 4 ]
+                Expect.sequenceEqual seen [ (3, 3); (4, 4) ] "the memo reads the keys of the write the effect reads"
+            }
+
+            test "an effect reading a memo over a projection's row, then the source, sees one state per write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal [ (1, 10) ]
+                let p = createProjection fst snd (fun () -> s.Value)
+                let m = createMemo (fun _ -> p.Get 1)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (m.Value, snd s.Value.Head))
+                s.Value <- [ (1, 20) ]
+                Expect.sequenceEqual seen [ (10, 10); (20, 20) ] "the memo reads the row of the write the effect reads"
+            }
+
+            test "a projection over a projection publishes before an effect reading both ends runs" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal [ 1; 2; 3 ]
+                let p = createProjection id id (fun () -> s.Value)
+                let q = createProjection id id (fun () -> p.Keys)
+                let m = createMemo (fun _ -> q.Keys.Length)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (m.Value, s.Value.Length))
+                s.Value <- [ 1; 2; 3; 4 ]
+                Expect.sequenceEqual seen [ (3, 3); (4, 4) ] "the downstream pass, queued by the upstream pass, runs before the effect"
+            }
+
+            test "a source written by an effect in the flush reaches a later effect through a projection" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let t = createSignal 0
+                let s = createSignal [ 0 ]
+                createEffect (fun () -> s.Value <- List.init (t.Value + 1) id)
+                let p = createProjection id id (fun () -> s.Value)
+                let m = createMemo (fun _ -> p.Keys.Length)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (m.Value, s.Value.Length))
+                t.Value <- 3
+                Expect.sequenceEqual seen [ (1, 1); (4, 4) ] "the pass queued inside the flush runs before the reader"
+            }
+
+            test "a pass queued by an effect that first reads its projection runs before an effect queued ahead of the write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let t = createSignal 0
+                let s = createSignal [ 1; 2; 3 ]
+                let p = createProjection id id (fun () -> s.Value)
+                let m = createMemo (fun _ -> p.Keys.Length)
+                let seen = ResizeArray ()
+                // Created first, so the write to `t` queues it behind the effect below, which writes `s`.
+                createEffect (fun () -> seen.Add (t.Value, m.Value))
+
+                createEffect (fun () ->
+                    if t.Value = 1 then
+                        p.Keys |> ignore
+                        s.Value <- [ 1; 2; 3; 4 ])
+
+                t.Value <- 1
+                Expect.sequenceEqual seen [ (0, 3); (1, 4) ] "the reader, queued before the write, reads the keys of the write"
+            }
+
+            test "an effect reading a memo over a lookup's key, then the source, sees one state per write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let l = createSelector (fun () -> s.Value)
+                let m = createMemo (fun _ -> l.Get 2)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (m.Value, s.Value))
+                s.Value <- 2
+                Expect.sequenceEqual seen [ (false, 1); (true, 2) ] "the lookup refreshes before the effect"
+            }
+
+            test "an effect reading a lookup's key, then the source, runs once per write" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let l = createSelector (fun () -> s.Value)
+                let seen = ResizeArray ()
+                createEffect (fun () -> seen.Add (l.Get 2, s.Value))
+                s.Value <- 2
+                Expect.sequenceEqual seen [ (false, 1); (true, 2) ] "one run for the first read and one for the write"
+            }
         ]

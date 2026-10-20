@@ -1058,12 +1058,19 @@ let tests =
                 let rows = createProjection id id (fun () -> source.Value)
                 let filtered = rows |> Projection.filter (fun n -> n % 2 = 0)
                 let view = filtered |> Projection.map (fun n -> n * 3)
+                let tick = createSignal 0
+                let ticked = createMemo (fun _ -> tick.Value)
+                // Reads the view's beacon ahead of `ticked`, so its check walk reaches the beacon first.
+                let reader = createMemo (fun _ -> view.Keys.Length + ticked.Value)
+                createEffect (fun () -> reader.Value |> ignore)
 
-                createEffect (fun () ->
-                    for k in view.Keys do
-                        view.Get k |> ignore)
+                // A flush runs queued passes before their readers, so the walk that pulls a pass is a stale read
+                // inside the batch.
+                batch (fun () ->
+                    source.Value <- [ 1; 3; 4 ]
+                    tick.Value <- 1
+                    reader.Value |> ignore)
 
-                source.Value <- [ 1; 3; 4 ]
                 Expect.equal (pullerOf g (filtered :> INode).Id) (view :> INode).Id "the view's beacon walk pulled the upstream pass"
             }
 
@@ -1092,6 +1099,56 @@ let tests =
                     |> Projection.filter (fun n -> n % 2 = 0)
                     |> Projection.map (fun n -> n * 3)
 
+                let tick = createSignal 0
+                let ticked = createMemo (fun _ -> tick.Value)
+
+                // Reads the view ahead of `ticked`, so its check walk reaches the view's beacon first.
+                let reader =
+                    createMemo (fun _ ->
+                        let mutable total = 0
+
+                        for k in view.Keys do
+                            total <- total + view.Get k
+
+                        total + ticked.Value)
+
+                let mutable runs = 0
+
+                createEffect (fun () ->
+                    runs <- runs + 1
+                    reader.Value |> ignore)
+
+                let before = (Trace.events g |> Array.last).Seq
+                let mutable walked = 0
+
+                // The walk is a stale read inside the batch: a flush runs queued passes before their readers.
+                batch (fun () ->
+                    source.Value <- [ 1; 3; 4 ]
+                    tick.Value <- 1
+                    reader.Value |> ignore
+                    walked <- (Trace.events g |> Array.last).Seq)
+
+                Expect.equal runs 2 "the effect runs once for the batch"
+                Expect.equal (pullerOf g (view :> INode).Id) (reader :> INode).Id "the view's pass names the memo walking it"
+
+                let pulled =
+                    ofKind TraceEventKind.RunStart g
+                    |> Array.filter (fun e ->
+                        e.Seq > before
+                        && e.Seq <= walked
+                        && e.Node <> (reader :> INode).Id)
+
+                Expect.isNonEmpty pulled "the passes ran in the walk"
+                Expect.all pulled (fun e -> e.Other <> 0) "every pass pulled in the walk names its reader"
+            }
+
+            test "a flush runs the passes an effect reads before the effect, unpulled" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2; 3; 4 ]
+                let rows = createProjection id id (fun () -> source.Value)
+                let filtered = rows |> Projection.filter (fun n -> n % 2 = 0)
+                let view = filtered |> Projection.map (fun n -> n * 3)
                 let mutable runs = 0
 
                 createEffect (fun () ->
@@ -1103,18 +1160,18 @@ let tests =
                 let effect = idsOf TraceNodeKind.Effect g |> Array.exactlyOne
                 let before = (Trace.events g |> Array.last).Seq
                 source.Value <- [ 1; 3; 4 ]
-                Expect.equal runs 2 "the reader runs once for the removing write"
-                Expect.equal (pullerOf g (view :> INode).Id) effect "the view's pass names the effect walking it"
+                Expect.equal runs 2 "the effect runs once for the write"
 
-                let pulled =
+                let starts =
                     ofKind TraceEventKind.RunStart g
-                    |> Array.filter (fun e ->
-                        e.Seq > before
-                        && e.Node <> (rows :> INode).Id
-                        && e.Node <> effect)
+                    |> Array.filter (fun e -> e.Seq > before)
 
-                Expect.isNonEmpty pulled "the downstream passes ran in the walk"
-                Expect.all pulled (fun e -> e.Other <> 0) "every pass pulled in the walk names its reader"
+                let effectRun = starts |> Array.find (fun e -> e.Node = effect)
+
+                for pass in [ rows :> INode; filtered; view ] do
+                    let run = starts |> Array.find (fun e -> e.Node = pass.Id)
+                    Expect.equal run.Other 0 "the scheduler ran the pass"
+                    Expect.isLessThan run.Seq effectRun.Seq "the pass ran before the effect"
             }
 
             test "a walker frame left open leaves an empty walker stack after the flush" {
@@ -1775,6 +1832,44 @@ let tests =
                         items.Value <- [| 1; 2; 3 |]
                         Expect.equal proj.Keys [| 1; 2; 3 |] "a later write runs the pass"
                         Expect.isGreaterThan reads 1 "the reader runs again"
+                    }
+
+                    test "a pass left queued by the guard leaves a later write that marks only a projection its flush" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let t = Signal (g, 0)
+                        let watched = createProjection id id (fun () -> [ t.Value ])
+                        let mutable seen = -1
+                        createEffect (fun () -> seen <- watched.Keys[0])
+
+                        let counter = Signal (g, 0)
+                        let mutable bumping = true
+
+                        let runaway =
+                            createProjection
+                                (fun x ->
+                                    if bumping && counter.Value < 5000 then
+                                        counter.Value <- counter.Value + 1
+
+                                    x)
+                                id
+                                (fun () ->
+                                    counter.Value |> ignore
+                                    [ 1 ] :> seq<_>)
+
+                        let raised =
+                            try
+                                createEffect (fun () -> runaway.Keys |> ignore)
+                                false
+                            with :? System.InvalidOperationException ->
+                                true
+
+                        Expect.isTrue raised "the runaway pass trips the guard"
+                        bumping <- false
+
+                        // The write marks only `watched`; its pass and the effect it wakes run in this write's flush.
+                        t.Value <- 7
+                        Expect.equal seen 7 "the effect reads the new key"
                     }
 
                     test "a guarded self-write of ten steps runs to completion" {

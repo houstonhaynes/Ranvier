@@ -35,7 +35,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 16 | 0 |
-| Tracing.fs | 2 | 2 | 2 | 82 | 77 | 77 | 1 | 0 |
+| Tracing.fs | 2 | 2 | 2 | 84 | 79 | 79 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
@@ -44,7 +44,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Cutoff.fs | 16 | 14 | 14 | 16 | 14 | 14 | 0 | 0 |
 | SuspensionEdges.fs | 21 | 20 | 20 | 21 | 20 | 20 | 0 | 0 |
 | Scopes.fs | 8 | 8 | 8 | 8 | 8 | 8 | 0 | 0 |
-| Propagation.fs | 12 | 12 | 12 | 12 | 12 | 12 | 0 | 0 |
+| Propagation.fs | 19 | 19 | 19 | 19 | 19 | 19 | 0 | 0 |
 | Reads.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 19 | 25 | 22 | 19 | 4 | 0 |
@@ -57,7 +57,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | DischargeReentry.fs | 29 | 29 | 29 | 29 | 29 | 29 | 1 | 0 |
 | MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
-| Combinators.fs | 226 | 226 | 226 | 226 | 226 | 226 | 2 | 0 |
+| Combinators.fs | 227 | 227 | 227 | 227 | 227 | 227 | 2 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1522 | 1501 | 1498 | 1662 | 1636 | 1633 | 105 | 1 |
+| **Total** | 1530 | 1509 | 1506 | 1672 | 1646 | 1643 | 105 | 1 |
 
 ## Tests.fs
 
@@ -530,7 +530,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | --- | --- |
 | an Unchecked graph creating nodes from two threads records every NodeNew | JavaScript has one thread. |
 
-<details><summary>77 passed in every build and delivery that runs them</summary>
+<details><summary>79 passed in every build and delivery that runs them</summary>
 
 - the assembly is traced exactly when RANVIER_TRACE is defined
 - named returns the thunk's result
@@ -586,6 +586,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - RunStart.Other names the walking reader: beacon (traced only)
 - RunStart.Other names the walking reader: lookup (traced only)
 - the b820ad6 check-walk case names the reader (traced only)
+- a flush runs the passes an effect reads before the effect, unpulled (traced only)
 - a walker frame left open leaves an empty walker stack after the flush (traced only)
 - history lists each run with its status, movement, root and flush (traced only)
 - waitingOn names the pending source the last run read (traced only)
@@ -603,6 +604,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a binding is traced as a binding (traced only)
 - Rerun guard / an effect that writes its own dependency on every run raises, naming the effect (traced only)
 - Rerun guard / a keyOf that writes its projection's source on every call raises once an effect reads the projection (traced only)
+- Rerun guard / a pass left queued by the guard leaves a later write that marks only a projection its flush (traced only)
 - Rerun guard / a guarded self-write of ten steps runs to completion (traced only)
 - Rerun guard / a flush of many distinct effects runs each once (traced only)
 - Rerun guard / an effect run once in each of many flushes runs every time (traced only)
@@ -875,7 +877,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Propagation.fs
 
-<details><summary>12 passed in every build and delivery that runs them</summary>
+<details><summary>19 passed in every build and delivery that runs them</summary>
 
 - an effect at the bottom of a diamond runs once per write
 - the bottom of a diamond never sees one leg updated and the other not
@@ -889,6 +891,13 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a memo nothing reads is never recomputed, however much its source moves
 - one pending leg suspends the diamond, and one settle releases it
 - a deep chain wakes its far end once per write, not once per link
+- an effect reading a memo over a projection's keys, then the source, sees one state per write
+- an effect reading a memo over a projection's row, then the source, sees one state per write
+- a projection over a projection publishes before an effect reading both ends runs
+- a source written by an effect in the flush reaches a later effect through a projection
+- a pass queued by an effect that first reads its projection runs before an effect queued ahead of the write
+- an effect reading a memo over a lookup's key, then the source, sees one state per write
+- an effect reading a lookup's key, then the source, runs once per write
 
 </details>
 
@@ -1432,7 +1441,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | foldGroup rejects a null subtract | Fable wraps a null function argument in a closure, so it is never null. |
 | a read through a memo of another graph publishes the current mean under a custom policy | the policy is an object expression over a generic interface member. |
 
-<details><summary>226 passed in every build and delivery that runs them</summary>
+<details><summary>227 passed in every build and delivery that runs them</summary>
 
 - 200 single edits at N=1000 make 200 predicate calls
 - a Keys reader wakes only when membership flips
@@ -1512,6 +1521,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a held inner view of an emptied group is disposed
 - a reader of an inner view alone follows upstream edits and runs once per write
 - an effect reading every group and row runs exactly once per write
+- an effect reading the Keys and folds over two groups runs once per write
 - a pending group key keeps the key's group; a never-settled key is in no group
 - a throwing group key leaves the key in no group
 - disposing the view disposes its inner views

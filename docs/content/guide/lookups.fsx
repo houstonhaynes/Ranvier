@@ -86,6 +86,11 @@ it succeeds. A pending source suspends every live cell until it settles.
 
 :::
 
+A flush refreshes the lookup before the effects the write woke, so an effect that reads a memo over
+`Get` and the source sees both from the same write. Inside a `batch`, or in a body after the write, a memo
+over `Get` holds the previous value until the flush or a direct `Get`. That read refreshes the lookup, and
+the memo is current from then on.
+
 *)
 (*** hide ***)
 active.Dispose ()

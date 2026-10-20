@@ -88,7 +88,11 @@ type TraceEventKind =
     | Mark = 11
     /// <summary>A mark skipped the running reader. Fields as for <c>Mark</c>.</summary>
     | MarkSkip = 12
-    /// <summary>A node was queued. <c>Arg</c>: the queue length ahead of it.</summary>
+    /// <summary>
+    /// A node was queued. <c>Arg</c>: the queue entries ahead of it. For a projection pass or a lookup refresh, the
+    /// queued passes; for any other node, the queued passes and the entries queued before it, which include the
+    /// internal items that run queued passes.
+    /// </summary>
     | Schedule = 13
     /// <summary>A check walk started on a node.</summary>
     | CheckStart = 14

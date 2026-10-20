@@ -150,7 +150,7 @@ Sites are an attribute of `NodeNew`/`OwnerNew` (§4.4), not an event.
 | `Write` | signal | running computation, or 0 | 0 | 1 when the value moved | that computation's `RunStart` seq, or 0 | null |
 | `Mark` | target | source | 1 check, 2 dirty | 0 | `Write`, `Moved` or `Publish` seq; from phase 2, an async source's `Settle` or `Fail` seq | null |
 | `MarkSkip` | skipped reader | source | as `Mark` | 0 | as `Mark` | null |
-| `Schedule` | scheduled node | 0 | queue length ahead | 0 | the `Mark` seq | null |
+| `Schedule` | scheduled node | 0 | queue entries ahead: the queued passes, plus, for a non-pass node, the earlier entries, pass-drain items included | 0 | the `Mark` seq | null |
 | `CheckStart` | node | 0 | 0 | 0 | 0 | null |
 | `CheckResolved` | node | source that answered dirty, or 0 | 0 | 1 dirty, 0 clean | `CheckStart` seq | null |
 | `EdgeAdd` / `EdgeRemove` | computation | source | slot | 0 | 0 | null |

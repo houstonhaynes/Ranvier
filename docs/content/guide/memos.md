@@ -35,7 +35,10 @@ controls [
 ### Glitch-free
 
 Propagation is glitch-free. In a diamond, where two memos read one signal and an effect reads both
-memos, the effect runs once per write and always sees both memos at the same write.
+memos, the effect runs once per write and always sees both memos at the same write. One exception: a memo
+over a projection's keys or rows, or over a lookup's `Get`, read inside a `batch` or in a body after its own
+write, can hold the value from before the write until the flush. See
+[Laziness](projections.fsx#laziness) and [Lookups](lookups.fsx).
 
 ::::details Test your understanding
 

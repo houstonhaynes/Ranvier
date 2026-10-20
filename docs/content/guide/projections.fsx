@@ -397,6 +397,12 @@ A projection with no observed row, key set or pending summary is lazy: writes to
 and the next read runs one pass. Once an effect or memo observes it, a write to the source schedules
 the pass eagerly.
 
+A flush runs every scheduled pass before the effects the write woke, so an effect that reads a memo over
+the keys or a row, and the source, sees both from the same write. A pass that publishes new keys schedules
+the passes of the projections that read them, and those run before the effects as well. Inside a `batch`,
+or in a body after the write, a memo over the keys or a row holds the previous pass's value until the
+flush or a direct read of `Keys` or `Get`. That read runs the pass, and the memo is current from then on.
+
 ## Binding to a UI list
 
 `AsObservableCollection ()` returns an `ObservableCollection` holding the row values in key order, kept

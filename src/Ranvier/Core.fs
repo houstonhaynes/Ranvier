@@ -1509,6 +1509,14 @@ and [<Sealed; AllowNullLiteral>] internal AmbientCell() =
     val mutable Hosting: obj
 
 /// <summary>
+/// The queue item that runs a graph's queued projection passes. Carries no id, so a trace records no node for it.
+/// </summary>
+[<Sealed>]
+type internal PassDrain(run: unit -> unit) =
+    interface IScheduled with
+        member _.Execute() = run ()
+
+/// <summary>
 /// Owns the tracking context and the construction-time policy. One graph is a
 /// single consistency domain; on .NET that also means a single thread of
 /// mutation, which is what <c>GraphOptions.Dispatcher</c> exists to enforce.
@@ -1577,6 +1585,33 @@ type Graph(options: GraphOptions) =
     /// Next entry to run. Between flushes it is 0, except after a throw.
     /// </summary>
     let mutable queueHead = 0
+
+    /// <summary>
+    /// Queued projection passes and lookup refreshes, read through <c>passHead</c> and <c>passCount</c> as
+    /// <c>queue</c> is. A flush runs every queued pass before the next <c>queue</c> item.
+    /// </summary>
+    /// <remarks>
+    /// <para>A reader run ahead of a queued pass reads the previous keys, rows or lookup values.</para>
+    /// <para>
+    /// While a pass is queued, <c>queue</c> holds <c>passDrain</c> at or after <c>queueHead</c>, so a non-empty
+    /// <c>queue</c> is the one test for queued work. A pass queued while an item runs puts <c>passDrain</c> at the
+    /// head of <c>queue</c>, and one queued outside a flush puts it at the tail. A pass queued while
+    /// <c>RunPasses</c> runs joins that run. A flush runs the passes queued before it starts ahead of its first item.
+    /// </para>
+    /// </remarks>
+    let passes = ResizeArray<IScheduled>()
+
+    /// <summary>Entries written to <c>passes</c>. Reset to 0 when <c>RunPasses</c> drains the buffer.</summary>
+    let mutable passCount = 0
+
+    /// <summary>Next entry of <c>passes</c> to run.</summary>
+    let mutable passHead = 0
+
+    /// <summary>The <c>queue</c> item that runs <c>RunPasses</c>. Created by the first queued pass.</summary>
+    let mutable passDrain: IScheduled = Unchecked.defaultof<IScheduled>
+
+    /// <summary>True while <c>RunPasses</c> runs; a pass queued then runs in the same <c>RunPasses</c>.</summary>
+    let mutable runningPasses = false
 
 #if !FABLE_COMPILER
     /// <summary>
@@ -2207,7 +2242,7 @@ type Graph(options: GraphOptions) =
 
 
     member internal this.Schedule(item: IScheduled) =
-        Tracer.Schedule (this, item, queueCount - queueHead)
+        Tracer.Schedule (this, item, queueCount - queueHead + passCount - passHead)
 
         if queueCount < queue.Count then
 #if FABLE_COMPILER
@@ -2220,13 +2255,80 @@ type Graph(options: GraphOptions) =
 
         queueCount <- queueCount + 1
 
+    /// <summary>Queues a projection pass or a lookup refresh. A flush runs it before the next item <c>Schedule</c> queued.</summary>
+    member internal this.SchedulePass(item: IScheduled) =
+        Tracer.Schedule (this, item, passCount - passHead)
+
+        if passHead = passCount && not runningPasses then
+            this.QueueDrain ()
+
+        if passCount < passes.Count then
+#if FABLE_COMPILER
+            Platform.setEntryAt passCount passes item
+#else
+            passes[passCount] <- item
+#endif
+        else
+            passes.Add item
+
+        passCount <- passCount + 1
+
+    /// <summary>
+    /// Queues <c>passDrain</c> for a pass queued while none is pending: at the head of <c>queue</c> when a spent slot
+    /// precedes it, as inside a flush, and at the tail otherwise.
+    /// </summary>
+    member private this.QueueDrain() =
+        if Platform.isNull (box passDrain) then
+            passDrain <- PassDrain (fun () -> this.RunPasses ())
+
+        if queueHead > 0 then
+            queueHead <- queueHead - 1
+#if FABLE_COMPILER
+            Platform.setEntryAt queueHead queue passDrain
+#else
+            queue[queueHead] <- passDrain
+#endif
+        else
+            if queueCount < queue.Count then
+#if FABLE_COMPILER
+                Platform.setEntryAt queueCount queue passDrain
+#else
+                queue[queueCount] <- passDrain
+#endif
+            else
+                queue.Add passDrain
+
+            queueCount <- queueCount + 1
+
+    /// <summary>Runs the queued passes, including those queued by a pass, and empties the pass buffer.</summary>
+    /// <remarks>A pass that throws leaves the passes after it queued, with <c>passDrain</c> queued to run them.</remarks>
+    member private this.RunPasses() =
+        runningPasses <- true
+
+        try
+            while passHead < passCount do
+                let item = Platform.entryAt passHead passes
+                Tracer.Dequeue (this, item)
+                Platform.releaseSlot passes passHead
+                passHead <- passHead + 1
+                item.Execute ()
+        finally
+            runningPasses <- false
+
+            if passHead < passCount then
+                this.QueueDrain ()
+            else
+                passHead <- 0
+                passCount <- 0
+
     /// <summary>
     /// Runs every queued effect. Re-entrant calls are absorbed: an effect that
     /// writes a signal adds to the queue this loop is already draining, rather
     /// than starting a nested flush.
     /// </summary>
     /// <remarks>
-    /// The graph is ambient while the loop runs.
+    /// The graph is ambient while the loop runs. Every queued projection pass and lookup refresh runs before the next
+    /// queued effect, so an effect reads the keys, rows and lookup values of the write that woke it.
     /// </remarks>
     member this.Flush() =
         this.Entered ("A flush", (fun () -> this.RunFlush ()))
@@ -2242,6 +2344,11 @@ type Graph(options: GraphOptions) =
             let previousAmbient = this.EnterAmbient ()
 
             try
+                // Passes queued before the flush run ahead of the effects queued with them. A pass queued during the
+                // flush puts `passDrain` at the head of the queue.
+                if passCount <> 0 then
+                    this.RunPasses ()
+
                 while queueHead < queueCount do
                     let item = Platform.entryAt queueHead queue
                     Tracer.Dequeue (this, item)
@@ -3628,6 +3735,8 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
     /// </remarks>
     let mutable inCleanup = false
 
+    let mutable publishes = false
+
 #if RANVIER_COUNTERS
     do Counters.EffectCreated ()
 #endif
@@ -3698,7 +3807,11 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
 
                 if not queued then
                     queued <- true
-                    graph.Schedule (this :> IScheduled)
+
+                    if publishes then
+                        graph.SchedulePass (this :> IScheduled)
+                    else
+                        graph.Schedule (this :> IScheduled)
 
         member this.MarkCheck() =
             if not disposed && not inCleanup then
@@ -3707,7 +3820,19 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
 
                 if not queued then
                     queued <- true
-                    graph.Schedule (this :> IScheduled)
+
+                    if publishes then
+                        graph.SchedulePass (this :> IScheduled)
+                    else
+                        graph.Schedule (this :> IScheduled)
+
+    /// <summary>
+    /// Set on an effect whose readers are marked only when its body writes, such as a lookup's refresh. Every run
+    /// queued after the flag is set runs with the projection passes, ahead of every other queued effect. The first
+    /// run, queued at creation, is on the main queue.
+    /// </summary>
+    member internal _.Publishes
+        with set value = publishes <- value
 
     interface IScheduled with
         member this.Execute() =
