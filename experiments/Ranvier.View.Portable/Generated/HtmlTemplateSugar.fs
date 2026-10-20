@@ -8,347 +8,450 @@ open Ranvier.View.Foundation.Template
 
 [<AutoOpen>]
 module Elements =
-    type TemplateBuilder<'inst> with
-        member _.``A``([<ParamArray>] parts: Part<Dom.HTMLAnchorElement, 'inst> array) : ElementBuilder<Dom.HTMLAnchorElement, 'inst> =
-            ElementBuilder<Dom.HTMLAnchorElement, 'inst> ((HtmlTag "a"), parts)
-
-        member _.``Abbr``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "abbr"), parts)
-
-        member _.``Address``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "address"), parts)
-
-        member _.``Area``([<ParamArray>] parts: Part<Dom.HTMLAreaElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "area") parts [||]
-
-        member _.``Article``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "article"), parts)
-
-        member _.``Aside``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "aside"), parts)
-
-        member _.``Audio``([<ParamArray>] parts: Part<Dom.HTMLAudioElement, 'inst> array) : ElementBuilder<Dom.HTMLAudioElement, 'inst> =
-            ElementBuilder<Dom.HTMLAudioElement, 'inst> ((HtmlTag "audio"), parts)
-
-        member _.``B``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "b"), parts)
-
-        member _.``Base``([<ParamArray>] parts: Part<Dom.HTMLBaseElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "base") parts [||]
-
-        member _.``Bdi``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "bdi"), parts)
-
-        member _.``Bdo``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "bdo"), parts)
-
-        member _.``Blockquote``([<ParamArray>] parts: Part<Dom.HTMLQuoteElement, 'inst> array) : ElementBuilder<Dom.HTMLQuoteElement, 'inst> =
-            ElementBuilder<Dom.HTMLQuoteElement, 'inst> ((HtmlTag "blockquote"), parts)
-
-        member _.``Body``([<ParamArray>] parts: Part<Dom.HTMLBodyElement, 'inst> array) : ElementBuilder<Dom.HTMLBodyElement, 'inst> =
-            ElementBuilder<Dom.HTMLBodyElement, 'inst> ((HtmlTag "body"), parts)
-
-        member _.``Br``([<ParamArray>] parts: Part<Dom.HTMLBRElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "br") parts [||]
-
-        member _.``Button``([<ParamArray>] parts: Part<Dom.HTMLButtonElement, 'inst> array) : ElementBuilder<Dom.HTMLButtonElement, 'inst> =
-            ElementBuilder<Dom.HTMLButtonElement, 'inst> (Button, parts)
-
-        member _.``Canvas``([<ParamArray>] parts: Part<Dom.HTMLCanvasElement, 'inst> array) : ElementBuilder<Dom.HTMLCanvasElement, 'inst> =
-            ElementBuilder<Dom.HTMLCanvasElement, 'inst> ((HtmlTag "canvas"), parts)
-
-        member _.``Caption``
-            ([<ParamArray>] parts: Part<Dom.HTMLTableCaptionElement, 'inst> array)
-            : ElementBuilder<Dom.HTMLTableCaptionElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableCaptionElement, 'inst> ((HtmlTag "caption"), parts)
-
-        member _.``Cite``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "cite"), parts)
-
-        member _.``Code``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "code"), parts)
-
-        member _.``Col``([<ParamArray>] parts: Part<Dom.HTMLTableColElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "col") parts [||]
-
-        member _.``Colgroup``([<ParamArray>] parts: Part<Dom.HTMLTableColElement, 'inst> array) : ElementBuilder<Dom.HTMLTableColElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableColElement, 'inst> ((HtmlTag "colgroup"), parts)
-
-        member _.``Data``([<ParamArray>] parts: Part<Dom.HTMLDataElement, 'inst> array) : ElementBuilder<Dom.HTMLDataElement, 'inst> =
-            ElementBuilder<Dom.HTMLDataElement, 'inst> ((HtmlTag "data"), parts)
-
-        member _.``Datalist``([<ParamArray>] parts: Part<Dom.HTMLDataListElement, 'inst> array) : ElementBuilder<Dom.HTMLDataListElement, 'inst> =
-            ElementBuilder<Dom.HTMLDataListElement, 'inst> ((HtmlTag "datalist"), parts)
-
-        member _.``Dd``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "dd"), parts)
-
-        member _.``Del``([<ParamArray>] parts: Part<Dom.HTMLModElement, 'inst> array) : ElementBuilder<Dom.HTMLModElement, 'inst> =
-            ElementBuilder<Dom.HTMLModElement, 'inst> ((HtmlTag "del"), parts)
-
-        member _.``Details``([<ParamArray>] parts: Part<Dom.HTMLDetailsElement, 'inst> array) : ElementBuilder<Dom.HTMLDetailsElement, 'inst> =
-            ElementBuilder<Dom.HTMLDetailsElement, 'inst> ((HtmlTag "details"), parts)
-
-        member _.``Dfn``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "dfn"), parts)
-
-        member _.``Dialog``([<ParamArray>] parts: Part<Dom.HTMLDialogElement, 'inst> array) : ElementBuilder<Dom.HTMLDialogElement, 'inst> =
-            ElementBuilder<Dom.HTMLDialogElement, 'inst> ((HtmlTag "dialog"), parts)
-
-        member _.``Div``([<ParamArray>] parts: Part<Dom.HTMLDivElement, 'inst> array) : ElementBuilder<Dom.HTMLDivElement, 'inst> =
-            ElementBuilder<Dom.HTMLDivElement, 'inst> (Div, parts)
-
-        member _.``Dl``([<ParamArray>] parts: Part<Dom.HTMLDListElement, 'inst> array) : ElementBuilder<Dom.HTMLDListElement, 'inst> =
-            ElementBuilder<Dom.HTMLDListElement, 'inst> ((HtmlTag "dl"), parts)
-
-        member _.``Dt``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "dt"), parts)
-
-        member _.``Em``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "em"), parts)
-
-        member _.``Embed``([<ParamArray>] parts: Part<Dom.HTMLEmbedElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "embed") parts [||]
-
-        member _.``Fieldset``([<ParamArray>] parts: Part<Dom.HTMLFieldSetElement, 'inst> array) : ElementBuilder<Dom.HTMLFieldSetElement, 'inst> =
-            ElementBuilder<Dom.HTMLFieldSetElement, 'inst> ((HtmlTag "fieldset"), parts)
-
-        member _.``Figcaption``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "figcaption"), parts)
-
-        member _.``Figure``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "figure"), parts)
-
-        member _.``Footer``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "footer"), parts)
-
-        member _.``Form``([<ParamArray>] parts: Part<Dom.HTMLFormElement, 'inst> array) : ElementBuilder<Dom.HTMLFormElement, 'inst> =
-            ElementBuilder<Dom.HTMLFormElement, 'inst> ((HtmlTag "form"), parts)
-
-        member _.``H1``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h1"), parts)
-
-        member _.``H2``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h2"), parts)
-
-        member _.``H3``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h3"), parts)
-
-        member _.``H4``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h4"), parts)
-
-        member _.``H5``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h5"), parts)
-
-        member _.``H6``([<ParamArray>] parts: Part<Dom.HTMLHeadingElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadingElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadingElement, 'inst> ((HtmlTag "h6"), parts)
-
-        member _.``Head``([<ParamArray>] parts: Part<Dom.HTMLHeadElement, 'inst> array) : ElementBuilder<Dom.HTMLHeadElement, 'inst> =
-            ElementBuilder<Dom.HTMLHeadElement, 'inst> ((HtmlTag "head"), parts)
-
-        member _.``Header``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "header"), parts)
-
-        member _.``Hgroup``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "hgroup"), parts)
-
-        member _.``Hr``([<ParamArray>] parts: Part<Dom.HTMLHRElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "hr") parts [||]
-
-        member _.``Html``([<ParamArray>] parts: Part<Dom.HTMLHtmlElement, 'inst> array) : ElementBuilder<Dom.HTMLHtmlElement, 'inst> =
-            ElementBuilder<Dom.HTMLHtmlElement, 'inst> ((HtmlTag "html"), parts)
-
-        member _.``I``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "i"), parts)
-
-        member _.``Iframe``([<ParamArray>] parts: Part<Dom.HTMLIFrameElement, 'inst> array) : ElementBuilder<Dom.HTMLIFrameElement, 'inst> =
-            ElementBuilder<Dom.HTMLIFrameElement, 'inst> ((HtmlTag "iframe"), parts)
-
-        member _.``Img``([<ParamArray>] parts: Part<Dom.HTMLImageElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "img") parts [||]
-
-        member _.``Input``([<ParamArray>] parts: Part<Dom.HTMLInputElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element Input parts [||]
-
-        member _.``Ins``([<ParamArray>] parts: Part<Dom.HTMLModElement, 'inst> array) : ElementBuilder<Dom.HTMLModElement, 'inst> =
-            ElementBuilder<Dom.HTMLModElement, 'inst> ((HtmlTag "ins"), parts)
-
-        member _.``Kbd``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "kbd"), parts)
-
-        member _.``Label``([<ParamArray>] parts: Part<Dom.HTMLLabelElement, 'inst> array) : ElementBuilder<Dom.HTMLLabelElement, 'inst> =
-            ElementBuilder<Dom.HTMLLabelElement, 'inst> ((HtmlTag "label"), parts)
-
-        member _.``Legend``([<ParamArray>] parts: Part<Dom.HTMLLegendElement, 'inst> array) : ElementBuilder<Dom.HTMLLegendElement, 'inst> =
-            ElementBuilder<Dom.HTMLLegendElement, 'inst> ((HtmlTag "legend"), parts)
-
-        member _.``Li``([<ParamArray>] parts: Part<Dom.HTMLLIElement, 'inst> array) : ElementBuilder<Dom.HTMLLIElement, 'inst> =
-            ElementBuilder<Dom.HTMLLIElement, 'inst> ((HtmlTag "li"), parts)
-
-        member _.``Link``([<ParamArray>] parts: Part<Dom.HTMLLinkElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "link") parts [||]
-
-        member _.``Main``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "main"), parts)
-
-        member _.``Map``([<ParamArray>] parts: Part<Dom.HTMLMapElement, 'inst> array) : ElementBuilder<Dom.HTMLMapElement, 'inst> =
-            ElementBuilder<Dom.HTMLMapElement, 'inst> ((HtmlTag "map"), parts)
-
-        member _.``Mark``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "mark"), parts)
-
-        member _.``Menu``([<ParamArray>] parts: Part<Dom.HTMLMenuElement, 'inst> array) : ElementBuilder<Dom.HTMLMenuElement, 'inst> =
-            ElementBuilder<Dom.HTMLMenuElement, 'inst> ((HtmlTag "menu"), parts)
-
-        member _.``Meta``([<ParamArray>] parts: Part<Dom.HTMLMetaElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "meta") parts [||]
-
-        member _.``Meter``([<ParamArray>] parts: Part<Dom.HTMLMeterElement, 'inst> array) : ElementBuilder<Dom.HTMLMeterElement, 'inst> =
-            ElementBuilder<Dom.HTMLMeterElement, 'inst> ((HtmlTag "meter"), parts)
-
-        member _.``Nav``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "nav"), parts)
-
-        member _.``Noscript``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "noscript"), parts)
-
-        member _.``Object``([<ParamArray>] parts: Part<Dom.HTMLObjectElement, 'inst> array) : ElementBuilder<Dom.HTMLObjectElement, 'inst> =
-            ElementBuilder<Dom.HTMLObjectElement, 'inst> ((HtmlTag "object"), parts)
-
-        member _.``Ol``([<ParamArray>] parts: Part<Dom.HTMLOListElement, 'inst> array) : ElementBuilder<Dom.HTMLOListElement, 'inst> =
-            ElementBuilder<Dom.HTMLOListElement, 'inst> ((HtmlTag "ol"), parts)
-
-        member _.``Optgroup``([<ParamArray>] parts: Part<Dom.HTMLOptGroupElement, 'inst> array) : ElementBuilder<Dom.HTMLOptGroupElement, 'inst> =
-            ElementBuilder<Dom.HTMLOptGroupElement, 'inst> ((HtmlTag "optgroup"), parts)
-
-        member _.``Option``([<ParamArray>] parts: Part<Dom.HTMLOptionElement, 'inst> array) : ElementBuilder<Dom.HTMLOptionElement, 'inst> =
-            ElementBuilder<Dom.HTMLOptionElement, 'inst> (Option, parts)
-
-        member _.``Output``([<ParamArray>] parts: Part<Dom.HTMLOutputElement, 'inst> array) : ElementBuilder<Dom.HTMLOutputElement, 'inst> =
-            ElementBuilder<Dom.HTMLOutputElement, 'inst> ((HtmlTag "output"), parts)
-
-        member _.``P``([<ParamArray>] parts: Part<Dom.HTMLParagraphElement, 'inst> array) : ElementBuilder<Dom.HTMLParagraphElement, 'inst> =
-            ElementBuilder<Dom.HTMLParagraphElement, 'inst> ((HtmlTag "p"), parts)
-
-        member _.``Picture``([<ParamArray>] parts: Part<Dom.HTMLPictureElement, 'inst> array) : ElementBuilder<Dom.HTMLPictureElement, 'inst> =
-            ElementBuilder<Dom.HTMLPictureElement, 'inst> ((HtmlTag "picture"), parts)
-
-        member _.``Pre``([<ParamArray>] parts: Part<Dom.HTMLPreElement, 'inst> array) : ElementBuilder<Dom.HTMLPreElement, 'inst> =
-            ElementBuilder<Dom.HTMLPreElement, 'inst> ((HtmlTag "pre"), parts)
-
-        member _.``Progress``([<ParamArray>] parts: Part<Dom.HTMLProgressElement, 'inst> array) : ElementBuilder<Dom.HTMLProgressElement, 'inst> =
-            ElementBuilder<Dom.HTMLProgressElement, 'inst> ((HtmlTag "progress"), parts)
-
-        member _.``Q``([<ParamArray>] parts: Part<Dom.HTMLQuoteElement, 'inst> array) : ElementBuilder<Dom.HTMLQuoteElement, 'inst> =
-            ElementBuilder<Dom.HTMLQuoteElement, 'inst> ((HtmlTag "q"), parts)
-
-        member _.``Rp``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "rp"), parts)
-
-        member _.``Rt``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "rt"), parts)
-
-        member _.``Ruby``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "ruby"), parts)
-
-        member _.``S``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "s"), parts)
-
-        member _.``Samp``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "samp"), parts)
-
-        member _.``Script``([<ParamArray>] parts: Part<Dom.HTMLScriptElement, 'inst> array) : ElementBuilder<Dom.HTMLScriptElement, 'inst> =
-            ElementBuilder<Dom.HTMLScriptElement, 'inst> ((HtmlTag "script"), parts)
-
-        member _.``Search``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "search"), parts)
-
-        member _.``Section``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "section"), parts)
-
-        member _.``Select``([<ParamArray>] parts: Part<Dom.HTMLSelectElement, 'inst> array) : ElementBuilder<Dom.HTMLSelectElement, 'inst> =
-            ElementBuilder<Dom.HTMLSelectElement, 'inst> (Select, parts)
-
-        member _.``Slot``([<ParamArray>] parts: Part<Dom.HTMLSlotElement, 'inst> array) : ElementBuilder<Dom.HTMLSlotElement, 'inst> =
-            ElementBuilder<Dom.HTMLSlotElement, 'inst> ((HtmlTag "slot"), parts)
-
-        member _.``Small``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "small"), parts)
-
-        member _.``Source``([<ParamArray>] parts: Part<Dom.HTMLSourceElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "source") parts [||]
-
-        member _.``Span``([<ParamArray>] parts: Part<Dom.HTMLSpanElement, 'inst> array) : ElementBuilder<Dom.HTMLSpanElement, 'inst> =
-            ElementBuilder<Dom.HTMLSpanElement, 'inst> ((HtmlTag "span"), parts)
-
-        member _.``Strong``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "strong"), parts)
-
-        member _.``Style``([<ParamArray>] parts: Part<Dom.HTMLStyleElement, 'inst> array) : ElementBuilder<Dom.HTMLStyleElement, 'inst> =
-            ElementBuilder<Dom.HTMLStyleElement, 'inst> ((HtmlTag "style"), parts)
-
-        member _.``Sub``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "sub"), parts)
-
-        member _.``Summary``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "summary"), parts)
-
-        member _.``Sup``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "sup"), parts)
-
-        member _.``Table``([<ParamArray>] parts: Part<Dom.HTMLTableElement, 'inst> array) : ElementBuilder<Dom.HTMLTableElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableElement, 'inst> ((HtmlTag "table"), parts)
-
-        member _.``Tbody``
-            ([<ParamArray>] parts: Part<Dom.HTMLTableSectionElement, 'inst> array)
-            : ElementBuilder<Dom.HTMLTableSectionElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableSectionElement, 'inst> ((HtmlTag "tbody"), parts)
-
-        member _.``Td``([<ParamArray>] parts: Part<Dom.HTMLTableCellElement, 'inst> array) : ElementBuilder<Dom.HTMLTableCellElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableCellElement, 'inst> ((HtmlTag "td"), parts)
-
-        member _.``Template``([<ParamArray>] parts: Part<Dom.HTMLTemplateElement, 'inst> array) : ElementBuilder<Dom.HTMLTemplateElement, 'inst> =
-            ElementBuilder<Dom.HTMLTemplateElement, 'inst> ((HtmlTag "template"), parts)
-
-        member _.``Textarea``([<ParamArray>] parts: Part<Dom.HTMLTextAreaElement, 'inst> array) : ElementBuilder<Dom.HTMLTextAreaElement, 'inst> =
-            ElementBuilder<Dom.HTMLTextAreaElement, 'inst> ((HtmlTag "textarea"), parts)
-
-        member _.``Tfoot``
-            ([<ParamArray>] parts: Part<Dom.HTMLTableSectionElement, 'inst> array)
-            : ElementBuilder<Dom.HTMLTableSectionElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableSectionElement, 'inst> ((HtmlTag "tfoot"), parts)
-
-        member _.``Th``([<ParamArray>] parts: Part<Dom.HTMLTableCellElement, 'inst> array) : ElementBuilder<Dom.HTMLTableCellElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableCellElement, 'inst> ((HtmlTag "th"), parts)
-
-        member _.``Thead``
-            ([<ParamArray>] parts: Part<Dom.HTMLTableSectionElement, 'inst> array)
-            : ElementBuilder<Dom.HTMLTableSectionElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableSectionElement, 'inst> ((HtmlTag "thead"), parts)
-
-        member _.``Time``([<ParamArray>] parts: Part<Dom.HTMLTimeElement, 'inst> array) : ElementBuilder<Dom.HTMLTimeElement, 'inst> =
-            ElementBuilder<Dom.HTMLTimeElement, 'inst> ((HtmlTag "time"), parts)
-
-        member _.``Title``([<ParamArray>] parts: Part<Dom.HTMLTitleElement, 'inst> array) : ElementBuilder<Dom.HTMLTitleElement, 'inst> =
-            ElementBuilder<Dom.HTMLTitleElement, 'inst> ((HtmlTag "title"), parts)
-
-        member _.``Tr``([<ParamArray>] parts: Part<Dom.HTMLTableRowElement, 'inst> array) : ElementBuilder<Dom.HTMLTableRowElement, 'inst> =
-            ElementBuilder<Dom.HTMLTableRowElement, 'inst> ((HtmlTag "tr"), parts)
-
-        member _.``Track``([<ParamArray>] parts: Part<Dom.HTMLTrackElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "track") parts [||]
-
-        member _.``U``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "u"), parts)
-
-        member _.``Ul``([<ParamArray>] parts: Part<Dom.HTMLUListElement, 'inst> array) : ElementBuilder<Dom.HTMLUListElement, 'inst> =
-            ElementBuilder<Dom.HTMLUListElement, 'inst> ((HtmlTag "ul"), parts)
-
-        member _.``Var``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : ElementBuilder<Dom.HTMLElement, 'inst> =
-            ElementBuilder<Dom.HTMLElement, 'inst> ((HtmlTag "var"), parts)
-
-        member _.``Video``([<ParamArray>] parts: Part<Dom.HTMLVideoElement, 'inst> array) : ElementBuilder<Dom.HTMLVideoElement, 'inst> =
-            ElementBuilder<Dom.HTMLVideoElement, 'inst> ((HtmlTag "video"), parts)
-
-        member _.``Wbr``([<ParamArray>] parts: Part<Dom.HTMLElement, 'inst> array) : TemplateView<'inst> =
-            TemplateParts.element (HtmlTag "wbr") parts [||]
+    type a<'i> private (ps: Part<Dom.HTMLAnchorElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLAnchorElement, 'i>((HtmlTag "a"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLAnchorElement, 'i> array) = a<'i> (ps, ())
+
+    type abbr<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "abbr"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = abbr<'i> (ps, ())
+
+    type address<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "address"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = address<'i> (ps, ())
+
+    type area<'i> private (ps: Part<Dom.HTMLAreaElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "area") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLAreaElement, 'i> array) = area<'i> (ps, ())
+
+    type article<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "article"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = article<'i> (ps, ())
+
+    type aside<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "aside"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = aside<'i> (ps, ())
+
+    type audio<'i> private (ps: Part<Dom.HTMLAudioElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLAudioElement, 'i>((HtmlTag "audio"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLAudioElement, 'i> array) = audio<'i> (ps, ())
+
+    type b<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "b"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = b<'i> (ps, ())
+
+    type base'<'i> private (ps: Part<Dom.HTMLBaseElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "base") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLBaseElement, 'i> array) = base'<'i> (ps, ())
+
+    type bdi<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "bdi"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = bdi<'i> (ps, ())
+
+    type bdo<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "bdo"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = bdo<'i> (ps, ())
+
+    type blockquote<'i> private (ps: Part<Dom.HTMLQuoteElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLQuoteElement, 'i>((HtmlTag "blockquote"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLQuoteElement, 'i> array) = blockquote<'i> (ps, ())
+
+    type body<'i> private (ps: Part<Dom.HTMLBodyElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLBodyElement, 'i>((HtmlTag "body"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLBodyElement, 'i> array) = body<'i> (ps, ())
+
+    type br<'i> private (ps: Part<Dom.HTMLBRElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "br") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLBRElement, 'i> array) = br<'i> (ps, ())
+
+    type button<'i> private (ps: Part<Dom.HTMLButtonElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLButtonElement, 'i>(Button, ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLButtonElement, 'i> array) = button<'i> (ps, ())
+
+    type canvas<'i> private (ps: Part<Dom.HTMLCanvasElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLCanvasElement, 'i>((HtmlTag "canvas"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLCanvasElement, 'i> array) = canvas<'i> (ps, ())
+
+    type caption<'i> private (ps: Part<Dom.HTMLTableCaptionElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableCaptionElement, 'i>((HtmlTag "caption"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableCaptionElement, 'i> array) = caption<'i> (ps, ())
+
+    type cite<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "cite"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = cite<'i> (ps, ())
+
+    type code<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "code"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = code<'i> (ps, ())
+
+    type col<'i> private (ps: Part<Dom.HTMLTableColElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "col") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLTableColElement, 'i> array) = col<'i> (ps, ())
+
+    type colgroup<'i> private (ps: Part<Dom.HTMLTableColElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableColElement, 'i>((HtmlTag "colgroup"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableColElement, 'i> array) = colgroup<'i> (ps, ())
+
+    type data<'i> private (ps: Part<Dom.HTMLDataElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDataElement, 'i>((HtmlTag "data"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDataElement, 'i> array) = data<'i> (ps, ())
+
+    type datalist<'i> private (ps: Part<Dom.HTMLDataListElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDataListElement, 'i>((HtmlTag "datalist"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDataListElement, 'i> array) = datalist<'i> (ps, ())
+
+    type dd<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "dd"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = dd<'i> (ps, ())
+
+    type del<'i> private (ps: Part<Dom.HTMLModElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLModElement, 'i>((HtmlTag "del"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLModElement, 'i> array) = del<'i> (ps, ())
+
+    type details<'i> private (ps: Part<Dom.HTMLDetailsElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDetailsElement, 'i>((HtmlTag "details"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDetailsElement, 'i> array) = details<'i> (ps, ())
+
+    type dfn<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "dfn"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = dfn<'i> (ps, ())
+
+    type dialog<'i> private (ps: Part<Dom.HTMLDialogElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDialogElement, 'i>((HtmlTag "dialog"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDialogElement, 'i> array) = dialog<'i> (ps, ())
+
+    type div<'i> private (ps: Part<Dom.HTMLDivElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDivElement, 'i>(Div, ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDivElement, 'i> array) = div<'i> (ps, ())
+
+    type dl<'i> private (ps: Part<Dom.HTMLDListElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLDListElement, 'i>((HtmlTag "dl"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLDListElement, 'i> array) = dl<'i> (ps, ())
+
+    type dt<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "dt"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = dt<'i> (ps, ())
+
+    type em<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "em"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = em<'i> (ps, ())
+
+    type embed<'i> private (ps: Part<Dom.HTMLEmbedElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "embed") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLEmbedElement, 'i> array) = embed<'i> (ps, ())
+
+    type fieldset<'i> private (ps: Part<Dom.HTMLFieldSetElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLFieldSetElement, 'i>((HtmlTag "fieldset"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLFieldSetElement, 'i> array) = fieldset<'i> (ps, ())
+
+    type figcaption<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "figcaption"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = figcaption<'i> (ps, ())
+
+    type figure<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "figure"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = figure<'i> (ps, ())
+
+    type footer<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "footer"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = footer<'i> (ps, ())
+
+    type form<'i> private (ps: Part<Dom.HTMLFormElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLFormElement, 'i>((HtmlTag "form"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLFormElement, 'i> array) = form<'i> (ps, ())
+
+    type h1<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h1"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h1<'i> (ps, ())
+
+    type h2<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h2"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h2<'i> (ps, ())
+
+    type h3<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h3"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h3<'i> (ps, ())
+
+    type h4<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h4"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h4<'i> (ps, ())
+
+    type h5<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h5"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h5<'i> (ps, ())
+
+    type h6<'i> private (ps: Part<Dom.HTMLHeadingElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadingElement, 'i>((HtmlTag "h6"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadingElement, 'i> array) = h6<'i> (ps, ())
+
+    type head<'i> private (ps: Part<Dom.HTMLHeadElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHeadElement, 'i>((HtmlTag "head"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHeadElement, 'i> array) = head<'i> (ps, ())
+
+    type header<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "header"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = header<'i> (ps, ())
+
+    type hgroup<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "hgroup"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = hgroup<'i> (ps, ())
+
+    type hr<'i> private (ps: Part<Dom.HTMLHRElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "hr") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLHRElement, 'i> array) = hr<'i> (ps, ())
+
+    type html<'i> private (ps: Part<Dom.HTMLHtmlElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLHtmlElement, 'i>((HtmlTag "html"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLHtmlElement, 'i> array) = html<'i> (ps, ())
+
+    type i<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "i"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = i<'i> (ps, ())
+
+    type iframe<'i> private (ps: Part<Dom.HTMLIFrameElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLIFrameElement, 'i>((HtmlTag "iframe"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLIFrameElement, 'i> array) = iframe<'i> (ps, ())
+
+    type img<'i> private (ps: Part<Dom.HTMLImageElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "img") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLImageElement, 'i> array) = img<'i> (ps, ())
+
+    type input<'i> private (ps: Part<Dom.HTMLInputElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element Input ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLInputElement, 'i> array) = input<'i> (ps, ())
+
+    type ins<'i> private (ps: Part<Dom.HTMLModElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLModElement, 'i>((HtmlTag "ins"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLModElement, 'i> array) = ins<'i> (ps, ())
+
+    type kbd<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "kbd"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = kbd<'i> (ps, ())
+
+    type label<'i> private (ps: Part<Dom.HTMLLabelElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLLabelElement, 'i>((HtmlTag "label"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLLabelElement, 'i> array) = label<'i> (ps, ())
+
+    type legend<'i> private (ps: Part<Dom.HTMLLegendElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLLegendElement, 'i>((HtmlTag "legend"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLLegendElement, 'i> array) = legend<'i> (ps, ())
+
+    type li<'i> private (ps: Part<Dom.HTMLLIElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLLIElement, 'i>((HtmlTag "li"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLLIElement, 'i> array) = li<'i> (ps, ())
+
+    type link<'i> private (ps: Part<Dom.HTMLLinkElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "link") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLLinkElement, 'i> array) = link<'i> (ps, ())
+
+    type main<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "main"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = main<'i> (ps, ())
+
+    type map<'i> private (ps: Part<Dom.HTMLMapElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLMapElement, 'i>((HtmlTag "map"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLMapElement, 'i> array) = map<'i> (ps, ())
+
+    type mark<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "mark"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = mark<'i> (ps, ())
+
+    type menu<'i> private (ps: Part<Dom.HTMLMenuElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLMenuElement, 'i>((HtmlTag "menu"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLMenuElement, 'i> array) = menu<'i> (ps, ())
+
+    type meta<'i> private (ps: Part<Dom.HTMLMetaElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "meta") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLMetaElement, 'i> array) = meta<'i> (ps, ())
+
+    type meter<'i> private (ps: Part<Dom.HTMLMeterElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLMeterElement, 'i>((HtmlTag "meter"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLMeterElement, 'i> array) = meter<'i> (ps, ())
+
+    type nav<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "nav"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = nav<'i> (ps, ())
+
+    type noscript<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "noscript"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = noscript<'i> (ps, ())
+
+    type object<'i> private (ps: Part<Dom.HTMLObjectElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLObjectElement, 'i>((HtmlTag "object"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLObjectElement, 'i> array) = object<'i> (ps, ())
+
+    type ol<'i> private (ps: Part<Dom.HTMLOListElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLOListElement, 'i>((HtmlTag "ol"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLOListElement, 'i> array) = ol<'i> (ps, ())
+
+    type optgroup<'i> private (ps: Part<Dom.HTMLOptGroupElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLOptGroupElement, 'i>((HtmlTag "optgroup"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLOptGroupElement, 'i> array) = optgroup<'i> (ps, ())
+
+    type option'<'i> private (ps: Part<Dom.HTMLOptionElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLOptionElement, 'i>(Option, ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLOptionElement, 'i> array) = option'<'i> (ps, ())
+
+    type output<'i> private (ps: Part<Dom.HTMLOutputElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLOutputElement, 'i>((HtmlTag "output"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLOutputElement, 'i> array) = output<'i> (ps, ())
+
+    type p<'i> private (ps: Part<Dom.HTMLParagraphElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLParagraphElement, 'i>((HtmlTag "p"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLParagraphElement, 'i> array) = p<'i> (ps, ())
+
+    type picture<'i> private (ps: Part<Dom.HTMLPictureElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLPictureElement, 'i>((HtmlTag "picture"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLPictureElement, 'i> array) = picture<'i> (ps, ())
+
+    type pre<'i> private (ps: Part<Dom.HTMLPreElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLPreElement, 'i>((HtmlTag "pre"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLPreElement, 'i> array) = pre<'i> (ps, ())
+
+    type progress<'i> private (ps: Part<Dom.HTMLProgressElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLProgressElement, 'i>((HtmlTag "progress"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLProgressElement, 'i> array) = progress<'i> (ps, ())
+
+    type q<'i> private (ps: Part<Dom.HTMLQuoteElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLQuoteElement, 'i>((HtmlTag "q"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLQuoteElement, 'i> array) = q<'i> (ps, ())
+
+    type rp<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "rp"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = rp<'i> (ps, ())
+
+    type rt<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "rt"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = rt<'i> (ps, ())
+
+    type ruby<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "ruby"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = ruby<'i> (ps, ())
+
+    type s<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "s"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = s<'i> (ps, ())
+
+    type samp<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "samp"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = samp<'i> (ps, ())
+
+    type script<'i> private (ps: Part<Dom.HTMLScriptElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLScriptElement, 'i>((HtmlTag "script"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLScriptElement, 'i> array) = script<'i> (ps, ())
+
+    type search<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "search"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = search<'i> (ps, ())
+
+    type section<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "section"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = section<'i> (ps, ())
+
+    type select<'i> private (ps: Part<Dom.HTMLSelectElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLSelectElement, 'i>(Select, ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLSelectElement, 'i> array) = select<'i> (ps, ())
+
+    type slot<'i> private (ps: Part<Dom.HTMLSlotElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLSlotElement, 'i>((HtmlTag "slot"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLSlotElement, 'i> array) = slot<'i> (ps, ())
+
+    type small<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "small"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = small<'i> (ps, ())
+
+    type source<'i> private (ps: Part<Dom.HTMLSourceElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "source") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLSourceElement, 'i> array) = source<'i> (ps, ())
+
+    type span<'i> private (ps: Part<Dom.HTMLSpanElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLSpanElement, 'i>((HtmlTag "span"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLSpanElement, 'i> array) = span<'i> (ps, ())
+
+    type strong<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "strong"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = strong<'i> (ps, ())
+
+    type style<'i> private (ps: Part<Dom.HTMLStyleElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLStyleElement, 'i>((HtmlTag "style"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLStyleElement, 'i> array) = style<'i> (ps, ())
+
+    type sub<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "sub"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = sub<'i> (ps, ())
+
+    type summary<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "summary"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = summary<'i> (ps, ())
+
+    type sup<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "sup"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = sup<'i> (ps, ())
+
+    type table<'i> private (ps: Part<Dom.HTMLTableElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableElement, 'i>((HtmlTag "table"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableElement, 'i> array) = table<'i> (ps, ())
+
+    type tbody<'i> private (ps: Part<Dom.HTMLTableSectionElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableSectionElement, 'i>((HtmlTag "tbody"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableSectionElement, 'i> array) = tbody<'i> (ps, ())
+
+    type td<'i> private (ps: Part<Dom.HTMLTableCellElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableCellElement, 'i>((HtmlTag "td"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableCellElement, 'i> array) = td<'i> (ps, ())
+
+    type template<'i> private (ps: Part<Dom.HTMLTemplateElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTemplateElement, 'i>((HtmlTag "template"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTemplateElement, 'i> array) = template<'i> (ps, ())
+
+    type textarea<'i> private (ps: Part<Dom.HTMLTextAreaElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTextAreaElement, 'i>((HtmlTag "textarea"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTextAreaElement, 'i> array) = textarea<'i> (ps, ())
+
+    type tfoot<'i> private (ps: Part<Dom.HTMLTableSectionElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableSectionElement, 'i>((HtmlTag "tfoot"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableSectionElement, 'i> array) = tfoot<'i> (ps, ())
+
+    type th<'i> private (ps: Part<Dom.HTMLTableCellElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableCellElement, 'i>((HtmlTag "th"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableCellElement, 'i> array) = th<'i> (ps, ())
+
+    type thead<'i> private (ps: Part<Dom.HTMLTableSectionElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableSectionElement, 'i>((HtmlTag "thead"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableSectionElement, 'i> array) = thead<'i> (ps, ())
+
+    type time<'i> private (ps: Part<Dom.HTMLTimeElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTimeElement, 'i>((HtmlTag "time"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTimeElement, 'i> array) = time<'i> (ps, ())
+
+    type title<'i> private (ps: Part<Dom.HTMLTitleElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTitleElement, 'i>((HtmlTag "title"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTitleElement, 'i> array) = title<'i> (ps, ())
+
+    type tr<'i> private (ps: Part<Dom.HTMLTableRowElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLTableRowElement, 'i>((HtmlTag "tr"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLTableRowElement, 'i> array) = tr<'i> (ps, ())
+
+    type track<'i> private (ps: Part<Dom.HTMLTrackElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "track") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLTrackElement, 'i> array) = track<'i> (ps, ())
+
+    type u<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "u"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = u<'i> (ps, ())
+
+    type ul<'i> private (ps: Part<Dom.HTMLUListElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLUListElement, 'i>((HtmlTag "ul"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLUListElement, 'i> array) = ul<'i> (ps, ())
+
+    type var<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLElement, 'i>((HtmlTag "var"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = var<'i> (ps, ())
+
+    type video<'i> private (ps: Part<Dom.HTMLVideoElement, 'i> array, primary: unit) =
+        inherit Element<Dom.HTMLVideoElement, 'i>((HtmlTag "video"), ps)
+        new([<ParamArray>] ps: Part<Dom.HTMLVideoElement, 'i> array) = video<'i> (ps, ())
+
+    type wbr<'i> private (ps: Part<Dom.HTMLElement, 'i> array, primary: unit) =
+        inherit VoidElement<'i>(TemplateParts.element (HtmlTag "wbr") ps [||])
+        new([<ParamArray>] ps: Part<Dom.HTMLElement, 'i> array) = wbr<'i> (ps, ())

@@ -284,6 +284,34 @@ let private nestedLive queued () =
 let private bounded queued () =
     pair queued (fun _ -> ()) (fun () -> Component.render boundedExplicit ()) (fun () -> Component.render boundedSugar ()) (fun () -> [])
 
+[<Emit("Array.from($1.querySelectorAll($0)).forEach(node => node.click())")>]
+let private clickAll (selector: string) (root: HTMLElement) : unit = jsNative
+
+/// <summary>Clicks every button twice on both twins; each static <c>View</c> ran once.</summary>
+let private mixedClicks (sugared: Component<unit>) queued () =
+    pair queued (fun _ -> ()) (fun () -> Component.render MixedExplicit.root ()) (fun () -> Component.render sugared ()) (fun () ->
+        [ Each (clickAll "button"); Each (clickAll "button") ])
+
+    equal (1, 1) (Builds.counterRecord, Builds.counterClass)
+
+/// <summary>Props are read once per instance, untracked: a later write to the caption signal leaves the child unchanged.</summary>
+let private renderPropsAreUntracked queued () =
+    let traces, _ =
+        twins
+            queued
+            (fun (graph: Graph) ->
+                graph.Run (fun () ->
+                    {
+                        Captioned.Caption = Api.createSignal "one"
+                    }))
+            (Component.render untrackedExplicit)
+            (Component.render untrackedSugar)
+            (fun state -> [ Write (fun () -> state.Caption.Value <- "two") ])
+
+    same traces
+    // Shot 0 is the mount, shot 1 the markup after the write.
+    equal true ((List.item 1 (snd traces).Shots).Contains "one")
+
 [<Emit("(() => { const w = document.createTreeWalker($0, 0xFFFFFFFF); const a = []; while (w.nextNode()) a.push(w.currentNode); return a; })()")>]
 let private nodesOf (root: Node) : Node array = jsNative
 
@@ -300,14 +328,15 @@ let private strictOptions: Hydration.HydrationOptions =
 
 /// <summary>
 /// Hydrates the explicit and the sugared definition from the server HTML of <c>served</c>. Both adopt exactly
-/// <c>adopts</c> server nodes. After each write both retain equal numbers of the server nodes, and they show the same markup after hydration, each write and disposal.
+/// <c>adopts</c> server nodes. After each step both retain equal numbers of the server nodes, and they show the same markup after hydration, each step and disposal.
 /// </summary>
-let private hydratedTwins
+/// <remarks>A <c>Write</c> step runs once on the graph; an <c>Each</c> step runs on the explicit host, then the sugared host.</remarks>
+let private hydratedSteps
     (served: Component<'props>)
     (explicitDefinition: Component<'props>)
     (sugarDefinition: Component<'props>)
     (props: 'props)
-    (writes: (unit -> unit) list)
+    (steps: Step list)
     (adopts: int)
     (graph: Graph)
     =
@@ -333,14 +362,36 @@ let private hydratedTwins
     equal adopts (adopted rightNodes right)
     equal left.innerHTML right.innerHTML
 
-    for write in writes do
-        graph.Run write
+    for step in steps do
+        match step with
+        | Write write -> graph.Run write
+        | Each act ->
+            act left
+            act right
+
         equal (adopted leftNodes left) (adopted rightNodes right)
         equal left.innerHTML right.innerHTML
 
     explicitMount.Dispose ()
     sugarMount.Dispose ()
     equal left.innerHTML right.innerHTML
+
+let private hydratedTwins served explicitDefinition sugarDefinition props (writes: (unit -> unit) list) adopts graph =
+    hydratedSteps served explicitDefinition sugarDefinition props (List.map Write writes) adopts graph
+
+let private demoState (graph: Graph) =
+    graph.Run (fun () ->
+        {
+            PlaygroundSugar.DemoState.Count = Api.createSignal 0
+            PlaygroundSugar.DemoState.Name = Api.createSignal "Ada"
+        })
+
+let private demoStyles: (string * Component<PlaygroundSugar.DemoState>) array =
+    [|
+        "template", PlaygroundSugar.demoSugar
+        "record", PlaygroundSugar.demoMembers
+        "class", PlaygroundSugar.demoClass
+    |]
 
 /// <summary>The number of server nodes each hydrated pair adopts.</summary>
 module private Adopted =
@@ -356,6 +407,16 @@ module private Adopted =
     let showElse = 7
     /// <summary>All 19 server nodes.</summary>
     let nested = 19
+    /// <summary>All 59 server nodes: two root markers, the root div and two panels of 28 (section, h2 and its text, five counters of 5).</summary>
+    let mixed = 59
+    /// <summary>All 38 server nodes of the demo screen.</summary>
+    let demo = 38
+    /// <summary>All 30 server nodes of the hidden tag views: two root markers, the div, two hidden shows of 3, an arm of 3, a counter arm of 7, two void tags, a counter of 5 and two rows with their markers.</summary>
+    let tagViews = 30
+    /// <summary>All 3 server nodes: two root markers and the image.</summary>
+    let voidRoot = 3
+    /// <summary>All 7 server nodes: two root markers and a counter of 5.</summary>
+    let tagRoot = 7
 
 /// <summary>Each pair hydrated from the explicit twin's HTML and from the sugared twin's HTML.</summary>
 let private hydration () =
@@ -404,6 +465,22 @@ let private hydration () =
             Adopted.showElse
             graph
 
+        let tagState = graph.Run (fun () -> toggle false)
+
+        hydratedTwins
+            (pick tagViewsExplicit tagViewsSugar)
+            tagViewsExplicit
+            tagViewsSugar
+            tagState
+            [
+                (fun () -> tagState.On.Value <- true)
+                (fun () -> tagState.On.Value <- false)
+            ]
+            Adopted.tagViews
+            graph
+
+        hydratedTwins (pick voidRootExplicit voidRootSugar) voidRootExplicit voidRootSugar () [] Adopted.voidRoot graph
+        hydratedTwins (pick tagRootExplicit tagRootSugar) tagRootExplicit tagRootSugar () [] Adopted.tagRoot graph
         let listed = graph.Run board
 
         hydratedTwins
@@ -414,6 +491,27 @@ let private hydration () =
             [ fun () -> listed.Entries.Value[0].Open.Value <- true ]
             Adopted.nested
             graph
+
+        hydratedSteps
+            (pick MixedExplicit.root mixedSugar)
+            MixedExplicit.root
+            mixedSugar
+            ()
+            [ Each (clickAll "button"); Each (clickAll "button") ]
+            Adopted.mixed
+            graph
+
+        for _, definition in demoStyles do
+            let state = demoState graph
+
+            hydratedTwins
+                (pick PlaygroundSugar.demoExplicit definition)
+                PlaygroundSugar.demoExplicit
+                definition
+                state
+                [ fun () -> state.Count.Value <- 4 ]
+                Adopted.demo
+                graph
 
 /// <summary>The elements under <c>root</c> that carry event handlers, as one <c>position:handler keys</c> entry each.</summary>
 [<Emit("Array.from($0.querySelectorAll('*')).map((node, index) => [index, Object.getOwnPropertyNames(node).filter(name => name.startsWith('$$ranvier')).join(',')]).filter(([, keys]) => keys !== '').map(([index, keys]) => index + ':' + keys).join(' ')")>]
@@ -461,24 +559,19 @@ let private armFixtures () =
     explicitOps.Dispose ()
     sugarOps.Dispose ()
 
-let private demoState (graph: Graph) =
-    graph.Run (fun () ->
-        {
-            PlaygroundSugar.DemoState.Count = Api.createSignal 0
-            PlaygroundSugar.DemoState.Name = Api.createSignal "Ada"
-        })
-
 let private demoLayout () =
-    equal (layoutSignature PlaygroundSugar.demoExplicit.Root) (layoutSignature PlaygroundSugar.demoSugar.Root)
     use graph = new Graph ()
     let state = demoState graph
-    equal (Server.render omit PlaygroundSugar.demoExplicit state) (Server.render omit PlaygroundSugar.demoSugar state)
+
+    for name, definition in demoStyles do
+        equal (name, layoutSignature PlaygroundSugar.demoExplicit.Root) (name, layoutSignature definition.Root)
+        equal (name, Server.render omit PlaygroundSugar.demoExplicit state) (name, Server.render omit definition state)
 
 [<Emit("(() => { const field = $2.querySelector($0); field.value = $1; field.dispatchEvent(new Event('input', { bubbles: true })); })()")>]
 let private typeInto (selector: string) (text: string) (root: HTMLElement) : unit = jsNative
 
-let private demoClicks queued () =
-    pair queued demoState (Component.render PlaygroundSugar.demoExplicit) (Component.render PlaygroundSugar.demoSugar) (fun state ->
+let private demoClicks (definition: Component<PlaygroundSugar.DemoState>) queued () =
+    pair queued demoState (Component.render PlaygroundSugar.demoExplicit) (Component.render definition) (fun state ->
         [
             Each (click "[data-testid=reset]")
             Each (click "[data-testid=increment]")
@@ -500,17 +593,23 @@ let cases: (string * (unit -> unit)) array =
                 templated "armOf arms switch and update their payload like their twins" arms
                 templated "show toggles with cleanups like its twin" (fun queued -> toggled queued showExplicit showSugar)
                 templated "showElse toggles with cleanups like its twin" (fun queued -> toggled queued showElseExplicit showElseSugar)
+                templated "void and component tags as show content, arms, fragment children and rows update like their twins" (fun queued ->
+                    toggled queued tagViewsExplicit tagViewsSugar)
                 templated "show in forEachFixed in an armOf arm updates like its twin" nested
                 templated "a live forEach in an armOf arm mounts and cleans up rows like its twin" nestedLive
                 templated "a boundary around sugared content renders like its twin" bounded
+                templated "the mixed tree (free root) updates like its twin" (mixedClicks mixedSugar)
+                templated "the mixed tree (t.render root) updates like its twin" (mixedClicks mixedRendered)
+                templated "render reads its props once per instance, untracked" renderPropsAreUntracked
                 [|
                     "the sugared keyed benchmark fixture renders like the production fixture", keyedFixtures
                     "the sugared arm benchmark fixture renders like the production fixture", armFixtures
                 |]
                 [|
-                    "the sugared demo screen shares the explicit screen's layout and server HTML", demoLayout
+                    "every demo style shares the explicit screen's layout and server HTML", demoLayout
                 |]
-                templated "the sugared demo screen updates like the explicit screen" demoClicks
+                for name, definition in demoStyles do
+                    templated (sprintf "the %s demo screen updates like the explicit screen" name) (demoClicks definition)
                 [| "sugared and explicit twins hydrate each other's server HTML", hydration |]
             ]
     )

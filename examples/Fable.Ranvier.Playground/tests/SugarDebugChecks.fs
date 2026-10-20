@@ -7,7 +7,6 @@ open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Template
 open Ranvier.View.Foundation.Sugar
-open CheckSupport
 
 type private Picked =
     {
@@ -22,52 +21,97 @@ let private noting (log: ResizeArray<string>) =
 
 /// <summary>Creates its arm inside the arms function, once per selector evaluation.</summary>
 let private hazard =
-    Component.define (fun _ (picked: Picked) -> picked) (fun t ->
-        t.Div () {
-            t.matchWith (fun (p: Picked) -> p.Pick.Value, p.Log) (fun (_, log) ->
-                let arm =
-                    t.armOf (fun (a: TemplateBuilder<unit -> unit>) -> a.Span (a.Hooks.mounted (noting log)) { "arm" })
-
-                t.arm arm ())
+    Component.template
+        (fun _ (picked: Picked) -> picked)
+        (div () {
+            matchWith (fun (p: Picked) -> p.Pick.Value, p.Log) (fun (_, log) ->
+                let created = armOf (span (Hooks.mounted (noting log)) { "arm" })
+                arm created ())
         })
 
 /// <summary>Creates its arm inside the key's arms function, once per key evaluation.</summary>
 let private branchHazard =
-    Component.define (fun _ (picked: Picked) -> picked) (fun t ->
-        t.Div () {
-            t.branch (fun (p: Picked) -> p.Pick.Value) (fun _ ->
-                let arm = t.armOf (fun (a: TemplateBuilder<unit -> unit>) -> a.Span () { "arm" })
-                t.arm arm ())
+    Component.template
+        (fun _ (picked: Picked) -> picked)
+        (div () {
+            branch (fun (p: Picked) -> p.Pick.Value) (fun _ ->
+                let created = armOf (span () { "arm" })
+                arm created ())
         })
+
+let private eachRow =
+    Component.define (fun _ (item: unit -> int) -> item) (fun _ -> span () { "row" })
 
 /// <summary>Creates a definition inside the items function, once per items evaluation.</summary>
 let private eachHazard =
-    Component.define (fun _ (picked: Picked) -> picked) (fun t ->
-        let row =
-            Component.define (fun _ (item: unit -> int) -> item) (fun r -> r.Span () { "row" })
-
-        t.Div () {
-            t.each
+    Component.template
+        (fun _ (picked: Picked) -> picked)
+        (div () {
+            each
                 id
                 (fun (p: Picked) ->
-                    Component.define (fun _ () -> ()) (fun d -> d.Span () { "hidden" })
+                    Component.template (fun _ () -> ()) (span () { "hidden" })
                     |> ignore
 
                     [| p.Pick.Value |])
-                row
+                eachRow
         })
 
 let private boundLog = ResizeArray<string>()
 
-/// <summary>An arm bound in the build function mounts once, however often the selector re-evaluates.</summary>
+let private boundArm = armOf (span (Hooks.mounted (noting boundLog)) { "arm" })
+
+/// <summary>An arm bound at module level mounts once, however often the selector re-evaluates.</summary>
 let private bound =
-    Component.define (fun _ (picked: Picked) -> picked) (fun t ->
-        let arm =
-            t.armOf (fun (a: TemplateBuilder<unit -> unit>) -> a.Span (a.Hooks.mounted (noting boundLog)) { "arm" })
+    Component.template (fun _ (picked: Picked) -> picked) (div () { matchWith (fun (p: Picked) -> p.Pick.Value) (fun _ -> arm boundArm ()) })
 
-        t.Div () { t.matchWith (fun (p: Picked) -> p.Pick.Value) (fun _ -> t.arm arm ()) })
+let private propertyLog = ResizeArray<string>()
 
-let private picks (definition: Component<Picked>) (log: ResizeArray<string>) =
+/// <summary>A static property whose getter creates a definition on each read.</summary>
+type private ArmHolder =
+    static member Arm: Component<unit -> unit> =
+        armOf (span (Hooks.mounted (noting propertyLog)) { "held" })
+
+/// <summary>Reads <c>ArmHolder.Arm</c> inside the arms function, once per selector evaluation.</summary>
+let private propertyHazard =
+    Component.template (fun _ (picked: Picked) -> picked) (div () { matchWith (fun (p: Picked) -> p.Pick.Value) (fun _ -> arm ArmHolder.Arm ()) })
+
+/// <summary>The setups run by <c>ArmRecord.Create</c> and the <c>ArmClass</c> constructor: one per mount.</summary>
+let mutable private armSetups = 0
+
+type ArmRecord =
+    {
+        Read: unit -> int
+    }
+
+    static member Create(_: Setup, read: unit -> int) =
+        armSetups <- armSetups + 1
+        { Read = read }
+
+    static member View = i () { fun a -> string (a.Read ()) }
+
+type ArmClass(_setup: Setup, read: unit -> int) =
+    do armSetups <- armSetups + 1
+    member _.Read = read
+    static member View: TemplateView<ArmClass> = i () { fun (a: ArmClass) -> string (a.Read ()) }
+
+/// <summary>Calls <c>Component.ofMembers</c> inside the arms function, once per selector evaluation.</summary>
+let private membersHazard =
+    Component.template
+        (fun _ (picked: Picked) -> picked)
+        (div () { matchWith (fun (p: Picked) -> p.Pick.Value) (fun v -> arm (Component.ofMembers<ArmRecord, _>()) v) })
+
+/// <summary>Calls <c>Component.ofClass</c> inside the arms function, once per selector evaluation.</summary>
+let private classHazard =
+    Component.template
+        (fun _ (picked: Picked) -> picked)
+        (div () { matchWith (fun (p: Picked) -> p.Pick.Value) (fun v -> arm (Component.ofClass ArmClass) v) })
+
+// Opened after the fixtures: CheckSupport.span shadows the span tag.
+open CheckSupport
+
+/// <summary>Mounts <c>definition</c>, writes the picks 2 and 3, applies <c>observe</c> to the host and disposes.</summary>
+let private picking (definition: Component<Picked>) (log: ResizeArray<string>) (observe: HTMLElement -> 'result) =
     use graph = new Graph ()
     let picked = graph.Run (fun () -> { Pick = Api.createSignal 1; Log = log })
     let target = host ()
@@ -78,7 +122,12 @@ let private picks (definition: Component<Picked>) (log: ResizeArray<string>) =
     for value in 2..3 do
         graph.Run (fun () -> picked.Pick.Value <- value)
 
+    let observed = observe target
     mounted.Dispose ()
+    observed
+
+let private picks (definition: Component<Picked>) (log: ResizeArray<string>) =
+    picking definition log ignore
     log.Count
 
 let private boundArmMountsOnce () =
@@ -156,6 +205,9 @@ let private serverDefinitionInRegionRaises () =
 
     equal true (thrown.Contains message)
 
+let private staticMemberArmRaises () =
+    raisesWhenMounted Component.render propertyHazard
+
 let cases: (string * (unit -> unit)) array =
     [|
         "a definition created in an arms function raises in a Debug build", definitionInRegionRaises
@@ -163,15 +215,33 @@ let cases: (string * (unit -> unit)) array =
         "a definition created in an each items function raises in a Debug build", eachDefinitionRaises
         "a definition created in an arms function raises through the expanded path in a Debug build", expandedDefinitionRaises
         "a definition created in an arms function raises in a Debug server render", serverDefinitionInRegionRaises
-        "an arm bound in the build function mounts once in a Debug build", boundArmMountsOnce
+        "an arm bound outside the arms function mounts once in a Debug build", boundArmMountsOnce
+        "a static member arm read in an arms function raises in a Debug build", staticMemberArmRaises
+        "Component.ofMembers in an arms function raises in a Debug build", (fun () -> raisesWhenMounted Component.render membersHazard)
+        "Component.ofClass in an arms function raises in a Debug build", (fun () -> raisesWhenMounted Component.render classHazard)
     |]
 #else
 let private armInArmsRemountsInRelease () =
     equal 3 (picks hazard (ResizeArray ()))
 
+let private staticMemberArmRemountsInRelease () =
+    propertyLog.Clear ()
+    equal 3 (picks propertyHazard propertyLog)
+
+/// <summary>The arm setups and the host's text after the picks 2 and 3.</summary>
+let private remounts (definition: Component<Picked>) =
+    armSetups <- 0
+    let text = picking definition (ResizeArray ()) (fun target -> target.textContent)
+    armSetups, text
+
 let cases: (string * (unit -> unit)) array =
     [|
         "a definition created in an arms function remounts on every update in Release", armInArmsRemountsInRelease
-        "an arm bound in the build function mounts once in Release", boundArmMountsOnce
+        "an arm bound outside the arms function mounts once in Release", boundArmMountsOnce
+        "a static member arm remounts on every update in Release", staticMemberArmRemountsInRelease
+        "Component.ofMembers in an arms function remounts on every update and shows the last payload in Release",
+        (fun () -> equal (3, "3") (remounts membersHazard))
+        "Component.ofClass in an arms function remounts on every update and shows the last payload in Release",
+        (fun () -> equal (3, "3") (remounts classHazard))
     |]
 #endif

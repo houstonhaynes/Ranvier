@@ -52,7 +52,11 @@
     <Compile Include="../../../experiments/Ranvier.View.Foundation/AuthoringPerfFixtures.fs" Link="AuthoringPerfFixtures.fs" />
     <Compile Include="AuthoringPerf.fs" />
     <Compile Include="FrameworkPerf.fs" />
+    <Compile Include="FrameworkTwinsPerf.fs" />
     <Compile Include="FrameworkSugarPerf.fs" />
+    <Compile Include="FrameworkMembersPerf.fs" />
+    <Compile Include="FrameworkClassPerf.fs" />
+    <Compile Include="SugarAllocControl.fs" />
     <Compile Include="KeyedRowsPerf.fs" />
     <Compile Include="KeyedRowsSugarPerf.fs" />
     <Compile Include="BoundaryPerf.fs" />
@@ -80,12 +84,15 @@
     <Compile Include="PlaygroundSugar.fs" />
     <Compile Include="SugarChecks.fs" />
     <Compile Include="SugarDebugChecks.fs" />
+    <Compile Include="ElmishNested.fs" />
+    <Compile Include="ElmishNestedChecks.fs" />
     <Compile Include="HydrationPerf.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/ComponentBench.fs" Link="ComponentBench.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Fixtures.fs" Link="Fixtures.fs" />
     <Compile Include="RepresentationBench.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/SnapshotBench.fs" Link="SnapshotBench.fs" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
+    <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
 </Project>

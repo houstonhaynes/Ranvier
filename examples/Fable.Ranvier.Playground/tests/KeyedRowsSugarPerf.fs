@@ -16,24 +16,24 @@ let private without (index: int) (rows: KeyedRow array) : KeyedRow array = jsNat
 let mutable private clicks = 0
 
 let private keyedList =
-    Component.define (fun _ (rows: Signal<KeyedRow array>) -> rows) (fun t ->
-        t.Table (t.Attrs.className "table") {
-            t.Tbody () {
-                t.forEachFixed (fun (row: KeyedRow) -> row.Id) (fun (rows: Signal<KeyedRow array>) -> rows.Value) (fun r ->
-                    r.Tr () {
-                        r.Td (r.Attrs.className "col-md-1") { r.text (fun (row: KeyedRow) -> string row.Id) }
+    Component.template
+        (fun _ (rows: Signal<KeyedRow array>) -> rows)
+        (table (Attrs.className "table") {
+            tbody () {
+                forEachFixed
+                    (fun (row: KeyedRow) -> row.Id)
+                    (fun (rows: Signal<_ array>) -> rows.Value)
+                    (tr () {
+                        td (Attrs.className "col-md-1") { fun (row: KeyedRow) -> string row.Id }
+                        td (Attrs.className "col-md-4") { a (Events.onClick (fun _ _ -> clicks <- clicks + 1)) { from (fun row -> row.Label) } }
 
-                        r.Td (r.Attrs.className "col-md-4") {
-                            r.A (r.Events.onClick (fun _ _ -> clicks <- clicks + 1)) { r.from (fun (row: KeyedRow) -> row.Label) }
-                        }
-
-                        r.Td (r.Attrs.className "col-md-1") {
-                            r.A (r.Events.onClick (fun _ _ -> clicks <- clicks - 1)) {
-                                r.Span (r.Attrs.className "glyphicon glyphicon-remove", r.Attrs.attribute ("aria-hidden", "true")) { }
+                        td (Attrs.className "col-md-1") {
+                            a (Events.onClick (fun _ _ -> clicks <- clicks - 1)) {
+                                span (Attrs.className "glyphicon glyphicon-remove", Attrs.attribute ("aria-hidden", "true")) { }
                             }
                         }
 
-                        r.Td (r.Attrs.className "col-md-6") { }
+                        td (Attrs.className "col-md-6") { }
                     })
             }
         })
@@ -95,24 +95,24 @@ let mountKeyed (host: HTMLElement) : KeyedOperations =
                     graph.Dispose ()
     }
 
+let private plain = armOf (span (Attrs.className "a") { "A" })
+let private counted = armOf (b () { fun payload -> string (payload ()) })
+
 let private armList =
-    Component.define (fun _ (rows: Signal<ArmRow array>) -> rows) (fun t ->
-        let plain =
-            t.armOf (fun (a: TemplateBuilder<unit -> unit>) -> a.Span (a.Attrs.className "a") { "A" })
+    Component.template
+        (fun _ (rows: Signal<ArmRow array>) -> rows)
+        (table () {
+            tbody () {
+                forEachFixed
+                    (fun row -> row.Id)
+                    (fun (rows: Signal<_ array>) -> rows.Value)
+                    (tr () {
+                        td () { fun row -> string row.Id }
 
-        let counted =
-            t.armOf (fun (a: TemplateBuilder<unit -> int>) -> a.B () { fun payload -> string (payload ()) })
-
-        t.Table () {
-            t.Tbody () {
-                t.forEachFixed (fun (row: ArmRow) -> row.Id) (fun (rows: Signal<ArmRow array>) -> rows.Value) (fun r ->
-                    r.Tr () {
-                        r.Td () { r.text (fun (row: ArmRow) -> string row.Id) }
-
-                        r.Td () {
-                            r.matchWith (fun (row: ArmRow) -> row.Mode.Value) (function
-                                | Plain -> r.arm plain ()
-                                | Counted count -> r.arm counted count)
+                        td () {
+                            matchWith (fun row -> row.Mode.Value) (function
+                                | Plain -> arm plain ()
+                                | Counted count -> arm counted count)
                         }
                     })
             }

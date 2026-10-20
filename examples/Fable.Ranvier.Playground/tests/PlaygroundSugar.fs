@@ -1,4 +1,4 @@
-/// <summary>The playground's demo screen: a verbatim copy of <c>App.fs</c>'s template and its rewrite with the template sugar.</summary>
+/// <summary>The playground's demo screen: a verbatim copy of <c>App.fs</c>'s template and its rewrites in the template, record and class styles.</summary>
 module PlaygroundSugar
 
 open global.Ranvier
@@ -123,62 +123,59 @@ let demoExplicit =
                         |]
                 |])
 
-/// <summary>The setup of <c>demoSugar</c>, equal to the setup of <c>demoExplicit</c>.</summary>
-let private demoSetup =
-    fun (_: Setup) (state: DemoState) ->
-        {
-            State = state
-            Doubled = Api.createMemo (fun _ -> state.Count.Value * 2)
-        }
-
-/// <summary>The demo screen of <c>App.fs</c> written with the template sugar.</summary>
+/// <summary>The demo screen with free tags and <c>Component.template</c>.</summary>
 let demoSugar =
-    Component.define demoSetup (fun t ->
-        t.Section (
-            t.Attrs.className "demo-grid",
-            t.Attrs.data ("testid", "demo-root"),
-            t.Attrs.data ("parity", (fun (demo: DemoInstance) -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd")))
+    Component.template
+        (fun _ (state: DemoState) ->
+            {
+                State = state
+                Doubled = Api.createMemo (fun _ -> state.Count.Value * 2)
+            })
+        (section (
+            Attrs.className "demo-grid",
+            Attrs.data ("testid", "demo-root"),
+            Attrs.data ("parity", (fun demo -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd")))
         ) {
-            t.Article (t.Attrs.className "panel counter-panel") {
-                t.Div (t.Attrs.className "panel-heading") {
-                    t.Span (t.Attrs.className "eyebrow") { "01 / Counter" }
-                    t.Span (t.Attrs.className "tag") { "signal → text" }
+            article (Attrs.className "panel counter-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "01 / Counter" }
+                    span (Attrs.className "tag") { "signal → text" }
                 }
 
-                t.Output (t.Attrs.className "count", t.Attrs.data ("testid", "count"), t.Attrs.aria ("live", "polite")) {
-                    fun (demo: DemoInstance) -> string demo.State.Count.Value
+                output (Attrs.className "count", Attrs.data ("testid", "count"), Attrs.aria ("live", "polite")) {
+                    fun demo -> string demo.State.Count.Value
                 }
 
-                t.Div (t.Attrs.className "derived") {
-                    t.Span () { "Doubled" }
-                    t.Output (t.Attrs.data ("testid", "doubled")) { fun (demo: DemoInstance) -> string demo.Doubled.Value }
+                div (Attrs.className "derived") {
+                    span () { "Doubled" }
+                    output (Attrs.data ("testid", "doubled")) { fun demo -> string demo.Doubled.Value }
                 }
 
-                t.Div (t.Attrs.className "actions") {
-                    t.Button (
-                        t.Attrs.className "primary",
-                        t.Attrs.data ("testid", "increment"),
-                        t.Attrs.attribute ("type", "button"),
-                        t.Events.onClick (fun (demo: DemoInstance) _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
+                div (Attrs.className "actions") {
+                    button (
+                        Attrs.className "primary",
+                        Attrs.data ("testid", "increment"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
                     ) {
                         "Increment +1"
                     }
 
-                    t.Button (
-                        t.Attrs.className "secondary",
-                        t.Attrs.data ("testid", "reset"),
-                        t.Attrs.attribute ("type", "button"),
-                        t.Props.Button.disabled (fun (demo: DemoInstance) -> demo.State.Count.Value = 0),
-                        t.Events.onClick (fun (demo: DemoInstance) _ -> demo.State.Count.Value <- 0)
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "reset"),
+                        Attrs.attribute ("type", "button"),
+                        Props.Button.disabled (fun demo -> demo.State.Count.Value = 0),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- 0)
                     ) {
                         "Reset"
                     }
 
-                    t.Button (
-                        t.Attrs.className "secondary",
-                        t.Attrs.data ("testid", "burst"),
-                        t.Attrs.attribute ("type", "button"),
-                        t.Events.onClick (fun (demo: DemoInstance) _ ->
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "burst"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun demo _ ->
                             Api.batch (fun () ->
                                 for _ in 1..100 do
                                     demo.State.Count.Value <- demo.State.Count.Value + 1))
@@ -187,31 +184,216 @@ let demoSugar =
                     }
                 }
 
-                t.P (t.Attrs.className "note") { "The output changes. The DOM nodes stay." }
+                p (Attrs.className "note") { "The output changes. The DOM nodes stay." }
             }
 
-            t.Article (t.Attrs.className "panel name-panel") {
-                t.Div (t.Attrs.className "panel-heading") {
-                    t.Span (t.Attrs.className "eyebrow") { "02 / Input" }
-                    t.Span (t.Attrs.className "tag") { "event → signal" }
+            article (Attrs.className "panel name-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "02 / Input" }
+                    span (Attrs.className "tag") { "event → signal" }
                 }
 
-                t.Label (t.Attrs.attribute ("for", "name-field")) { "Your name" }
+                label (Attrs.attribute ("for", "name-field")) { "Your name" }
 
-                t.Input (
-                    t.Attrs.id "name-field",
-                    t.Attrs.attribute ("type", "text"),
-                    t.Attrs.attribute ("autocomplete", "off"),
-                    t.Attrs.data ("testid", "name"),
-                    t.Props.Input.value (fun (demo: DemoInstance) -> demo.State.Name.Value),
-                    t.Events.onInput (fun (demo: DemoInstance) event ->
-                        demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
+                input (
+                    Attrs.id "name-field",
+                    Attrs.attribute ("type", "text"),
+                    Attrs.attribute ("autocomplete", "off"),
+                    Attrs.data ("testid", "name"),
+                    Props.Input.value (fun demo -> demo.State.Name.Value),
+                    Events.onInput (fun demo event -> demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
                 )
 
-                t.P (t.Attrs.className "greeting", t.Attrs.data ("testid", "greeting"), t.Attrs.aria ("live", "polite")) {
-                    fun (demo: DemoInstance) -> $"Hello, {demo.State.Name.Value}"
+                p (Attrs.className "greeting", Attrs.data ("testid", "greeting"), Attrs.aria ("live", "polite")) {
+                    fun demo -> $"Hello, {demo.State.Name.Value}"
                 }
 
-                t.P (t.Attrs.className "note") { "Type anywhere in the field. Focus and selection are preserved." }
+                p (Attrs.className "note") { "Type anywhere in the field. Focus and selection are preserved." }
             }
         })
+
+/// <summary>The demo screen as a record with static <c>Create</c> and <c>View</c> members.</summary>
+type DemoMembers =
+    {
+        State: DemoState
+        Doubled: Memo<int>
+    }
+
+    static member Create(_: Setup, state: DemoState) =
+        {
+            State = state
+            Doubled = Api.createMemo (fun _ -> state.Count.Value * 2)
+        }
+
+    static member View =
+        section (
+            Attrs.className "demo-grid",
+            Attrs.data ("testid", "demo-root"),
+            Attrs.data ("parity", (fun demo -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd")))
+        ) {
+            article (Attrs.className "panel counter-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "01 / Counter" }
+                    span (Attrs.className "tag") { "signal → text" }
+                }
+
+                output (Attrs.className "count", Attrs.data ("testid", "count"), Attrs.aria ("live", "polite")) {
+                    fun demo -> string demo.State.Count.Value
+                }
+
+                div (Attrs.className "derived") {
+                    span () { "Doubled" }
+                    output (Attrs.data ("testid", "doubled")) { fun demo -> string demo.Doubled.Value }
+                }
+
+                div (Attrs.className "actions") {
+                    button (
+                        Attrs.className "primary",
+                        Attrs.data ("testid", "increment"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
+                    ) {
+                        "Increment +1"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "reset"),
+                        Attrs.attribute ("type", "button"),
+                        Props.Button.disabled (fun demo -> demo.State.Count.Value = 0),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- 0)
+                    ) {
+                        "Reset"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "burst"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun demo _ ->
+                            Api.batch (fun () ->
+                                for _ in 1..100 do
+                                    demo.State.Count.Value <- demo.State.Count.Value + 1))
+                    ) {
+                        "Burst +100"
+                    }
+                }
+
+                p (Attrs.className "note") { "The output changes. The DOM nodes stay." }
+            }
+
+            article (Attrs.className "panel name-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "02 / Input" }
+                    span (Attrs.className "tag") { "event → signal" }
+                }
+
+                label (Attrs.attribute ("for", "name-field")) { "Your name" }
+
+                input (
+                    Attrs.id "name-field",
+                    Attrs.attribute ("type", "text"),
+                    Attrs.attribute ("autocomplete", "off"),
+                    Attrs.data ("testid", "name"),
+                    Props.Input.value (fun demo -> demo.State.Name.Value),
+                    Events.onInput (fun demo event -> demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
+                )
+
+                p (Attrs.className "greeting", Attrs.data ("testid", "greeting"), Attrs.aria ("live", "polite")) {
+                    fun demo -> $"Hello, {demo.State.Name.Value}"
+                }
+
+                p (Attrs.className "note") { "Type anywhere in the field. Focus and selection are preserved." }
+            }
+        }
+
+let demoMembers = Component.ofMembers<DemoMembers, _>()
+
+/// <summary>The demo screen as a class: the constructor is the setup, the static <c>View</c> the template.</summary>
+type DemoClass(setup: Setup, state: DemoState) =
+    member _.State = state
+    member val Doubled = Api.createMemo (fun _ -> state.Count.Value * 2)
+
+    static member View: TemplateView<DemoClass> =
+        section (
+            Attrs.className "demo-grid",
+            Attrs.data ("testid", "demo-root"),
+            Attrs.data ("parity", (fun (demo: DemoClass) -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd")))
+        ) {
+            article (Attrs.className "panel counter-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "01 / Counter" }
+                    span (Attrs.className "tag") { "signal → text" }
+                }
+
+                output (Attrs.className "count", Attrs.data ("testid", "count"), Attrs.aria ("live", "polite")) {
+                    fun (demo: DemoClass) -> string demo.State.Count.Value
+                }
+
+                div (Attrs.className "derived") {
+                    span () { "Doubled" }
+                    output (Attrs.data ("testid", "doubled")) { fun (demo: DemoClass) -> string demo.Doubled.Value }
+                }
+
+                div (Attrs.className "actions") {
+                    button (
+                        Attrs.className "primary",
+                        Attrs.data ("testid", "increment"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun (demo: DemoClass) _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
+                    ) {
+                        "Increment +1"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "reset"),
+                        Attrs.attribute ("type", "button"),
+                        Props.Button.disabled (fun (demo: DemoClass) -> demo.State.Count.Value = 0),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- 0)
+                    ) {
+                        "Reset"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "burst"),
+                        Attrs.attribute ("type", "button"),
+                        Events.onClick (fun (demo: DemoClass) _ ->
+                            Api.batch (fun () ->
+                                for _ in 1..100 do
+                                    demo.State.Count.Value <- demo.State.Count.Value + 1))
+                    ) {
+                        "Burst +100"
+                    }
+                }
+
+                p (Attrs.className "note") { "The output changes. The DOM nodes stay." }
+            }
+
+            article (Attrs.className "panel name-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "02 / Input" }
+                    span (Attrs.className "tag") { "event → signal" }
+                }
+
+                label (Attrs.attribute ("for", "name-field")) { "Your name" }
+
+                input (
+                    Attrs.id "name-field",
+                    Attrs.attribute ("type", "text"),
+                    Attrs.attribute ("autocomplete", "off"),
+                    Attrs.data ("testid", "name"),
+                    Props.Input.value (fun (demo: DemoClass) -> demo.State.Name.Value),
+                    Events.onInput (fun demo event -> demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
+                )
+
+                p (Attrs.className "greeting", Attrs.data ("testid", "greeting"), Attrs.aria ("live", "polite")) {
+                    fun (demo: DemoClass) -> $"Hello, {demo.State.Name.Value}"
+                }
+
+                p (Attrs.className "note") { "Type anywhere in the field. Focus and selection are preserved." }
+            }
+        }
+
+let demoClass = Component.ofClass DemoClass

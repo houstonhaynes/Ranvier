@@ -2217,6 +2217,26 @@ module internal TemplateParts =
     let sourceText (source: Source<'inst, string>) : TemplateView<'inst> =
         TemplateView (TextSlotNode (sourceSlot TextTarget source primitiveSame))
 
+    let arm (definition: Component<unit -> 'payload>) (payload: 'payload) : Arm =
+        let template = definition :> TemplateComponent
+
+        if isNull template.armReader then
+            let reader =
+                Func<(unit -> obj), obj>(fun current -> box (fun () -> unbox<'payload> (unbox<Arm>(current ())).Payload))
+
+#if FABLE_COMPILER
+            template.armReader <- reader
+#else
+            Threading.Interlocked.CompareExchange (&template.armReader, reader, null)
+            |> ignore
+#endif
+
+        {
+            Arm.Definition = template
+            Payload = box payload
+            Reader = template.ArmReader
+        }
+
 /// <summary>Attribute parts: a value is static, a reader or source is dynamic.</summary>
 [<Sealed>]
 type AttributeBuilder<'inst> internal () =
@@ -2528,24 +2548,7 @@ type TemplateBuilder<'inst> internal () =
 
     /// <summary>An arm that renders <c>definition</c>; its props read the payload of the arm currently selected.</summary>
     member _.arm (definition: Component<unit -> 'payload>) (payload: 'payload) : Arm =
-        let template = definition :> TemplateComponent
-
-        if isNull template.armReader then
-            let reader =
-                Func<(unit -> obj), obj>(fun current -> box (fun () -> unbox<'payload> (unbox<Arm>(current ())).Payload))
-
-#if FABLE_COMPILER
-            template.armReader <- reader
-#else
-            Threading.Interlocked.CompareExchange (&template.armReader, reader, null)
-            |> ignore
-#endif
-
-        {
-            Arm.Definition = template
-            Payload = box payload
-            Reader = template.ArmReader
-        }
+        TemplateParts.arm definition payload
 
     /// <summary>Renders the arm that <c>arms</c> selects for the instance's union value, between region markers.</summary>
     /// <remarks>Arms are compared by key under <c>=</c>; a <c>matchWith</c> key is the arm's definition. Selecting another definition remounts, and selecting the same definition updates the payload read by its props. Writing <c>arms</c> as a <c>function</c> match lets the compiler check that every case has an arm. A remount runs the previous arm's cleanups and removes its nodes before the new arm is set up.</remarks>

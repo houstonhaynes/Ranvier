@@ -1,0 +1,82 @@
+{
+  "explicit": {
+    "raw": 212352,
+    "gzip": 61169,
+    "brotli": 53606
+  },
+  "explicit-combined": {
+    "raw": 213734,
+    "gzip": 61350,
+    "brotli": 53733
+  },
+  "sugared": {
+    "raw": 216387,
+    "gzip": 62009,
+    "brotli": 54304
+  },
+  "members": {
+    "raw": 216537,
+    "gzip": 61993,
+    "brotli": 54298
+  },
+  "class": {
+    "raw": 216627,
+    "gzip": 62061,
+    "brotli": 54314
+  },
+  "combined": {
+    "raw": 218022,
+    "gzip": 62219,
+    "brotli": 54446
+  },
+  "twins": {
+    "sugared": "explicit",
+    "members": "explicit",
+    "class": "explicit",
+    "combined": "explicit-combined"
+  },
+  "delta": {
+    "sugared": {
+      "raw": 4035,
+      "gzip": 840,
+      "brotli": 698
+    },
+    "members": {
+      "raw": 4185,
+      "gzip": 824,
+      "brotli": 692
+    },
+    "class": {
+      "raw": 4275,
+      "gzip": 892,
+      "brotli": 708
+    },
+    "combined": {
+      "raw": 4288,
+      "gzip": 869,
+      "brotli": 713
+    }
+  },
+  "combinedOverOneRowExplicit": {
+    "raw": 5670,
+    "gzip": 1050,
+    "brotli": 840
+  },
+  "budgetGzip": 1024,
+  "withinBudget": true,
+  "explicitHoldsSugar": false,
+  "sugaredHoldsSugar": true,
+  "frameCheck": {
+    "sugarDeclarations": 53,
+    "uncovered": [],
+    "nameCollisions": [
+      "map$1 (generated-tests/fable_modules/fable-library-js.5.18.0/List.js)",
+      "text (generated-tests/src/Ranvier/Types.js)",
+      "text (generated-tests/src/Ranvier/Types.js)",
+      "fragment (generated-tests/experiments/Ranvier.View.Foundation/Binding.js)",
+      "text (generated-tests/experiments/Ranvier.View.Foundation/Binding.js)",
+      "each (generated-tests/KeyedRowsPerf.js)"
+    ],
+    "violations": []
+  }
+}
