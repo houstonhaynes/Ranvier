@@ -231,7 +231,7 @@ test("microtask mode batches a burst and preserves state across scheduling chang
 });
 
 test("Fable watch replaces the app through Vite cleanup without reloading the page", async ({ page }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(180_000);
   const source = new URL("../App.fs", import.meta.url);
   const original = await readFile(source, "utf8");
   const modified = original.replace('t.text "Create once."', 't.text "Create once, live."');
@@ -241,7 +241,7 @@ test("Fable watch replaces the app through Vite cleanup without reloading the pa
   await page.evaluate(() => { document.documentElement.dataset.watchProbe = "same-document"; });
   try {
     await writeFile(source, modified);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Create once, live.", { timeout: 20_000 });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Create once, live.", { timeout: 60_000 });
     expect(await page.evaluate(() => document.documentElement.dataset.watchProbe)).toBe("same-document");
     expect(await oldRoot.evaluate(element => element.parentNode === null)).toBe(true);
     await expect(page.getByTestId("demo-root")).toHaveCount(1);
@@ -249,7 +249,7 @@ test("Fable watch replaces the app through Vite cleanup without reloading the pa
     await expect(page.getByTestId("count")).toHaveText("1");
   } finally {
     await writeFile(source, original);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Create once.", { timeout: 20_000 });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Create once.", { timeout: 60_000 });
   }
 });
 

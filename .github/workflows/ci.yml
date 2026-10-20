@@ -165,11 +165,49 @@ jobs:
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1 -CheckFable
 
+  # The Fable playground and the view layer under experiments/: the jsdom suites (with the view counters defined),
+  # the Chromium suite through Playwright, and the view layer's .NET representation checks. Documentation-only
+  # changes skip it with the other build jobs; everything under examples/Fable.Ranvier.Playground, experiments/,
+  # src/ and tools/Ranvier.Dom.Generate is non-documentation and runs it.
+  playground:
+    name: Playground
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/Fable.Ranvier.Playground
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      # The playground requires Node 26 or newer (package.json engines).
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: examples/Fable.Ranvier.Playground/package-lock.json
+      - name: Install npm packages
+        run: npm ci
+      - name: Restore tools
+        run: dotnet tool restore
+        working-directory: .
+      - name: Run the view layer representation checks
+        run: dotnet run --project experiments/Ranvier.View.Foundation/RepresentationChecks.fsproj -c Release
+        working-directory: .
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      # npm test runs the package's whole test chain: the jsdom suites (test:dom, with the view counters defined)
+      # and the Chromium suite (test:browser), plus any suites the script gains.
+      - name: Run the playground tests
+        run: npm test
+
   # The one CI check that branch rules require: it fails when any job failed or was cancelled, and passes when the
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground]
     if: always()
     runs-on: ubuntu-latest
     steps:
