@@ -16,6 +16,8 @@ type TestsAttribute() =
 let testList (name: string) (tests: Test list) : Test =
     Test.testList name tests
 
+let testSequenced (t: Test) : Test = t
+
 let testCase (name: string) (body: unit -> unit) : Test =
     Test.testCase name body
 

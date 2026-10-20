@@ -85,6 +85,15 @@ let all =
                     Ranvier.Tests.Combinators.groupByTests
                     Ranvier.Tests.Combinators.chainPendingTests
                     Ranvier.Tests.Combinators.foldTests
+                    Ranvier.Tests.Combinators.ownershipTests
+                    Ranvier.Tests.Combinators.sizeTests
+                    Ranvier.Tests.Combinators.positionTests
+                    Ranvier.Tests.Combinators.findTests
+                    Ranvier.Tests.Combinators.averageTests
+                    Ranvier.Tests.Combinators.extremeTests
+                    Ranvier.Tests.Combinators.partitionTests
+                    Ranvier.Tests.Combinators.distinctByTests
+                    Ranvier.Tests.Combinators.groupingAggregateTests
                 ]
             testList "PreviousValues.fs" [ Ranvier.Tests.PreviousValues.tests; Ranvier.Tests.PreviousValues.asyncTests ]
             testList

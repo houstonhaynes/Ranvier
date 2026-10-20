@@ -34,7 +34,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
-| Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 12 | 0 |
+| Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 16 | 0 |
 | Tracing.fs | 2 | 2 | 2 | 82 | 77 | 77 | 1 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
@@ -48,7 +48,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Reads.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Batching.fs | 11 | 11 | 11 | 11 | 11 | 11 | 0 | 0 |
 | AsyncEdges.fs | 25 | 22 | 19 | 25 | 22 | 19 | 4 | 0 |
-| Projections.fs | 116 | 116 | 116 | 116 | 116 | 116 | 10 | 0 |
+| Projections.fs | 121 | 121 | 121 | 121 | 121 | 121 | 10 | 0 |
 | TrimmedPass.fs | 59 | 59 | 59 | 59 | 59 | 59 | 0 | 0 |
 | Lookups.fs | 31 | 31 | 31 | 31 | 31 | 31 | 0 | 0 |
 | MemoScopes.fs | 24 | 24 | 24 | 24 | 24 | 24 | 0 | 0 |
@@ -57,7 +57,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | DischargeReentry.fs | 29 | 29 | 29 | 29 | 29 | 29 | 1 | 0 |
 | MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
-| Combinators.fs | 127 | 127 | 127 | 127 | 127 | 127 | 1 | 0 |
+| Combinators.fs | 226 | 226 | 226 | 226 | 226 | 226 | 2 | 0 |
 | Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1411 | 1390 | 1387 | 1551 | 1525 | 1522 | 98 | 1 |
+| **Total** | 1515 | 1494 | 1491 | 1655 | 1629 | 1626 | 103 | 1 |
 
 ## Tests.fs
 
@@ -504,6 +504,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | {name}: a flight that never settles is released when the memo is disposed | JavaScript exposes no forced collection. |
 | the items and keys {name} from a projection over {source} source are released | JavaScript exposes no forced collection. |
 | a failed read swallowed inside a {name} is released when it ends | JavaScript exposes no forced collection. |
+| a disposed aggregate memo is not retained by its fold | JavaScript exposes no forced collection. |
+| a tryFind memo disposed with its root is not retained | JavaScript exposes no forced collection. |
+| partition halves disposed with their root are not retained | JavaScript exposes no forced collection. |
+| an emptied group's aggregate is not retained | JavaScript exposes no forced collection. |
 
 <details><summary>2 passed in every build and delivery that runs them</summary>
 
@@ -993,7 +997,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | a view stops following when the scope that created it re-runs | AsObservableCollection returns an ObservableCollection, which the library omits under Fable. |
 | AsObservableCollection over a pending pass resets once when the pass settles | AsObservableCollection returns an ObservableCollection, which the library omits under Fable. |
 
-<details><summary>116 passed in every build and delivery that runs them</summary>
+<details><summary>121 passed in every build and delivery that runs them</summary>
 
 - the key order follows the source
 - a projection nothing reads is never recomputed
@@ -1088,10 +1092,14 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a removal whose cleanup disposes the projection gives a reset with empty keys
 - disposing the last reader, or its owner, stops recording
 - groupBy groups follow the law (seed 11)
+- sortByDescending keys follow the law while sort keys fail and recover (seed 11)
+- distinctBy keys follow the law while values fail and recover (seed 11)
 - index projection keys follow the law (seed 11)
 - filter keys follow the law while predicates fail and recover (seed 11)
 - sortBy keys follow the law while sort keys fail and recover (seed 11)
 - groupBy groups follow the law (seed 4242)
+- sortByDescending keys follow the law while sort keys fail and recover (seed 4242)
+- distinctBy keys follow the law while values fail and recover (seed 4242)
 - index projection keys follow the law (seed 4242)
 - filter keys follow the law while predicates fail and recover (seed 4242)
 - sortBy keys follow the law while sort keys fail and recover (seed 4242)
@@ -1109,6 +1117,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - a memo-free factory failure is raised by reads of its row
 - memo-free create-first rows keep the previous rows when a factory fails
 - value readers and combinators reject memo-free rows
+- size and position memos read a projection from createProjectionOnce
 - ensureUniqueKeys raises the pass's message for int, string, record and tuple keys
 - ensureUniqueKeys keeps boxed keys of different types apart, as = does
 
@@ -1421,8 +1430,9 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Excluded | Reason |
 | --- | --- |
 | foldGroup rejects a null subtract | Fable wraps a null function argument in a closure, so it is never null. |
+| a read through a memo of another graph publishes the current mean under a custom policy | the policy is an object expression over a generic interface member. |
 
-<details><summary>127 passed in every build and delivery that runs them</summary>
+<details><summary>226 passed in every build and delivery that runs them</summary>
 
 - 200 single edits at N=1000 make 200 predicate calls
 - a Keys reader wakes only when membership flips
@@ -1455,7 +1465,6 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - None sorts before Some, across updates
 - 200 single edits at N=1000 make 200 sort-key calls
 - a Keys reader wakes only when the order changes
-- a pass whose sort keys and upstream order are unchanged does not re-sort
 - an effect reading Keys and Get runs exactly once per write
 - an unread view leaves an unread upstream idle
 - a key removed and re-added while unread sorts by the new upstream row
@@ -1466,6 +1475,13 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - Get outside Keys raises KeyNotFoundException
 - removing a key disposes the key's memo
 - disposing the view detaches it from the upstream
+- sortByDescending sorts largest first, and equal sort keys keep upstream order
+- sortByDescending orders NaN last, across updates
+- sortByDescending orders None after Some
+- disposing a sortByDescending view detaches it from the upstream
+- tests reading the shared comparison counter / a pass whose sort keys and upstream order are unchanged does not re-sort
+- tests reading the shared comparison counter / a sortByDescending pass whose sort keys and upstream order are unchanged does not re-sort
+- tests reading the shared comparison counter / removing a non-extreme row costs no comparison; removing the extreme re-folds once
 - take, skip and sub select positions and clamp counts as List.truncate and a clamped skip do
 - the window follows signals read by offset and count, and a reader runs once per change
 - a key that stays in a shifted window keeps its row
@@ -1484,6 +1500,8 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - an effect reading Keys and Get of filter then mapWith runs exactly once per write
 - an effect reading Keys and Get of choose then sortBy runs exactly once per write
 - an effect reading Keys and Get of sortBy then take runs exactly once per write
+- an effect reading Keys and Get of sortByDescending then take runs exactly once per write
+- an effect reading Keys and Get of distinctBy then sortBy runs exactly once per write
 - an effect reading Keys and Get of sub then map runs exactly once per write
 - mapping runs once per key and its reader re-runs on an edit
 - a node the mapping creates is disposed with its key
@@ -1551,6 +1569,97 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - sumBy over floats reads zero once every row leaves
 - a throwing add recomputes from the cached values on the next read
 - a batch of edits reads the combined result
+- disposing the foldGroup memo releases the upstream rows
+- disposing the foldGroup memo twice, then its scope, records no error
+- disposing the fold memo releases the upstream rows
+- disposing the fold memo twice, then its scope, records no error
+- disposing the foldGroupBy memo releases the upstream rows
+- disposing the foldGroupBy memo twice, then its scope, records no error
+- disposing the sumBy memo releases the upstream rows
+- disposing the sumBy memo twice, then its scope, records no error
+- disposing the countBy memo releases the upstream rows
+- disposing the countBy memo twice, then its scope, records no error
+- disposing the exists memo releases the upstream rows
+- disposing the exists memo twice, then its scope, records no error
+- disposing the forall memo releases the upstream rows
+- disposing the forall memo twice, then its scope, records no error
+- creating an aggregate inside a pure memo body fails that memo and attaches nothing
+- a disposed aggregate reads its last value
+- disposing only the calling scope of a foldGroupBy memo stops its fold steps
+- Memo.Adopt disposes a replaced companion and the last companion once
+- length and isEmpty follow membership
+- a row edit wakes no reader
+- isEmpty wakes its readers only when emptiness changes
+- length over a filter follows the filter's membership
+- a pending pass makes length pending until it settles
+- a pending pass makes isEmpty pending until it settles
+- a failed pass makes length and isEmpty fail
+- disposing the calling scope stops length
+- tryHead and tryLast follow order and values
+- an edit off the head and the last key wakes no reader
+- appending a key after the head wakes no tryHead reader
+- tryHead, tryLast and tryItem read only the row at their position
+- tryItem follows its index signal, and a position outside Keys reads None
+- a pending head row makes tryHead pending, and a failed head row raises its error
+- tryHead over sortBy follows the minimum
+- a throwing index fails tryItem until it recovers
+- tryHead over a disposed view reads None
+- head, last and item raise KeyNotFoundException while empty and recover
+- head raises one exception instance per memo, and a reader runs once per transition
+- disposing the calling scope stops tryHead
+- the first match in upstream order
+- 200 single edits at N=1000 make 200 predicate calls
+- tryPick returns the first chosen value
+- an edit outside the first match wakes no tryFind reader
+- editing the matching row's value with its key unchanged wakes no tryFindKey reader
+- a non-matching row past the first match costs one predicate call and wakes no reader
+- a throwing predicate excludes its key from the search
+- a pending predicate on the head makes the search pending; elsewhere it keeps membership
+- find, findKey and pick raise KeyNotFoundException while nothing matches and recover
+- disposing the calling scope stops the search
+- disposing the tryFind memo releases the upstream rows
+- tryAverageBy averages float32 and decimal
+- tryAverageBy follows edits, removals and additions
+- an equal mean after a key change wakes no reader
+- an edit at N=1000 makes one addition
+- tryAverageBy over floats recovers from infinity and NaN
+- a pending row keeps its last settled value; a never-settled row adds nothing
+- averageBy raises KeyNotFoundException while empty and recovers
+- disposing the tryAverageBy memo releases the upstream rows
+- tryMinBy and tryMaxBy follow edits and removals
+- among equal ranks the current result stays until its holder's row is removed or edited
+- NaN orders last: tryMaxBy holds NaN, tryMinBy skips it
+- a failed rank raises until it recovers
+- a pending rank keeps its last settled rank
+- a batch of edits reads the combined result
+- a key removed and re-added while unread follows its new rank
+- minBy and maxBy raise KeyNotFoundException while empty and recover
+- minBy stays asleep while it stays empty
+- disposing the calling scope stops the rank calls
+- disposing the tryMinBy memo releases the upstream rows
+- the halves are complementary, in upstream order
+- 200 single edits at N=1000 make 200 predicate calls across both halves
+- a throwing predicate excludes the key from both halves
+- a pending predicate keeps the last side; a never-settled key is pending in both
+- an effect reading both halves runs once per write
+- disposing one half leaves the other following edits
+- disposing the calling scope stops every predicate call
+- the first holder per value, in upstream order
+- distinctBy republishes Keys only when the holder set changes
+- a key reader sees a hand-over as Removed and Added
+- a pending value keeps the key's last settled value; a never-settled key is only in PendingKeys
+- a pending key whose last settled value repeats an earlier holder stays out of Keys
+- a throwing value excludes the key, and Get and TryGet raise its error
+- disposing the view detaches it from the upstream
+- totals per group follow edits, moves and emptying
+- an edit within a group runs only that group's aggregate
+- an emptied group's aggregate is disposed, and a returning group gets a new one
+- an effect reading every group's total runs once per write
+- emptying a group and creating one each run the reader once
+- a pending or failed group memo makes its row pending or failed
+- a reorder that keeps group order and totals wakes no reader
+- a never-settled group key contributes to no total
+- disposing the result disposes every aggregate; disposing the grouping empties the result
 
 </details>
 

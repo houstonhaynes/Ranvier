@@ -2390,6 +2390,28 @@ let deltaReaderTests =
                         :> Projection<int, Projection<int, int>>)
                 }
 
+                test $"sortByDescending keys follow the law while sort keys fail and recover (seed {seed})" {
+                    randomPassesWith seed 150 (fun items ->
+                        let failing = createSignal Set.empty<int>
+
+                        createProjection id id (fun () -> items.Value)
+                        |> Projection.sortByDescending (fun n ->
+                            failWhen failing n
+                            n % 5),
+                        rewriteFailing failing)
+                }
+
+                test $"distinctBy keys follow the law while values fail and recover (seed {seed})" {
+                    randomPassesWith seed 150 (fun items ->
+                        let failing = createSignal Set.empty<int>
+
+                        createProjection id id (fun () -> items.Value)
+                        |> Projection.distinctBy (fun n ->
+                            failWhen failing n
+                            n % 5),
+                        rewriteFailing failing)
+                }
+
                 test $"index projection keys follow the law (seed {seed})" {
                     randomPasses seed 150 (fun items -> createIndexProjection id (fun () -> items.Value))
                 }
@@ -2793,7 +2815,38 @@ let rowOptionTests =
                 Expect.throwsT<NotSupportedException> (fun () -> Projection.filter (fun _ -> true) proj |> ignore) "filter"
                 Expect.throwsT<NotSupportedException> (fun () -> Projection.map id proj |> ignore) "map"
                 Expect.throwsT<NotSupportedException> (fun () -> Projection.sortBy id proj |> ignore) "sortBy"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.sortByDescending id proj |> ignore) "sortByDescending"
                 Expect.throwsT<NotSupportedException> (fun () -> Projection.fold (+) 0 proj |> ignore) "fold"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.tryFind (fun _ -> true) proj |> ignore) "tryFind"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.pick Some proj |> ignore) "pick"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.tryAverageBy float proj |> ignore) "tryAverageBy"
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.tryMinBy id proj |> ignore) "tryMinBy"
+
+                Expect.throwsT<NotSupportedException>
+                    (fun () ->
+                        Projection.partition (fun _ -> true) proj
+                        |> ignore)
+                    "partition"
+
+                Expect.throwsT<NotSupportedException> (fun () -> Projection.distinctBy id proj |> ignore) "distinctBy"
+            }
+
+            test "size and position memos read a projection from createProjectionOnce" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let items = createSignal [ 1; 2 ]
+
+                let proj =
+                    createProjectionOnce ProjectionOptions.None id (fun item -> item () * 10) (fun () -> items.Value)
+
+                Expect.equal (Projection.length proj).Value 2 "length"
+                Expect.isFalse (Projection.isEmpty proj).Value "isEmpty"
+                Expect.equal (Projection.tryHead proj).Value (Some (1, 10)) "tryHead"
+                Expect.equal (Projection.tryLast proj).Value (Some (2, 20)) "tryLast"
+                Expect.equal (Projection.head proj).Value (1, 10) "head"
+                Expect.equal (Projection.last proj).Value (2, 20) "last"
+                Expect.equal (Projection.tryItem (fun () -> 1) proj).Value (Some (2, 20)) "tryItem"
+                Expect.equal (Projection.item (fun () -> 0) proj).Value (1, 10) "item"
             }
 
             test "ensureUniqueKeys raises the pass's message for int, string, record and tuple keys" {

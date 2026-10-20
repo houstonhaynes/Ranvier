@@ -191,14 +191,14 @@ type internal SliceView<'K, 'V when 'K: equality>(graph: Graph, upstream: Projec
         heldOut.Publish upstream
 
 /// <summary>
-/// The keys of <c>inclusion</c> whose predicate row holds <c>true</c>, each with the value of <c>read</c> at the key.
+/// The keys of <c>inclusion</c> whose predicate row holds <c>admit</c>, each with the value of <c>read</c> at the key.
 /// </summary>
 /// <remarks>
 /// A pending predicate keeps the key's last settled membership. A failed predicate leaves the key out of <c>Keys</c> and
 /// keeps its row, which raises the failure. <c>read</c> raises when the key's predicate row is pending or failed.
 /// </remarks>
 type internal FilterView<'K, 'V, 'U when 'K: equality>
-    (graph: Graph, upstream: Projection<'K, 'V>, inclusion: Projection<'K, bool> ref, read: 'K -> 'U) =
+    (graph: Graph, upstream: Projection<'K, 'V>, inclusion: Projection<'K, bool> ref, read: 'K -> 'U, admit: bool) =
     inherit RowsOf<'K, 'K, 'U>(graph, read, Unchecked.defaultof<_>)
 
     let heldOut = HeldOut<'K> graph
@@ -220,12 +220,13 @@ type internal FilterView<'K, 'V, 'U when 'K: equality>
 
             if not (Platform.isNull entry) then
                 match entry.Row.TryValue with
-                | Ready true -> this.Visit (key, key)
-                | Ready false -> ()
+                | Ready included ->
+                    if included = admit then
+                        this.Visit (key, key)
                 | Pending ->
                     if not entry.Settled then
                         heldOut.Add key
-                    elif entry.Row.Peek then
+                    elif entry.Row.Peek = admit then
                         this.Visit (key, key)
                 | Failed _ ->
                     this.Visit (key, key)
@@ -234,15 +235,89 @@ type internal FilterView<'K, 'V, 'U when 'K: equality>
         heldOut.Publish upstream
 
 /// <summary>
-/// The keys of <c>sortKeys</c> whose sort key has settled, ascending by sort key and then by upstream position, each with
-/// a row reading the upstream value.
+/// The first key holding each distinct value of <c>values</c>, in upstream order, each with a row reading the upstream
+/// value.
+/// </summary>
+/// <remarks>
+/// A pending value keeps the key's last settled value. A failed value leaves the key out of <c>Keys</c> and keeps its
+/// row, which raises the failure.
+/// </remarks>
+type internal DistinctView<'K, 'V, 'G when 'K: equality and 'G: equality>(graph: Graph, upstream: Projection<'K, 'V>, values: Projection<'K, 'G> ref)
+    =
+    inherit
+        RowsOf<'K, 'K, 'V>(
+            graph,
+            (fun key ->
+                values.Value.Get key |> ignore
+                upstream.Get key),
+            Unchecked.defaultof<_>
+        )
+
+    let heldOut = HeldOut<'K> graph
+    let taken = Platform.KeySet<'G>()
+
+    /// <summary>
+    /// The upstream keys whose value has never settled, in upstream order, followed by the keys <c>upstream</c> holds out
+    /// of its <c>Keys</c>. A tracked read.
+    /// </summary>
+    member _.HeldOut = heldOut.Keys
+
+    override this.Enumerate() =
+        heldOut.Begin ()
+        taken.Clear ()
+        let rows = values.Value
+        let keys = rows.Keys
+
+        for i in 0 .. keys.Length - 1 do
+            let key = Platform.itemAt i keys
+            let entry = rows.Entries.Find key
+
+            if not (Platform.isNull entry) then
+                match entry.Row.TryValue with
+                | Ready value ->
+                    if taken.Add value then
+                        this.Visit (key, key)
+                | Pending ->
+                    if not entry.Settled then
+                        heldOut.Add key
+                    elif taken.Add entry.Row.Peek then
+                        this.Visit (key, key)
+                | Failed _ ->
+                    this.Visit (key, key)
+                    this.HideLast ()
+
+        heldOut.Publish upstream
+
+/// <summary>
+/// The rank order of extremes: <c>compare</c>, with a <c>float</c> or <c>float32</c> NaN equal to NaN and after every
+/// other rank.
+/// </summary>
+module internal Ranks =
+    let isNaN (rank: 'S) =
+        match box rank with
+        | :? float as f -> System.Double.IsNaN f
+        | :? float32 as f -> System.Single.IsNaN f
+        | _ -> false
+
+    /// <summary>The order of <c>sortBy</c>.</summary>
+    let ascending (a: 'S) (b: 'S) =
+        match isNaN a, isNaN b with
+        | true, true -> 0
+        | true, false -> 1
+        | false, true -> -1
+        | false, false -> compare a b
+
+/// <summary>
+/// The keys of <c>sortKeys</c> whose sort key has settled, ascending by sort key, or descending when <c>descending</c> is
+/// set, and then by upstream position, each with a row reading the upstream value.
 /// </summary>
 /// <remarks>
 /// A pending sort key keeps the key's last settled sort key. A failed sort key leaves the key out of <c>Keys</c> and keeps
-/// its row, which raises the failure. A <c>float</c> or <c>float32</c> NaN sort key orders after every other sort key.
+/// its row, which raises the failure. A <c>float</c> or <c>float32</c> NaN sort key orders after every other sort key in
+/// both directions.
 /// </remarks>
-type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: Graph, upstream: Projection<'K, 'V>, sortKeys: Projection<'K, 'S> ref)
-    =
+type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>
+    (graph: Graph, upstream: Projection<'K, 'V>, sortKeys: Projection<'K, 'S> ref, descending: bool) =
     inherit
         RowsOf<'K, 'K, 'V>(
             graph,
@@ -266,19 +341,20 @@ type internal SortView<'K, 'V, 'S when 'K: equality and 'S: comparison>(graph: G
     /// <summary>Whether <c>order</c> holds the result of a completed sort.</summary>
     let mutable sorted = false
 
+    // Local copies of the Ranks orders: a call into Ranks, direct or through a closure, costs 5-15% per sorting pass.
     let isNaN (rank: 'S) =
         match box rank with
         | :? float as f -> System.Double.IsNaN f
         | :? float32 as f -> System.Single.IsNaN f
         | _ -> false
 
-    /// <summary><c>compare</c>, with NaN equal to NaN and after every other value.</summary>
+    /// <summary>The order of <c>sortByDescending</c> when <c>descending</c> is set, of <c>sortBy</c> otherwise.</summary>
     let compareRanks (a: 'S) (b: 'S) =
         match isNaN a, isNaN b with
         | true, true -> 0
         | true, false -> 1
         | false, true -> -1
-        | false, false -> compare a b
+        | false, false -> if descending then compare b a else compare a b
 
     /// <summary>
     /// Whether <c>order</c> applies to this pass: the last sort completed, and this pass placed the keys and sort keys of the
@@ -975,6 +1051,20 @@ type internal ProjectionFold<'K, 'V, 'S when 'K: equality>
             link <- null
             this.Dispose ()
 
+    interface System.IDisposable with
+        member this.Dispose() =
+            this.Dispose ()
+
+/// <summary>The number of folded values and the key, rank and value of the holder of the extreme rank.</summary>
+[<Struct>]
+type internal Extreme<'K, 'S, 'V> =
+    {
+        Folded: int
+        HolderKey: 'K
+        HolderRank: 'S
+        HolderValue: 'V
+    }
+
 /// <summary>Views over a <c>Projection</c> that re-run the user function only for keys whose upstream row changed.</summary>
 /// <remarks>
 /// A view is a <c>Projection</c> owned by the scope that creates it. A membership or order change costs O(N) per view, and O(window) for <c>take</c>, <c>skip</c> and <c>sub</c>.
@@ -994,6 +1084,80 @@ module Projection =
 
             if not (seen.Add key) then
                 raise (ProjectionFailures.duplicateKey key)
+
+    /// <summary>An owner parented to the calling scope, for the nodes built by a composed memo.</summary>
+    let private ownedScope (graph: Graph) =
+        let parent = graph.CurrentOwner
+        let owner = new Owner (graph.Root)
+        owner.SetParent (parent.AttachLinked owner)
+        owner
+
+    /// <summary>A projection over the keys of <c>upstream</c>, each row holding <c>f</c> of the upstream value.</summary>
+    let private perKey (graph: Graph) (upstream: Projection<'K, 'V>) (f: 'V -> 'X) : Projection<'K, 'X> =
+        new KeyedProjection<'K, 'K, 'X> (graph, id, (fun key -> f (upstream.Get key)), Unchecked.defaultof<_>, fun () -> upstream.Keys)
+        :> Projection<'K, 'X>
+
+    /// <summary>
+    /// A function returning the value inside <c>Some</c>, and raising one <c>KeyNotFoundException</c> instance with
+    /// <c>message</c> for every <c>None</c>.
+    /// </summary>
+    let inline private orRaise (message: string) : 'T option -> 'T =
+        let empty = ref (null: exn)
+
+        fun result ->
+            match result with
+            | Some value -> value
+            | None ->
+                if isNull empty.Value then
+                    empty.Value <- System.Collections.Generic.KeyNotFoundException message :> exn
+
+                raise empty.Value
+
+    /// <summary>
+    /// The key at position <c>position count</c> of <c>upstream</c>, where <c>count</c> is the key count, with its value;
+    /// <c>None</c> for a position outside <c>Keys</c>.
+    /// </summary>
+    /// <remarks>Tracked reads of <c>Keys</c>, of what <c>position</c> reads, and of the row at the position.</remarks>
+    let private entryAt (upstream: Projection<'K, 'V>) (position: int -> int) : ('K * 'V) option =
+        let keys = upstream.Keys
+        let index = position keys.Length
+
+        if index < 0 || index >= keys.Length then
+            None
+        else
+            let key = Platform.itemAt index keys
+            Some (key, upstream.Get key)
+
+    /// <summary>A memo of <c>finish</c> applied to <c>entryAt upstream position</c>.</summary>
+    /// <remarks>
+    /// Readers re-run only when the entry changes: an equal entry returns the last result instance.
+    /// </remarks>
+    let private positional (upstream: Projection<'K, 'V>) (position: int -> int) (finish: ('K * 'V) option -> 'R) : Memo<'R> =
+        let equalKeys = System.Collections.Generic.EqualityComparer<'K>.Default
+        let equalValues = upstream.Graph.Options.Equality.Comparer<'V>()
+        let lastEntry: ('K * 'V) option ref = ref None
+        let lastResult = ref Unchecked.defaultof<'R>
+
+        let compute (_: 'R voption) =
+            let entry = entryAt upstream position
+
+            match entry, lastEntry.Value with
+            | Some (key, value), Some (lastKey, lastValue) when
+                equalKeys.Equals (key, lastKey)
+                && equalValues.Equals (value, lastValue)
+                ->
+                lastResult.Value
+            | Some _, _ ->
+                let result = finish entry
+                lastEntry.Value <- entry
+                lastResult.Value <- result
+                result
+            | None, _ ->
+                lastEntry.Value <- None
+                lastResult.Value <- Unchecked.defaultof<_>
+                finish entry
+
+        Memo<'R>.Create(upstream.Graph, compute, ScopeMode.Pure)
 
     /// <summary>The keys of <c>upstream</c> whose value satisfies <c>predicate</c>, in upstream order, with their values.</summary>
     /// <remarks>
@@ -1017,21 +1181,9 @@ module Projection =
             inclusion.Value.Get key |> ignore
             upstream.Get key
 
-        let view = new FilterView<'K, 'V, 'V> (graph, upstream, inclusion, read)
+        let view = new FilterView<'K, 'V, 'V> (graph, upstream, inclusion, read, true)
 
-        inclusion.Value <-
-            graph.RunOwned (
-                view.Scope,
-                fun () ->
-                    new KeyedProjection<'K, 'K, bool> (
-                        graph,
-                        id,
-                        (fun key -> predicate (upstream.Get key)),
-                        Unchecked.defaultof<_>,
-                        fun () -> upstream.Keys
-                    )
-                    :> Projection<'K, bool>
-            )
+        inclusion.Value <- graph.RunOwned (view.Scope, fun () -> perKey graph upstream predicate)
 
         view.PendingExtra <- fun () -> view.HeldOut
         view :> Projection<'K, 'V>
@@ -1064,19 +1216,12 @@ module Projection =
             | Some value -> value
             | None -> raise (System.Collections.Generic.KeyNotFoundException ("The projection has no key " + string key + "."))
 
-        let view = new FilterView<'K, 'V, 'U> (graph, upstream, inclusion, read)
+        let view = new FilterView<'K, 'V, 'U> (graph, upstream, inclusion, read, true)
 
         graph.RunOwned (
             view.Scope,
             fun () ->
-                choices.Value <-
-                    new KeyedProjection<'K, 'K, 'U option> (
-                        graph,
-                        id,
-                        (fun key -> chooser (upstream.Get key)),
-                        Unchecked.defaultof<_>,
-                        fun () -> upstream.Keys
-                    )
+                choices.Value <- perKey graph upstream chooser
 
                 inclusion.Value <-
                     new KeyedProjection<'K, 'K, bool> (
@@ -1091,6 +1236,16 @@ module Projection =
         view.PendingExtra <- fun () -> view.HeldOut
         view :> Projection<'K, 'U>
 
+    /// <summary>The keys of <c>upstream</c>, in upstream order, each with the value of <c>mapping</c> at the key.</summary>
+    let private mapByKey (mapping: 'K -> 'U) (upstream: Projection<'K, 'V>) : Projection<'K, 'U> =
+        let view =
+            new MapView<'K, 'V, 'U> (upstream.Graph, upstream, mapping, Unchecked.defaultof<_>)
+
+        if not (Platform.isNull (box upstream.PendingExtra)) then
+            view.PendingExtra <- fun () -> view.HeldOut
+
+        view :> Projection<'K, 'U>
+
     /// <summary>The keys of <c>upstream</c>, in upstream order, each with <c>mapping</c> of its value.</summary>
     /// <remarks>
     /// <c>mapping</c> re-runs for a key when its upstream row changes. A throwing <c>mapping</c> keeps the key, and <c>Get</c>
@@ -1099,14 +1254,7 @@ module Projection =
     /// </remarks>
     let map (mapping: 'V -> 'U) (upstream: Projection<'K, 'V>) : Projection<'K, 'U> =
         upstream.RequireRowMemos "Projection.map"
-
-        let view =
-            new MapView<'K, 'V, 'U> (upstream.Graph, upstream, (fun key -> mapping (upstream.Get key)), Unchecked.defaultof<_>)
-
-        if not (Platform.isNull (box upstream.PendingExtra)) then
-            view.PendingExtra <- fun () -> view.HeldOut
-
-        view :> Projection<'K, 'U>
+        mapByKey (fun key -> mapping (upstream.Get key)) upstream
 
     /// <summary>
     /// The keys of <c>upstream</c>, in upstream order, each row the reader <c>mapping</c> returns for the key and a
@@ -1138,6 +1286,17 @@ module Projection =
 
         view :> Projection<'K, 'U>
 
+    let private sortIn (operation: string) (descending: bool) (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> =
+        upstream.RequireRowMemos operation
+        let graph = upstream.Graph
+        let sortKeys = ref Unchecked.defaultof<Projection<'K, 'S>>
+        let view = new SortView<'K, 'V, 'S> (graph, upstream, sortKeys, descending)
+
+        sortKeys.Value <- graph.RunOwned (view.Scope, fun () -> perKey graph upstream projection)
+
+        view.PendingExtra <- fun () -> view.HeldOut
+        view :> Projection<'K, 'V>
+
     /// <summary>
     /// The keys of <c>upstream</c> with their values, ascending by <c>projection</c> of the value; equal sort keys keep upstream
     /// order.
@@ -1154,27 +1313,24 @@ module Projection =
     /// </code>
     /// </example>
     let sortBy (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> =
-        upstream.RequireRowMemos "Projection.sortBy"
-        let graph = upstream.Graph
-        let sortKeys = ref Unchecked.defaultof<Projection<'K, 'S>>
-        let view = new SortView<'K, 'V, 'S> (graph, upstream, sortKeys)
+        sortIn "Projection.sortBy" false projection upstream
 
-        sortKeys.Value <-
-            graph.RunOwned (
-                view.Scope,
-                fun () ->
-                    new KeyedProjection<'K, 'K, 'S> (
-                        graph,
-                        id,
-                        (fun key -> projection (upstream.Get key)),
-                        Unchecked.defaultof<_>,
-                        fun () -> upstream.Keys
-                    )
-                    :> Projection<'K, 'S>
-            )
-
-        view.PendingExtra <- fun () -> view.HeldOut
-        view :> Projection<'K, 'V>
+    /// <summary>
+    /// The keys of <c>upstream</c> with their values, descending by <c>projection</c> of the value; equal sort keys keep
+    /// upstream order.
+    /// </summary>
+    /// <remarks>
+    /// A <c>float</c> or <c>float32</c> NaN sort key orders last; <c>None</c> orders after <c>Some</c>. Costs, pending and
+    /// failed sort keys follow <c>sortBy</c>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let newestFirst = rows |> Projection.sortByDescending (fun t -> t.Created)
+    /// </code>
+    /// </example>
+    let sortByDescending (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> =
+        sortIn "Projection.sortByDescending" true projection upstream
 
     let private slice (offset: unit -> int) (count: unit -> int) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> =
         upstream.RequireRowMemos "Projection.slice"
@@ -1262,21 +1418,32 @@ module Projection =
         let groupKeys = ref Unchecked.defaultof<Projection<'K, 'G>>
         let view = new Grouping<'G, 'K, 'V> (graph, upstream, groupKeys)
 
-        groupKeys.Value <-
-            graph.RunOwned (
-                view.Scope,
-                fun () ->
-                    new KeyedProjection<'K, 'K, 'G> (
-                        graph,
-                        id,
-                        (fun key -> projection (upstream.Get key)),
-                        Unchecked.defaultof<_>,
-                        fun () -> upstream.Keys
-                    )
-                    :> Projection<'K, 'G>
-            )
+        groupKeys.Value <- graph.RunOwned (view.Scope, fun () -> perKey graph upstream projection)
 
         view
+
+    /// <summary>
+    /// A memo of <c>result</c> applied to the fold of <c>rows ()</c>. The memo owns the fold and every node created by
+    /// <c>rows</c>.
+    /// </summary>
+    let private foldOwned
+        (graph: Graph)
+        (rows: unit -> Projection<'K, 'U>)
+        (add: 'S -> 'U -> 'S)
+        (subtract: 'S -> 'U -> 'S)
+        (zero: 'S)
+        (result: 'S -> 'R)
+        : Memo<'R> =
+        let owner = ownedScope graph
+
+        let aggregate =
+            graph.RunOwned (owner, fun () -> new ProjectionFold<'K, 'U, 'S> (graph, rows (), add, subtract, zero))
+
+        let memo =
+            Memo<'R>.Create(graph, (fun _ -> result (aggregate.Compute ValueNone)), ScopeMode.Pure)
+
+        memo.Adopt owner
+        memo
 
     /// <summary>
     /// A memo of the settled values of <c>upstream</c> folded into <c>zero</c> with <c>add</c>, kept current by applying each
@@ -1286,7 +1453,7 @@ module Projection =
     /// <c>subtract</c> must invert <c>add</c>. A row edit costs O(1) calls and reads the edited row alone; a key change costs
     /// an O(N) key diff. The fold covers settled values: a pending row keeps its last one, as in <c>Snapshot</c>, and
     /// <c>AnyPending</c> reports it. A failed row makes a read raise its exception. A value read by <c>add</c> or
-    /// <c>subtract</c> re-folds the cached values on change. The memo is disposed with the calling scope.
+    /// <c>subtract</c> re-folds the cached values on change. Disposing the memo, or the calling scope, disposes the fold.
     /// </remarks>
     /// <example>
     /// <code lang="fsharp">
@@ -1301,9 +1468,14 @@ module Projection =
             raise (System.ArgumentNullException (nameof subtract))
 
         let graph = upstream.Graph
-        let aggregate = ProjectionFold<'K, 'V, 'S>(graph, upstream, add, subtract, zero)
-        aggregate.Memo <- Memo<'S>.Create(graph, aggregate.Compute, ScopeMode.Pure)
-        aggregate.Memo
+
+        let aggregate =
+            new ProjectionFold<'K, 'V, 'S> (graph, upstream, add, subtract, zero)
+
+        let memo = Memo<'S>.Create(graph, aggregate.Compute, ScopeMode.Pure)
+        aggregate.Memo <- memo
+        memo.Adopt aggregate
+        memo
 
     /// <summary>A memo of the settled values of <c>upstream</c> folded with <c>folder</c> from <c>state</c>, in <c>Keys</c> order.</summary>
     /// <remarks>
@@ -1315,14 +1487,66 @@ module Projection =
         let graph = upstream.Graph
 
         let aggregate =
-            ProjectionFold<'K, 'V, 'S>(graph, upstream, folder, Unchecked.defaultof<_>, state)
+            new ProjectionFold<'K, 'V, 'S> (graph, upstream, folder, Unchecked.defaultof<_>, state)
 
-        aggregate.Memo <- Memo<'S>.Create(graph, aggregate.Compute, ScopeMode.Pure)
-        aggregate.Memo
+        let memo = Memo<'S>.Create(graph, aggregate.Compute, ScopeMode.Pure)
+        aggregate.Memo <- memo
+        memo.Adopt aggregate
+        memo
+
+    /// <summary>
+    /// A memo of <c>result</c> applied to the <c>foldGroup add subtract zero</c> of <c>projection</c> over the values of
+    /// <c>upstream</c>.
+    /// </summary>
+    /// <remarks>
+    /// <c>projection</c> re-runs for a key when its upstream row changes, in a view the memo owns; <c>result</c> re-runs
+    /// when the fold state changes. Costs, pending and failed rows follow <c>foldGroup</c>. Disposing the memo, or the
+    /// calling scope, disposes the view and the fold.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">On .NET, <c>subtract</c> is null.</exception>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    ///
+    /// let anyOpen =
+    ///     rows
+    ///     |> Projection.foldGroupBy
+    ///         (fun t -> t.Done)
+    ///         (fun n d -> if d then n else n + 1)
+    ///         (fun n d -> if d then n else n - 1)
+    ///         0
+    ///         (fun n -> n > 0)
+    /// </code>
+    /// </example>
+    let foldGroupBy
+        (projection: 'V -> 'U)
+        (add: 'S -> 'U -> 'S)
+        (subtract: 'S -> 'U -> 'S)
+        (zero: 'S)
+        (result: 'S -> 'R)
+        (upstream: Projection<'K, 'V>)
+        : Memo<'R> =
+        upstream.RequireRowMemos "Projection.foldGroupBy"
+
+        if Platform.isNull (box subtract) then
+            raise (System.ArgumentNullException (nameof subtract))
+
+        foldOwned upstream.Graph (fun () -> map projection upstream) add subtract zero result
+
+    /// <summary><c>s - n</c>, raising ArithmeticException when the difference is infinite or NaN.</summary>
+    [<NoDynamicInvocation>]
+    let inline private subtractFinite (s: ^N) (n: ^N) : ^N =
+        let d = s - n
+
+        // A throwing subtract re-folds from the cached values. d - d is non-zero exactly when d is infinite or NaN.
+        if d - d <> LanguagePrimitives.GenericZero then
+            raise (System.ArithmeticException ())
+
+        d
 
     /// <summary>A memo of the sum of <c>projection</c> over the values of <c>upstream</c>, kept current per row change.</summary>
     /// <remarks>
-    /// <c>projection</c> re-runs for a key when its upstream row changes, in a view the memo reads as <c>foldGroup</c> does.
+    /// <c>projection</c> re-runs for a key when its upstream row changes, in a view the memo owns.
     /// A pending or throwing <c>projection</c> behaves as a pending or failed row of <c>foldGroup</c>. While the sum is
     /// infinite or NaN, each row change re-adds every cached value: O(N).
     /// </remarks>
@@ -1335,18 +1559,7 @@ module Projection =
     [<NoDynamicInvocation>]
     let inline sumBy (projection: 'V -> ^N) (upstream: Projection<'K, 'V>) : Memo< ^N > =
         upstream
-        |> map projection
-        |> foldGroup
-            (fun s n -> s + n)
-            (fun s n ->
-                let d = s - n
-
-                // A throwing subtract re-folds from the cached values. d - d is non-zero exactly when d is infinite or NaN.
-                if d - d <> LanguagePrimitives.GenericZero then
-                    raise (System.ArithmeticException ())
-
-                d)
-            LanguagePrimitives.GenericZero
+        |> foldGroupBy projection (fun s n -> s + n) subtractFinite LanguagePrimitives.GenericZero id
 
     /// <summary>A memo of how many values of <c>upstream</c> satisfy <c>predicate</c>, kept current per row change.</summary>
     /// <remarks>
@@ -1355,17 +1568,454 @@ module Projection =
     /// </remarks>
     let countBy (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<int> =
         upstream
-        |> map predicate
-        |> foldGroup (fun n hit -> if hit then n + 1 else n) (fun n hit -> if hit then n - 1 else n) 0
+        |> foldGroupBy predicate (fun n hit -> if hit then n + 1 else n) (fun n hit -> if hit then n - 1 else n) 0 id
 
     /// <summary>A memo of whether some value of <c>upstream</c> satisfies <c>predicate</c>: a <c>countBy</c> above zero.</summary>
     /// <remarks>Costs and pending and failed rows follow <c>countBy</c>. An empty projection reads <c>false</c>.</remarks>
     let exists (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<bool> =
-        let count = countBy predicate upstream
-        Memo<bool>.Create(upstream.Graph, (fun _ -> count.Value > 0), ScopeMode.Pure)
+        upstream
+        |> foldGroupBy predicate (fun n hit -> if hit then n + 1 else n) (fun n hit -> if hit then n - 1 else n) 0 (fun n -> n > 0)
 
     /// <summary>A memo of whether every value of <c>upstream</c> satisfies <c>predicate</c>: a <c>countBy</c> of misses at zero.</summary>
     /// <remarks>Costs and pending and failed rows follow <c>countBy</c>. An empty projection reads <c>true</c>.</remarks>
     let forall (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<bool> =
-        let misses = countBy (predicate >> not) upstream
-        Memo<bool>.Create(upstream.Graph, (fun _ -> misses.Value = 0), ScopeMode.Pure)
+        upstream
+        |> foldGroupBy predicate (fun n hit -> if hit then n else n + 1) (fun n hit -> if hit then n else n - 1) 0 (fun n -> n = 0)
+
+    /// <summary>A memo of the number of keys of <c>upstream</c>.</summary>
+    /// <remarks>
+    /// Depends exclusively on <c>Keys</c>. Pending rows count, as in <c>Count</c>. A pending or failed pass makes the memo
+    /// pending or failed.
+    /// </remarks>
+    let length (upstream: Projection<'K, 'V>) : Memo<int> =
+        Memo<int>.Create(upstream.Graph, (fun _ -> upstream.Keys.Length), ScopeMode.Pure)
+
+    /// <summary>A memo of whether <c>Keys</c> of <c>upstream</c> is empty.</summary>
+    /// <remarks>Depends on <c>Keys</c> as <c>length</c> does, and wakes its readers only when emptiness changes.</remarks>
+    let isEmpty (upstream: Projection<'K, 'V>) : Memo<bool> =
+        Memo<bool>.Create(upstream.Graph, (fun _ -> upstream.Keys.Length = 0), ScopeMode.Pure)
+
+    /// <summary>A memo of the first key of <c>upstream</c> with its value, or <c>None</c> while <c>Keys</c> is empty.</summary>
+    /// <remarks>
+    /// Depends exclusively on <c>Keys</c> and the first key's row. A pending first row makes the memo pending, and a failed
+    /// one makes it raise the row's exception.
+    /// </remarks>
+    let tryHead (upstream: Projection<'K, 'V>) : Memo<('K * 'V) option> =
+        positional upstream (fun _ -> 0) id
+
+    /// <summary>A memo of the last key of <c>upstream</c> with its value, or <c>None</c> while <c>Keys</c> is empty.</summary>
+    /// <remarks>Reads as <c>tryHead</c> does, at the last position.</remarks>
+    let tryLast (upstream: Projection<'K, 'V>) : Memo<('K * 'V) option> =
+        positional upstream (fun count -> count - 1) id
+
+    /// <summary>
+    /// A memo of the key at position <c>index ()</c> of <c>upstream</c> with its value, or <c>None</c> for a position
+    /// outside <c>Keys</c>, negative included.
+    /// </summary>
+    /// <remarks>
+    /// <c>index</c> is a tracked read, as the count of <c>take</c> is. Reads as <c>tryHead</c> does, at that position. A
+    /// throwing <c>index</c> fails the memo.
+    /// </remarks>
+    let tryItem (index: unit -> int) (upstream: Projection<'K, 'V>) : Memo<('K * 'V) option> =
+        positional upstream (fun _ -> index ()) id
+
+    /// <summary><c>tryHead</c>, raising <c>KeyNotFoundException</c> while <c>Keys</c> is empty.</summary>
+    /// <remarks>The memo fails while empty and recovers once a key arrives; prefer <c>tryHead</c> for a binding.</remarks>
+    let head (upstream: Projection<'K, 'V>) : Memo<'K * 'V> =
+        positional upstream (fun _ -> 0) (orRaise "Projection.head: the projection has no keys.")
+
+    /// <summary><c>tryLast</c>, raising <c>KeyNotFoundException</c> while <c>Keys</c> is empty.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let last (upstream: Projection<'K, 'V>) : Memo<'K * 'V> =
+        positional upstream (fun count -> count - 1) (orRaise "Projection.last: the projection has no keys.")
+
+    /// <summary><c>tryItem</c>, raising <c>KeyNotFoundException</c> for a position outside <c>Keys</c>.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let item (index: unit -> int) (upstream: Projection<'K, 'V>) : Memo<'K * 'V> =
+        positional upstream (fun _ -> index ()) (orRaise "Projection.item: the projection has no key at the index.")
+
+    /// <summary>
+    /// A memo of <c>finish</c> applied to the first key of the view returned by <c>build</c>, with its value. The memo owns
+    /// the view.
+    /// </summary>
+    /// <remarks>
+    /// Readers re-run only when the compared part changes: the key when <c>byKey</c> is true, and the value otherwise. An
+    /// equal part returns the last result instance.
+    /// </remarks>
+    let private firstOf (graph: Graph) (build: unit -> Projection<'K, 'U>) (byKey: bool) (finish: ('K * 'U) option -> 'R) : Memo<'R> =
+        let owner = ownedScope graph
+        let view = graph.RunOwned (owner, build)
+        let equalKeys = System.Collections.Generic.EqualityComparer<'K>.Default
+        let equalValues = graph.Options.Equality.Comparer<'U>()
+        let lastEntry: ('K * 'U) option ref = ref None
+        let lastResult = ref Unchecked.defaultof<'R>
+
+        let compute (_: 'R voption) =
+            let entry = entryAt view (fun _ -> 0)
+
+            match entry, lastEntry.Value with
+            | Some (key, value), Some (lastKey, lastValue) when
+                (if byKey then
+                     equalKeys.Equals (key, lastKey)
+                 else
+                     equalValues.Equals (value, lastValue))
+                ->
+                lastResult.Value
+            | Some _, _ ->
+                let result = finish entry
+                lastEntry.Value <- entry
+                lastResult.Value <- result
+                result
+            | None, _ ->
+                lastEntry.Value <- None
+                lastResult.Value <- Unchecked.defaultof<_>
+                finish entry
+
+        let memo = Memo<'R>.Create(graph, compute, ScopeMode.Pure)
+        memo.Adopt owner
+        memo
+
+    /// <summary>A memo of the first value of <c>upstream</c>, in upstream order, that satisfies <c>predicate</c>.</summary>
+    /// <remarks>
+    /// The memo owns a <c>filter</c> view: <c>predicate</c> re-runs for a key when its upstream row changes, and a
+    /// membership flip costs the filter's O(N) pass. A match whose predicate is pending makes the memo pending.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let firstOpen = rows |> Projection.tryFind (fun t -> not t.Done)
+    /// </code>
+    /// </example>
+    let tryFind (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<'V option> =
+        upstream.RequireRowMemos "Projection.tryFind"
+        firstOf upstream.Graph (fun () -> filter predicate upstream) false (Option.map snd)
+
+    /// <summary>A memo of the first key of <c>upstream</c>, in upstream order, whose value satisfies <c>predicate</c>.</summary>
+    /// <remarks>Follows <c>tryFind</c>.</remarks>
+    let tryFindKey (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<'K option> =
+        upstream.RequireRowMemos "Projection.tryFindKey"
+        firstOf upstream.Graph (fun () -> filter predicate upstream) true (Option.map fst)
+
+    /// <summary>
+    /// A memo of the first <c>Some</c> returned by <c>chooser</c> over the values of <c>upstream</c>, in upstream order.
+    /// </summary>
+    /// <remarks>The memo owns a <c>choose</c> view; costs, pending and failure follow <c>tryFind</c>.</remarks>
+    let tryPick (chooser: 'V -> 'U option) (upstream: Projection<'K, 'V>) : Memo<'U option> =
+        upstream.RequireRowMemos "Projection.tryPick"
+        firstOf upstream.Graph (fun () -> choose chooser upstream) false (Option.map snd)
+
+    /// <summary><c>tryFind</c>, raising <c>KeyNotFoundException</c> while no value satisfies <c>predicate</c>.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let find (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<'V> =
+        upstream.RequireRowMemos "Projection.find"
+
+        firstOf
+            upstream.Graph
+            (fun () -> filter predicate upstream)
+            false
+            (Option.map snd
+             >> orRaise "Projection.find: no value satisfies the predicate.")
+
+    /// <summary><c>tryFindKey</c>, raising <c>KeyNotFoundException</c> while no value satisfies <c>predicate</c>.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let findKey (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Memo<'K> =
+        upstream.RequireRowMemos "Projection.findKey"
+
+        firstOf
+            upstream.Graph
+            (fun () -> filter predicate upstream)
+            true
+            (Option.map fst
+             >> orRaise "Projection.findKey: no value satisfies the predicate.")
+
+    /// <summary><c>tryPick</c>, raising <c>KeyNotFoundException</c> while <c>chooser</c> returns <c>None</c> for every value.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let pick (chooser: 'V -> 'U option) (upstream: Projection<'K, 'V>) : Memo<'U> =
+        upstream.RequireRowMemos "Projection.pick"
+
+        firstOf
+            upstream.Graph
+            (fun () -> choose chooser upstream)
+            false
+            (Option.map snd
+             >> orRaise "Projection.pick: the chooser returns None for every value.")
+
+    /// <summary>The mean of a <c>struct (sum, count)</c> state, or <c>None</c> at count zero.</summary>
+    [<NoDynamicInvocation>]
+    let inline private mean (struct (sum: ^N, count: int)) : ^N option =
+        if count = 0 then
+            None
+        else
+            Some (LanguagePrimitives.DivideByInt sum count)
+
+    /// <summary>
+    /// A memo of <c>result</c> applied to the running <c>struct (sum, count)</c> of <c>projection</c> over the values of
+    /// <c>upstream</c>.
+    /// </summary>
+    [<NoDynamicInvocation>]
+    let inline private meanBy (projection: 'V -> ^N) (result: struct (^N * int) -> 'R) (upstream: Projection<'K, 'V>) : Memo<'R> =
+        upstream
+        |> foldGroupBy
+            projection
+            (fun (struct (sum, count)) n -> struct (sum + n, count + 1))
+            (fun (struct (sum, count)) n -> struct (subtractFinite sum n, count - 1))
+            (struct (LanguagePrimitives.GenericZero, 0))
+            result
+
+    /// <summary>
+    /// A memo of the mean of <c>projection</c> over the settled values of <c>upstream</c>, or <c>None</c> while no value has
+    /// settled.
+    /// </summary>
+    /// <remarks>
+    /// Costs and pending rows follow <c>sumBy</c>. Readers wake only when the mean changes. Supports <c>float</c>,
+    /// <c>float32</c>, <c>decimal</c> and any type with <c>+</c>, <c>-</c>, <c>Zero</c>, <c>DivideByInt</c> and equality.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let meanHours = rows |> Projection.tryAverageBy (fun t -> t.Hours)
+    /// </code>
+    /// </example>
+    [<NoDynamicInvocation>]
+    let inline tryAverageBy (projection: 'V -> ^N) (upstream: Projection<'K, 'V>) : Memo<^N option> =
+        let last: ^N option ref = ref None
+
+        meanBy
+            projection
+            (fun state ->
+                match mean state, last.Value with
+                | Some current, Some previous when current = previous -> last.Value
+                | current, _ ->
+                    last.Value <- current
+                    current)
+            upstream
+
+    /// <summary><c>tryAverageBy</c>, raising <c>KeyNotFoundException</c> while no value has settled.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    [<NoDynamicInvocation>]
+    let inline averageBy (projection: 'V -> ^N) (upstream: Projection<'K, 'V>) : Memo< ^N > =
+        let raiseEmpty =
+            orRaise "Projection.averageBy: the projection has no settled values."
+
+        meanBy projection (fun state -> raiseEmpty (mean state)) upstream
+
+    /// <summary>
+    /// A memo of <c>finish</c> applied to the value holding the best rank of <c>projection</c>. <c>better rank best</c> is
+    /// true when <c>rank</c> replaces the holder of <c>best</c>.
+    /// </summary>
+    /// <remarks>
+    /// An equal rank keeps the holder. Removing or editing the holder re-folds the cached ranks in <c>Keys</c> order, and
+    /// the re-fold favours the last published holder over an equal rank. Readers re-run only when the holder value
+    /// changes.
+    /// </remarks>
+    let private extremeBy
+        (operation: string)
+        (better: 'S -> 'S -> bool)
+        (projection: 'V -> 'S)
+        (finish: 'V option -> 'R)
+        (upstream: Projection<'K, 'V>)
+        : Memo<'R> =
+        upstream.RequireRowMemos operation
+        let equalKeys = System.Collections.Generic.EqualityComparer<'K>.Default
+        let equalValues = upstream.Graph.Options.Equality.Comparer<'V>()
+        let hasLast = ref false
+        let lastKey = ref Unchecked.defaultof<'K>
+        let lastValue = ref Unchecked.defaultof<'V>
+        let lastResult = ref Unchecked.defaultof<'R>
+
+        let add (state: Extreme<'K, 'S, 'V>) (struct (key: 'K, rank: 'S, value: 'V)) =
+            if
+                state.Folded = 0
+                || better rank state.HolderRank
+                || (hasLast.Value
+                    && equalKeys.Equals (key, lastKey.Value)
+                    && not (better state.HolderRank rank))
+            then
+                {
+                    Folded = state.Folded + 1
+                    HolderKey = key
+                    HolderRank = rank
+                    HolderValue = value
+                }
+            else
+                { state with Folded = state.Folded + 1 }
+
+        let subtract (state: Extreme<'K, 'S, 'V>) (struct (key: 'K, _: 'S, _: 'V)) =
+            // A throwing subtract re-folds from the cached values.
+            if equalKeys.Equals (key, state.HolderKey) then
+                raise (System.InvalidOperationException ())
+
+            { state with Folded = state.Folded - 1 }
+
+        let zero =
+            {
+                Folded = 0
+                HolderKey = Unchecked.defaultof<'K>
+                HolderRank = Unchecked.defaultof<'S>
+                HolderValue = Unchecked.defaultof<'V>
+            }
+
+        let ranked () =
+            upstream
+            |> mapByKey (fun key ->
+                let value = upstream.Get key
+                struct (key, projection value, value))
+
+        let result (state: Extreme<'K, 'S, 'V>) =
+            if state.Folded = 0 then
+                hasLast.Value <- false
+                lastKey.Value <- Unchecked.defaultof<_>
+                lastValue.Value <- Unchecked.defaultof<_>
+                lastResult.Value <- Unchecked.defaultof<_>
+                finish None
+            elif
+                hasLast.Value
+                && equalValues.Equals (state.HolderValue, lastValue.Value)
+            then
+                lastKey.Value <- state.HolderKey
+                lastResult.Value
+            else
+                let current = finish (Some state.HolderValue)
+                hasLast.Value <- true
+                lastKey.Value <- state.HolderKey
+                lastValue.Value <- state.HolderValue
+                lastResult.Value <- current
+                current
+
+        foldOwned upstream.Graph ranked add subtract zero result
+
+    /// <summary>
+    /// A memo of a value of <c>upstream</c> with the least <c>projection</c> under the <c>sortBy</c> order, or <c>None</c>
+    /// while no value has settled.
+    /// </summary>
+    /// <remarks>
+    /// A NaN rank orders after every other rank. Among equal ranks the current result stays, including when its holder's
+    /// row is edited to an equal rank; when the holder is removed, the result is the first holder in <c>Keys</c> order. A
+    /// row change costs O(1) unless it removes or edits the holder's row, which re-folds the cached ranks in O(N).
+    /// Pending and failed ranks follow <c>foldGroup</c>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let next = rows |> Projection.tryMinBy (fun t -> t.Due)
+    /// </code>
+    /// </example>
+    let tryMinBy (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Memo<'V option> =
+        extremeBy "Projection.tryMinBy" (fun rank best -> Ranks.ascending rank best < 0) projection id upstream
+
+    /// <summary>
+    /// A memo of a value of <c>upstream</c> with the greatest <c>projection</c> under the <c>sortBy</c> order, or
+    /// <c>None</c> while no value has settled.
+    /// </summary>
+    /// <remarks>A NaN rank is the greatest. Ties, costs, pending and failure follow <c>tryMinBy</c>.</remarks>
+    let tryMaxBy (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Memo<'V option> =
+        extremeBy "Projection.tryMaxBy" (fun rank best -> Ranks.ascending rank best > 0) projection id upstream
+
+    /// <summary><c>tryMinBy</c>, raising <c>KeyNotFoundException</c> while no value has settled.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let minBy (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Memo<'V> =
+        extremeBy
+            "Projection.minBy"
+            (fun rank best -> Ranks.ascending rank best < 0)
+            projection
+            (orRaise "Projection.minBy: the projection has no settled values.")
+            upstream
+
+    /// <summary><c>tryMaxBy</c>, raising <c>KeyNotFoundException</c> while no value has settled.</summary>
+    /// <remarks>Fails and recovers as <c>head</c> does.</remarks>
+    let maxBy (projection: 'V -> 'S) (upstream: Projection<'K, 'V>) : Memo<'V> =
+        extremeBy
+            "Projection.maxBy"
+            (fun rank best -> Ranks.ascending rank best > 0)
+            projection
+            (orRaise "Projection.maxBy: the projection has no settled values.")
+            upstream
+
+    /// <summary>
+    /// The keys of <c>upstream</c> satisfying <c>predicate</c>, and the remaining keys, each in upstream order with their
+    /// values.
+    /// </summary>
+    /// <remarks>
+    /// The halves share one predicate view, disposed with the calling scope; each half is disposable on its own. A
+    /// throwing predicate removes the key from both halves, and <c>Get</c> and <c>TryGet</c> of either raise its exception.
+    /// A pending predicate keeps the key on its last side; a never-settled key is in the <c>PendingKeys</c> of both.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let finished, pending = rows |> Projection.partition (fun t -> t.Done)
+    /// </code>
+    /// </example>
+    let partition (predicate: 'V -> bool) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> * Projection<'K, 'V> =
+        upstream.RequireRowMemos "Projection.partition"
+        let graph = upstream.Graph
+        let owner = ownedScope graph
+
+        let inclusion =
+            ref (graph.RunOwned (owner, fun () -> perKey graph upstream predicate))
+
+        let read key =
+            inclusion.Value.Get key |> ignore
+            upstream.Get key
+
+        let half admit =
+            let view = new FilterView<'K, 'V, 'V> (graph, upstream, inclusion, read, admit)
+            view.PendingExtra <- fun () -> view.HeldOut
+            view :> Projection<'K, 'V>
+
+        half true, half false
+
+    /// <summary>
+    /// The first key of <c>upstream</c> for each distinct <c>projection</c> of the value, in upstream order, with its
+    /// value.
+    /// </summary>
+    /// <remarks>
+    /// When a holder leaves or changes value, the next key with the same projection enters; a membership change costs
+    /// O(N). A pending value keeps the key's last settled value, and a never-settled key is in <c>PendingKeys</c>. A
+    /// throwing <c>projection</c> excludes the key, and <c>Get</c> and <c>TryGet</c> of the key raise its exception.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    /// let onePerOwner = rows |> Projection.distinctBy (fun t -> t.Owner)
+    /// </code>
+    /// </example>
+    let distinctBy (projection: 'V -> 'G) (upstream: Projection<'K, 'V>) : Projection<'K, 'V> =
+        upstream.RequireRowMemos "Projection.distinctBy"
+        let graph = upstream.Graph
+        let values = ref Unchecked.defaultof<Projection<'K, 'G>>
+        let view = new DistinctView<'K, 'V, 'G> (graph, upstream, values)
+
+        values.Value <- graph.RunOwned (view.Scope, fun () -> perKey graph upstream projection)
+
+        view.PendingExtra <- fun () -> view.HeldOut
+        view :> Projection<'K, 'V>
+
+/// <summary>Operations over the groups of a <c>Grouping</c>.</summary>
+[<RequireQualifiedAccess>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Grouping =
+    /// <summary>
+    /// A projection keyed and ordered as <c>grouping</c>, whose row for a group is the value of the memo created by
+    /// <c>perGroup</c> over the group's inner view.
+    /// </summary>
+    /// <remarks>
+    /// <c>perGroup</c> runs once per group row, in a scope that owns the nodes it creates and is disposed with the row: an
+    /// emptied group disposes its memo, and a returning group gets a new one. A pending or failed memo makes its row
+    /// pending or failed. Each memo covers only the keys of its group.
+    /// </remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let rows = createProjection (fun t -> t.Id) id (fun () -> todos.Value)
+    ///
+    /// let hoursByOwner =
+    ///     rows
+    ///     |> Projection.groupBy (fun t -> t.Owner)
+    ///     |> Grouping.aggregate (Projection.sumBy (fun t -> t.Hours))
+    /// </code>
+    /// </example>
+    let aggregate (perGroup: Projection<'K, 'V> -> Memo<'S>) (grouping: Grouping<'G, 'K, 'V>) : Projection<'G, 'S> =
+        (grouping :> Projection<'G, Projection<'K, 'V>>)
+        |> Projection.mapWith (fun _ group ->
+            let total = perGroup (group ())
+            fun () -> total.Value)

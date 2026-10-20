@@ -3076,6 +3076,9 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
 
     let mutable link: OwnerLink = null
 
+    /// <summary>The companion disposed with the memo, or null.</summary>
+    let mutable adopted: IDisposable = null
+
     /// <summary>
     /// Owner of the nodes an owning body creates, allocated by the first of
     /// them. Discharged before each run and disposed with the computation.
@@ -3360,6 +3363,11 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
 
                     if not (Platform.isNull (box scope)) then
                         graph.Retire scope
+
+                    if not (Platform.isNull adopted) then
+                        let companion = adopted
+                        adopted <- null
+                        companion.Dispose ()
         )
 
     /// <summary>
@@ -3374,6 +3382,23 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
     /// value.
     /// </summary>
     member internal _.Violated = violated
+
+    /// <summary>
+    /// Disposes <c>companion</c> when the memo is disposed, or at once when it already is. A replaced companion is
+    /// disposed at once.
+    /// </summary>
+    member internal _.Adopt(companion: IDisposable) =
+        if disposed then
+            companion.Dispose ()
+        else
+            let replaced = adopted
+            adopted <- companion
+
+            if
+                not (Platform.isNull replaced)
+                && not (obj.ReferenceEquals (replaced, companion))
+            then
+                replaced.Dispose ()
 
     interface IOwned with
         member this.Release() =

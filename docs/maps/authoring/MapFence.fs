@@ -258,7 +258,10 @@ module MapFence =
             None
 
     let private aggregate =
-        Regex (@"^Projection\.(?:sumBy|countBy|exists|forall|fold|foldGroup)\b", RegexOptions.Compiled)
+        Regex (
+            @"^Projection\.(?:sumBy|countBy|exists|forall|fold|foldGroup|foldGroupBy|length|isEmpty|tryHead|head|tryLast|last|tryItem|item|tryFind|find|tryFindKey|findKey|tryPick|pick|tryAverageBy|averageBy|tryMinBy|minBy|tryMaxBy|maxBy)\b",
+            RegexOptions.Compiled
+        )
 
     let private pipelineResult (value: string) =
         let mutable depth = 0

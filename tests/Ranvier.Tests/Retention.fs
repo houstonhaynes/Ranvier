@@ -411,4 +411,85 @@ let tests =
                     GC.KeepAlive g
                 }
 #endif
+
+#if !FABLE_COMPILER
+            // .NET only: JavaScript exposes no forced collection.
+            test "a disposed aggregate memo is not retained by its fold" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2; 3 ]
+                let up = createProjection id id (fun () -> source.Value)
+                let refs = ResizeArray<WeakReference>()
+
+                for _ in 1..200 do
+                    let total = up |> Projection.foldGroup (+) (-) 0
+                    total.Value |> ignore
+                    total.Dispose ()
+                    refs.Add (WeakReference total)
+
+                Expect.isLessThan (aliveOf refs) 20 "a disposed aggregate leaves no fold behind"
+            }
+#endif
+
+#if !FABLE_COMPILER
+            // .NET only: JavaScript exposes no forced collection.
+            test "a tryFind memo disposed with its root is not retained" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2; 3 ]
+                let up = createProjection id id (fun () -> source.Value)
+                let refs = ResizeArray<WeakReference>()
+
+                for _ in 1..200 do
+                    let owner, found =
+                        createRoot (fun owner -> owner, up |> Projection.tryFind (fun n -> n > 1))
+
+                    found.Value |> ignore
+                    owner.Dispose ()
+                    refs.Add (WeakReference found)
+
+                Expect.isLessThan (aliveOf refs) 20 "a disposed search leaves no view behind"
+            }
+
+            test "partition halves disposed with their root are not retained" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2; 3 ]
+                let up = createProjection id id (fun () -> source.Value)
+                let refs = ResizeArray<WeakReference>()
+
+                for _ in 1..200 do
+                    let owner, (evens, _) =
+                        createRoot (fun owner -> owner, up |> Projection.partition (fun n -> n % 2 = 0))
+
+                    evens.Keys |> ignore
+                    owner.Dispose ()
+                    refs.Add (WeakReference evens)
+
+                Expect.isLessThan (aliveOf refs) 20 "a disposed partition leaves no helper behind"
+            }
+
+            test "an emptied group's aggregate is not retained" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let source = createSignal [ 1; 2 ]
+                let up = createProjection id id (fun () -> source.Value)
+                let refs = ResizeArray<WeakReference>()
+
+                let totals =
+                    up
+                    |> Projection.groupBy id
+                    |> Grouping.aggregate (fun inner ->
+                        let total = Projection.sumBy id inner
+                        refs.Add (WeakReference total)
+                        total)
+
+                for i in 1..200 do
+                    source.Value <- [ 1; 2 + i ]
+                    totals.Keys |> ignore
+
+                Expect.isGreaterThan refs.Count 200 "every returning key created an aggregate"
+                Expect.isLessThan (aliveOf refs) 20 "each emptied group released its aggregate"
+            }
+#endif
         ]

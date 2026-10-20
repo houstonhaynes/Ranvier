@@ -43,18 +43,25 @@ let rows = createProjection _.Id id (fun () -> tasks.Value)
 - For totals and counts, use `sumBy` and `countBy`.
 - For any/all checks, use `exists` and `forall`.
 - For a fold with an inverse, use `foldGroup` to update changed contributions.
-- For a maximum or an order-dependent result, use `fold` to recompute from cached values.
+- For a minimum or maximum, use `tryMinBy` and `tryMaxBy`; for another order-dependent result, use `fold` to recompute from cached values.
+- For one aggregate per group, use `Grouping.aggregate` over a `groupBy` (see [Collection views](collection-views.fsx)).
 
 :::details Aggregate functions and row-edit costs
 
 | Function | Result | Cost of a row edit |
 |----------|--------|--------------------|
 | `Projection.foldGroup add subtract zero` | the fold of every settled value with `add` | O(1) calls: `subtract` of the old value, `add` of the new |
+| `Projection.foldGroupBy projection add subtract zero result` | `result` of the `foldGroup` of `projection` over the values | as `foldGroup` |
 | `Projection.fold folder state` | the fold of every settled value in `Keys` order | O(N) calls of `folder` over the cached values |
 | `Projection.sumBy projection` | the sum of `projection` over the values | as `foldGroup` |
 | `Projection.countBy predicate` | the count of values satisfying `predicate` | as `foldGroup` |
 | `Projection.exists predicate` | whether `countBy predicate` is above zero | as `foldGroup` |
 | `Projection.forall predicate` | whether `countBy` of the misses is zero | as `foldGroup` |
+| `Projection.length`, `Projection.isEmpty` | the key count; whether it is zero | no work: a row edit wakes neither |
+| `Projection.tryHead`, `tryLast`, `tryItem index` (`head`, `last`, `item` raise) | the key at a position with its value | O(1); an edit off the position wakes no reader |
+| `Projection.tryFind`, `tryFindKey`, `tryPick` (`find`, `findKey`, `pick` raise) | the first match in upstream order | one predicate call; a membership flip costs an O(N) filter pass |
+| `Projection.tryAverageBy projection` (`averageBy` raises) | the mean of `projection` over the settled values | as `foldGroup` |
+| `Projection.tryMinBy`, `tryMaxBy projection` (`minBy`, `maxBy` raise) | a value with the least or greatest rank | O(1); O(N) when the holder leaves or changes |
 
 :::
 
@@ -105,6 +112,22 @@ tasks.Value <- tasks.Value |> List.map (fun t -> if t.Id = 1 then { t with Estim
 totalEstimate.Value // 15
 
 (**
+`Projection.foldGroupBy` folds a projection of each value and finishes the state with `result`. The memo owns the
+view of projected values and the fold.
+*)
+
+let meanEstimate =
+    rows
+    |> Projection.foldGroupBy
+        _.Estimate
+        (fun (struct (sum, count)) estimate -> struct (sum + estimate, count + 1))
+        (fun (struct (sum, count)) estimate -> struct (sum - estimate, count - 1))
+        (struct (0, 0))
+        (fun (struct (sum, count)) -> if count = 0 then 0 else sum / count)
+
+meanEstimate.Value // 5
+
+(**
 :::details Pending and failed rows
 
 The fold reads settled values. A pending row keeps its last settled value in the state, as in `Snapshot`, and
@@ -121,7 +144,7 @@ Use these shorthands for common totals and predicates. Their functions re-run fo
 A pending or throwing function behaves like a pending or failed row.
 
 :::details How the shorthands are built
-They combine `Projection.map` with `foldGroup`.
+Each is `Projection.foldGroupBy`: a `Projection.map` view and a `foldGroup` that the returned memo owns.
 :::
 *)
 
@@ -148,7 +171,8 @@ an infinite or NaN row restores a finite sum.
 
 ## Folds with no inverse
 
-Use `Projection.fold` for a maximum or another result whose old contribution cannot be subtracted.
+Use `Projection.fold` for an order-dependent result whose old contribution cannot be subtracted. For a minimum or
+maximum, use `Projection.tryMinBy` and `tryMaxBy`.
 It folds cached values in `Keys` order after any key or value change. This costs O(N) folder calls,
 but reads only the changed rows again.
 *)
@@ -179,16 +203,140 @@ These functions re-run on row changes, outside the calling scope. A node created
 `InvalidOperationException`; create it outside the aggregate and read it inside.
 
 :::
+*)
 
+(**
+## Size
+
+`Projection.length` and `Projection.isEmpty` follow `Keys` alone: a row edit wakes neither, and `isEmpty` wakes its
+readers only when the projection becomes empty or stops being empty. Both also read a projection from
+`createProjectionOnce`.
+*)
+
+let scores = createSignal [ 1, 40; 2, 75; 3, 60 ]
+let scoreRows = createProjection fst snd (fun () -> scores.Value)
+let scoreCount = scoreRows |> Projection.length
+let noScores = scoreRows |> Projection.isEmpty
+
+(scoreCount.Value, noScores.Value) // (3, false)
+
+(**
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.length and isEmpty` tests, including `a row edit wakes no reader` and `isEmpty wakes its
+readers only when emptiness changes`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+*)
+
+(**
+## Position
+
+`Projection.tryHead`, `tryLast` and `tryItem` read the key at a position with its value, and `None` when the position
+is outside `Keys`. They depend exclusively on `Keys` and the row at the position; over a sorted view, `tryHead` is
+the top row. A pending row at the position makes the memo pending, and a failed one
+raises.
+
+`Projection.head`, `last` and `item` raise `KeyNotFoundException` instead of returning `None`. The memo fails while
+the position is empty, so every reader needs a boundary or `TryValue`; prefer the `try` forms for bindings.
+*)
+
+let firstScore = scoreRows |> Projection.tryHead
+let topScore = scoreRows |> Projection.sortBy (fun score -> -score) |> Projection.tryHead
+let secondScore = scoreRows |> Projection.tryItem (fun () -> 1)
+
+(firstScore.Value, topScore.Value, secondScore.Value) // (Some (1, 40), Some (2, 75), Some (2, 75))
+
+(**
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.tryHead, tryLast and tryItem` tests, including `an edit off the head and the last key wakes
+no reader`, `appending a key after the head wakes no tryHead reader`, `a pending head row makes tryHead pending, and a
+failed head row raises its error` and `head raises one exception instance per memo, and a reader runs once per
+transition`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+*)
+
+(**
+## Search
+
+`Projection.tryFind`, `tryFindKey` and `tryPick` return the first match in upstream order. Each owns a `filter` (or
+`choose`) view, so the function re-runs only for changed rows, and the filter's rules decide the candidates: a
+throwing predicate skips its key, and a pending one keeps the key's last membership. `find`, `findKey` and `pick`
+raise `KeyNotFoundException` while nothing matches.
+*)
+
+let firstPass = scoreRows |> Projection.tryFindKey (fun score -> score >= 50)
+
+firstPass.Value // Some 2
+
+(**
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.tryFind, tryFindKey and tryPick` tests, including `200 single edits at N=1000 make 200
+predicate calls` and `a pending predicate on the head makes the search pending; elsewhere it keeps membership`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+*)
+
+(**
+## Averages
+
+`Projection.tryAverageBy` keeps a running sum and count, so a row edit costs O(1), and reads `None` while no value has
+settled. `Projection.averageBy` raises `KeyNotFoundException` instead. Both follow `sumBy` for infinity and NaN, and
+accept `float`, `float32` and `decimal`; `int` does not compile, as with `List.averageBy`.
+*)
+
+let meanScore = scoreRows |> Projection.tryAverageBy float
+
+meanScore.Value // Some 58.33333333
+
+(**
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.tryAverageBy and averageBy` tests, including `an edit at N=1000 makes one addition` and
+`tryAverageBy over floats recovers from infinity and NaN`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+*)
+
+(**
+## Least and greatest
+
+`Projection.tryMinBy` and `tryMaxBy` return a value with the least or greatest rank, under the `sortBy` order: a NaN
+rank is the greatest. Among equal ranks the current result stays, including when its holder's row is edited to an
+equal rank; when the holder is removed, the result is the first holder in `Keys` order. A row change costs O(1) unless
+it removes or edits the holder's row, which re-folds the cached ranks in O(N). `minBy` and `maxBy` raise
+`KeyNotFoundException` while no value has settled.
+*)
+
+let lowest = scoreRows |> Projection.tryMinBy id
+let highest = scoreRows |> Projection.tryMaxBy id
+
+(lowest.Value, highest.Value) // (Some 40, Some 75)
+
+(**
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.tryMinBy and tryMaxBy` tests, including `removing a non-extreme row costs no comparison;
+removing the extreme re-folds once`, `among equal ranks the current result stays until its holder's row is removed or edited` and `NaN
+orders last: tryMaxBy holds NaN, tryMinBy skips it`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+*)
+
+(**
 ## Lifetime
 
-The aggregate belongs to the scope that created it and is disposed with it. After disposal it stops observing the
-rows, and reads return the last state.
+The aggregate belongs to the scope that created it. Disposing the aggregate, or that scope, disposes it with the views
+and folds it built; it stops observing the rows, and reads return the last state.
 
 :::details Tests covering this behaviour
 
 Pinned by the `Projection.foldGroup` tests, including `an edit at N=1000 makes one add and one subtract`, `sumBy over
-floats recovers from infinity and NaN` and `sumBy over floats reads zero once every row leaves`
+floats recovers from infinity and NaN` and `sumBy over floats reads zero once every row leaves`, and by the
+`Projection aggregate ownership` tests
 ([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
 :::
 *)

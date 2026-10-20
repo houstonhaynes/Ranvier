@@ -16,8 +16,8 @@ let active = graph.Activate ()
 
 The examples run inside an [active graph](graph.fsx).
 
-Derive a live view from a projection with `filter`, `choose`, `map`, `mapWith`, `sortBy` or `groupBy`.
-Each view keeps rows by key and re-runs its function only for changed upstream rows.
+Derive a live view from a projection with `filter`, `choose`, `map`, `mapWith`, `sortBy`, `sortByDescending`, `partition`, `distinctBy` or `groupBy`, and aggregate each group of a `groupBy` with
+`Grouping.aggregate`. Each view keeps rows by key and re-runs its function only for changed upstream rows.
 
 As with a source projection, `Keys` tracks membership and order; `Get key` tracks a row value.
 
@@ -94,6 +94,19 @@ byLength.Keys
 [|2; 1; 3|]
 ```
 
+`Projection.sortByDescending` orders largest first. Equal sort keys keep their upstream order, a NaN sort key still
+comes last, and `None` comes after `Some`.
+
+
+*)
+let longestFirst = orderedTitles |> Projection.sortByDescending String.length
+longestFirst.Keys
+(**
+
+```text
+[|1; 3; 2|]
+```
+
 :::details Sort costs
 
 When every sort key, membership and the upstream order are unchanged, a `sortBy` pass costs O(N) and publishes no new
@@ -126,8 +139,10 @@ describe its pass, not its rows.
 
 Pinned by `a throwing predicate excludes the key, and Get and TryGet raise its error`, `a pending predicate keeps
 membership; a never-settled key is only in PendingKeys`, `an effect reading Keys and Get runs exactly once per write`,
-`sorts ascending, and equal sort keys keep upstream order`, `ties keep upstream order at 40 keys, across reorder and
-removal`, `NaN sort keys sort after every other key, across updates`, `None sorts before Some, across updates`, `a pass whose sort keys and upstream order are unchanged does not re-sort` and
+`sorts ascending, and equal sort keys keep upstream order`, `sortByDescending sorts largest first, and equal sort
+keys keep upstream order`, `sortByDescending orders NaN last, across updates`, `ties keep upstream order at 40 keys,
+across reorder and removal`, `NaN sort keys sort after every other key, across updates`, `None sorts before Some,
+across updates`, `a pass whose sort keys and upstream order are unchanged does not re-sort` and
 `a pending sort key keeps its last settled sort key; a never-settled key is only in PendingKeys`, `a pending chooser
 keeps membership; a never-settled key is only in PendingKeys`, `a throwing chooser excludes the key, and Get and TryGet
 raise its error`, and the
@@ -193,6 +208,73 @@ An inner view is disposed once its group is empty: a reader holding it sees empt
 Pinned by the `Projection.mapWith` and `Projection.groupBy` tests, including `a never-settled key is in UngroupedKeys,
 in upstream order, until it settles and joins its group` and `filter then groupBy lists the keys the filter holds out
 in UngroupedKeys`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+
+### Split rows
+
+`Projection.partition` returns the keys whose value satisfies a predicate and the rest, as two views over one
+predicate view: the predicate runs once per changed row for both halves. A raising predicate leaves the key out of
+both halves; a pending one keeps the key on its last side. Each half can be disposed on its own.
+
+*)
+let shortTitles, longerTitles = orderedTitles |> Projection.partition (fun title -> title.Length < 2)
+(shortTitles.Keys, longerTitles.Keys)
+(**
+
+```text
+([|2|], [|1; 3|])
+```
+
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.partition` tests, including `200 single edits at N=1000 make 200 predicate calls across
+both halves` and `a pending predicate keeps the last side; a never-settled key is pending in both`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
+:::
+
+### Distinct rows
+
+`Projection.distinctBy` keeps the first key for each distinct value of a function, in upstream order, under that
+key. When the holder leaves or changes value, the next key with the value takes its place, and a key reader sees the
+old key removed and the new one added. Pending and raising functions follow the predicate rules above.
+
+*)
+let oneTitlePerLength = orderedTitles |> Projection.distinctBy String.length
+oneTitlePerLength.Keys
+(**
+
+```text
+[|1; 2|]
+```
+
+:::details Tests covering this behaviour
+
+Pinned by the `Projection.distinctBy` tests, including `a key reader sees a hand-over as Removed and Added`, and
+`distinctBy keys follow the law while values fail and recover`
+([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs),
+[Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs)).
+:::
+
+### Aggregate each group
+
+`Grouping.aggregate` turns a grouping into a projection whose row for each group is the value of that group's memo,
+such as a total. The memo is created once per group, in the group's scope, so an emptied group disposes it and a returning group gets a new one.
+
+
+*)
+let titleCountByLength = byLengthGroup |> Grouping.aggregate Projection.length
+[ for length in titleCountByLength.Keys -> length, titleCountByLength.Get length ]
+(**
+
+```text
+[(2, 2); (1, 1)]
+```
+
+:::details Tests covering this behaviour
+
+Pinned by the `Grouping.aggregate` tests, including `an edit within a group runs only that group's aggregate` and `an
+emptied group's aggregate is disposed, and a returning group gets a new one`
 ([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
 :::
 
