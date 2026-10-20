@@ -6,6 +6,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <IsPackable>false</IsPackable>
+        <IsExcludedFromRootBuild>true</IsExcludedFromRootBuild>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
 
