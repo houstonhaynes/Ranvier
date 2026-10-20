@@ -22,6 +22,7 @@
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Microtask.fs" Link="Microtask.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Representation.fs" Link="Representation.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Typed.fs" Link="Typed.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Portable/Departures.fs" Link="Departures.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/DomEvents.fs" Link="DomEvents.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Template.fs" Link="Template.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplate.fs" Link="Generated/HtmlTemplate.fs" />
@@ -81,6 +82,7 @@
     <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/SugarFixtures.fs" Link="Checks/SugarFixtures.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/SugarServerChecks.fs" Link="Checks/SugarServerChecks.fs" />
     <Compile Include="HydrationChecks.fs" />
+    <Compile Include="DepartureChecks.fs" />
     <Compile Include="PlaygroundSugar.fs" />
     <Compile Include="SugarChecks.fs" />
     <Compile Include="SugarDebugChecks.fs" />

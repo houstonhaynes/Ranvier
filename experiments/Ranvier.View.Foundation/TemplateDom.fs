@@ -298,7 +298,7 @@ type Compiled =
         Properties: (int * PortableProperty * obj) array
         Events: (int * string * Func<obj, obj, unit>) array
         /// <summary>The placed hooks of the part's nodes: node index, kind and hook.</summary>
-        Placed: (int * PlacedKind * Func<obj, obj, (unit -> unit)>) array
+        Placed: (int * PlacedKind * Func<obj, obj, obj, obj>) array
         /// <summary>
         /// The document head entries of the part in document order, each with the number of the part's dynamic nodes
         /// before it.
@@ -480,7 +480,7 @@ let private tables (targets: (TemplateNode * int array) array) (owners: int arra
     let isolatedSlots = ResizeArray<int * Slot>()
     let properties = ResizeArray<int * PortableProperty * obj>()
     let events = ResizeArray<int * string * Func<obj, obj, unit>>()
-    let placed = ResizeArray<int * PlacedKind * Func<obj, obj, (unit -> unit)>>()
+    let placed = ResizeArray<int * PlacedKind * Func<obj, obj, obj, obj>>()
 
     let add index (slot: Slot) =
         if slot.Mode = IsolatedMode then
@@ -1098,7 +1098,8 @@ let private bind (services: MountServices) (compiled: Compiled) (state: obj arra
                 not (isNull roots)
                 && Array.exists (fun (adopted: Node) -> obj.ReferenceEquals (adopted, node)) roots
 
-            PlacedHook.register services.Placement services.Scope owner kind node root (fun () -> hook.Invoke (instance, box node))
+            PlacedHook.register services.Placement services.Scope owner kind node root (not (isNull services.Hydration)) (fun flags ->
+                unbox (hook.Invoke (instance, box node, flags)))
 
     while head < heads.Length do
         services.Head (headEntry (fst (at heads head)) instance)

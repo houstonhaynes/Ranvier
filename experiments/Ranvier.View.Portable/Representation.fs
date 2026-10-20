@@ -107,13 +107,23 @@ type PlacedKind =
     | Lent
     /// <summary>Owns the element's content.</summary>
     | Widget
+    /// <summary>Runs code against the element with the element's placement context.</summary>
+    | Motion
+    /// <summary>Holds a retired row or arm root element in place until the hook finishes.</summary>
+    | Exit
+    /// <summary>Measures the element before and after the region passes under it.</summary>
+    | Reflow
 
-/// <summary>The part name of a placed hook in a browser-capability error.</summary>
+/// <summary>
+/// The part name of a placed hook in a browser-capability error; null for a motion, exit or reflow hook; the server omits
+/// these under every policy.
+/// </summary>
 let internal placedPart kind =
     match kind with
     | PlacedKind.Mounted -> "mounted hook"
     | PlacedKind.Lent -> "lent hook"
     | PlacedKind.Widget -> "widget"
+    | _ -> null
 
 /// <summary>The browser-capability error under <c>Reject</c> for <c>part</c> of an element <c>tag</c>.</summary>
 let internal browserRejected (tag: string) (part: string) =
@@ -152,6 +162,31 @@ type NodeRef<'native> internal () =
 module NodeRef =
     let create () : NodeRef<'native> =
         NodeRef<'native>()
+
+/// <summary>The placement of an element with a motion hook.</summary>
+[<NoEquality; NoComparison>]
+type MotionContext =
+    {
+        /// <summary>Whether the element was adopted from server HTML.</summary>
+        Hydrated: bool
+        /// <summary>Whether the element's row or arm was created by a region pass after the region's first.</summary>
+        Inserted: bool
+        /// <summary>
+        /// A reader of whether the element has an exit hook that has not started. Read in the motion hook's cleanup, true
+        /// means the element stays in place for its exit once the instance is disposed, unless the mount tears down.
+        /// </summary>
+        ExitPending: unit -> bool
+    }
+
+/// <summary>The measurements a reflow hook takes around the region passes under its element.</summary>
+[<NoEquality; NoComparison>]
+type Reflow =
+    {
+        /// <summary>Runs before the first region pass under the element.</summary>
+        Before: unit -> unit
+        /// <summary>Runs once the passes' nodes and commits are in place.</summary>
+        After: unit -> unit
+    }
 
 /// <summary>The element a document head entry stands for.</summary>
 [<RequireQualifiedAccess>]
@@ -634,9 +669,10 @@ type Backend() =
 
     /// <summary>
     /// Registers a hook for the element currently receiving modifiers, run once the element is placed in the mount's
-    /// host. The hook's returned cleanup runs when the element's owner is disposed.
+    /// host. The hook receives the element and the flags of its <c>MotionContext</c> (1 hydrated, 2 inserted), and returns
+    /// its cleanup, which runs when the element's owner is disposed.
     /// </summary>
-    abstract Placed: PlacedKind * (obj -> (unit -> unit)) -> unit
+    abstract Placed: PlacedKind * System.Func<obj, obj, obj> -> unit
 
     default _.Placed(_, _) =
         raise (System.NotSupportedException "Placed hooks require a DOM mount")
@@ -860,7 +896,9 @@ and [<Sealed>] HtmlBackend(policy: BrowserPolicy, sink: HtmlSink) =
         browserCapability "browser hook"
 
     override _.Placed(kind, _) =
-        browserCapability (placedPart kind)
+        match placedPart kind with
+        | null -> ensureAttributes ()
+        | part -> browserCapability part
 
         if kind = PlacedKind.Widget then
             if widget then

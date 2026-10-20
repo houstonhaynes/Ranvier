@@ -56,6 +56,14 @@ type internal Placement(parent: Placement) =
     /// <summary>True while a root mount's first placement runs inside <c>mountWith</c>.</summary>
     member val Placing = false with get, set
 
+    /// <summary>Whether the container holds the hooks of a region pass after the region's first.</summary>
+    [<DefaultValue>]
+    val mutable Inserted: bool
+
+    /// <summary>Whether the container holds the hooks of a region pass: the rows or the arm it creates.</summary>
+    [<DefaultValue>]
+    val mutable Row: bool
+
     member _.IsPlaced: bool = laidOut && (isNull parent || parent.IsPlaced)
 
     /// <summary>The container of the root mount.</summary>
@@ -172,8 +180,18 @@ type internal PlacementPass(parent: Placement) =
     let mutable current: Placement = null
     let mutable placed = false
 
-    /// <summary>Starts a pass: the next request allocates a new container.</summary>
-    member _.Begin() =
+    /// <summary>Whether the current pass follows the region's first; the pass's container takes the flag.</summary>
+    [<DefaultValue>]
+    val mutable Inserted: bool
+
+    /// <summary>Whether a pass has begun.</summary>
+    [<DefaultValue>]
+    val mutable Begun: bool
+
+    /// <summary>Starts a pass: the next request allocates a new container. Every pass after the first is inserted.</summary>
+    member this.Begin() =
+        this.Inserted <- this.Begun
+        this.Begun <- true
         current <- null
         placed <- false
 
@@ -181,12 +199,14 @@ type internal PlacementPass(parent: Placement) =
     /// The container of the current pass. A request after the pass's <c>Place</c> and before the next <c>Begin</c> raises
     /// "A pass placement container was requested after its Place".
     /// </summary>
-    member _.Container: Placement =
+    member this.Container: Placement =
         if placed then
             raise (InvalidOperationException "A pass placement container was requested after its Place")
 
         if isNull current then
             current <- Placement parent
+            current.Inserted <- this.Inserted
+            current.Row <- true
 
         current
 
@@ -204,7 +224,7 @@ module internal PlacedHook =
 
     /// <summary>Whether the node is a root of its row or mount: detached, or a child of a document fragment.</summary>
     [<Emit("($0.parentNode == null || $0.parentNode.nodeType === 11)")>]
-    let private atRoot (node: Node) : bool = jsNative
+    let atRoot (node: Node) : bool = jsNative
 
     /// <summary>
     /// Adds <c>hook</c> for <c>node</c> to <c>container</c>; its returned cleanup runs when <c>owner</c> is disposed. A
@@ -212,7 +232,10 @@ module internal PlacedHook =
     /// remaining hooks run; every other failure goes to <c>scope</c>. After the cleanup of a lent or widget hook on an
     /// element that is not a row or mount root, a parent different from the one the hook ran under raises "An integration
     /// moved its element", also when the cleanup fails. A node is a root when <c>root</c> is set, as for a root adopted by
-    /// hydration, or when it is detached or a child of a document fragment.
+    /// hydration, or when it is detached or a child of a document fragment. The hook receives the flags of its element's
+    /// <c>MotionContext</c>: 1 when <c>hydrated</c>, plus 2 when <c>container</c> is inserted. A Debug build raises "An exit
+    /// hook requires a row or arm root element" for an exit hook on a node that is not a root, or whose container is not a
+    /// region pass's.
     /// </summary>
     let register
         (container: Placement)
@@ -221,12 +244,28 @@ module internal PlacedHook =
         (kind: PlacedKind)
         (node: Node)
         (root: bool)
-        (hook: unit -> (unit -> unit))
+        (hydrated: bool)
+        (hook: obj -> (unit -> unit))
         =
+#if DEBUG
+        match kind with
+        | PlacedKind.Exit when not container.Row || not root && not (atRoot node) ->
+            raise (InvalidOperationException "An exit hook requires a row or arm root element")
+        | _ -> ()
+#endif
         let checksParent =
-            kind <> PlacedKind.Mounted
+            (match kind with
+             | PlacedKind.Lent
+             | PlacedKind.Widget -> true
+             | _ -> false)
             && not root
             && not (atRoot node)
+
+        let flags =
+            box (
+                (if hydrated then 1 else 0)
+                + (if container.Inserted then 2 else 0)
+            )
 
         container.Add (
             owner,
@@ -236,7 +275,7 @@ module internal PlacedHook =
 
                 let cleanup =
                     try
-                        hook ()
+                        hook flags
                     with error ->
                         failed <- true
                         let root = container.Root

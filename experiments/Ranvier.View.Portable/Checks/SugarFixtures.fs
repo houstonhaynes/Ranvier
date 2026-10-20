@@ -992,3 +992,55 @@ let tagViewServerPairs () : (string * string * string) array =
         "a void tag as the root", Server.render omit voidRootExplicit (), Server.render omit voidRootSugar ()
         "a component tag as the root", Server.render omit tagRootExplicit (), Server.render omit tagRootSugar ()
     |]
+
+/// <summary>Fails when a hook the server omits runs.</summary>
+let private serverRan (part: string) : 'a =
+    failwithf "The server ran a %s" part
+
+/// <summary>Lines in a list with motion and exit hooks on each row root, a reflow hook on the list's parent and a motion and exit hook on a shown arm.</summary>
+let motionHooked =
+    Component.template
+        (fun _ (state: Lined) -> state)
+        (div () {
+            ul (Hooks.reflow (fun _ _ -> serverRan "reflow hook")) {
+                forEach
+                    (fun (line: Line) -> line.Id)
+                    (fun (s: Lined) -> s.Lines.Value)
+                    (li (Hooks.motion (fun _ _ _ -> serverRan "motion hook"), Hooks.exit (fun _ _ _ -> serverRan "exit hook")) {
+                        from (fun (row: unit -> Line) -> (row ()).Label)
+                    })
+            }
+
+            show
+                (fun s -> s.Shown.Value)
+                (span (Hooks.motion (fun _ _ _ -> serverRan "motion hook"), Hooks.exit (fun _ _ _ -> serverRan "exit hook")) { "shown" })
+        })
+
+/// <summary><c>motionHooked</c> without its hooks.</summary>
+let motionPlain =
+    Component.template
+        (fun _ (state: Lined) -> state)
+        (div () {
+            ul () {
+                forEach (fun (line: Line) -> line.Id) (fun (s: Lined) -> s.Lines.Value) (li () { from (fun (row: unit -> Line) -> (row ()).Label) })
+            }
+
+            show (fun s -> s.Shown.Value) (span () { "shown" })
+        })
+
+/// <summary>The server HTML of <c>motionPlain</c> and <c>motionHooked</c> under <c>Reject</c> and <c>Omit</c>, shown and hidden.</summary>
+let motionServerPairs () : (string * string * string) array =
+    use graph = new Graph ()
+
+    let shown, hidden =
+        graph.Run (fun () ->
+            let shown = lined ()
+            let hidden = lined ()
+            hidden.Shown.Value <- false
+            shown, hidden)
+
+    [|
+        for policyName, options in [ "Reject", Server.Options.defaults; "Omit", omit ] do
+            for stateName, state in [ "shown", shown; "hidden", hidden ] do
+                policyName + " " + stateName, Server.render options motionPlain state, Server.render options motionHooked state
+    |]

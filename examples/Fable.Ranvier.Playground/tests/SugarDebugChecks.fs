@@ -134,6 +134,34 @@ let private boundArmMountsOnce () =
     boundLog.Clear ()
     equal 1 (picks bound boundLog)
 
+/// <summary>A list whose rows have an exit on an element inside the row root.</summary>
+let private innerExit =
+    Component.template
+        (fun _ (items: int array) -> items)
+        (ul () { forEach id (fun (items: int array) -> items) (li () { b (Hooks.exit (fun (_: unit -> int) (_: HTMLElement) _ -> ignore)) { "x" } }) })
+
+/// <summary>A template whose root element, a root of the mount, has an exit.</summary>
+let private rootExit =
+    Component.template (fun _ (items: int array) -> items) (ul (Hooks.exit (fun (_: int array) (_: HTMLUListElement) _ -> ignore)) { "x" })
+
+/// <summary>The messages of mounting <c>definition</c> on one row: raised during the mount or reported.</summary>
+let private exitMessages (definition: Component<int array>) =
+    use graph = new Graph ()
+    let reports = ResizeArray<exn list>()
+
+    let thrown =
+        try
+            let mounted =
+                Mounting.mount graph None reports.Add (host ()) None (fun context ->
+                    Program.run (Component.render definition [| 1 |]) context.Backend)
+
+            mounted.Dispose ()
+            []
+        with error ->
+            [ error.Message ]
+
+    thrown @ List.concat (messages reports)
+
 #if DEBUG
 let private message =
     "a template definition was created while a region was read; bind it in the template's build function"
@@ -219,6 +247,18 @@ let cases: (string * (unit -> unit)) array =
         "a static member arm read in an arms function raises in a Debug build", staticMemberArmRaises
         "Component.ofMembers in an arms function raises in a Debug build", (fun () -> raisesWhenMounted Component.render membersHazard)
         "Component.ofClass in an arms function raises in a Debug build", (fun () -> raisesWhenMounted Component.render classHazard)
+        "an exit hook below a row root raises in a Debug build",
+        (fun () ->
+            equal
+                true
+                (exitMessages innerExit
+                 |> List.exists (fun text -> text.Contains "An exit hook requires a row or arm root element")))
+        "an exit hook on a mount root raises in a Debug build",
+        (fun () ->
+            equal
+                true
+                (exitMessages rootExit
+                 |> List.exists (fun text -> text.Contains "An exit hook requires a row or arm root element")))
     |]
 #else
 let private armInArmsRemountsInRelease () =
@@ -243,5 +283,7 @@ let cases: (string * (unit -> unit)) array =
         (fun () -> equal (3, "3") (remounts membersHazard))
         "Component.ofClass in an arms function remounts on every update and shows the last payload in Release",
         (fun () -> equal (3, "3") (remounts classHazard))
+        "an exit hook below a row root mounts without a report in Release", (fun () -> equal [] (exitMessages innerExit))
+        "an exit hook on a mount root mounts without a report in Release", (fun () -> equal [] (exitMessages rootExit))
     |]
 #endif

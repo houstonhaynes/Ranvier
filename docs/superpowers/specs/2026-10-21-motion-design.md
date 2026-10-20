@@ -19,10 +19,11 @@ Required by `.claude/rules/view-uses-core.md`.
 **View-owned state (new):** all of it is DOM node and layout state, which the rule assigns to the view.
 
 - `Departures.exits: WeakMap<Node, Exit>` — the exit hook registered on a row or arm root element.
-- `Departures.leaving: WeakSet<Node>` and `MountState.leaving: ResizeArray<Node * cancel>` — nodes of retired rows held in the DOM until their exit finishes. The core has no DOM.
+- `Departures.leaving: WeakSet<Node>` and `MountState.leaving: ResizeArray<unit -> unit>` (each held root's end action: cancel, then remove) — nodes of retired rows held in the DOM until their exit finishes. The core has no DOM.
 - `Departures.reflows: WeakMap<Node, Reflow>` — the before/after measurement pair registered on a region's parent element.
 - `Placement.Inserted: bool` — whether the current region pass is not the region's first; read by placed motion hooks.
-- `Departures.enabled`, `Departures.reflowEnabled` — set on first registration; while false the new code paths are a single boolean test.
+- `Departures.pending: WeakSet<Node>` — row roots whose instance is disposed and whose exit runs once the row retires; nested mounts under such a root leave their nodes in place.
+- `Departures.seam` — a plain object whose `Enabled` and `ReflowEnabled` flags and registry operations are set on first registration; while the flags are unset the new code paths are a single property test.
 
 ## Goal
 
@@ -32,7 +33,7 @@ anime.js 4.5.0 is the animation framework of Ranvier. An author animates any ele
 
 - **A Ranvier animation engine.** anime is the engine; Ranvier adds ownership, reactivity and DOM-lifecycle seams.
 - **Sequential ("out-in") arm transitions.** The next arm would have to wait for the old arm's exit, which delays reactive setup behind a visual timer. Arms transition simultaneously; an exit can pin the leaving node out of flow.
-- **Exit transitions on the authored path** (`Generated.Html` nested-mount rows, boundary content). Their nodes leave through `MountState.release`; the sugar path is entirely template rows and arms.
+- **Exit transitions on the authored path** (`Generated.Html` nested-mount rows, boundary content). Their nodes leave through `MountState.release`. Sugar templates under queued commits mount through `Expand`, whose list rows and arms are nested mounts: those do hold their roots (see Runtime changes).
 - **Exits on non-root elements.** Only a row or arm root element can hold its node after the row is retired.
 - **Reactive `splitText`.** `Motion.split` takes static text.
 - **CSS-transition-based enter/exit.** `Hooks.exit` is generic and can be used that way, but nothing ships for it.
@@ -182,14 +183,17 @@ val policy: unit -> Signal<MotionPolicy>
 ### Runtime hooks (`experiments/Ranvier.View.Portable/Template.fs`, `HookBuilder`)
 
 ```fsharp
-type MotionContext = { Hydrated: bool; Inserted: bool }
+type MotionContext = { Hydrated: bool; Inserted: bool; ExitPending: unit -> bool }
 type Reflow = { Before: unit -> unit; After: unit -> unit }
 
-/// Runs once the element is placed, with whether the mount adopted server nodes and whether the element's row or
-/// arm was created by a pass after its region's first. The returned cleanup runs when the instance is disposed.
+/// Runs once the element is placed, with whether the element was adopted from server HTML (the mount's hydration
+/// cursor, not the root flag), whether its row or arm was created by a pass after its region's first, and a reader of
+/// whether an exit of the element has not started; read in the cleanup, true means the element stays for its exit.
+/// The returned cleanup runs when the instance is disposed.
 member Hooks.motion: ('inst -> 'native -> MotionContext -> (unit -> unit)) -> Part<'native, 'inst>
 /// On a row or arm root element: when the row is retired, its node stays in place and `exit` runs with `finish`;
-/// the node leaves when `finish` is called. The returned function cancels the exit when removal is forced.
+/// the node leaves when `finish` is called, with its content kept until then. The returned function cancels the exit
+/// when removal is forced. An exit applies once the element is placed.
 member Hooks.exit: ('inst -> 'native -> (unit -> unit) -> (unit -> unit)) -> Part<'native, 'inst>
 /// On a region's parent element: `Before` runs before the first region pass under the element in a flush, `After`
 /// once the pass's nodes and commits are in place.
@@ -276,14 +280,14 @@ let board =
 
 `experiments/Ranvier.View.Foundation`:
 
-- **New `Departures.fs`** (after `Placement.fs`, before `TemplateDom.fs`): `exits`, `leaving`, `reflows` (as in Core and view state); `register (node, exit)`; `registerReflow (node, reflow)` returning its unregister; `retire (node: Node) (forced: bool) (held: ResizeArray<Node * (unit -> unit)>) : bool` (true when the node is held: marks it leaving, calls the exit with a `finish` that removes the node and drops it from `held`, and a 10 s safety timeout that forces `finish`); `isLeaving`; `nextLive node` (next sibling that is not leaving); `before (parent)`/`after (parent, post)` with per-flush coalescing per element.
-- `Placement.fs`: `Placement.Inserted` (mutable, default false). `PlacedHook.register` switches on kind: `Motion` invokes the hook with `{ Hydrated = root (adopted); Inserted = container.Inserted }`; `Exit` calls `Departures.register` and registers no cleanup (the entry lives until removal); `Reflow` calls `Departures.registerReflow` and registers the unregister as the cleanup. A Debug build raises "An exit hook requires a row or arm root element" when `Exit` is registered on a node that is not at a row root (`atRoot` at registration).
+- **New `Departures.fs`** in `experiments/Ranvier.View.Portable` (after `Typed.fs`, before `Template.fs`), beside `HookBuilder`, which calls it from the exit and reflow payloads; the mount paths reach it only through `Departures.seam`, so a bundle without those hooks holds the seam object and its call sites alone. It holds `exits`, `leaving`, `pending`, `reflows` (as in Core and view state); `register (node, exit)`, which returns the cleanup that marks the node pending; `registerReflow (node, reflow)` returning its unregister; `hasExit`; and the seam operations `Retire (node, held)` (true when the node is held: marks it leaving, calls the exit with a `finish` that removes the node and drops it from its held list, and a 10 s safety timeout that forces `finish`), `NextLive`, `Holds (start, end)` for the cleared guard, `Within node` (the node or an ancestor is leaving or pending), `End (held, errors, target)` (end every held exit, or move them, still running, into `target`) and `Before (regionStart, post)` returning the post of `After` with per-flush coalescing per element.
+- `Placement.fs`: `Placement.Inserted` and `Placement.Row` (the container is a region pass's), set by `PlacementPass.Container`; `PlacementPass.Begin` marks every pass after the first inserted. `PlacedHook.register` registers every kind the same way and passes each hook the flags of its `MotionContext` (1 hydrated, 2 inserted); the hydrated flag is the services' hydration cursor. The exit payload registers its exit once placed and returns the pending mark as its cleanup; the reflow payload registers its measurement and returns the withdrawal. A Debug build raises "An exit hook requires a row or arm root element" when an exit is registered on a node that is not a root at registration, or whose container is not a region pass's (a mount root).
 - `Mounting.fs`:
-  - `Row.Remove` takes `retire: Node -> bool`; for each node from `First` to `Last`, `if not (retire node) then remove node`. `MountState.removeRow` passes `fun node -> Departures.enabled && Departures.retire node root.IsDisposed leaving` (forced when the mount itself tears down, so release stays synchronous).
-  - `Row.ValidateWindow` steps with `Departures.nextLive` when `Departures.enabled`, so held nodes between rows do not read as external mutation.
-  - `RegionSite.FlushReleased`: the `cleared` fast path (`Row.ClearBetween`) is taken only when `not Departures.enabled` or no released row's root has an exit and no node between the markers is leaving; otherwise rows release one by one.
-  - `ListRegion.reconcile` and `ArmRegion.reconcile`: set `passPlacement.Inserted <- not firstPass` (`armPlacement` likewise) before building; when `Departures.reflowEnabled` and not hydrating, call `Departures.before (site.Parent ())` at pass start and, after `Row.Layout` (list) or `Row.MoveBefore` (arm), `Departures.after (parent, post)`, where `post` runs the action at once under `Synchronous` and enqueues it on a slot of the mount's `Queue` under `Queued`.
-  - `MountState.release`: before `range.Release`, cancel and remove every node in `leaving` (decision 11).
+  - `Row.Remove` takes the mount's held list, null when the removal is forced (the mount tears down, so release stays synchronous); each node from `First` to `Last` is offered to `seam.Retire` and removed when not held. A failure is raised after every node is handled.
+  - `Row.ValidateWindow` steps with `seam.NextLive` when exits are enabled, so held nodes between rows do not read as external mutation.
+  - `RegionSite.FlushReleased`: the `cleared` fast path (`Row.ClearBetween`) is taken only when exits are disabled or no node between the markers is leaving or has an exit; otherwise rows release one by one.
+  - `ListRegion.reconcile` and `ArmRegion.reconcile`: begin the pass (`PlacementPass.Begin`) before building; when reflows are enabled and the pass is not hydrating, call `seam.Before (regionStart, this.Post)` at pass start and, after the pass settles, run the returned post, where `Post` creates an untracked core effect under `Synchronous` (it runs after the effects the pass created) and enqueues the action on a slot of the mount's `Queue` under `Queued`.
+  - `MountState.release`: before `range.Release`, cancel and remove every node in `leaving` (decision 11); on a live release inside a live enclosing mount, move them, still running, into the enclosing mount's list instead. A nested mount whose first node is `Within` a leaving or pending root leaves its nodes in place, unclaimed, so a held root keeps its nested lists, arms, boundaries and holes until `finish`. A list row's or arm's nested mount (its inherited container is a region pass's) retires its roots into the enclosing mount's list on a live release.
 - `Hydration.fs`: none; adopted rows retire through the same `removeRow`.
 
 ## Examples
@@ -316,7 +320,7 @@ Measured with rolldown (minify) and gzip level 9 on anime 4.5.0, importing from 
 
 | Check | Budget |
 |---|---|
-| Runtime seam: the Playground `sugar-size.mjs` explicit entry, before and after steps 3–6 | ≤ 150 B gzip |
+| Runtime seam: the Playground `sugar-size.mjs` explicit entry, before and after steps 3–6 | ≤ 450 B gzip (re-baselined from 150 B on review; measured +447 B, see `docs/research/2026-10-21-motion-seam.md`) |
 | Bindings: `Anime.animate` entry vs hand-written JS calling `animate` | ≤ 64 B gzip |
 | Glue: `Motion.presence` entry vs `Hooks.motion`/`Hooks.exit` calling `animate` by hand | ≤ 900 B gzip |
 | Glue: `Motion.flip` entry vs `Hooks.reflow` calling `createLayout` by hand | ≤ 600 B gzip |
@@ -353,7 +357,7 @@ Each step lands with its tests green and is reviewable alone.
 5. **Departures.** `Departures.fs`, `Row.Remove`, validation stepping, cleared path, release. Tests: the exit cases of Testing §1; the sibling-walk audit of Risk 1.
 6. **Reflow.** `before`/`after` in list and arm passes, synchronous and queued. Tests: Reflow order cases.
 7. **Seam gate.** Bundle delta on the explicit entry, `keyed-rows.mjs`, `--template-comparison`, counters; record in the research note.
-8. **`Ranvier.View.Anime`, lifecycle parts.** `on`, `appear`, `enter`, `exit`, `presence`, presets, `flip`, `Motion.policy` handling. Tests: Testing §3 lifecycle cases; `motion-size.mjs` presence and flip rows.
+8. **`Ranvier.View.Anime`, lifecycle parts.** `on`, `appear`, `enter`, `exit`, `presence`, presets, `flip`, `Motion.policy` handling. The "paused, not reverted" interplay reads `MotionContext.ExitPending ()` in the motion hook's cleanup: true while an exit of the element is registered and not started. Tests: Testing §3 lifecycle cases; `motion-size.mjs` presence and flip rows.
 9. **`Ranvier.View.Anime`, reactive parts.** `follow`, `animateOn`, `draw`, `morph`, `scroll`, `drag`, `split`. Tests: Testing §3 reactive cases; isolation row of the budget.
 10. **`examples/Ranvier.Motion` scaffold and kanban**, Playwright config, CI `motion` job.
 11. **Dashboard page.**

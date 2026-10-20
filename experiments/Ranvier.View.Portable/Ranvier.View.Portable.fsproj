@@ -11,6 +11,7 @@
     <Compile Include="Identity.fs" />
     <Compile Include="Representation.fs" />
     <Compile Include="Typed.fs" />
+    <Compile Include="Departures.fs" />
     <Compile Include="Template.fs" />
     <Compile Include="Generated/HtmlTemplate.fs" />
     <Compile Include="TemplateSugar.fs" />

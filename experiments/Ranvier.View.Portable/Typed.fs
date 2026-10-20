@@ -72,19 +72,19 @@ let browser (hook: 'native -> (unit -> unit)) : Modifier<'native> =
 /// disposed, before the element leaves the host.
 /// </summary>
 let mounted (hook: 'native -> (unit -> unit)) : Modifier<'native> =
-    Modifier (fun backend -> backend.Placed (PlacedKind.Mounted, (fun node -> hook (unbox node))))
+    Modifier (fun backend -> backend.Placed (PlacedKind.Mounted, System.Func<obj, obj, obj>(fun node _ -> box (hook (unbox node)))))
 
 /// <summary>Sets <c>target</c> to the element while the element is placed.</summary>
 let ref (target: NodeRef<'native>) : Modifier<'native> =
-    Modifier (fun backend -> backend.Placed (PlacedKind.Mounted, target.Place))
+    Modifier (fun backend -> backend.Placed (PlacedKind.Mounted, System.Func<obj, obj, obj>(fun node _ -> box (target.Place node))))
 
 /// <summary>The widget owns the element's content once the element is placed, and the element's children are the widget's alone. The cleanup destroys the widget.</summary>
 let widget (attach: 'native -> (unit -> unit)) : Modifier<'native> =
-    Modifier (fun backend -> backend.Placed (PlacedKind.Widget, (fun node -> attach (unbox node))))
+    Modifier (fun backend -> backend.Placed (PlacedKind.Widget, System.Func<obj, obj, obj>(fun node _ -> box (attach (unbox node)))))
 
 /// <summary>The integration borrows the element once it is placed; the cleanup removes what it added. The integration keeps the element under its parent; moving it is reported after the cleanup.</summary>
 let lend (attach: 'native -> (unit -> unit)) : Modifier<'native> =
-    Modifier (fun backend -> backend.Placed (PlacedKind.Lent, (fun node -> attach (unbox node))))
+    Modifier (fun backend -> backend.Placed (PlacedKind.Lent, System.Func<obj, obj, obj>(fun node _ -> box (attach (unbox node)))))
 
 /// <summary>Applies a fixed property value during element construction.</summary>
 let staticProperty (setter: 'native -> 'value -> unit) value : Modifier<'native> =

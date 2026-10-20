@@ -125,6 +125,24 @@ let private viewsBuiltOnce () =
 
     equal (1, 1) (Builds.counterRecord, Builds.counterClass)
 
+/// <summary>A mounted hook raises the browser-capability error under <c>Reject</c>; the motion kinds beside it do not.</summary>
+let private mountedStillRejected () =
+    let mixed =
+        Component.template
+            (fun _ () -> ())
+            (div (Hooks.motion (fun _ _ _ -> ignore), Hooks.mounted (fun _ (_: Fable.Core.TS.Dom.HTMLDivElement) -> ignore)) { "x" })
+
+    let message =
+        try
+            Server.render Server.Options.defaults mixed ()
+            |> ignore
+
+            ""
+        with :? InvalidOperationException as error ->
+            error.Message
+
+    equal "Browser capability requires explicit Omit policy: <div> mounted hook" message
+
 let cases: (string * (unit -> unit)) array =
     [|
         "sugared elements share their explicit twins' layouts and hashes", sameLayouts elementPairs
@@ -140,4 +158,6 @@ let cases: (string * (unit -> unit)) array =
         "a static View is read once per definition", viewsBuiltOnce
         "void and component tags as views share their explicit twins' layouts and hashes", sameLayouts tagViewPairs
         "void and component tags as views render their explicit twins' server HTML", sameServerHtml tagViewServerPairs
+        "motion, exit and reflow hooks add no server HTML under Reject or Omit", sameServerHtml motionServerPairs
+        "a mounted hook beside the motion kinds still requires Omit", mountedStillRejected
     |]
