@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <RootNamespace>Ranvier.Anime</RootNamespace>
+        <AssemblyName>Fable.Ranvier.Anime</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Values.fs" />
+        <Compile Include="Tickables.fs" />
+        <Compile Include="Params.fs" />
+        <Compile Include="Anime.fs" />
+        <Compile Include="Reactive.fs" />
+        <Compile Include="Testing.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Ranvier\Ranvier.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />
+    </ItemGroup>
+
+</Project>

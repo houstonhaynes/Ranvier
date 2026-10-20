@@ -42,12 +42,14 @@
     <Project Path="src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <Project Path="src/Ranvier.Query/Ranvier.Query.fsproj" />
     <Project Path="src/Ranvier.Wire/Ranvier.Wire.fsproj" />
+    <Project Path="src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />
     <Project Path="tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj" />
     <Project Path="tests/Ranvier.CSharp.Tests/Ranvier.CSharp.Tests.csproj" />
     <Project Path="fable/Ranvier.Tests.Fable/Ranvier.Tests.Fable.fsproj" />
+    <Project Path="fable/Ranvier.Anime.Tests/Ranvier.Anime.Tests.fsproj" />
     <Project Path="tests/Ranvier.AotSmoke/Ranvier.AotSmoke.fsproj" />
   </Folder>
   <Folder Name="/bench/">

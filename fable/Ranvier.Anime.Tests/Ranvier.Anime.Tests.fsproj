@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The Fable.Ranvier.Anime bindings, compiled with Fable and run under the Node test runner with jsdom and a mocked clock. -->
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <IsPackable>false</IsPackable>
+        <IsExcludedFromRootBuild>true</IsExcludedFromRootBuild>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Fixtures.fs" />
+        <Compile Include="Surface.fs" />
+        <Compile Include="AnimeChecks.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
+    </ItemGroup>
+
+</Project>
