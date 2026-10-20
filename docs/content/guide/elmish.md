@@ -229,6 +229,15 @@ signal write. Nesting selectors reduces downstream runs to the changed path. See
 Selectors and effects belong to the scope active when they are created. Create a view inside
 `createRoot` or an owning memo to dispose its nodes, including selectors, with that scope.
 
+An `Mvu` belongs to the scope active at `Mvu.create` or `Mvu.withCmd`. Once that scope is
+disposed, `Dispatch` drops every message. A command, callback or timer still holding `dispatch`
+leaves the model as it was, a message queued from another thread is dropped when it drains, and
+the rest of a command list is skipped. An `Mvu` created in an effect's body stops at the effect's
+next run, and one created in the graph's root scope lives as long as the graph.
+
+As with a selector, creating an `Mvu` inside a pure body, such as a `createMemo` body, fails the
+run.
+
 :::info Branches and loops are allowed
 Ownership depends on scope, not call position. A view can create selectors inside a branch or a
 loop. See [Owners instead of hooks](../concepts/ecosystem.md#owners-instead-of-hooks).

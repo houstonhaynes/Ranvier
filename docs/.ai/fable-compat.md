@@ -65,7 +65,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | FailureOrigins.fs | 16 | 16 | 16 | 16 | 16 | 16 | 2 | 0 |
 | NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Editables.fs | 17 | 17 | 17 | 17 | 17 | 17 | 1 | 0 |
-| MvuBridge.fs | 7 | 7 | 7 | 7 | 7 | 7 | 1 | 0 |
+| MvuBridge.fs | 14 | 14 | 14 | 14 | 14 | 14 | 3 | 0 |
 | QueryComposition.fs | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 0 |
 | Queries.fs | 12 | 12 | 12 | 12 | 12 | 12 | 0 | 0 |
 | QueryReconciliation.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1515 | 1494 | 1491 | 1655 | 1629 | 1626 | 103 | 1 |
+| **Total** | 1522 | 1501 | 1498 | 1662 | 1636 | 1633 | 105 | 1 |
 
 ## Tests.fs
 
@@ -1907,8 +1907,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Excluded | Reason |
 | --- | --- |
 | a dispatch from another thread is queued until the graph pumps | JavaScript has one thread. |
+| a dispatch queued from another thread and drained after the scope is disposed is dropped | JavaScript has one thread. |
+| an unreferenced Mvu in the root scope is collectable | JavaScript exposes no forced collection. |
 
-<details><summary>7 passed in every build and delivery that runs them</summary>
+<details><summary>14 passed in every build and delivery that runs them</summary>
 
 - Dispatch applies update to the model
 - an update that returns its argument wakes nothing
@@ -1917,6 +1919,13 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - commands run after the write, with Dispatch
 - initial commands run before withCmd returns
 - a dispatch from an effect leaves the effect unsubscribed from the model
+- a dispatch after the scope is disposed is dropped
+- a withCmd dispatch after the scope is disposed runs neither update nor commands
+- a command holding Dispatch past the disposal of the scope dispatches nothing
+- a command list stops at the disposal of the scope
+- an Mvu created in an effect body drops messages after the effect re-runs
+- an Mvu in the root scope keeps applying after a sibling scope is disposed
+- Mvu.create inside a pure memo fails the run
 
 </details>
 

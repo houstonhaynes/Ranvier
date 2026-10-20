@@ -14,6 +14,12 @@ open Ranvier
 /// observed selector over the model; a selector over another selector's memo re-runs only when that memo changes.
 /// </para>
 /// <para>
+/// An <c>Mvu</c> belongs to the scope current at construction. Once the scope is torn down, at its disposal or before
+/// the re-run of the effect or owning memo whose body created the <c>Mvu</c>, <c>Dispatch</c> drops every message
+/// unapplied, and the commands of an earlier dispatch that have not yet run are skipped. An <c>Mvu</c> constructed in the
+/// graph's root scope stays live for the graph's lifetime.
+/// </para>
+/// <para>
 /// Selectors belong to the scope current when <c>Select</c> is called, not to a call position.
 /// </para>
 /// </remarks>
@@ -22,16 +28,28 @@ type Mvu<'Model, 'Msg>
     internal
     (graph: Graph, init: 'Model, update: 'Msg -> 'Model -> 'Model, step: 'Msg -> 'Model -> 'Model * (('Msg -> unit) -> unit) list, commanded: bool) =
     let root = Signal<'Model>(graph, init)
+    let mutable disposed = false
+
+    do
+        if not (obj.ReferenceEquals (getOwner (), graph.Root)) then
+            onCleanup (fun () -> disposed <- true)
 
     member private this.Apply(msg: 'Msg) =
-        if not commanded then
-            root.Value <- update msg root.Peek
-        else
-            let model, commands = step msg root.Peek
-            root.Value <- model
+        if not disposed then
+            if not commanded then
+                root.Value <- update msg root.Peek
+            else
+                let model, commands = step msg root.Peek
+                root.Value <- model
+                this.Run commands
 
-            for command in commands do
-                command this.Dispatch
+    /// <summary>Runs <c>commands</c> in order with <c>Dispatch</c>, stopping once the owning scope is torn down.</summary>
+    member internal this.Run(commands: (('Msg -> unit) -> unit) list) =
+        let mutable rest = commands
+
+        while not disposed && not rest.IsEmpty do
+            rest.Head this.Dispatch
+            rest <- rest.Tail
 
     /// <summary>A tracked read of the model.</summary>
     member _.Model = root.Value
@@ -41,10 +59,16 @@ type Mvu<'Model, 'Msg>
     /// <c>Dispatch</c> as their argument.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <c>update</c> and the commands run untracked. A call on the graph's thread runs inline, and a dispatch from an effect
     /// joins the running flush. A call from another thread is queued, as <c>Graph.Dispatch</c> queues work. Under
     /// <c>Serialised</c>, a call from outside the graph is queued and waits for the next drain; with no
     /// <c>SynchronizationContext</c> at construction, that drain is <c>Graph.Pump</c>.
+    /// </para>
+    /// <para>
+    /// Once the scope current at construction is torn down, a call drops its message, as does a queued call that drains
+    /// after the teardown.
+    /// </para>
     /// </remarks>
     member this.Dispatch(msg: 'Msg) : unit =
         if graph.IsOnGraphThread then
@@ -70,6 +94,11 @@ type Mvu<'Model, 'Msg>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mvu =
     /// <summary>A model holding <c>init</c>, updated by <c>update msg model</c> on each dispatch.</summary>
+    /// <remarks>
+    /// The model belongs to the current scope: once the scope is torn down, a dispatch drops its message. In the graph's
+    /// root scope the model stays live for the graph's lifetime.
+    /// </remarks>
+    /// <exception cref="T:System.InvalidOperationException">Called inside a pure body, such as a <c>createMemo</c> body.</exception>
     /// <example>
     /// <code lang="fsharp">
     /// let app = Mvu.create { Count = 0 } (fun msg model -> match msg with Increment -> { model with Count = model.Count + 1 })
@@ -85,9 +114,17 @@ module Mvu =
     /// model write it came with.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A command list has the shape of Elmish's <c>Cmd</c>, so Elmish commands pass unchanged. The initial commands run
     /// before <c>withCmd</c> returns.
+    /// </para>
+    /// <para>
+    /// The model belongs to the current scope: once the scope is torn down, a dispatch drops its message, including a
+    /// dispatch from a command holding <c>Dispatch</c>, and a command list stops at the teardown. In the graph's root
+    /// scope the model stays live for the graph's lifetime.
+    /// </para>
     /// </remarks>
+    /// <exception cref="T:System.InvalidOperationException">Called inside a pure body, such as a <c>createMemo</c> body.</exception>
     let withCmd
         (init: 'Model * (('Msg -> unit) -> unit) list)
         (update: 'Msg -> 'Model -> 'Model * (('Msg -> unit) -> unit) list)
@@ -97,7 +134,5 @@ module Mvu =
         let mvu =
             Mvu<'Model, 'Msg>(Graph.Current, model, Unchecked.defaultof<_>, update, true)
 
-        for command in commands do
-            command mvu.Dispatch
-
+        mvu.Run commands
         mvu

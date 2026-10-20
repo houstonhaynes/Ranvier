@@ -1,5 +1,6 @@
 module Ranvier.Tests.MvuBridge
 
+open System
 open Expecto
 open Ranvier
 open Ranvier.Elmish
@@ -186,5 +187,167 @@ let tests =
                 g.Pump () |> ignore
                 Expect.equal app.Model.Count 1 "applied by the pump"
             }
+
+            test "a dispatch queued from another thread and drained after the scope is disposed is dropped" {
+                use g =
+                    new Graph (
+                        { GraphOptions.Default with
+                            Dispatcher = Some (ManualDispatcher ())
+                        }
+                    )
+
+                use _ = g.Activate ()
+                let app, owner = createRoot (fun owner -> Mvu.create init update, owner)
+
+                let thread = System.Threading.Thread (fun () -> app.Dispatch Increment)
+                thread.Start ()
+                thread.Join ()
+
+                owner.Dispose ()
+                g.Pump () |> ignore
+                Expect.equal app.Model.Count 0 "the queued message is dropped"
+            }
 #endif
+
+#if !FABLE_COMPILER
+            // .NET only: JavaScript exposes no forced collection.
+            test "an unreferenced Mvu in the root scope is collectable" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let refs = ResizeArray<WeakReference>()
+
+                let createMany () =
+                    for _ in 1..100 do
+                        refs.Add (WeakReference (Mvu.create init update))
+
+                createMany ()
+                GC.Collect ()
+                GC.WaitForPendingFinalizers ()
+                GC.Collect ()
+
+                let alive = refs |> Seq.filter _.IsAlive |> Seq.length
+                Expect.isLessThan alive 10 "the root scope retains no Mvu"
+            }
+#endif
+
+            test "a dispatch after the scope is disposed is dropped" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let app, owner = createRoot (fun owner -> Mvu.create init update, owner)
+                let runs = countRuns (fun () -> app.Model)
+
+                app.Dispatch Increment
+                owner.Dispose ()
+                app.Dispatch Increment
+
+                Expect.equal app.Model.Count 1 "the model keeps the last write before the disposal"
+                Expect.equal runs.Value 2 "the model reader wakes for the live dispatch only"
+            }
+
+            test "a withCmd dispatch after the scope is disposed runs neither update nor commands" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let updates = ref 0
+                let commands = ref 0
+
+                let app, owner =
+                    createRoot (fun owner ->
+                        let app =
+                            Mvu.withCmd (init, []) (fun msg model ->
+                                updates.Value <- updates.Value + 1
+                                update msg model, [ fun _ -> commands.Value <- commands.Value + 1 ])
+
+                        app, owner)
+
+                owner.Dispose ()
+                app.Dispatch Increment
+
+                Expect.equal updates.Value 0 "update"
+                Expect.equal commands.Value 0 "commands"
+                Expect.equal app.Model.Count 0 "the model"
+            }
+
+            test "a command holding Dispatch past the disposal of the scope dispatches nothing" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let held = ref (fun (_: Msg) -> ())
+                let reports = ResizeArray<int>()
+
+                let app, owner =
+                    createRoot (fun owner ->
+                        let app =
+                            Mvu.withCmd (init, [ fun dispatch -> held.Value <- dispatch ]) (fun msg model ->
+                                let next = update msg model
+                                next, [ fun _ -> reports.Add next.Count ])
+
+                        app, owner)
+
+                held.Value Increment
+                owner.Dispose ()
+                held.Value Increment
+
+                Expect.equal app.Model.Count 1 "the model keeps the last write before the disposal"
+                Expect.sequenceEqual reports [ 1 ] "only the dispatch before the disposal reports"
+            }
+
+            test "a command list stops at the disposal of the scope" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let scope = ref Unchecked.defaultof<Owner>
+                let later = ref 0
+
+                let app =
+                    createRoot (fun owner ->
+                        scope.Value <- owner
+
+                        Mvu.withCmd (init, []) (fun msg model ->
+                            update msg model, [ (fun _ -> scope.Value.Dispose ()); (fun _ -> later.Value <- later.Value + 1) ]))
+
+                app.Dispatch Increment
+
+                Expect.equal app.Model.Count 1 "the dispatch before the disposal is applied"
+                Expect.equal later.Value 0 "the command after the disposal is skipped"
+            }
+
+            test "an Mvu created in an effect body drops messages after the effect re-runs" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let trigger = createSignal 0
+                let apps = ResizeArray<Mvu<Model, Msg>>()
+
+                createEffect (fun () ->
+                    trigger.Value |> ignore
+                    apps.Add (Mvu.create init update))
+
+                trigger.Value <- 1
+                apps[0].Dispatch Increment
+                apps[1].Dispatch Increment
+
+                Expect.equal apps[0].Model.Count 0 "the Mvu of the torn-down run"
+                Expect.equal apps[1].Model.Count 1 "the Mvu of the current run"
+            }
+
+            test "an Mvu in the root scope keeps applying after a sibling scope is disposed" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let app = Mvu.create init update
+
+                let owner =
+                    createRoot (fun owner ->
+                        Mvu.create init update |> ignore
+                        owner)
+
+                owner.Dispose ()
+                app.Dispatch Increment
+
+                Expect.equal app.Model.Count 1 "the root-scope Mvu applies the message"
+            }
+
+            test "Mvu.create inside a pure memo fails the run" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let m = createMemo (fun _ -> (Mvu.create init update).Model.Count)
+
+                Expect.throwsT<InvalidOperationException> (fun () -> m.Value |> ignore) "the memo run fails"
+            }
         ]
