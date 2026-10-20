@@ -1,19 +1,29 @@
 import { mountKeyed as ranvierKeyed, mountArms as ranvierArmsMount } from "../../generated-tests/KeyedRowsPerf.js";
+import { mountKeyed as sugarKeyed, mountArms as sugarArmsMount } from "../../generated-tests/KeyedRowsSugarPerf.js";
 import { mountKeyed as solidKeyed, mountArms as solidArms } from "./keyed-solid.jsx";
 
 // MEASUREMENT (measure/poc-rerun-2026-10-15): production rows and the production arm adapter against Solid 2.
-// Ranvier's operations record exposes F# field names; both adapters present the same shape.
+// Ranvier's operations record exposes F# field names; the Ranvier, sugared Ranvier and Solid adapters present the same shape.
 const ranvierRows = host => {
   const ops = ranvierKeyed(host);
   return { create: n => ops.Create(n), append: n => ops.Append(n), updateEvery10th: () => ops.UpdateEvery10th(), swap: () => ops.Swap(), remove: i => ops.Remove(i), clear: () => ops.Clear(), dispose: () => ops.Dispose() };
 };
-const adapters = { ranvier: ranvierRows, solid: solidKeyed };
+const sugarRows = host => {
+  const ops = sugarKeyed(host);
+  return { create: n => ops.Create(n), append: n => ops.Append(n), updateEvery10th: () => ops.UpdateEvery10th(), swap: () => ops.Swap(), remove: i => ops.Remove(i), clear: () => ops.Clear(), dispose: () => ops.Dispose() };
+};
+// ranvier-sugar: the same fixtures written with the template sugar (forEachFixed, armOf).
+const adapters = { ranvier: ranvierRows, "ranvier-sugar": sugarRows, solid: solidKeyed };
 const ranvierArms = host => {
   const ops = ranvierArmsMount(host);
   return { create: n => ops.Create(n), switch: () => ops.Switch(), payload: () => ops.Payload(), clear: () => ops.Clear(), dispose: () => ops.Dispose() };
 };
 // The arm fixture: every row holds one matchWith region.
-const armAdapters = { ranvier: ranvierArms, solid: solidArms };
+const sugarArms = host => {
+  const ops = sugarArmsMount(host);
+  return { create: n => ops.Create(n), switch: () => ops.Switch(), payload: () => ops.Payload(), clear: () => ops.Clear(), dispose: () => ops.Dispose() };
+};
+const armAdapters = { ranvier: ranvierArms, "ranvier-sugar": sugarArms, solid: solidArms };
 const adapterFor = (operation, mode) => (operation.fixture === "arms" ? armAdapters : adapters)[mode];
 
 // Each operation: untimed setup on a fresh list, then the timed step, then the expected row count.

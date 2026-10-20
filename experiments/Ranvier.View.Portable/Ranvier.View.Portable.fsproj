@@ -13,6 +13,8 @@
     <Compile Include="Typed.fs" />
     <Compile Include="Template.fs" />
     <Compile Include="Generated/HtmlTemplate.fs" />
+    <Compile Include="TemplateSugar.fs" />
+    <Compile Include="Generated/HtmlTemplateSugar.fs" />
     <Compile Include="Server.fs" />
     <ProjectReference Include="../../src/Ranvier/Ranvier.fsproj" />
     <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />

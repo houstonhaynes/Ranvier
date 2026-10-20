@@ -17,7 +17,7 @@ const counts = argument("counts", "1000,10000").split(",").map(Number);
 const processes = Number(argument("processes", 2));
 const label = argument("label", "heap");
 const port = 5188;
-const bundles = { production: ["ranvier", "solid"] };
+const bundles = { production: ["ranvier", "ranvier-sugar", "solid"] };
 const envFor = () => ({ ...process.env, RANVIER_PERF_OUTPUT: "generated-keyed-heap", RANVIER_PERF_PROFILE: "true" });
 
 if (!process.argv.includes("--no-bundle"))
@@ -221,7 +221,7 @@ try {
       "Objects are matched by snapshot id. `js` lists the V8 objects new in the second snapshot, by node type and constructor name, with self sizes; the kinds sum to jsBytesPerRow.",
       "codeBytesPerRow (compiled code, shapes, feedback) and nativeBytesPerRow (Blink nodes outside the V8 heap) are excluded from jsBytesPerRow.",
       "`memo` attributes the new objects held by each field of a new Memo$1, and the arrays, closures and contexts directly inside them, each object once. Shared objects (an empty array, a comparer, the graph) are not new and do not appear.",
-      "One bundle: ranvier is the production keyed list (t.each); solid is Solid 2 <For>."
+      "One bundle: ranvier is the production keyed list (t.each); ranvier-sugar is the same list written with forEachFixed; solid is Solid 2 <For>."
     ],
     bundles, counts, processes, results
   };

@@ -1,5 +1,6 @@
 """Compile valid generated usage and reject incompatible/readonly examples."""
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -13,6 +14,15 @@ module H = Ranvier.View.Foundation.Generated.Html
 open Ranvier.View.Foundation.Generated.Html.Authoring
 open Ranvier.View.Foundation.Template
 """
+sugar_members = re.findall(
+    r"member _\.``(\w+)`` ?\(\[<ParamArray>\] parts: Part<[^>]*>[^)]*\) : (ElementBuilder|TemplateView)",
+    re.sub(r"\s+", " ", (root / "experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.fs").read_text(encoding="utf-8")),
+)
+assert len(sugar_members) == 112, "the generated sugar file must declare every HTML tag"
+# One call per generated tag: a void tag takes no body, any other tag takes an empty body.
+all_sugar_tags = "\n".join(
+    "            t." + name + ("() { }" if kind == "ElementBuilder" else "()") for name, kind in sugar_members
+)
 examples = [
     ("valid helpers", "let view = H.div Tree.ops [| H.Properties.HTMLElement.titleStatic \"shared\"; H.Events.onClick (fun (_: Dom.PointerEvent) -> ()) |] [| H.input Tree.ops [| H.Input.checkedStatic true |]; H.select Tree.ops [||] [| H.option Tree.ops [||] [||] |]; H.br Tree.ops [||] |]", None),
     ("generic modifiers reject lists", "let view = H.div Tree.ops [] [||]", "FS0001"),
@@ -71,6 +81,84 @@ let view = Component.define (fun _ (p: R) -> p) (fun t -> t.div [| t.Props.Input
 type R = { Value: string }
 let view = Component.define (fun _ (p: R) -> p) (fun t -> t.br [||] [||])
 ''', "FS0003"),
+    ("sugar element bodies", '''
+open Ranvier.View.Foundation.Sugar
+type SugarRow = { Value: global.Ranvier.Signal<string>; Count: global.Ranvier.Signal<int> }
+let view =
+    Component.define (fun _ (p: SugarRow) -> p) (fun t ->
+        t.Div(t.Attrs.className "x", t.Attrs.title (t.from (fun r -> r.Value))) {
+            "static"
+            t.Input(t.Props.Input.value (t.from (fun r -> r.Value)))
+            t.Span() { fun r -> string r.Count.Value }
+            t.Span() { t.text (fun (r: SugarRow) -> string r.Count.Value) }
+        })
+''', None),
+    ("sugar input part on div", '''
+open Ranvier.View.Foundation.Sugar
+type SugarRow = { Value: global.Ranvier.Signal<string> }
+let view = Component.define (fun _ (p: SugarRow) -> p) (fun t -> t.Div(t.Props.Input.value (t.from (fun r -> r.Value))) { "x" })
+''', "FS0041"),
+    ("sugar void tag with children", '''
+open Ranvier.View.Foundation.Sugar
+let view = Component.define (fun _ () -> ()) (fun t -> t.Div() { t.Input() { "x" } })
+''', "FS0708"),
+    ("sugar part of another element", '''
+open Ranvier.View.Foundation.Sugar
+let view =
+    Component.define (fun _ () -> ()) (fun t ->
+        let part: Part<Dom.HTMLButtonElement, unit> = t.Props.Button.disabled true
+        t.Span(t.Attrs.className "x", part) { "y" })
+''', "FS0001"),
+    ("sugar lambda yield with a label shared by a later record", '''
+open Ranvier.View.Foundation.Sugar
+type SugarItem = { Id: int }
+type SugarOther = { Id: int; Name: string }
+let view =
+    Component.define (fun _ (items: SugarItem array) -> items) (fun t ->
+        t.Div() { t.forEach (fun (item: SugarItem) -> item.Id) id (fun r -> r.Span() { fun row -> string (row ()).Id }) })
+''', "FS0001"),
+    # Counterpart of the lambda-yield case above: t.text compiles where the bare lambda yield conflicts.
+    ("sugar t.text with a label shared by a later record", '''
+open Ranvier.View.Foundation.Sugar
+type SugarItem = { Id: int }
+type SugarOther = { Id: int; Name: string }
+let view =
+    Component.define (fun _ (items: SugarItem array) -> items) (fun t ->
+        t.Div() { t.forEach (fun (item: SugarItem) -> item.Id) id (fun r -> r.Span() { r.text (fun row -> string (row ()).Id) }) })
+''', None),
+    ("sugar outer instance inside a row", '''
+open Ranvier.View.Foundation.Sugar
+type SugarItem = { Id: int }
+let view =
+    Component.define (fun _ (items: SugarItem array) -> items) (fun t ->
+        t.Div() { t.forEach (fun (item: SugarItem) -> item.Id) id (fun r -> r.Span() { t.text (fun (items: SugarItem array) -> string items.Length) }) })
+''', "FS0041"),
+    ("sugar Program view in a body", '''
+open Ranvier.View.Foundation.Sugar
+let view = Component.define (fun _ () -> ()) (fun t -> t.Div() { Program.text "x" })
+''', "FS0041"),
+    ("generated sugar tags", '''
+open Ranvier.View.Foundation.Sugar
+let view =
+    Component.define (fun _ () -> ()) (fun t ->
+        t.Article(t.Attrs.className "a") {
+            t.Base()
+            t.Select() { t.Option() { "one" } }
+            t.Object() { }
+            t.Img()
+            t.H1() { "title" }
+            t.Tbody() { t.Tr() { t.Td() { "cell" } } }
+''' + all_sugar_tags + '''
+        })
+''', None),
+    ("generated sugar void tag with children", '''
+open Ranvier.View.Foundation.Sugar
+let view = Component.define (fun _ () -> ()) (fun t -> t.Div() { t.Img() { "x" } })
+''', "FS0708"),
+    ("generated sugar part of another element", '''
+open Ranvier.View.Foundation.Sugar
+let view = Component.define (fun _ () -> ()) (fun t -> t.Span(t.Props.Input.value "x") { "y" })
+''', "FS0041"),
 ]
 
 with tempfile.TemporaryDirectory(prefix="ranvier-generated-types-") as directory:
@@ -93,6 +181,9 @@ with tempfile.TemporaryDirectory(prefix="ranvier-generated-types-") as directory
         if diagnostic is None:
             if result.returncode:
                 raise AssertionError(f"{name} failed:\n{output}")
-        elif result.returncode == 0 or f"error {diagnostic}" not in output:
-            raise AssertionError(f"{name} did not fail with {diagnostic}:\n{output}")
+        else:
+            errors = sorted({match.group(0) for match in re.finditer(r"[^\r\n]*\berror FS\d+:[^\r\n]*", output)})
+            codes = [re.search(r"error (FS\d+)", line).group(1) for line in errors]
+            if result.returncode == 0 or codes != [diagnostic]:
+                raise AssertionError(f"{name} must fail with exactly one error {diagnostic}, got {codes}:\n{output}")
         print(f"PASS {name}")

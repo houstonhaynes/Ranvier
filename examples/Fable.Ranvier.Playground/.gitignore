@@ -1,6 +1,8 @@
 generated/
 generated-tests/
 generated-authoring-counters/
+generated-tests-counters/
+generated-tests-debug/
 generated-ripple/
 generated-framework-dist/
 generated-framework-shared/
@@ -17,3 +19,5 @@ generated-keyed-dist/
 generated-keyed-heap/
 generated-keyed-identity/
 generated-keyed-passes/
+generated-sugar-size/
+generated-keyed-profile/

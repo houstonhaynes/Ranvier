@@ -2208,6 +2208,15 @@ module internal TemplateParts =
     let event name (handler: 'inst -> 'event -> unit) : Part<'native, 'inst> =
         EventPart (name, Func<obj, obj, unit>(fun instance event -> handler (unbox instance) (unbox event)))
 
+    let text (value: string) : TemplateView<'inst> =
+        TemplateView (TextNode value)
+
+    let readText (read: 'inst -> string) : TemplateView<'inst> =
+        TemplateView (TextSlotNode (slot TextTarget RenderMode read primitiveSame))
+
+    let sourceText (source: Source<'inst, string>) : TemplateView<'inst> =
+        TemplateView (TextSlotNode (sourceSlot TextTarget source primitiveSame))
+
 /// <summary>Attribute parts: a value is static, a reader or source is dynamic.</summary>
 [<Sealed>]
 type AttributeBuilder<'inst> internal () =
@@ -2416,6 +2425,25 @@ type DocumentBuilder<'inst> internal () =
         let attributes, slots = headParts linkKeys parts
         headView HeadKind.Link (linkKey attributes key) (attributes, slots) null
 
+#if DEBUG && FABLE_COMPILER
+/// <summary>The number of region item reads in progress; <c>Component.define</c> raises while it is nonzero.</summary>
+module internal RegionReads =
+    let mutable depth = 0
+#endif
+
+/// <summary>Runs a region's item read; Fable Debug builds count it in <c>RegionReads.depth</c>.</summary>
+let inline private regionRead ([<InlineIfLambda>] read: unit -> 'value) : 'value =
+#if DEBUG && FABLE_COMPILER
+    RegionReads.depth <- RegionReads.depth + 1
+
+    try
+        read ()
+    finally
+        RegionReads.depth <- RegionReads.depth - 1
+#else
+    read ()
+#endif
+
 /// <summary>Builds a template for instances of type <c>'inst</c>; dynamic parts receive the instance as their argument.</summary>
 [<Sealed>]
 type TemplateBuilder<'inst> internal () =
@@ -2527,7 +2555,7 @@ type TemplateBuilder<'inst> internal () =
                 {
                     Items =
                         Func<obj, obj array>(fun instance ->
-                            let arm = arms (read (unbox instance))
+                            let arm = regionRead (fun () -> arms (read (unbox instance)))
                             [| box (box arm.Definition, box arm) |])
                     Key = KeyedItems.pairKey
                     Row = ArmRow
@@ -2543,7 +2571,7 @@ type TemplateBuilder<'inst> internal () =
                     Items =
                         Func<obj, obj array>(fun instance ->
                             let current = key (unbox instance)
-                            let arm = arms current
+                            let arm = regionRead (fun () -> arms current)
                             [| box (box (box current, arm.Definition), box arm) |])
                     Key = KeyedItems.pairKey
                     Row = ArmRow
@@ -2561,7 +2589,7 @@ type TemplateBuilder<'inst> internal () =
         TemplateView (
             RegionNode
                 {
-                    Items = Func<obj, obj array>(fun instance -> KeyedItems.boxAll (items (unbox instance)))
+                    Items = Func<obj, obj array>(fun instance -> regionRead (fun () -> KeyedItems.boxAll (items (unbox instance))))
                     Key = Func<obj, obj>(fun item -> box (key (unbox<'item> item)))
                     Row = ItemRow (row :> TemplateComponent, Func<(unit -> obj), obj>(fun current -> box (fun () -> unbox<'item>(current ()))))
                 }
@@ -2575,6 +2603,10 @@ module Component =
     /// <summary>Defines a component from per-instance setup and a template built once.</summary>
     /// <remarks><c>setup</c> runs untracked for each instance and returns the instance that dynamic parts receive.</remarks>
     let define (setup: Setup -> 'props -> 'inst) (build: TemplateBuilder<'inst> -> TemplateView<'inst>) : Component<'props> =
+#if DEBUG && FABLE_COMPILER
+        if RegionReads.depth > 0 then
+            raise (InvalidOperationException ("a template definition was created while a region was read; bind it in the template's build function"))
+#endif
         let (TemplateView root) = build (TemplateBuilder<'inst>())
         Component<'props>(Func<Setup, obj, obj>(fun context props -> box (setup context (unbox props))), root)
 

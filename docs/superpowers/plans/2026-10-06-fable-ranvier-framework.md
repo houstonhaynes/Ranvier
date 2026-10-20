@@ -61,6 +61,7 @@ The core alone, with no DOM ([trimmed pass](../../research/2026-10-14-core-trimm
 - Component templates with dynamic structure and the generated template catalogue (plans 2a–2c).
 - The generated DOM catalogue, all 112 tags.
 - Production comparisons against Solid 2, Ripple and React.
+- Template sugar (Task 10 optional wrappers): `t.Div(...) { ... }`, `forEach`, `forEachFixed`, `armOf`, `show` and `showElse`, with the generated 112 element members and twin tests against the explicit forms.
 
 ### Open, in proposed order
 
@@ -71,7 +72,7 @@ The core alone, with no DOM ([trimmed pass](../../research/2026-10-14-core-trimm
 5. Done: structural view boundaries and live setter-failure handling ([plan](2026-10-19-view-boundaries.md)).
 6. Done: the playground screen migration (Task 7), on mounted hooks, widget integrations and the explicit-batch contract ([notes](../../research/2026-10-19-view-integrations.md)). Owned async cancellation is covered by OwnedAsyncChecks.fs.
 7. Done: server HTML and hydration ([plan](2026-10-19-server-html-hydration.md), [measurements](../../research/2026-10-19-server-html-hydration.md)).
-8. Performance and release acceptance, then sugar (Tasks 8 and 10).
+8. Performance and release acceptance (Task 8). The template sugar is done on `feat/view-sugar` ([measurements](../../research/2026-10-20-view-sugar.md), [spec section 9](../specs/2026-10-19-view-sugar-design.md#9-measurements)): the sugared benchmark row, keyed list and arms match their explicit twins in timing ranges, retained bytes (856 B/row at 1k) and allocation; the sugared fixtures add 582 B gzip against a 1,024 B budget; the keyed-row template shrinks from 39 to 22 lines and the arm template from 31 to 22. Open from it: the Fable plugin decision (spec open question 6), after item 8's startup numbers.
 
 Indexed edges ([#54](https://github.com/shayanhabibi/Ranvier/pull/54)) stay deferred; the core projection pass is 10–26% of remove and swap in the loop profile.
 

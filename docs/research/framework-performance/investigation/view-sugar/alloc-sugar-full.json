@@ -1,0 +1,1806 @@
+{
+  "measuredAt": "2026-10-20T08:32:48.664Z",
+  "commit": "df3bb0bc2c042c30296be9e60c293bae9d7e6258",
+  "dirty": [
+    "M examples/Fable.Ranvier.Playground/benchmarks/frameworks/keyed-rows.mjs",
+    " M examples/Fable.Ranvier.Playground/benchmarks/frameworks/sugar-compare.mjs",
+    "?? docs/research/framework-performance/investigation/view-sugar/alloc-template-row.json",
+    "?? examples/Fable.Ranvier.Playground/benchmarks/frameworks/sugar-alloc.mjs"
+  ],
+  "node": "v26.7.0",
+  "chromium": "153.0.8010.12",
+  "cpu": "AMD Ryzen 9 9900X 12-Core Processor            ",
+  "cores": 24,
+  "memoryGb": 62,
+  "platform": "win32 10.0.26200",
+  "production": true,
+  "minified": false,
+  "fable": "5.18.0",
+  "packages": {
+    "solid": "2.0.0-rc.14",
+    "solidWeb": "2.0.0-rc.14",
+    "solidCompiler": "2.0.0-rc.14"
+  },
+  "processes": 1,
+  "warmups": 3,
+  "rounds": 15,
+  "shuffle": false,
+  "pin": false,
+  "unit": "milliseconds per operation",
+  "notes": [
+    "Each sample mounts a fresh list, runs the untimed setup, forces GC through CDP, then times one synchronous operation including its DOM commit; layout and paint are excluded.",
+    "Modes alternate within each round and the starting mode rotates per round and process; ratios divide each Ranvier sample by the Solid sample of the same round.",
+    "Rows follow js-framework-benchmark keyed: id text, label signal in an anchor, a remove anchor with a span, an empty cell; two click handlers per row. Solid's For keys by row identity, Ranvier's t.each by row id.",
+    "Retained heap is GC-stabilized JavaScript heap per row of a mounted list, excluding DOM node memory outside the V8 heap."
+  ],
+  "sourceHashes": {
+    "benchmarks/frameworks/keyed-rows.mjs": "e7b3b41326b3db496f6685542b0ce75d293c14585df94043c88b6e1a951b63f6",
+    "benchmarks/frameworks/keyed-page.mjs": "122578d741b81b2c420c67cbcc7f752f33047f042c871ebe1ad333d10ae64aec",
+    "benchmarks/frameworks/keyed-solid.jsx": "e3a0db90ead42a76089806409b064a4a142fb78dd73d1edef38a75be39c9ad10",
+    "benchmarks/frameworks/vite.config.mjs": "b09bd3985edc37edaf2a89f7f1df964c572a47c253193b2a30c1cfcee9d73a89",
+    "tests/KeyedRowsPerf.fs": "6a2a355dda401139995b9c4249e0ed26780a227b07a36cc1a80087373b9ddd61",
+    "package-lock.json": "7d60e45b5fb7c43be37abb2219218bfc68f2aa67716514fd79d8286af555b23e",
+    "../../experiments/Ranvier.View.Portable/Lifetime.fs": "2a0f89ab20c23844677a63cf3984dc2412d13616342abf15c0ad16793996b01d",
+    "../../experiments/Ranvier.View.Portable/Representation.fs": "18da44be156eee0671a4e2f7c6839ba1a52e84f66bede7b37aa2137ffcc425d5",
+    "../../experiments/Ranvier.View.Portable/Template.fs": "916b873320c199052652a160d29fee5445183bc411a2421844b9d4249555af8f",
+    "../../experiments/Ranvier.View.Foundation/TemplateDom.fs": "db268b572a24d741d91aa96002fdc2b67d73a368fe8c3689e3ce6243bdfbe750",
+    "../../experiments/Ranvier.View.Foundation/Mounting.fs": "a5839ef6d01787927bbea7870499697a3065204a19d7aa2c6dcc779f578a013b",
+    "../../src/Ranvier/Core.fs": "03203520e46f2634db702ca442be89608a545631e19e81155b68fa8130906bd1",
+    "../../src/Ranvier/Projections.fs": "24ca5196b22e133271cf9b0f5b4a3667c97eb603dba83d2cb143474104158188",
+    "../../src/Ranvier/Api.fs": "2d2bda885ac5baf40441ba4d2169e00b44f1639c8beaf1a40101cc3d9b67ffaf",
+    "../../src/Ranvier/Combinators.fs": "518dafed24cd97678f442364f4d566bea5fa74f62b5cc8d313492f5706bf27d4"
+  },
+  "modes": [
+    "ranvier",
+    "ranvier-sugar"
+  ],
+  "operations": [
+    "create1k"
+  ],
+  "summaries": [],
+  "ratios": [],
+  "pairRatios": [],
+  "heaps": [],
+  "domCalls": [],
+  "samples": [],
+  "profiles": [
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "repeats": 10,
+      "totalMs": 50.606,
+      "files": [
+        {
+          "name": "(native)",
+          "ms": 25.372
+        },
+        {
+          "name": "assets/index-CyqLIIjp.js",
+          "ms": 25.234
+        }
+      ],
+      "self": [
+        {
+          "name": "cloneNode (native):0",
+          "ms": 12.275
+        },
+        {
+          "name": "(garbage collector) (native):0",
+          "ms": 6.872
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "ms": 3.868
+        },
+        {
+          "name": "appendChild (native):0",
+          "ms": 3.218
+        },
+        {
+          "name": "write assets/index-CyqLIIjp.js:11151",
+          "ms": 3.141
+        },
+        {
+          "name": "insertBefore (native):0",
+          "ms": 3.007
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "ms": 1.476
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "ms": 1.471
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "ms": 1.146
+        },
+        {
+          "name": "ObserverSet__Add_Z13C4C09A assets/index-CyqLIIjp.js:3143",
+          "ms": 1.009
+        },
+        {
+          "name": "KeyedRow assets/index-CyqLIIjp.js:15270",
+          "ms": 0.9
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "ms": 0.817
+        },
+        {
+          "name": "RowsOf$3__Stage_5BDD81 assets/index-CyqLIIjp.js:6507",
+          "ms": 0.731
+        },
+        {
+          "name": "RowsOf$3__CreateAddedFirst assets/index-CyqLIIjp.js:6626",
+          "ms": 0.575
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "ms": 0.548
+        },
+        {
+          "name": "Row_Layout_56BA4C2E assets/index-CyqLIIjp.js:14061",
+          "ms": 0.52
+        },
+        {
+          "name": "ClearStaged assets/index-CyqLIIjp.js:6483",
+          "ms": 0.517
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "ms": 0.512
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "ms": 0.507
+        },
+        {
+          "name": "KeyedProjection$3__KeyOf_2B595 assets/index-CyqLIIjp.js:6785",
+          "ms": 0.505
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10144",
+          "ms": 0.505
+        },
+        {
+          "name": "Graph__RunOwned_Z27813270 assets/index-CyqLIIjp.js:3988",
+          "ms": 0.5
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "ms": 0.5
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15310",
+          "ms": 0.499
+        },
+        {
+          "name": "ItemRow$3__get_Item assets/index-CyqLIIjp.js:5462",
+          "ms": 0.497
+        },
+        {
+          "name": "ItemRow$3 assets/index-CyqLIIjp.js:5454",
+          "ms": 0.497
+        },
+        {
+          "name": "Owner__SetParent_Z6ED9BB41 assets/index-CyqLIIjp.js:3516",
+          "ms": 0.494
+        },
+        {
+          "name": "MarkDirty assets/index-CyqLIIjp.js:4764",
+          "ms": 0.493
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "ms": 0.489
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "ms": 0.487
+        },
+        {
+          "name": "OnceRow$3__get_Value assets/index-CyqLIIjp.js:5478",
+          "ms": 0.482
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "ms": 0.471
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "ms": 0.428
+        },
+        {
+          "name": "Projection$2__get_Runs assets/index-CyqLIIjp.js:6357",
+          "ms": 0.316
+        },
+        {
+          "name": "Append assets/index-CyqLIIjp.js:13451",
+          "ms": 0.191
+        },
+        {
+          "name": "FSharpRef$1.setter assets/index-CyqLIIjp.js:456",
+          "ms": 0.071
+        },
+        {
+          "name": "Ranvier.RowsOf`3.Enumerate assets/index-CyqLIIjp.js:6681",
+          "ms": 0.071
+        }
+      ],
+      "inclusive": [
+        {
+          "name": "(root) (native):0",
+          "ms": 50.606
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15322",
+          "ms": 43.734
+        },
+        {
+          "name": "Ranvier_Graph__Graph_Run_FCFD9EF assets/index-CyqLIIjp.js:10289",
+          "ms": 43.734
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15321",
+          "ms": 43.734
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:19735",
+          "ms": 43.734
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:19790",
+          "ms": 43.734
+        },
+        {
+          "name": "measuredRun assets/index-CyqLIIjp.js:19873",
+          "ms": 43.734
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:19977",
+          "ms": 43.734
+        },
+        {
+          "name": "(anonymous) (native):1",
+          "ms": 43.734
+        },
+        {
+          "name": "evaluate (native):305",
+          "ms": 43.734
+        },
+        {
+          "name": "Graph__RunHosted_4E4940D5 assets/index-CyqLIIjp.js:4226",
+          "ms": 41.823
+        },
+        {
+          "name": "Effect__RunBody assets/index-CyqLIIjp.js:4844",
+          "ms": 41.823
+        },
+        {
+          "name": "Effect__Run assets/index-CyqLIIjp.js:4832",
+          "ms": 41.823
+        },
+        {
+          "name": "Execute assets/index-CyqLIIjp.js:4784",
+          "ms": 41.823
+        },
+        {
+          "name": "Graph__RunFlush assets/index-CyqLIIjp.js:4020",
+          "ms": 41.823
+        },
+        {
+          "name": "Graph__Flush assets/index-CyqLIIjp.js:4017",
+          "ms": 41.823
+        },
+        {
+          "name": "Graph__RequestFlush assets/index-CyqLIIjp.js:4067",
+          "ms": 41.823
+        },
+        {
+          "name": "Signal$1__set_Value_2B595 assets/index-CyqLIIjp.js:4368",
+          "ms": 41.823
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "ms": 38.326
+        },
+        {
+          "name": "Graph__RunUntracked_FCFD9EF assets/index-CyqLIIjp.js:4299",
+          "ms": 37.855
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14684",
+          "ms": 34.714
+        },
+        {
+          "name": "Projection$2__Run assets/index-CyqLIIjp.js:5984",
+          "ms": 30.705
+        },
+        {
+          "name": "Projection$2__EnsureCurrent assets/index-CyqLIIjp.js:6196",
+          "ms": 30.705
+        },
+        {
+          "name": "Projection$2__PullFor_7E1B59FA assets/index-CyqLIIjp.js:6220",
+          "ms": 30.705
+        },
+        {
+          "name": "Projection$2__get_Keys assets/index-CyqLIIjp.js:6271",
+          "ms": 30.705
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14733",
+          "ms": 30.705
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14706",
+          "ms": 30.705
+        },
+        {
+          "name": "MountLifetime_Capture_30631095 assets/index-CyqLIIjp.js:11883",
+          "ms": 30.705
+        },
+        {
+          "name": "Projection$2__ApplyDiff_Z524259A4 assets/index-CyqLIIjp.js:6069",
+          "ms": 29.082
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6021",
+          "ms": 29.082
+        },
+        {
+          "name": "Graph__RunBatch_FCFD9EF assets/index-CyqLIIjp.js:4128",
+          "ms": 29.082
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6020",
+          "ms": 29.082
+        },
+        {
+          "name": "RowsOf$3__CreateAddedFirst assets/index-CyqLIIjp.js:6626",
+          "ms": 28.565
+        },
+        {
+          "name": "RowsOf$3__CreateAdded assets/index-CyqLIIjp.js:6605",
+          "ms": 28.565
+        },
+        {
+          "name": "CreateAdded assets/index-CyqLIIjp.js:6469",
+          "ms": 28.565
+        },
+        {
+          "name": "RowsOf$3__CreateOnce_5BDD81 assets/index-CyqLIIjp.js:6587",
+          "ms": 27.99
+        },
+        {
+          "name": "Graph__RunOwned_Z27813270 assets/index-CyqLIIjp.js:3988",
+          "ms": 26.502
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14671",
+          "ms": 26.002
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6595",
+          "ms": 26.002
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "ms": 25.527
+        },
+        {
+          "name": "rows assets/index-CyqLIIjp.js:11749",
+          "ms": 25.527
+        },
+        {
+          "name": "RowBuilder__Build_Z434D8317 assets/index-CyqLIIjp.js:14130",
+          "ms": 25.527
+        },
+        {
+          "name": "cloneNode (native):0",
+          "ms": 12.275
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "ms": 7.109
+        },
+        {
+          "name": "(garbage collector) (native):0",
+          "ms": 6.872
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "ms": 4.071
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14799",
+          "ms": 4.009
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14796",
+          "ms": 4.009
+        },
+        {
+          "name": "RegionSite__Settle_Z7FD688B0 assets/index-CyqLIIjp.js:14268",
+          "ms": 4.009
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "ms": 3.868
+        },
+        {
+          "name": "Row_Layout_56BA4C2E assets/index-CyqLIIjp.js:14061",
+          "ms": 3.527
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "ms": 3.523
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "ms": 3.523
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "ms": 3.523
+        },
+        {
+          "name": "Append assets/index-CyqLIIjp.js:13451",
+          "ms": 3.409
+        },
+        {
+          "name": "appendChild (native):0",
+          "ms": 3.218
+        },
+        {
+          "name": "write assets/index-CyqLIIjp.js:11151",
+          "ms": 3.141
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "ms": 3.141
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11332",
+          "ms": 3.141
+        },
+        {
+          "name": "insertBefore (native):0",
+          "ms": 3.007
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "ms": 2.357
+        },
+        {
+          "name": "Effect_Create_Z2C5AF67C assets/index-CyqLIIjp.js:4821",
+          "ms": 2.357
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10144",
+          "ms": 2.001
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15310",
+          "ms": 1.911
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "ms": 1.911
+        },
+        {
+          "name": "build assets/index-CyqLIIjp.js:15310",
+          "ms": 1.911
+        },
+        {
+          "name": "Ranvier.RowsOf`3.Enumerate assets/index-CyqLIIjp.js:6681",
+          "ms": 1.623
+        },
+        {
+          "name": "Enumerate assets/index-CyqLIIjp.js:6466",
+          "ms": 1.623
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6008",
+          "ms": 1.623
+        },
+        {
+          "name": "ObserverSet__Add_Z13C4C09A assets/index-CyqLIIjp.js:3143",
+          "ms": 1.496
+        },
+        {
+          "name": "AddObserver assets/index-CyqLIIjp.js:4333",
+          "ms": 1.496
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "ms": 1.496
+        },
+        {
+          "name": "SourceList__Add_Z47AEE590 assets/index-CyqLIIjp.js:3344",
+          "ms": 1.496
+        },
+        {
+          "name": "AddSource assets/index-CyqLIIjp.js:4757",
+          "ms": 1.496
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "ms": 1.496
+        },
+        {
+          "name": "Signal$1__get_Value assets/index-CyqLIIjp.js:4360",
+          "ms": 1.496
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "ms": 1.471
+        },
+        {
+          "name": "Operators_IsNull$1 assets/index-CyqLIIjp.js:1539",
+          "ms": 1.471
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "ms": 1.146
+        },
+        {
+          "name": "Effect__Start assets/index-CyqLIIjp.js:4824",
+          "ms": 1
+        }
+      ]
+    },
+    {
+      "mode": "ranvier-sugar",
+      "operation": "create1k",
+      "repeats": 10,
+      "totalMs": 68.031,
+      "files": [
+        {
+          "name": "assets/index-CyqLIIjp.js",
+          "ms": 34.135
+        },
+        {
+          "name": "(native)",
+          "ms": 33.896
+        }
+      ],
+      "self": [
+        {
+          "name": "cloneNode (native):0",
+          "ms": 12.69
+        },
+        {
+          "name": "(garbage collector) (native):0",
+          "ms": 11.83
+        },
+        {
+          "name": "insertBefore (native):0",
+          "ms": 6.426
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "ms": 2.97
+        },
+        {
+          "name": "appendChild (native):0",
+          "ms": 2.95
+        },
+        {
+          "name": "write assets/index-CyqLIIjp.js:11151",
+          "ms": 2.827
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "ms": 2.267
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "ms": 2.009
+        },
+        {
+          "name": "Append assets/index-CyqLIIjp.js:13451",
+          "ms": 1.881
+        },
+        {
+          "name": "Graph__RequestFlush assets/index-CyqLIIjp.js:4067",
+          "ms": 1.55
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "ms": 1.521
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "ms": 1.504
+        },
+        {
+          "name": "RowsOf$3__CreateAddedFirst assets/index-CyqLIIjp.js:6626",
+          "ms": 1.122
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "ms": 1.018
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "ms": 1.001
+        },
+        {
+          "name": "clear$1 assets/index-CyqLIIjp.js:295",
+          "ms": 1
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "ms": 0.982
+        },
+        {
+          "name": "MountState__delegateLate_Z721C83C5 assets/index-CyqLIIjp.js:15219",
+          "ms": 0.933
+        },
+        {
+          "name": "RowsOf$3__CreateOnce_5BDD81 assets/index-CyqLIIjp.js:6587",
+          "ms": 0.805
+        },
+        {
+          "name": "KeyedProjection$3__KeyOf_2B595 assets/index-CyqLIIjp.js:6785",
+          "ms": 0.799
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "ms": 0.666
+        },
+        {
+          "name": "Operators_IsNull$1 assets/index-CyqLIIjp.js:1539",
+          "ms": 0.543
+        },
+        {
+          "name": "RowsOf$3__Stage_5BDD81 assets/index-CyqLIIjp.js:6507",
+          "ms": 0.519
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "ms": 0.512
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "ms": 0.511
+        },
+        {
+          "name": "KeyedRow assets/index-CyqLIIjp.js:15270",
+          "ms": 0.511
+        },
+        {
+          "name": "Effect__Run assets/index-CyqLIIjp.js:4832",
+          "ms": 0.508
+        },
+        {
+          "name": "rows assets/index-CyqLIIjp.js:11749",
+          "ms": 0.508
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "ms": 0.508
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "ms": 0.508
+        },
+        {
+          "name": "RaiseSetupFailure assets/index-CyqLIIjp.js:13466",
+          "ms": 0.507
+        },
+        {
+          "name": "Signal$1__get_Value assets/index-CyqLIIjp.js:4360",
+          "ms": 0.506
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "ms": 0.498
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14671",
+          "ms": 0.496
+        },
+        {
+          "name": "KeySet$1__Add_2B595 assets/index-CyqLIIjp.js:3097",
+          "ms": 0.496
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "ms": 0.493
+        },
+        {
+          "name": "Graph__get_Root assets/index-CyqLIIjp.js:3903",
+          "ms": 0.488
+        },
+        {
+          "name": "RowsOf$3__Visit_5BDD81 assets/index-CyqLIIjp.js:6499",
+          "ms": 0.487
+        },
+        {
+          "name": "RowEntry$2 assets/index-CyqLIIjp.js:5186",
+          "ms": 0.427
+        },
+        {
+          "name": "KeyMap$2__Set_5BDDA1 assets/index-CyqLIIjp.js:3044",
+          "ms": 0.254
+        }
+      ],
+      "inclusive": [
+        {
+          "name": "(root) (native):0",
+          "ms": 68.031
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15604",
+          "ms": 56.201
+        },
+        {
+          "name": "Ranvier_Graph__Graph_Run_FCFD9EF assets/index-CyqLIIjp.js:10289",
+          "ms": 56.201
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15603",
+          "ms": 56.201
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:19747",
+          "ms": 56.201
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:19790",
+          "ms": 56.201
+        },
+        {
+          "name": "measuredRun assets/index-CyqLIIjp.js:19873",
+          "ms": 56.201
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:19977",
+          "ms": 56.201
+        },
+        {
+          "name": "(anonymous) (native):1",
+          "ms": 56.201
+        },
+        {
+          "name": "evaluate (native):305",
+          "ms": 56.201
+        },
+        {
+          "name": "Effect__Run assets/index-CyqLIIjp.js:4832",
+          "ms": 54.684
+        },
+        {
+          "name": "Execute assets/index-CyqLIIjp.js:4784",
+          "ms": 54.684
+        },
+        {
+          "name": "Graph__RunFlush assets/index-CyqLIIjp.js:4020",
+          "ms": 54.684
+        },
+        {
+          "name": "Graph__Flush assets/index-CyqLIIjp.js:4017",
+          "ms": 54.684
+        },
+        {
+          "name": "Graph__RequestFlush assets/index-CyqLIIjp.js:4067",
+          "ms": 54.684
+        },
+        {
+          "name": "Signal$1__set_Value_2B595 assets/index-CyqLIIjp.js:4368",
+          "ms": 54.684
+        },
+        {
+          "name": "Graph__RunHosted_4E4940D5 assets/index-CyqLIIjp.js:4226",
+          "ms": 54.176
+        },
+        {
+          "name": "Effect__RunBody assets/index-CyqLIIjp.js:4844",
+          "ms": 54.176
+        },
+        {
+          "name": "Graph__RunUntracked_FCFD9EF assets/index-CyqLIIjp.js:4299",
+          "ms": 51.002
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "ms": 51.002
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14684",
+          "ms": 47.174
+        },
+        {
+          "name": "Projection$2__Run assets/index-CyqLIIjp.js:5984",
+          "ms": 40.748
+        },
+        {
+          "name": "Projection$2__EnsureCurrent assets/index-CyqLIIjp.js:6196",
+          "ms": 40.748
+        },
+        {
+          "name": "Projection$2__PullFor_7E1B59FA assets/index-CyqLIIjp.js:6220",
+          "ms": 40.748
+        },
+        {
+          "name": "Projection$2__get_Keys assets/index-CyqLIIjp.js:6271",
+          "ms": 40.748
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14733",
+          "ms": 40.748
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14706",
+          "ms": 40.748
+        },
+        {
+          "name": "MountLifetime_Capture_30631095 assets/index-CyqLIIjp.js:11883",
+          "ms": 40.748
+        },
+        {
+          "name": "Graph__RunBatch_FCFD9EF assets/index-CyqLIIjp.js:4128",
+          "ms": 38.447
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6020",
+          "ms": 38.447
+        },
+        {
+          "name": "RowsOf$3__CreateAddedFirst assets/index-CyqLIIjp.js:6626",
+          "ms": 38.389
+        },
+        {
+          "name": "RowsOf$3__CreateAdded assets/index-CyqLIIjp.js:6605",
+          "ms": 38.389
+        },
+        {
+          "name": "CreateAdded assets/index-CyqLIIjp.js:6469",
+          "ms": 38.389
+        },
+        {
+          "name": "Projection$2__ApplyDiff_Z524259A4 assets/index-CyqLIIjp.js:6069",
+          "ms": 38.389
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6021",
+          "ms": 38.389
+        },
+        {
+          "name": "RowsOf$3__CreateOnce_5BDD81 assets/index-CyqLIIjp.js:6587",
+          "ms": 37.267
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14671",
+          "ms": 34.8
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6595",
+          "ms": 34.8
+        },
+        {
+          "name": "Graph__RunOwned_Z27813270 assets/index-CyqLIIjp.js:3988",
+          "ms": 34.8
+        },
+        {
+          "name": "RowBuilder__Build_Z434D8317 assets/index-CyqLIIjp.js:14130",
+          "ms": 34.304
+        },
+        {
+          "name": "rows assets/index-CyqLIIjp.js:11749",
+          "ms": 33.304
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "ms": 32.285
+        },
+        {
+          "name": "cloneNode (native):0",
+          "ms": 12.69
+        },
+        {
+          "name": "(garbage collector) (native):0",
+          "ms": 11.83
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "ms": 7.499
+        },
+        {
+          "name": "insertBefore (native):0",
+          "ms": 6.426
+        },
+        {
+          "name": "Row_Layout_56BA4C2E assets/index-CyqLIIjp.js:14061",
+          "ms": 6.426
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14799",
+          "ms": 6.426
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14796",
+          "ms": 6.426
+        },
+        {
+          "name": "RegionSite__Settle_Z7FD688B0 assets/index-CyqLIIjp.js:14268",
+          "ms": 6.426
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "ms": 6.336
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "ms": 5.062
+        },
+        {
+          "name": "Append assets/index-CyqLIIjp.js:13451",
+          "ms": 4.831
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "ms": 4.012
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "ms": 4.012
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "ms": 3.828
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11332",
+          "ms": 3.828
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "ms": 3.517
+        },
+        {
+          "name": "Effect_Create_Z2C5AF67C assets/index-CyqLIIjp.js:4821",
+          "ms": 3.517
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "ms": 2.97
+        },
+        {
+          "name": "appendChild (native):0",
+          "ms": 2.95
+        },
+        {
+          "name": "write assets/index-CyqLIIjp.js:11151",
+          "ms": 2.827
+        },
+        {
+          "name": "Ranvier.RowsOf`3.Enumerate assets/index-CyqLIIjp.js:6681",
+          "ms": 2.301
+        },
+        {
+          "name": "Enumerate assets/index-CyqLIIjp.js:6466",
+          "ms": 2.301
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6008",
+          "ms": 2.301
+        },
+        {
+          "name": "Signal$1__get_Value assets/index-CyqLIIjp.js:4360",
+          "ms": 2.032
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "ms": 2.009
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "ms": 1.526
+        },
+        {
+          "name": "ObserverSet__Add_Z13C4C09A assets/index-CyqLIIjp.js:3143",
+          "ms": 1.526
+        },
+        {
+          "name": "AddObserver assets/index-CyqLIIjp.js:4333",
+          "ms": 1.526
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "ms": 1.526
+        },
+        {
+          "name": "SourceList__Add_Z47AEE590 assets/index-CyqLIIjp.js:3344",
+          "ms": 1.526
+        },
+        {
+          "name": "AddSource assets/index-CyqLIIjp.js:4757",
+          "ms": 1.526
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "ms": 1.526
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10144",
+          "ms": 1.526
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "ms": 1.521
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15592",
+          "ms": 1.517
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "ms": 1.517
+        },
+        {
+          "name": "build assets/index-CyqLIIjp.js:15592",
+          "ms": 1.517
+        },
+        {
+          "name": "RowsOf$3__Visit_5BDD81 assets/index-CyqLIIjp.js:6499",
+          "ms": 1.502
+        }
+      ]
+    }
+  ],
+  "allocations": [
+    {
+      "mode": "ranvier",
+      "operation": "create1k",
+      "runs": 10,
+      "totalBytes": 16439124,
+      "self": [
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 1869668
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 1543416
+        },
+        {
+          "name": "RowsOf$3__CreateOnce_5BDD81 assets/index-CyqLIIjp.js:6587",
+          "bytes": 1222344
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 1075772
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 1032348
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 881816
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 778360
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 724048
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 697100
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14671",
+          "bytes": 670592
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 630664
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 598272
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "bytes": 561960
+        },
+        {
+          "name": "ItemRow$3 assets/index-CyqLIIjp.js:5454",
+          "bytes": 499208
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 495888
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15310",
+          "bytes": 405320
+        },
+        {
+          "name": "MountState__delegateLate_Z721C83C5 assets/index-CyqLIIjp.js:15219",
+          "bytes": 403112
+        },
+        {
+          "name": "RowBuilder__Build_Z434D8317 assets/index-CyqLIIjp.js:14130",
+          "bytes": 287868
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 287200
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6595",
+          "bytes": 281372
+        },
+        {
+          "name": "RowsOf$3__Visit_5BDD81 assets/index-CyqLIIjp.js:6499",
+          "bytes": 240432
+        },
+        {
+          "name": "RowsOf$3__Stage_5BDD81 assets/index-CyqLIIjp.js:6507",
+          "bytes": 224704
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 205680
+        },
+        {
+          "name": "Graph__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3979",
+          "bytes": 162408
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 160496
+        },
+        {
+          "name": "Row_Layout_56BA4C2E assets/index-CyqLIIjp.js:14061",
+          "bytes": 114432
+        },
+        {
+          "name": "KeyedProjection$3__grow assets/index-CyqLIIjp.js:6906",
+          "bytes": 80480
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14799",
+          "bytes": 41460
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 40240
+        },
+        {
+          "name": "slice (native):0",
+          "bytes": 40160
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 30960
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 24180
+        },
+        {
+          "name": "Graph__get_Running assets/index-CyqLIIjp.js:3960",
+          "bytes": 22912
+        },
+        {
+          "name": "OnceRow$3_$ctor_3216CF93 assets/index-CyqLIIjp.js:5475",
+          "bytes": 19708
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15278",
+          "bytes": 10724
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 9504
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 9472
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 8076
+        },
+        {
+          "name": "KeyedRow assets/index-CyqLIIjp.js:15270",
+          "bytes": 6800
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 4684
+        },
+        {
+          "name": "Graph_get_Current assets/index-CyqLIIjp.js:3918",
+          "bytes": 3340
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14684",
+          "bytes": 3168
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 3028
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 1736
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14706",
+          "bytes": 1540
+        },
+        {
+          "name": "TeardownWindow assets/index-CyqLIIjp.js:11780",
+          "bytes": 1432
+        },
+        {
+          "name": "Enumerator_concat$1 assets/index-CyqLIIjp.js:2070",
+          "bytes": 1300
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 1096
+        },
+        {
+          "name": "RowEntry$2 assets/index-CyqLIIjp.js:5186",
+          "bytes": 1004
+        },
+        {
+          "name": "Row_$ctor_Z4BE639A0 assets/index-CyqLIIjp.js:13435",
+          "bytes": 952
+        },
+        {
+          "name": "Projection$2__Run assets/index-CyqLIIjp.js:5984",
+          "bytes": 948
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 836
+        },
+        {
+          "name": "FSharpResult$2 assets/index-CyqLIIjp.js:12753",
+          "bytes": 812
+        },
+        {
+          "name": "KeyedProjection$3__Read assets/index-CyqLIIjp.js:6756",
+          "bytes": 756
+        },
+        {
+          "name": "getEnumerator$1 assets/index-CyqLIIjp.js:98",
+          "bytes": 732
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15321",
+          "bytes": 688
+        },
+        {
+          "name": "KeyedProjection$3__Trim_Z448FC5D8 assets/index-CyqLIIjp.js:6795",
+          "bytes": 684
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 680
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14796",
+          "bytes": 680
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 660
+        },
+        {
+          "name": "concat$2 assets/index-CyqLIIjp.js:2209",
+          "bytes": 612
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 612
+        },
+        {
+          "name": "KeySet$1__Clear assets/index-CyqLIIjp.js:3110",
+          "bytes": 600
+        },
+        {
+          "name": "HashSet__Clear assets/index-CyqLIIjp.js:2929",
+          "bytes": 532
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 532
+        },
+        {
+          "name": "MountLifetime_Capture_30631095 assets/index-CyqLIIjp.js:11883",
+          "bytes": 464
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 428
+        },
+        {
+          "name": "build assets/index-CyqLIIjp.js:15310",
+          "bytes": 392
+        },
+        {
+          "name": "Projection$2__ApplyDiff_Z524259A4 assets/index-CyqLIIjp.js:6069",
+          "bytes": 388
+        },
+        {
+          "name": "Row$2 assets/index-CyqLIIjp.js:13428",
+          "bytes": 368
+        },
+        {
+          "name": "Enumerator_FromFunctions$1$1 assets/index-CyqLIIjp.js:2046",
+          "bytes": 360
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 360
+        },
+        {
+          "name": "disposeSafe$1 assets/index-CyqLIIjp.js:68",
+          "bytes": 344
+        },
+        {
+          "name": "RegionErrors__Report_Z36D62A65 assets/index-CyqLIIjp.js:13032",
+          "bytes": 312
+        },
+        {
+          "name": "RowsOf$3__CreateAdded assets/index-CyqLIIjp.js:6605",
+          "bytes": 300
+        },
+        {
+          "name": "Signal$1__get_ObserverCount assets/index-CyqLIIjp.js:4402",
+          "bytes": 276
+        },
+        {
+          "name": "Projection$2__get_Scope assets/index-CyqLIIjp.js:5722",
+          "bytes": 252
+        },
+        {
+          "name": "Enumerator_FromFunctions$1_$ctor_58C54629$1 assets/index-CyqLIIjp.js:2067",
+          "bytes": 240
+        },
+        {
+          "name": "Enumerator$1 assets/index-CyqLIIjp.js:78",
+          "bytes": 240
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14741",
+          "bytes": 224
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6020",
+          "bytes": 168
+        },
+        {
+          "name": "TeardownWindow_$ctor_Z5D680CCE assets/index-CyqLIIjp.js:11788",
+          "bytes": 144
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 140
+        },
+        {
+          "name": "Projection$2__ObservePass assets/index-CyqLIIjp.js:6172",
+          "bytes": 140
+        },
+        {
+          "name": "isDisposable$1 assets/index-CyqLIIjp.js:65",
+          "bytes": 96
+        },
+        {
+          "name": "isEnumerable$1 assets/index-CyqLIIjp.js:53",
+          "bytes": 80
+        },
+        {
+          "name": "Enumerator_Seq$1 assets/index-CyqLIIjp.js:2012",
+          "bytes": 80
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:2100",
+          "bytes": 80
+        },
+        {
+          "name": "OnceRow$3 assets/index-CyqLIIjp.js:5470",
+          "bytes": 80
+        },
+        {
+          "name": "Enumerator_Seq_$ctor_673A07F2$1 assets/index-CyqLIIjp.js:2042",
+          "bytes": 80
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 72
+        },
+        {
+          "name": "Operators_IsNull$1 assets/index-CyqLIIjp.js:1539",
+          "bytes": 72
+        },
+        {
+          "name": "TeardownWindow__Errors assets/index-CyqLIIjp.js:11807",
+          "bytes": 72
+        },
+        {
+          "name": "Owner__ErrorsFrom_Z524259A4 assets/index-CyqLIIjp.js:3532",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "mode": "ranvier-sugar",
+      "operation": "create1k",
+      "runs": 10,
+      "totalBytes": 16430288,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 2676784
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 1810740
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 1296556
+        },
+        {
+          "name": "RowsOf$3__CreateOnce_5BDD81 assets/index-CyqLIIjp.js:6587",
+          "bytes": 1218320
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 1200900
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 1189748
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 725496
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 604504
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "bytes": 559524
+        },
+        {
+          "name": "Graph__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3979",
+          "bytes": 550184
+        },
+        {
+          "name": "ItemRow$3 assets/index-CyqLIIjp.js:5454",
+          "bytes": 527104
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 513848
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14671",
+          "bytes": 490820
+        },
+        {
+          "name": "RowsOf$3__Visit_5BDD81 assets/index-CyqLIIjp.js:6499",
+          "bytes": 467540
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15592",
+          "bytes": 405320
+        },
+        {
+          "name": "MountState__delegateLate_Z721C83C5 assets/index-CyqLIIjp.js:15219",
+          "bytes": 404220
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 392904
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 286560
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6595",
+          "bytes": 283976
+        },
+        {
+          "name": "RowBuilder__Build_Z434D8317 assets/index-CyqLIIjp.js:14130",
+          "bytes": 282156
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 205160
+        },
+        {
+          "name": "KeyedProjection$3__grow assets/index-CyqLIIjp.js:6906",
+          "bytes": 80480
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14799",
+          "bytes": 40860
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 40240
+        },
+        {
+          "name": "slice (native):0",
+          "bytes": 40224
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 30096
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 26460
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 14976
+        },
+        {
+          "name": "Graph_get_Current assets/index-CyqLIIjp.js:3918",
+          "bytes": 7588
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 5976
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 4728
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 4480
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 3608
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14684",
+          "bytes": 3132
+        },
+        {
+          "name": "Projection$2__AddEntry_2E7D114C assets/index-CyqLIIjp.js:5864",
+          "bytes": 2696
+        },
+        {
+          "name": "KeyedRow assets/index-CyqLIIjp.js:15270",
+          "bytes": 2540
+        },
+        {
+          "name": "Enumerator_concat$1 assets/index-CyqLIIjp.js:2070",
+          "bytes": 2096
+        },
+        {
+          "name": "MarkDirty assets/index-CyqLIIjp.js:4764",
+          "bytes": 1756
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 1720
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 1480
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14706",
+          "bytes": 1408
+        },
+        {
+          "name": "Projection$2__Run assets/index-CyqLIIjp.js:5984",
+          "bytes": 1340
+        },
+        {
+          "name": "TeardownWindow assets/index-CyqLIIjp.js:11780",
+          "bytes": 1260
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 1144
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 1068
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 940
+        },
+        {
+          "name": "HashSet__Clear assets/index-CyqLIIjp.js:2929",
+          "bytes": 912
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14796",
+          "bytes": 860
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 820
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 752
+        },
+        {
+          "name": "RowEntry$2 assets/index-CyqLIIjp.js:5186",
+          "bytes": 664
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 664
+        },
+        {
+          "name": "getEnumerator$1 assets/index-CyqLIIjp.js:98",
+          "bytes": 660
+        },
+        {
+          "name": "Projection$2__ApplyDiff_Z524259A4 assets/index-CyqLIIjp.js:6069",
+          "bytes": 612
+        },
+        {
+          "name": "concat$2 assets/index-CyqLIIjp.js:2209",
+          "bytes": 604
+        },
+        {
+          "name": "KeySet$1__Clear assets/index-CyqLIIjp.js:3110",
+          "bytes": 600
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15603",
+          "bytes": 556
+        },
+        {
+          "name": "Api_getOwner assets/index-CyqLIIjp.js:10250",
+          "bytes": 512
+        },
+        {
+          "name": "Row$2 assets/index-CyqLIIjp.js:13428",
+          "bytes": 476
+        },
+        {
+          "name": "build assets/index-CyqLIIjp.js:15592",
+          "bytes": 476
+        },
+        {
+          "name": "FSharpResult$2 assets/index-CyqLIIjp.js:12753",
+          "bytes": 460
+        },
+        {
+          "name": "KeyedProjection$3__Trim_Z448FC5D8 assets/index-CyqLIIjp.js:6795",
+          "bytes": 432
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:6020",
+          "bytes": 392
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14741",
+          "bytes": 392
+        },
+        {
+          "name": "Owner__ErrorsFrom_Z524259A4 assets/index-CyqLIIjp.js:3532",
+          "bytes": 384
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 348
+        },
+        {
+          "name": "TeardownWindow__Errors assets/index-CyqLIIjp.js:11807",
+          "bytes": 312
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 300
+        },
+        {
+          "name": "Projection$2__ObservePass assets/index-CyqLIIjp.js:6172",
+          "bytes": 300
+        },
+        {
+          "name": "RowsOf$3__CreateAdded assets/index-CyqLIIjp.js:6605",
+          "bytes": 300
+        },
+        {
+          "name": "Enumerator_FromFunctions$1$1 assets/index-CyqLIIjp.js:2046",
+          "bytes": 244
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 240
+        },
+        {
+          "name": "Enumerator_FromFunctions$1_$ctor_58C54629$1 assets/index-CyqLIIjp.js:2067",
+          "bytes": 240
+        },
+        {
+          "name": "Signal$1__get_ObserverCount assets/index-CyqLIIjp.js:4402",
+          "bytes": 204
+        },
+        {
+          "name": "Api_onCleanup assets/index-CyqLIIjp.js:10242",
+          "bytes": 192
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 168
+        },
+        {
+          "name": "Enumerator_Seq$1 assets/index-CyqLIIjp.js:2012",
+          "bytes": 164
+        },
+        {
+          "name": "Enumerator$1 assets/index-CyqLIIjp.js:78",
+          "bytes": 164
+        },
+        {
+          "name": "MountLifetime_Capture_30631095 assets/index-CyqLIIjp.js:11883",
+          "bytes": 152
+        },
+        {
+          "name": "TeardownWindow_$ctor_Z5D680CCE assets/index-CyqLIIjp.js:11788",
+          "bytes": 144
+        },
+        {
+          "name": "KeyedProjection$3__Read assets/index-CyqLIIjp.js:6756",
+          "bytes": 144
+        },
+        {
+          "name": "Enumerator_Seq_$ctor_673A07F2$1 assets/index-CyqLIIjp.js:2042",
+          "bytes": 144
+        },
+        {
+          "name": "RegionErrors__Report_Z36D62A65 assets/index-CyqLIIjp.js:13032",
+          "bytes": 144
+        },
+        {
+          "name": "OnceRow$3__set_Value_2B597 assets/index-CyqLIIjp.js:5481",
+          "bytes": 96
+        },
+        {
+          "name": "Row_$ctor_Z4BE639A0 assets/index-CyqLIIjp.js:13435",
+          "bytes": 84
+        },
+        {
+          "name": "ActivationEntry__get_GraphOnCurrentThread assets/index-CyqLIIjp.js:3759",
+          "bytes": 84
+        },
+        {
+          "name": "OnceRow$3 assets/index-CyqLIIjp.js:5470",
+          "bytes": 80
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 80
+        },
+        {
+          "name": "isDisposable$1 assets/index-CyqLIIjp.js:65",
+          "bytes": 72
+        }
+      ]
+    }
+  ]
+}

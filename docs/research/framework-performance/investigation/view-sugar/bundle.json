@@ -1,0 +1,19 @@
+{
+  "explicit": {
+    "raw": 204052,
+    "gzip": 58684,
+    "brotli": 51543
+  },
+  "sugared": {
+    "raw": 206859,
+    "gzip": 59266,
+    "brotli": 51937
+  },
+  "delta": {
+    "raw": 2807,
+    "gzip": 582,
+    "brotli": 394
+  },
+  "explicitHoldsSugar": false,
+  "sugaredHoldsSugar": true
+}

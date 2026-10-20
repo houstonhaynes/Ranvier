@@ -1,0 +1,4021 @@
+{
+  "measuredAt": "2026-10-20T08:36:03.699Z",
+  "chromium": "153.0.8010.12",
+  "width": 128,
+  "mounts": 10,
+  "processes": 4,
+  "allocations": [
+    {
+      "process": 0,
+      "mode": "ranvier-template",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1561916,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 147424
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 143376
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 131092
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 124832
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 123432
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 102984
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 82452
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 61760
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 53040
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 52900
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 47308
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "bytes": 39212
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 30960
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20630",
+          "bytes": 30392
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 28196
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 27000
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 26808
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11480",
+          "bytes": 26684
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 26144
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 22180
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10419",
+          "bytes": 21284
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 19680
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 19660
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 19260
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "bytes": 19224
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 16992
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 9928
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 9772
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 7140
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20537",
+          "bytes": 5680
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 4804
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3268
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3228
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 3192
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 3096
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2808
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 2672
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 1884
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 1748
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1680
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 1672
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 1644
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1608
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 1584
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1568
+        },
+        {
+          "name": "get Identity assets/index-CyqLIIjp.js:13870",
+          "bytes": 1508
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 1388
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 1312
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 1276
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 1224
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1216
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20629",
+          "bytes": 1176
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1148
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 1104
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 1068
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 1064
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 1040
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 984
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 956
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 944
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 824
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 784
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 768
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 764
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 764
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 704
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 680
+        },
+        {
+          "name": "get Scope assets/index-CyqLIIjp.js:13899",
+          "bytes": 672
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 660
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 656
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 640
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 640
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 612
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 612
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 612
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 572
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 564
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 552
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 548
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 536
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 512
+        },
+        {
+          "name": "Execute assets/index-CyqLIIjp.js:4784",
+          "bytes": 500
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 464
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 452
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 408
+        },
+        {
+          "name": "Memo$1__Run assets/index-CyqLIIjp.js:4581",
+          "bytes": 404
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 392
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 392
+        },
+        {
+          "name": "Placement__Place assets/index-CyqLIIjp.js:10635",
+          "bytes": 392
+        },
+        {
+          "name": "mountTemplate assets/index-CyqLIIjp.js:20628",
+          "bytes": 380
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 380
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 368
+        },
+        {
+          "name": "mountWith assets/index-CyqLIIjp.js:15247",
+          "bytes": 368
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 360
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 292
+        },
+        {
+          "name": "OwnedRange__Attach_Z10A2E39D assets/index-CyqLIIjp.js:13202",
+          "bytes": 292
+        },
+        {
+          "name": "TemplateDefinition__get_Compiled assets/index-CyqLIIjp.js:7634",
+          "bytes": 288
+        },
+        {
+          "name": "SourceList__sourceAt_Z524259A4 assets/index-CyqLIIjp.js:3363",
+          "bytes": 264
+        },
+        {
+          "name": "same$1 assets/index-CyqLIIjp.js:12879",
+          "bytes": 252
+        },
+        {
+          "name": "contains assets/index-CyqLIIjp.js:12842",
+          "bytes": 232
+        },
+        {
+          "name": "Effect__RunBody assets/index-CyqLIIjp.js:4844",
+          "bytes": 224
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 216
+        },
+        {
+          "name": "OwnedRange__ValidateDestination_Z10A2E39D assets/index-CyqLIIjp.js:13187",
+          "bytes": 204
+        },
+        {
+          "name": "OwnedRange__Validate assets/index-CyqLIIjp.js:13176",
+          "bytes": 180
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 176
+        },
+        {
+          "name": "[Symbol.hasInstance] (native):0",
+          "bytes": 168
+        },
+        {
+          "name": "MarkDirty assets/index-CyqLIIjp.js:4764",
+          "bytes": 168
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 168
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 156
+        },
+        {
+          "name": "Ranvier.View.Foundation.Representation.Backend.ElementWith45902D85 assets/index-CyqLIIjp.js:13764",
+          "bytes": 156
+        },
+        {
+          "name": "delegateFrom assets/index-CyqLIIjp.js:12921",
+          "bytes": 156
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 148
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 144
+        },
+        {
+          "name": "OwnedRange__AddCreated_63A0C213 assets/index-CyqLIIjp.js:13121",
+          "bytes": 140
+        },
+        {
+          "name": "Memo$1__Attach assets/index-CyqLIIjp.js:4562",
+          "bytes": 120
+        },
+        {
+          "name": "MountLifetime__MarkAttached assets/index-CyqLIIjp.js:11965",
+          "bytes": 120
+        },
+        {
+          "name": "MountState__applyModifiers assets/index-CyqLIIjp.js:15053",
+          "bytes": 108
+        },
+        {
+          "name": "Graph__RunHosted_Z87FD897 assets/index-CyqLIIjp.js:4246",
+          "bytes": 108
+        },
+        {
+          "name": "Dispose assets/index-CyqLIIjp.js:3933",
+          "bytes": 104
+        },
+        {
+          "name": "OwnedRange_$ctor_63A0C213 assets/index-CyqLIIjp.js:13077",
+          "bytes": 104
+        },
+        {
+          "name": "AmbientSlot_get_Cell assets/index-CyqLIIjp.js:3833",
+          "bytes": 104
+        },
+        {
+          "name": "Memo$1__Recompute assets/index-CyqLIIjp.js:4568",
+          "bytes": 104
+        },
+        {
+          "name": "SourceList__EndRun_7E1B59FA assets/index-CyqLIIjp.js:3353",
+          "bytes": 96
+        },
+        {
+          "name": "Api_createRoot assets/index-CyqLIIjp.js:10267",
+          "bytes": 88
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20597",
+          "bytes": 88
+        },
+        {
+          "name": "MountState__childParent assets/index-CyqLIIjp.js:15076",
+          "bytes": 88
+        },
+        {
+          "name": "ImmediateDispatcher assets/index-CyqLIIjp.js:2436",
+          "bytes": 84
+        },
+        {
+          "name": "Activation_set assets/index-CyqLIIjp.js:3767",
+          "bytes": 84
+        },
+        {
+          "name": "Graph__RunRoot_Z6EC41034 assets/index-CyqLIIjp.js:3968",
+          "bytes": 84
+        },
+        {
+          "name": "Api_getOwner assets/index-CyqLIIjp.js:10250",
+          "bytes": 84
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 84
+        },
+        {
+          "name": "GraphOptions_get_Default assets/index-CyqLIIjp.js:2521",
+          "bytes": 80
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 80
+        },
+        {
+          "name": "Effect__Start assets/index-CyqLIIjp.js:4824",
+          "bytes": 80
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "bytes": 80
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 80
+        },
+        {
+          "name": "unwrap assets/index-CyqLIIjp.js:567",
+          "bytes": 80
+        },
+        {
+          "name": "BuildContext assets/index-CyqLIIjp.js:13412",
+          "bytes": 80
+        },
+        {
+          "name": "sameConstructor$1 assets/index-CyqLIIjp.js:74",
+          "bytes": 76
+        },
+        {
+          "name": "defaultDispatcher assets/index-CyqLIIjp.js:2997",
+          "bytes": 72
+        },
+        {
+          "name": "RootScope_$ctor_6ED947BB assets/index-CyqLIIjp.js:3465",
+          "bytes": 72
+        },
+        {
+          "name": "Owner__SetParent_Z6ED9BB41 assets/index-CyqLIIjp.js:3516",
+          "bytes": 72
+        },
+        {
+          "name": "isEquatable$1 assets/index-CyqLIIjp.js:59",
+          "bytes": 72
+        },
+        {
+          "name": "Graph__Schedule_B041F36 assets/index-CyqLIIjp.js:4007",
+          "bytes": 72
+        },
+        {
+          "name": "get Hydration assets/index-CyqLIIjp.js:13860",
+          "bytes": 72
+        },
+        {
+          "name": "empty$2 assets/index-CyqLIIjp.js:1846",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15192",
+          "bytes": 72
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 0,
+      "mode": "ranvier-template-sugar",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1496116,
+      "self": [
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 175524
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 140648
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 121328
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 113960
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 113644
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 103976
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 93128
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 77852
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20652",
+          "bytes": 68464
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 62720
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 55756
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 51804
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 50160
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 30528
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20639",
+          "bytes": 28100
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 26716
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20638",
+          "bytes": 26628
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 20168
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 20000
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 16044
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 13032
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 12768
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 10528
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 8932
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 8760
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3648
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 3304
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3196
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 2604
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1368
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1300
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 1208
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1176
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1008
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 1008
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 948
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 912
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 864
+        },
+        {
+          "name": "item$1 assets/index-CyqLIIjp.js:1656",
+          "bytes": 864
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 820
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 788
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20651",
+          "bytes": 784
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 756
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 704
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 608
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 580
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 576
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 560
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 532
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 508
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 476
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 476
+        },
+        {
+          "name": "mountTemplateSugar assets/index-CyqLIIjp.js:20650",
+          "bytes": 464
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 444
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 432
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 420
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 420
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 384
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 380
+        },
+        {
+          "name": "IdentityScope__Enter_Z59CCB080 assets/index-CyqLIIjp.js:4990",
+          "bytes": 372
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 352
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 308
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 308
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 288
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 288
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 288
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 276
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 240
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 240
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:36756",
+          "bytes": 220
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 216
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 216
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 168
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 160
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 144
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 144
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 144
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 144
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 140
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10007",
+          "bytes": 108
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 80
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 80
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 72
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 1,
+      "mode": "ranvier-template-sugar",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1565484,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 147868
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 147332
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 132752
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 124000
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 116180
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 107784
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 75872
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 66128
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 56324
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 51996
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 48220
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "bytes": 38624
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20652",
+          "bytes": 29780
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 28752
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 28548
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 27472
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11480",
+          "bytes": 27412
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 27244
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 25448
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 23116
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "bytes": 21024
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 21000
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 20976
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10419",
+          "bytes": 20660
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 19692
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 16644
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 8544
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 7800
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 7588
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20639",
+          "bytes": 5660
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 4292
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3480
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 3472
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 3272
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3040
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2984
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 2744
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 2380
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 1820
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 1724
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1576
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 1572
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1532
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 1468
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1460
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 1380
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 1376
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 1236
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1204
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 1152
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1148
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20651",
+          "bytes": 1108
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 1048
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 984
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 984
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 980
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 956
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 916
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 896
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 888
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 884
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 860
+        },
+        {
+          "name": "Delegate assets/index-CyqLIIjp.js:13887",
+          "bytes": 852
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 768
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 740
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 736
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 724
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 680
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 644
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 644
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 640
+        },
+        {
+          "name": "get Hydration assets/index-CyqLIIjp.js:13860",
+          "bytes": 624
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 620
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 612
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 576
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 548
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 540
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 512
+        },
+        {
+          "name": "get Scope assets/index-CyqLIIjp.js:13899",
+          "bytes": 488
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 476
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 468
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 464
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 464
+        },
+        {
+          "name": "OwnedRange__ValidateDestination_Z10A2E39D assets/index-CyqLIIjp.js:13187",
+          "bytes": 456
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 432
+        },
+        {
+          "name": "Api_getOwner assets/index-CyqLIIjp.js:10250",
+          "bytes": 408
+        },
+        {
+          "name": "Memo$1__Run assets/index-CyqLIIjp.js:4581",
+          "bytes": 404
+        },
+        {
+          "name": "mountTemplateSugar assets/index-CyqLIIjp.js:20650",
+          "bytes": 392
+        },
+        {
+          "name": "Placement__Place assets/index-CyqLIIjp.js:10635",
+          "bytes": 392
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 388
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 368
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 336
+        },
+        {
+          "name": "contains assets/index-CyqLIIjp.js:12842",
+          "bytes": 328
+        },
+        {
+          "name": "TemplateDefinition__get_Compiled assets/index-CyqLIIjp.js:7634",
+          "bytes": 308
+        },
+        {
+          "name": "delegateFrom assets/index-CyqLIIjp.js:12921",
+          "bytes": 300
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 288
+        },
+        {
+          "name": "mountWith assets/index-CyqLIIjp.js:15247",
+          "bytes": 288
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 288
+        },
+        {
+          "name": "GraphOptions_get_Default assets/index-CyqLIIjp.js:2521",
+          "bytes": 280
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 280
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 256
+        },
+        {
+          "name": "Graph__Schedule_B041F36 assets/index-CyqLIIjp.js:4007",
+          "bytes": 248
+        },
+        {
+          "name": "Ranvier.View.Foundation.Representation.Backend.ElementWith45902D85 assets/index-CyqLIIjp.js:13764",
+          "bytes": 236
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 232
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 224
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 216
+        },
+        {
+          "name": "OwnedRange__Attach_Z10A2E39D assets/index-CyqLIIjp.js:13202",
+          "bytes": 196
+        },
+        {
+          "name": "Operators_IsNull$1 assets/index-CyqLIIjp.js:1539",
+          "bytes": 180
+        },
+        {
+          "name": "mount$4 assets/index-CyqLIIjp.js:15264",
+          "bytes": 168
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 168
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 168
+        },
+        {
+          "name": "get Tracks assets/index-CyqLIIjp.js:13916",
+          "bytes": 168
+        },
+        {
+          "name": "sameDocument assets/index-CyqLIIjp.js:12845",
+          "bytes": 168
+        },
+        {
+          "name": "BuildContext assets/index-CyqLIIjp.js:13412",
+          "bytes": 156
+        },
+        {
+          "name": "OwnedRange__AddCreated_63A0C213 assets/index-CyqLIIjp.js:13121",
+          "bytes": 140
+        },
+        {
+          "name": "Memo$1__Attach assets/index-CyqLIIjp.js:4562",
+          "bytes": 120
+        },
+        {
+          "name": "InstancePath_Below_Z59CCB080 assets/index-CyqLIIjp.js:4933",
+          "bytes": 120
+        },
+        {
+          "name": "Placement__RaiseFailure assets/index-CyqLIIjp.js:10569",
+          "bytes": 120
+        },
+        {
+          "name": "MountLifetime__MarkAttached assets/index-CyqLIIjp.js:11965",
+          "bytes": 120
+        },
+        {
+          "name": "MountState__applyModifiers assets/index-CyqLIIjp.js:15053",
+          "bytes": 108
+        },
+        {
+          "name": "Graph__RunHosted_Z87FD897 assets/index-CyqLIIjp.js:4246",
+          "bytes": 108
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 104
+        },
+        {
+          "name": "OwnedRange_$ctor_63A0C213 assets/index-CyqLIIjp.js:13077",
+          "bytes": 104
+        },
+        {
+          "name": "AmbientSlot_get_Cell assets/index-CyqLIIjp.js:3833",
+          "bytes": 104
+        },
+        {
+          "name": "MountLifetime__OnCleanup_3A5B6456 assets/index-CyqLIIjp.js:11931",
+          "bytes": 104
+        },
+        {
+          "name": "MountLifetime__EnsureLive assets/index-CyqLIIjp.js:11928",
+          "bytes": 104
+        },
+        {
+          "name": "isVoid assets/index-CyqLIIjp.js:7135",
+          "bytes": 96
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 96
+        },
+        {
+          "name": "Graph_$ctor assets/index-CyqLIIjp.js:3897",
+          "bytes": 88
+        },
+        {
+          "name": "Api_createMemo assets/index-CyqLIIjp.js:10200",
+          "bytes": 88
+        },
+        {
+          "name": "Api_createRoot assets/index-CyqLIIjp.js:10267",
+          "bytes": 88
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20597",
+          "bytes": 88
+        },
+        {
+          "name": "claim assets/index-CyqLIIjp.js:12960",
+          "bytes": 88
+        },
+        {
+          "name": "Graph__get_Deferring assets/index-CyqLIIjp.js:4082",
+          "bytes": 88
+        },
+        {
+          "name": "Activation_set assets/index-CyqLIIjp.js:3767",
+          "bytes": 84
+        },
+        {
+          "name": "Backend$1 assets/index-CyqLIIjp.js:7365",
+          "bytes": 84
+        },
+        {
+          "name": "Graph__RunRoot_Z6EC41034 assets/index-CyqLIIjp.js:3968",
+          "bytes": 84
+        },
+        {
+          "name": "Graph__get_CurrentOwner assets/index-CyqLIIjp.js:3964",
+          "bytes": 84
+        },
+        {
+          "name": "Program_childActions assets/index-CyqLIIjp.js:7963",
+          "bytes": 84
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 84
+        },
+        {
+          "name": "Mounted assets/index-CyqLIIjp.js:13420",
+          "bytes": 84
+        },
+        {
+          "name": "unwrap assets/index-CyqLIIjp.js:567",
+          "bytes": 80
+        },
+        {
+          "name": "Equals assets/index-CyqLIIjp.js:380",
+          "bytes": 76
+        },
+        {
+          "name": "sameConstructor$1 assets/index-CyqLIIjp.js:74",
+          "bytes": 76
+        },
+        {
+          "name": "isEquatable$1 assets/index-CyqLIIjp.js:59",
+          "bytes": 72
+        },
+        {
+          "name": "Owner__AttachLinked_ZE530460 assets/index-CyqLIIjp.js:3537",
+          "bytes": 72
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14497",
+          "bytes": 72
+        },
+        {
+          "name": "get Identity assets/index-CyqLIIjp.js:13870",
+          "bytes": 72
+        },
+        {
+          "name": "Placement__set_Placing_Z1FBCCD16 assets/index-CyqLIIjp.js:10544",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 1,
+      "mode": "ranvier-template",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1496728,
+      "self": [
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 166548
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 137384
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 122480
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 122304
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 117996
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 104264
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 94668
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 77184
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20630",
+          "bytes": 64864
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 61348
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 54320
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 53768
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 51500
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 32220
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 27980
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20537",
+          "bytes": 26900
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20536",
+          "bytes": 24024
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 21072
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 20112
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 16044
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 13212
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 12032
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 10668
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 9352
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 9288
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3960
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 3164
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 2848
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 2736
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1672
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1484
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1260
+        },
+        {
+          "name": "item$1 assets/index-CyqLIIjp.js:1656",
+          "bytes": 1212
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1008
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 984
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 984
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 936
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20629",
+          "bytes": 784
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 768
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 768
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 744
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 704
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 672
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 644
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 644
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 616
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 612
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 608
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 532
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 512
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 512
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 488
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 480
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 480
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 480
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 468
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 464
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 440
+        },
+        {
+          "name": "TemplateParts_present assets/index-CyqLIIjp.js:10012",
+          "bytes": 432
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 384
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 356
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 312
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 312
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:36756",
+          "bytes": 300
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 288
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 280
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 276
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 264
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 224
+        },
+        {
+          "name": "AmbientSlot_get_Cell assets/index-CyqLIIjp.js:3833",
+          "bytes": 204
+        },
+        {
+          "name": "mountTemplate assets/index-CyqLIIjp.js:20628",
+          "bytes": 168
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 168
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 144
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 144
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 144
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 144
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 140
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 84
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 84
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 84
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 80
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 80
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 2,
+      "mode": "ranvier-template",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1564880,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 143780
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 143008
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 133660
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 123648
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 119104
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 109488
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 78348
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 61444
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 53584
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 53244
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 48620
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "bytes": 39164
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 30996
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20630",
+          "bytes": 28248
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 28240
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 28220
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11480",
+          "bytes": 28028
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 26804
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 25784
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10419",
+          "bytes": 23576
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 21908
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 21680
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 20588
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "bytes": 18648
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 18144
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 15768
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 10176
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 9380
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 9088
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20537",
+          "bytes": 7160
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 4908
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3444
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 3292
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3076
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2992
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 2592
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 2184
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 2104
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1808
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1596
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 1568
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1456
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 1452
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1416
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 1364
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 1248
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 1248
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 1244
+        },
+        {
+          "name": "unwrap assets/index-CyqLIIjp.js:567",
+          "bytes": 1228
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 1184
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 1136
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 1040
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 988
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 972
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 956
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20629",
+          "bytes": 952
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 936
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 932
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 916
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20540",
+          "bytes": 892
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 832
+        },
+        {
+          "name": "Graph__RequestFlush assets/index-CyqLIIjp.js:4067",
+          "bytes": 828
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 816
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 780
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 780
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 744
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 740
+        },
+        {
+          "name": "MountState_$ctor_Z189DA61B assets/index-CyqLIIjp.js:13931",
+          "bytes": 728
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "bytes": 724
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 716
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 684
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 680
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 640
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 612
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 612
+        },
+        {
+          "name": "TemplateParts_present assets/index-CyqLIIjp.js:10012",
+          "bytes": 600
+        },
+        {
+          "name": "IdentityScope__get_Window assets/index-CyqLIIjp.js:4982",
+          "bytes": 588
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 576
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 552
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 540
+        },
+        {
+          "name": "MountLifetime__OnCleanup_3A5B6456 assets/index-CyqLIIjp.js:11931",
+          "bytes": 540
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 532
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 520
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 520
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 500
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 444
+        },
+        {
+          "name": "AmbientSlot_get_Existing assets/index-CyqLIIjp.js:3840",
+          "bytes": 420
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 420
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 416
+        },
+        {
+          "name": "Memo$1__Run assets/index-CyqLIIjp.js:4581",
+          "bytes": 404
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 392
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 392
+        },
+        {
+          "name": "OwnerLink__set_Generation_Z524259A4 assets/index-CyqLIIjp.js:3495",
+          "bytes": 392
+        },
+        {
+          "name": "Placement__Place assets/index-CyqLIIjp.js:10635",
+          "bytes": 392
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 360
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 324
+        },
+        {
+          "name": "mountTemplate assets/index-CyqLIIjp.js:20628",
+          "bytes": 308
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 308
+        },
+        {
+          "name": "Graph_get_Current assets/index-CyqLIIjp.js:3918",
+          "bytes": 308
+        },
+        {
+          "name": "TemplateDefinition__get_Compiled assets/index-CyqLIIjp.js:7634",
+          "bytes": 300
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 296
+        },
+        {
+          "name": "OwnedRange__Attach_Z10A2E39D assets/index-CyqLIIjp.js:13202",
+          "bytes": 292
+        },
+        {
+          "name": "mountWith assets/index-CyqLIIjp.js:15247",
+          "bytes": 288
+        },
+        {
+          "name": "OwnedRange__ValidateDestination_Z10A2E39D assets/index-CyqLIIjp.js:13187",
+          "bytes": 288
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 288
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 260
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 240
+        },
+        {
+          "name": "Ranvier.View.Foundation.Representation.Backend.ElementWith45902D85 assets/index-CyqLIIjp.js:13764",
+          "bytes": 236
+        },
+        {
+          "name": "delegateFrom assets/index-CyqLIIjp.js:12921",
+          "bytes": 236
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 232
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 220
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 204
+        },
+        {
+          "name": "GraphOptions_get_Default assets/index-CyqLIIjp.js:2521",
+          "bytes": 200
+        },
+        {
+          "name": "get Identity assets/index-CyqLIIjp.js:13870",
+          "bytes": 180
+        },
+        {
+          "name": "OwnedRange__Validate assets/index-CyqLIIjp.js:13176",
+          "bytes": 180
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 168
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 160
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 144
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 144
+        },
+        {
+          "name": "OwnedRange__AddCreated_63A0C213 assets/index-CyqLIIjp.js:13121",
+          "bytes": 140
+        },
+        {
+          "name": "InstancePath_Below_Z59CCB080 assets/index-CyqLIIjp.js:4933",
+          "bytes": 120
+        },
+        {
+          "name": "MountLifetime__MarkAttached assets/index-CyqLIIjp.js:11965",
+          "bytes": 120
+        },
+        {
+          "name": "MountState__applyModifiers assets/index-CyqLIIjp.js:15053",
+          "bytes": 108
+        },
+        {
+          "name": "Graph__RunHosted_Z87FD897 assets/index-CyqLIIjp.js:4246",
+          "bytes": 108
+        },
+        {
+          "name": "Ranvier_Graph__Graph_Run_FCFD9EF assets/index-CyqLIIjp.js:10289",
+          "bytes": 104
+        },
+        {
+          "name": "AmbientSlot_get_Cell assets/index-CyqLIIjp.js:3833",
+          "bytes": 104
+        },
+        {
+          "name": "get Hydration assets/index-CyqLIIjp.js:13860",
+          "bytes": 96
+        },
+        {
+          "name": "Graph_$ctor assets/index-CyqLIIjp.js:3897",
+          "bytes": 88
+        },
+        {
+          "name": "Owner_$ctor assets/index-CyqLIIjp.js:3510",
+          "bytes": 88
+        },
+        {
+          "name": "Api_createMemo assets/index-CyqLIIjp.js:10200",
+          "bytes": 88
+        },
+        {
+          "name": "claim assets/index-CyqLIIjp.js:12960",
+          "bytes": 88
+        },
+        {
+          "name": "AddSource assets/index-CyqLIIjp.js:4520",
+          "bytes": 88
+        },
+        {
+          "name": "contains assets/index-CyqLIIjp.js:12842",
+          "bytes": 88
+        },
+        {
+          "name": "JsIdentityPolicy assets/index-CyqLIIjp.js:2483",
+          "bytes": 84
+        },
+        {
+          "name": "Backend$1 assets/index-CyqLIIjp.js:7365",
+          "bytes": 84
+        },
+        {
+          "name": "ActivationEntry__get_GraphOnCurrentThread assets/index-CyqLIIjp.js:3759",
+          "bytes": 84
+        },
+        {
+          "name": "isEquatable$1 assets/index-CyqLIIjp.js:59",
+          "bytes": 80
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 80
+        },
+        {
+          "name": "sameDocument assets/index-CyqLIIjp.js:12845",
+          "bytes": 80
+        },
+        {
+          "name": "sameConstructor$1 assets/index-CyqLIIjp.js:74",
+          "bytes": 76
+        },
+        {
+          "name": "ObserverSet__NotifyDirtyExcept_7E1B59FA assets/index-CyqLIIjp.js:3210",
+          "bytes": 76
+        },
+        {
+          "name": "defaultDispatcher assets/index-CyqLIIjp.js:2997",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20588",
+          "bytes": 72
+        },
+        {
+          "name": "RootScope_$ctor_6ED947BB assets/index-CyqLIIjp.js:3465",
+          "bytes": 72
+        },
+        {
+          "name": "Owner__SetParent_Z6ED9BB41 assets/index-CyqLIIjp.js:3516",
+          "bytes": 72
+        },
+        {
+          "name": "BuildContext__get_Backend assets/index-CyqLIIjp.js:13934",
+          "bytes": 72
+        },
+        {
+          "name": "Graph__get_CurrentComputation assets/index-CyqLIIjp.js:4219",
+          "bytes": 72
+        },
+        {
+          "name": "BuildContext assets/index-CyqLIIjp.js:13412",
+          "bytes": 72
+        },
+        {
+          "name": "Mounted assets/index-CyqLIIjp.js:13420",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 2,
+      "mode": "ranvier-template-sugar",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1537132,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 146608
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 140228
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 131812
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 123760
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 118492
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 107512
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 79488
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20652",
+          "bytes": 68212
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 62268
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 54608
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 52824
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20638",
+          "bytes": 45204
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 35856
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 28756
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 28656
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 27816
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20639",
+          "bytes": 27144
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 25904
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 25284
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 23496
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 22040
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 21364
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 17820
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 15648
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 15152
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 13524
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 9136
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 3808
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3344
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 3340
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 2960
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 2720
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2672
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 2540
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 1924
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 1768
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1580
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 1556
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1520
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 1520
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 1376
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 1152
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 1152
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 1132
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 1128
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20651",
+          "bytes": 1108
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 1104
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1092
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 1020
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 960
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 952
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 924
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 896
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 884
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 876
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 820
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 788
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 784
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10147",
+          "bytes": 764
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 720
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 600
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 556
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 532
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 528
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 512
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 504
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 464
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 456
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 448
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 420
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 384
+        },
+        {
+          "name": "mountTemplateSugar assets/index-CyqLIIjp.js:20650",
+          "bytes": 380
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 372
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 344
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 300
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 288
+        },
+        {
+          "name": "IdentityScope__get_Window assets/index-CyqLIIjp.js:4982",
+          "bytes": 288
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10419",
+          "bytes": 288
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 280
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 276
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 264
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 264
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 264
+        },
+        {
+          "name": "SourceList__holds assets/index-CyqLIIjp.js:3385",
+          "bytes": 264
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10182",
+          "bytes": 252
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 248
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 240
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 232
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 224
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:36756",
+          "bytes": 220
+        },
+        {
+          "name": "get Identity assets/index-CyqLIIjp.js:13870",
+          "bytes": 216
+        },
+        {
+          "name": "AddObserver assets/index-CyqLIIjp.js:4508",
+          "bytes": 192
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 168
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20644",
+          "bytes": 168
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 156
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 144
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 144
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 84
+        },
+        {
+          "name": "Effect__Start assets/index-CyqLIIjp.js:4824",
+          "bytes": 80
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 80
+        },
+        {
+          "name": "BuildContext assets/index-CyqLIIjp.js:13412",
+          "bytes": 80
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 3,
+      "mode": "ranvier-template-sugar",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1553960,
+      "self": [
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 147144
+        },
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 146476
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 135284
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 121072
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 109828
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 108312
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 74780
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 60924
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 54280
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 53940
+        },
+        {
+          "name": "Signal$1_$ctor_Z160327B9 assets/index-CyqLIIjp.js:4353",
+          "bytes": 48640
+        },
+        {
+          "name": "initialize assets/index-CyqLIIjp.js:1602",
+          "bytes": 37308
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20652",
+          "bytes": 32124
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 29796
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 28600
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 28360
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 27152
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11480",
+          "bytes": 27020
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 24104
+        },
+        {
+          "name": "Effect_$ctor_Z2C5AF67C assets/index-CyqLIIjp.js:4814",
+          "bytes": 21744
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 21576
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 21520
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10419",
+          "bytes": 21104
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 19832
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 18216
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 17900
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 9532
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 8904
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 8092
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20639",
+          "bytes": 5000
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 4096
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 3452
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3364
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 3140
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3116
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2980
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 2612
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 2268
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 2060
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 1748
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 1548
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 1512
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1476
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1456
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 1388
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 1352
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1304
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 1276
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 1264
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 1212
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 1188
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 1172
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1148
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 1136
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 1132
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 1080
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20651",
+          "bytes": 1024
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 932
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 900
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 896
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 880
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 828
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 824
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 804
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 800
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 764
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 704
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 692
+        },
+        {
+          "name": "TemplateDefinition__get_Compiled assets/index-CyqLIIjp.js:7634",
+          "bytes": 660
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 660
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 632
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 600
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 584
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 576
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 556
+        },
+        {
+          "name": "TemplateParts_present assets/index-CyqLIIjp.js:10012",
+          "bytes": 528
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 504
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20644",
+          "bytes": 476
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 460
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 436
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 424
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 416
+        },
+        {
+          "name": "unwrap assets/index-CyqLIIjp.js:567",
+          "bytes": 416
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:10182",
+          "bytes": 408
+        },
+        {
+          "name": "Memo$1__Run assets/index-CyqLIIjp.js:4581",
+          "bytes": 404
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 392
+        },
+        {
+          "name": "RaiseSetupFailure assets/index-CyqLIIjp.js:13880",
+          "bytes": 392
+        },
+        {
+          "name": "Placement__Place assets/index-CyqLIIjp.js:10635",
+          "bytes": 392
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 392
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 384
+        },
+        {
+          "name": "mountWith assets/index-CyqLIIjp.js:15247",
+          "bytes": 368
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 368
+        },
+        {
+          "name": "Placement__Leave_Z524259A4 assets/index-CyqLIIjp.js:10628",
+          "bytes": 360
+        },
+        {
+          "name": "set (native):0",
+          "bytes": 328
+        },
+        {
+          "name": "contains assets/index-CyqLIIjp.js:12842",
+          "bytes": 312
+        },
+        {
+          "name": "mountTemplateSugar assets/index-CyqLIIjp.js:20650",
+          "bytes": 308
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 308
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 304
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 300
+        },
+        {
+          "name": "OwnedRange__AddCreated_63A0C213 assets/index-CyqLIIjp.js:13121",
+          "bytes": 300
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 300
+        },
+        {
+          "name": "OwnedRange__ValidateDestination_Z10A2E39D assets/index-CyqLIIjp.js:13187",
+          "bytes": 288
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 264
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 240
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 236
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 224
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 220
+        },
+        {
+          "name": "IdentityScope__get_Window assets/index-CyqLIIjp.js:4982",
+          "bytes": 216
+        },
+        {
+          "name": "GraphOptions_get_Default assets/index-CyqLIIjp.js:2521",
+          "bytes": 200
+        },
+        {
+          "name": "OwnedRange__Attach_Z10A2E39D assets/index-CyqLIIjp.js:13202",
+          "bytes": 196
+        },
+        {
+          "name": "Graph__Schedule_B041F36 assets/index-CyqLIIjp.js:4007",
+          "bytes": 192
+        },
+        {
+          "name": "OwnedRange__Validate assets/index-CyqLIIjp.js:13176",
+          "bytes": 180
+        },
+        {
+          "name": "claim assets/index-CyqLIIjp.js:12960",
+          "bytes": 160
+        },
+        {
+          "name": "Equals assets/index-CyqLIIjp.js:380",
+          "bytes": 160
+        },
+        {
+          "name": "Mounted assets/index-CyqLIIjp.js:13420",
+          "bytes": 152
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 144
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 140
+        },
+        {
+          "name": "Memo$1__Attach assets/index-CyqLIIjp.js:4562",
+          "bytes": 120
+        },
+        {
+          "name": "InstancePath_Below_Z59CCB080 assets/index-CyqLIIjp.js:4933",
+          "bytes": 120
+        },
+        {
+          "name": "MountLifetime__MarkAttached assets/index-CyqLIIjp.js:11965",
+          "bytes": 120
+        },
+        {
+          "name": "Graph__RunHosted_Z87FD897 assets/index-CyqLIIjp.js:4246",
+          "bytes": 108
+        },
+        {
+          "name": "AmbientSlot_get_Cell assets/index-CyqLIIjp.js:3833",
+          "bytes": 104
+        },
+        {
+          "name": "Memo$1__Refresh assets/index-CyqLIIjp.js:4648",
+          "bytes": 104
+        },
+        {
+          "name": "MountLifetime__OnCleanup_3A5B6456 assets/index-CyqLIIjp.js:11931",
+          "bytes": 104
+        },
+        {
+          "name": "MountLifetime__EnsureLive assets/index-CyqLIIjp.js:11928",
+          "bytes": 104
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 96
+        },
+        {
+          "name": "Graph_$ctor assets/index-CyqLIIjp.js:3897",
+          "bytes": 88
+        },
+        {
+          "name": "Api_createMemo assets/index-CyqLIIjp.js:10200",
+          "bytes": 88
+        },
+        {
+          "name": "mount$4 assets/index-CyqLIIjp.js:15264",
+          "bytes": 88
+        },
+        {
+          "name": "Api_createRoot assets/index-CyqLIIjp.js:10267",
+          "bytes": 88
+        },
+        {
+          "name": "Graph__get_Deferring assets/index-CyqLIIjp.js:4082",
+          "bytes": 88
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14525",
+          "bytes": 88
+        },
+        {
+          "name": "sameDocument assets/index-CyqLIIjp.js:12845",
+          "bytes": 88
+        },
+        {
+          "name": "Ranvier_Graph__Graph_Run_FCFD9EF assets/index-CyqLIIjp.js:10289",
+          "bytes": 84
+        },
+        {
+          "name": "Graph__RunRoot_Z6EC41034 assets/index-CyqLIIjp.js:3968",
+          "bytes": 84
+        },
+        {
+          "name": "get Hydration assets/index-CyqLIIjp.js:13860",
+          "bytes": 84
+        },
+        {
+          "name": "BindingState_started assets/index-CyqLIIjp.js:10466",
+          "bytes": 80
+        },
+        {
+          "name": "Ranvier.View.Foundation.Representation.Backend.ElementWith45902D85 assets/index-CyqLIIjp.js:13764",
+          "bytes": 80
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 80
+        },
+        {
+          "name": "InstancePath_get_Root assets/index-CyqLIIjp.js:4911",
+          "bytes": 80
+        },
+        {
+          "name": "delegateFrom assets/index-CyqLIIjp.js:12921",
+          "bytes": 80
+        },
+        {
+          "name": "sameConstructor$1 assets/index-CyqLIIjp.js:74",
+          "bytes": 76
+        },
+        {
+          "name": "ObserverSet__NotifyDirtyExcept_7E1B59FA assets/index-CyqLIIjp.js:3210",
+          "bytes": 76
+        },
+        {
+          "name": "defaultDispatcher assets/index-CyqLIIjp.js:2997",
+          "bytes": 72
+        },
+        {
+          "name": "MountState_$ctor_Z189DA61B assets/index-CyqLIIjp.js:13931",
+          "bytes": 72
+        },
+        {
+          "name": "Owner__AttachLinked_ZE530460 assets/index-CyqLIIjp.js:3537",
+          "bytes": 72
+        },
+        {
+          "name": "Graph__Track_Z6287CB6 assets/index-CyqLIIjp.js:4211",
+          "bytes": 72
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 72
+        },
+        {
+          "name": "BuildContext__get_Backend assets/index-CyqLIIjp.js:13934",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20653",
+          "bytes": 72
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:15192",
+          "bytes": 72
+        }
+      ]
+    },
+    {
+      "process": 3,
+      "mode": "ranvier-template",
+      "width": 128,
+      "mounts": 10,
+      "totalBytes": 1530716,
+      "self": [
+        {
+          "name": "materialise assets/index-CyqLIIjp.js:11649",
+          "bytes": 146608
+        },
+        {
+          "name": "ObserverSet__grow assets/index-CyqLIIjp.js:3236",
+          "bytes": 144116
+        },
+        {
+          "name": "startRender assets/index-CyqLIIjp.js:11302",
+          "bytes": 136332
+        },
+        {
+          "name": "stateFor assets/index-CyqLIIjp.js:11290",
+          "bytes": 124656
+        },
+        {
+          "name": "Effect$1 assets/index-CyqLIIjp.js:4726",
+          "bytes": 116960
+        },
+        {
+          "name": "SourceList__grow assets/index-CyqLIIjp.js:3371",
+          "bytes": 102824
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:11310",
+          "bytes": 74852
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20630",
+          "bytes": 69312
+        },
+        {
+          "name": "collect assets/index-CyqLIIjp.js:11272",
+          "bytes": 61424
+        },
+        {
+          "name": "bind assets/index-CyqLIIjp.js:11414",
+          "bytes": 53924
+        },
+        {
+          "name": "FSharpRef$1 assets/index-CyqLIIjp.js:450",
+          "bytes": 52476
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20536",
+          "bytes": 46308
+        },
+        {
+          "name": "Api_createEffect assets/index-CyqLIIjp.js:10213",
+          "bytes": 36248
+        },
+        {
+          "name": "Owner__Append_ZE530460 assets/index-CyqLIIjp.js:3558",
+          "bytes": 29976
+        },
+        {
+          "name": "ownSetup assets/index-CyqLIIjp.js:6996",
+          "bytes": 27800
+        },
+        {
+          "name": "setUp assets/index-CyqLIIjp.js:11478",
+          "bytes": 27604
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20537",
+          "bytes": 26760
+        },
+        {
+          "name": "Setup assets/index-CyqLIIjp.js:6986",
+          "bytes": 26264
+        },
+        {
+          "name": "get Setup assets/index-CyqLIIjp.js:13863",
+          "bytes": 26036
+        },
+        {
+          "name": "Signal$1 assets/index-CyqLIIjp.js:4320",
+          "bytes": 22752
+        },
+        {
+          "name": "SourceList_$ctor assets/index-CyqLIIjp.js:3297",
+          "bytes": 21240
+        },
+        {
+          "name": "Component_render assets/index-CyqLIIjp.js:10181",
+          "bytes": 17876
+        },
+        {
+          "name": "OwnerLink_$ctor_2DD6F3F assets/index-CyqLIIjp.js:3423",
+          "bytes": 17244
+        },
+        {
+          "name": "Api_createSignal assets/index-CyqLIIjp.js:10194",
+          "bytes": 15712
+        },
+        {
+          "name": "ObserverSet_$ctor assets/index-CyqLIIjp.js:3129",
+          "bytes": 15652
+        },
+        {
+          "name": "PerfRow assets/index-CyqLIIjp.js:20528",
+          "bytes": 13856
+        },
+        {
+          "name": "PerfProps assets/index-CyqLIIjp.js:20520",
+          "bytes": 8080
+        },
+        {
+          "name": "Helpers_allocateArrayFromCons$1 assets/index-CyqLIIjp.js:1461",
+          "bytes": 5360
+        },
+        {
+          "name": "MountState assets/index-CyqLIIjp.js:13601",
+          "bytes": 3988
+        },
+        {
+          "name": "mountCore assets/index-CyqLIIjp.js:20586",
+          "bytes": 3532
+        },
+        {
+          "name": "push (native):0",
+          "bytes": 3344
+        },
+        {
+          "name": "Graph__Activate assets/index-CyqLIIjp.js:3927",
+          "bytes": 3232
+        },
+        {
+          "name": "Owner assets/index-CyqLIIjp.js:3430",
+          "bytes": 2472
+        },
+        {
+          "name": "Graph assets/index-CyqLIIjp.js:3849",
+          "bytes": 2276
+        },
+        {
+          "name": "Memo$1 assets/index-CyqLIIjp.js:4464",
+          "bytes": 2012
+        },
+        {
+          "name": "IdentityScope assets/index-CyqLIIjp.js:4961",
+          "bytes": 1768
+        },
+        {
+          "name": "Backend assets/index-CyqLIIjp.js:12125",
+          "bytes": 1672
+        },
+        {
+          "name": "Graph_get_Ambient assets/index-CyqLIIjp.js:3938",
+          "bytes": 1572
+        },
+        {
+          "name": "MountLifetime assets/index-CyqLIIjp.js:11828",
+          "bytes": 1548
+        },
+        {
+          "name": "Placement assets/index-CyqLIIjp.js:10518",
+          "bytes": 1376
+        },
+        {
+          "name": "OwnedRange assets/index-CyqLIIjp.js:13059",
+          "bytes": 1288
+        },
+        {
+          "name": "TemplateDefinition__get_Compiled assets/index-CyqLIIjp.js:7634",
+          "bytes": 1232
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20629",
+          "bytes": 1120
+        },
+        {
+          "name": "Owner__OnCleanup_Z335DF544 assets/index-CyqLIIjp.js:3611",
+          "bytes": 1064
+        },
+        {
+          "name": "disposeSafe$1 assets/index-CyqLIIjp.js:68",
+          "bytes": 1056
+        },
+        {
+          "name": "Map (native):0",
+          "bytes": 1056
+        },
+        {
+          "name": "Entry assets/index-CyqLIIjp.js:13049",
+          "bytes": 1040
+        },
+        {
+          "name": "Memo$1_$ctor_Z1F81D953 assets/index-CyqLIIjp.js:4543",
+          "bytes": 1008
+        },
+        {
+          "name": "Signal$1_$ctor_Z50E1EC72 assets/index-CyqLIIjp.js:4347",
+          "bytes": 992
+        },
+        {
+          "name": "Graph_$ctor_Z2EBDB19E assets/index-CyqLIIjp.js:3894",
+          "bytes": 960
+        },
+        {
+          "name": "GraphOptions assets/index-CyqLIIjp.js:2495",
+          "bytes": 796
+        },
+        {
+          "name": "MountState__Run_Z5F452C38 assets/index-CyqLIIjp.js:14486",
+          "bytes": 784
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14491",
+          "bytes": 784
+        },
+        {
+          "name": "MountState__delegateAt_63A0C213 assets/index-CyqLIIjp.js:15191",
+          "bytes": 776
+        },
+        {
+          "name": "ActivationEntry_$ctor_4F9FD7ED assets/index-CyqLIIjp.js:3753",
+          "bytes": 768
+        },
+        {
+          "name": "OwnerLink assets/index-CyqLIIjp.js:3414",
+          "bytes": 736
+        },
+        {
+          "name": "Owner_$ctor_2591009F assets/index-CyqLIIjp.js:3453",
+          "bytes": 720
+        },
+        {
+          "name": "RootScope assets/index-CyqLIIjp.js:3460",
+          "bytes": 708
+        },
+        {
+          "name": "copyTo assets/index-CyqLIIjp.js:1611",
+          "bytes": 660
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:36693",
+          "bytes": 656
+        },
+        {
+          "name": "IdentityScope_$ctor_Z721C83C5 assets/index-CyqLIIjp.js:4976",
+          "bytes": 600
+        },
+        {
+          "name": "Set (native):0",
+          "bytes": 600
+        },
+        {
+          "name": "SourceList assets/index-CyqLIIjp.js:3287",
+          "bytes": 592
+        },
+        {
+          "name": "Placement_$ctor_Z67A9D6F assets/index-CyqLIIjp.js:10532",
+          "bytes": 560
+        },
+        {
+          "name": "ObserverSet assets/index-CyqLIIjp.js:3122",
+          "bytes": 556
+        },
+        {
+          "name": "fill assets/index-CyqLIIjp.js:1557",
+          "bytes": 540
+        },
+        {
+          "name": "add (native):0",
+          "bytes": 532
+        },
+        {
+          "name": "OwnedRange_$ctor_54F25073 assets/index-CyqLIIjp.js:13074",
+          "bytes": 528
+        },
+        {
+          "name": "setItem$1 assets/index-CyqLIIjp.js:1660",
+          "bytes": 528
+        },
+        {
+          "name": "MountLifetime_Create_Z2706B894 assets/index-CyqLIIjp.js:11866",
+          "bytes": 524
+        },
+        {
+          "name": "next (native):0",
+          "bytes": 520
+        },
+        {
+          "name": "toString (native):0",
+          "bytes": 512
+        },
+        {
+          "name": "MountLifetime_$ctor_Z2706B894 assets/index-CyqLIIjp.js:11844",
+          "bytes": 512
+        },
+        {
+          "name": "set contents assets/index-CyqLIIjp.js:447",
+          "bytes": 468
+        },
+        {
+          "name": "Api_untrack assets/index-CyqLIIjp.js:10225",
+          "bytes": 396
+        },
+        {
+          "name": "create assets/index-CyqLIIjp.js:14490",
+          "bytes": 392
+        },
+        {
+          "name": "view assets/index-CyqLIIjp.js:20592",
+          "bytes": 392
+        },
+        {
+          "name": "Owner__AddCleanup_3A5B6456 assets/index-CyqLIIjp.js:3616",
+          "bytes": 384
+        },
+        {
+          "name": "RaiseSetupFailure assets/index-CyqLIIjp.js:13880",
+          "bytes": 380
+        },
+        {
+          "name": "comment assets/index-CyqLIIjp.js:12831",
+          "bytes": 368
+        },
+        {
+          "name": "mountTemplate assets/index-CyqLIIjp.js:20628",
+          "bytes": 308
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:14489",
+          "bytes": 308
+        },
+        {
+          "name": "FSharpList$1 assets/index-CyqLIIjp.js:1672",
+          "bytes": 304
+        },
+        {
+          "name": "run assets/index-CyqLIIjp.js:36756",
+          "bytes": 300
+        },
+        {
+          "name": "Tag assets/index-CyqLIIjp.js:6952",
+          "bytes": 300
+        },
+        {
+          "name": "equals$1 assets/index-CyqLIIjp.js:228",
+          "bytes": 288
+        },
+        {
+          "name": "JsIdentityPolicy_$ctor assets/index-CyqLIIjp.js:2488",
+          "bytes": 276
+        },
+        {
+          "name": "defaultOf$1 assets/index-CyqLIIjp.js:71",
+          "bytes": 264
+        },
+        {
+          "name": "unwrap assets/index-CyqLIIjp.js:567",
+          "bytes": 252
+        },
+        {
+          "name": "values (native):0",
+          "bytes": 240
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20542",
+          "bytes": 224
+        },
+        {
+          "name": "Mounted_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13424",
+          "bytes": 224
+        },
+        {
+          "name": "OwnerLink__set_Generation_Z524259A4 assets/index-CyqLIIjp.js:3495",
+          "bytes": 216
+        },
+        {
+          "name": "IsDelegated assets/index-CyqLIIjp.js:13884",
+          "bytes": 216
+        },
+        {
+          "name": "commit assets/index-CyqLIIjp.js:11234",
+          "bytes": 192
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20590",
+          "bytes": 168
+        },
+        {
+          "name": "TemplateParts_present assets/index-CyqLIIjp.js:10012",
+          "bytes": 168
+        },
+        {
+          "name": "splice (native):0",
+          "bytes": 160
+        },
+        {
+          "name": "SourceList__Append_Z47AEE590 assets/index-CyqLIIjp.js:3324",
+          "bytes": 152
+        },
+        {
+          "name": "ImmediateDispatcher_$ctor assets/index-CyqLIIjp.js:2441",
+          "bytes": 144
+        },
+        {
+          "name": "MountState__openElement assets/index-CyqLIIjp.js:15069",
+          "bytes": 144
+        },
+        {
+          "name": "copyToArray assets/index-CyqLIIjp.js:320",
+          "bytes": 96
+        },
+        {
+          "name": "FSharpRef$1.getter assets/index-CyqLIIjp.js:455",
+          "bytes": 84
+        },
+        {
+          "name": "IdentityScope__Leave assets/index-CyqLIIjp.js:5008",
+          "bytes": 84
+        },
+        {
+          "name": "BuildContext assets/index-CyqLIIjp.js:13412",
+          "bytes": 84
+        },
+        {
+          "name": "Mounted assets/index-CyqLIIjp.js:13420",
+          "bytes": 84
+        },
+        {
+          "name": "ActivationEntry assets/index-CyqLIIjp.js:3747",
+          "bytes": 80
+        },
+        {
+          "name": "BuildContext_$ctor_Z78E4D11F assets/index-CyqLIIjp.js:13416",
+          "bytes": 80
+        },
+        {
+          "name": "Backend$1 assets/index-CyqLIIjp.js:7365",
+          "bytes": 72
+        },
+        {
+          "name": "(anonymous) assets/index-CyqLIIjp.js:20540",
+          "bytes": 72
+        }
+      ]
+    }
+  ]
+}

@@ -11,8 +11,9 @@ import { cases as placement, browserCases as placementBrowser } from "../generat
 import { cases as integrationChecks, browserCases as integrationBrowser } from "../generated-tests/IntegrationChecks.js";
 import { cases as unsafeHtml, unsafeMarkup } from "../generated-tests/UnsafeHtmlChecks.js";
 import { cases as documentChecks } from "../generated-tests/DocumentChecks.js";
+import { cases as sugar } from "../generated-tests/SugarChecks.js";
 import { browserCases as templateBrowser } from "../generated-tests/TemplateChecks.js";
-window.rangeCases = [...cases, ...bindings, ...integration, ...generated, ...attributes, ...boundaries, ...placement, ...integrationChecks, ...unsafeHtml, ...documentChecks];
+window.rangeCases = [...cases, ...bindings, ...integration, ...generated, ...attributes, ...boundaries, ...placement, ...integrationChecks, ...unsafeHtml, ...documentChecks, ...sugar];
 window.bindingMicrotaskFixture = microtaskFixture;
 window.templateBrowserCases = templateBrowser;
 window.placementBrowserCases = placementBrowser;

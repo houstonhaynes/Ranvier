@@ -8,14 +8,14 @@ open Ranvier.View.Foundation.Generated.Html.Authoring
 
 module H = Ranvier.View.Foundation.Generated.Html
 
-type private PerfProps =
+type internal PerfProps =
     {
         Index: int
         Source: Signal<string>
         Disabled: Memo<bool>
     }
 
-type private PerfRow =
+type internal PerfRow =
     {
         Index: int
         Source: Signal<string>
@@ -76,7 +76,7 @@ let private preparedRows width (source: Signal<string>) (disabled: Memo<bool>) =
 
     Program.fragment (Array.init width (fun index -> Prepared.createComponent rowTemplate setup (index + 1)))
 
-let private mountCore rows (host: HTMLElement) width =
+let internal mountCore rows (host: HTMLElement) width =
     let graph = new Graph ()
     let source = graph.Run (fun () -> Api.createSignal "a")
 
