@@ -5,10 +5,11 @@ const head = 'a'.repeat(40), base = 'b'.repeat(40);
 const repo = { owner: 'o', repo: 'r' };
 function artifact(leg, h = head, b = base) {
   const run = { Leg: leg, Base: b, Head: h, Rounds: 5, Versions: [], NoBaseline: [], Processes: [], Counters: [] };
-  for (const Runtime of ['node', 'dotnet']) for (const Side of ['base', 'head']) {
+  const runtimes = leg === 'arm64-counters' ? ['node', 'node-jitless', 'dotnet'] : ['node', 'dotnet'];
+  for (const Runtime of runtimes) for (const Side of ['base', 'head']) {
     const row = { Runtime, Side, Commit: Side === 'head' ? h : b, Scenarios: [{ Gc: false, Metrics: [{ Name: leg === 'arm64-counters' ? 'instructions' : 'cpu_ns', Value: 100 }] }] };
     for (let Process = 0; Process < 5; Process++) run.Processes.push({ ...row, Process });
-    run.Counters.push({ ...row, Process: 0 });
+    if (Runtime !== 'node-jitless') run.Counters.push({ ...row, Process: 0 });
   }
   return run;
 }
@@ -63,4 +64,13 @@ test('relabel restates commits and records the source run', () => {
   assert.deepEqual(data.Versions, [{ Name: 'reused', Value: `run 3: ${c} against ${d}` }]);
   const same = artifact('x64-timing');
   assert.equal(relabel(same, { base, head, from: '3' }), same);
+});
+test('an arm64 artifact without jitless Node processes is not reusable', async () => {
+  const github = api({ same: [{ id: 1, head_sha: head, status: 'completed', conclusion: 'success' }] });
+  const read = async a => {
+    const data = artifact(a.name.slice(3));
+    data.Processes = data.Processes.filter(p => p.Runtime !== 'node-jitless');
+    return data;
+  };
+  assert.equal(await find({ github, repo, head, base, currentRun: 2, read, treeOf }), null);
 });

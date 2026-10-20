@@ -36,7 +36,8 @@ function bodyFor(report, run) {
   const { Acceptance, Verdicts } = report.verdict;
   const failed = Acceptance.Unknown.length > 0 || Verdicts.some(v => v.Fails);
   const rows = Verdicts.map(v => {
-    const count = kind => v.Findings.filter(f => f.Kind === kind).length;
+    // Findings with Gated false (tiered Node on arm64) are reported only; a verdict.json without the field counts every finding.
+    const count = kind => v.Findings.filter(f => f.Kind === kind && f.Gated !== false).length;
     return `| ${v.Leg} | ${v.Fails ? 'FAILED' : 'passed'} | ${count('Regressed')} | ${count('Improved')} | ${v.Warnings.length} |`;
   });
   // Only the API-provided run URL enters the fallback link; artifact text cannot supply it.

@@ -13,6 +13,11 @@ about 5 % are treated as run-to-run noise. Larger differences still need measure
 Under Node, the harness settles each case under full tiering and keeps tier-up disabled across its
 measured regions; a region in which V8 compiles is reported as compiled.
 
+CI also runs every Node case under `node --jitless` (runtime `node-jitless`), with one warm-up run
+and no settling. The interpreter executes the same bytecode whichever objects earlier runs left
+alive, so these counts follow the work done, and they are the Node figures the perf gate checks.
+Tiered Node counts depend on V8's optimisation history and are reported without a gate.
+
 The static .NET and Node charts below are the historical `e13f159` run. The interactive
 views use recorded CI measurements (hardware counters and allocations on arm64, CPU time on x64)
 and identify the selected commit explicitly.

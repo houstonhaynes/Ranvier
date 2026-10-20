@@ -242,5 +242,18 @@ let perScenario =
 
                         Expect.equal run.Cases[0].Scenario "keyed-remove" "scenario argument")
             }
+            test "runScenarioWith jitless runs the harness in the interpreter after the shared V8 flags" {
+                script
+                    "const fs = require('fs'); const a = process.argv; fs.writeFileSync(__dirname + '/flags', process.execArgv.join(' ')); fs.writeFileSync(a[a.indexOf('--out') + 1], JSON.stringify({ProcessId: process.pid, CountersCompiled: false, Cases: [{Scenario: 'keyed-remove', Engine: 'Test', Unit: 'op', Measurements: []}]}));"
+                    (fun directory path ->
+                        NodeRuns.runScenarioWith NodeRuns.jitless "node" path 1 "keyed-remove" (Path.Combine (directory, "out.json")) (fun _ _ _ ->
+                            ())
+                        |> ignore
+
+                        Expect.equal
+                            (File.ReadAllText (Path.Combine (directory, "flags")))
+                            (String.Join (" ", NodeRuns.flags @ NodeRuns.jitless))
+                            "flags")
+            }
         ]
     |> testSequenced

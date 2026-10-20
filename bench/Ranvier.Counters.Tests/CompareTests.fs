@@ -47,7 +47,7 @@ let private run b h =
         NoBaseline = [||]
         Processes =
             [|
-                for runtime in [ "node"; "dotnet" ] do
+                for runtime in Runtimes.measured "arm64-counters" do
                     for i in 0..4 do
                         yield proc "base" runtime i b
                         yield proc "head" runtime i h
@@ -232,7 +232,7 @@ let tests =
 
                 Expect.isFalse v.Fails "passes"
                 Expect.equal (gateKind "node" "x" v) Inconclusive "finding"
-                Expect.equal (Set.ofArray v.ControlMoved) (Set.ofList [ "node"; "dotnet" ]) "runtimes"
+                Expect.equal (Set.ofArray v.ControlMoved) (Set.ofList (Runtimes.measured "arm64-counters")) "runtimes"
                 Expect.equal (gateKind "node" Control.Scenario v) Regressed "control finding"
                 let text = markdown none [ v ]
                 Expect.stringContains text "## Performance: inconclusive" "heading"
@@ -322,7 +322,7 @@ let tests =
                     }
 
                 Expect.isFalse (verdictOf reference).Fails "reference"
-                Expect.hasLength (verdictOf reference).Findings 8 "all metrics and runtimes retained"
+                Expect.hasLength (verdictOf reference).Findings 11 "all metrics and runtimes retained"
             testCase "artifact validation fails closed"
             <| fun _ ->
                 let r = run 1000. 1000.
@@ -377,6 +377,10 @@ let tests =
                         NoBaseline =
                             [|
                                 { Name = "node"; Value = "old worker" }
+                                {
+                                    Name = Runtimes.NodeJitless
+                                    Value = "old harness"
+                                }
                                 {
                                     Name = "dotnet"
                                     Value = "old worker"
@@ -654,16 +658,80 @@ let tests =
                 Expect.stringContains text "| GC base/head | JIT base/head |" "flag column"
                 Expect.stringContains text "| x | Ranvier | yes/yes | no/yes |" "node row"
                 Expect.stringContains text "| x | Ranvier | yes/yes | no/no |" "dotnet row"
+            for runtime, fails, outcome in
+                [
+                    Runtimes.Node, false, "is reported and passes"
+                    Runtimes.NodeJitless, true, "fails"
+                    Runtimes.Dotnet, true, "fails"
+                ] do
+                testCase $"a {runtime} regression alone {outcome}"
+                <| fun _ ->
+                    let r = run 1000. 1000.
+
+                    let regressed =
+                        { r with
+                            Processes =
+                                r.Processes
+                                |> Array.map (fun p ->
+                                    if p.Side = "head" && p.Runtime = runtime then
+                                        { p with
+                                            Scenarios =
+                                                p.Scenarios
+                                                |> Array.map (fun s ->
+                                                    { s with
+                                                        Metrics =
+                                                            s.Metrics
+                                                            |> Array.map (fun m ->
+                                                                if m.Name = "instructions" then
+                                                                    { m with Value = 1500. }
+                                                                else
+                                                                    m)
+                                                    })
+                                        }
+                                    else
+                                        p)
+                        }
+
+                    let v = verdictOf regressed
+                    Expect.equal v.Fails fails "gate"
+                    Expect.equal (gateKind runtime "x" v) Regressed "the finding is still classified"
+
+                    let text = markdown none [ v ]
+
+                    Expect.equal
+                        (text.Contains "Regressed (not gated: JIT history-dependent)")
+                        (runtime = Runtimes.Node)
+                        "only a tiered Node regression is labelled as not gated"
+
+            testCase "an arm64 artifact without jitless Node processes is invalid"
+            <| fun _ ->
+                let r = run 1000. 1000.
+
+                Expect.throws
+                    (fun () ->
+                        verdictOf
+                            { r with
+                                Processes =
+                                    r.Processes
+                                    |> Array.filter (fun p -> p.Runtime <> Runtimes.NodeJitless)
+                            }
+                        |> ignore)
+                    "the gated Node runtime cannot be absent without a NoBaseline reason"
             testCase "x64 regressions are advisory"
             <| fun _ ->
+                let arm = run 1000. 1200.
+
                 let r =
-                    { run 1000. 1200. with
+                    { arm with
                         Leg = "x64-timing"
+                        Processes =
+                            arm.Processes
+                            |> Array.filter (fun p -> p.Runtime <> Runtimes.NodeJitless)
                     }
 
                 let v = verdict "cpu_ns" 0.15 0. false none r
                 Expect.isFalse v.Fails "advisory"
-                Expect.hasLength v.Warnings 2 "each runtime"
+                Expect.hasLength v.Warnings 2 "each runtime: x64 has no jitless leg, so tiered Node warns"
                 let typo = acceptance true [ "Perf-Accepted: typo -- mistake" ] (Set.singleton "x")
                 Expect.isTrue (verdict "cpu_ns" 0.15 0. false typo r).Fails "unknown override remains fatal"
             testCase "CLI writes readable DTO on rejected regression and validates overrides"

@@ -100,14 +100,22 @@ let compiled (m: NodeMeasurement) =
 let script (output: string) (build: string) =
     Path.Combine (output, build, "Main.fs.js")
 
-let private startInfo (node: string) (script: string) (args: string list) =
+/// <summary>
+/// The extra V8 flag of the <c>node-jitless</c> runtime: every function of the run executes in the interpreter.
+/// </summary>
+let jitless = [ "--jitless" ]
+
+let private startInfoWith (extra: string list) (node: string) (script: string) (args: string list) =
     let info = ProcessStartInfo node
 
-    for arg in flags @ [ script ] @ args do
+    for arg in flags @ extra @ [ script ] @ args do
         info.ArgumentList.Add arg
 
     info.UseShellExecute <- false
     info
+
+let private startInfo node script args =
+    startInfoWith [] node script args
 
 let private finish (p: Process) (resultFile: string) =
     p.WaitForExit ()
@@ -138,9 +146,18 @@ let run (node: string) (script: string) (scale: int) (only: string option) (resu
 
     finish p resultFile
 
-let private handshake (node: string) (script: string) (scale: int) (selection: string list) (resultFile: string) (mark: int -> bool -> int -> unit) =
+let private handshakeWith
+    (extra: string list)
+    (node: string)
+    (script: string)
+    (scale: int)
+    (selection: string list)
+    (resultFile: string)
+    (mark: int -> bool -> int -> unit)
+    =
     let info =
-        startInfo
+        startInfoWith
+            extra
             node
             script
             ([ "--out"; resultFile; "--scale"; string scale; "--handshake" ]
@@ -227,13 +244,28 @@ let private handshake (node: string) (script: string) (scale: int) (selection: s
 /// unless every measured region was marked at both ends.
 /// </summary>
 let runHandshake (node: string) (script: string) (scale: int) (only: string option) (resultFile: string) (mark: int -> bool -> int -> unit) =
-    handshake node script scale (onlyArgs only) resultFile mark
+    handshakeWith [] node script scale (onlyArgs only) resultFile mark
+
+/// <summary>
+/// <c>runHandshake</c> over the cases of the scenario named <c>name</c>, with the V8 flags <c>extra</c> after
+/// <c>flags</c>.
+/// </summary>
+let runScenarioWith
+    (extra: string list)
+    (node: string)
+    (script: string)
+    (scale: int)
+    (name: string)
+    (resultFile: string)
+    (mark: int -> bool -> int -> unit)
+    =
+    handshakeWith extra node script scale [ "--scenario"; name ] resultFile mark
 
 /// <summary>
 /// <c>runHandshake</c> over the cases of the scenario named <c>name</c>.
 /// </summary>
 let runScenario (node: string) (script: string) (scale: int) (name: string) (resultFile: string) (mark: int -> bool -> int -> unit) =
-    handshake node script scale [ "--scenario"; name ] resultFile mark
+    runScenarioWith [] node script scale name resultFile mark
 
 /// <summary>
 /// The scenario names of the harness <c>script</c>, in measurement order. <c>None</c> when the harness predates

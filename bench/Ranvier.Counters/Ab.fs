@@ -478,8 +478,8 @@ let main args =
 
     let cpu = machine ()
 
-    // One Node process per scenario; a harness without --list runs every scenario in one process.
-    let nodeRegions (script: string) (dir: string) =
+    // One Node process per scenario; a harness without --list runs every scenario in one process, tiered only.
+    let nodeRegions (extra: string list) (script: string) (dir: string) =
         let measure (run: (int -> bool -> int -> unit) -> NodeRuns.NodeRun) =
             use recorder = new LinuxPmc.RegionRecorder ()
             let result = run recorder.Mark
@@ -493,11 +493,12 @@ let main args =
                 |> Option.forall (fun prefix -> name.StartsWith (prefix, StringComparison.Ordinal)))
             |> Array.mapi (fun i name ->
                 let run, regions =
-                    measure (NodeRuns.runScenario o.Node script o.Scale name (Path.Combine (dir, $"node-%d{i}.json")))
+                    measure (NodeRuns.runScenarioWith extra o.Node script o.Scale name (Path.Combine (dir, $"node-%d{i}.json")))
 
                 name, run, regions)
             |> NodeRuns.merge
-        | None -> measure (NodeRuns.runHandshake o.Node script o.Scale o.Only (Path.Combine (dir, "node.json")))
+        | None when extra.IsEmpty -> measure (NodeRuns.runHandshake o.Node script o.Scale o.Only (Path.Combine (dir, "node.json")))
+        | None -> failwith "The harness predates --list and cannot run with extra V8 flags."
 
     let timing runtime side index =
         scratch (fun dir ->
@@ -517,8 +518,14 @@ let main args =
 
                     dotnetFigures side.Commit index run
                 else
+                    let extra =
+                        if runtime = Runtimes.NodeJitless then
+                            NodeRuns.jitless
+                        else
+                            []
+
                     let run, regions =
-                        nodeRegions (Path.Combine (side.Directory, "fable", "plain", "Main.fs.js")) dir
+                        nodeRegions extra (Path.Combine (side.Directory, "fable", "plain", "Main.fs.js")) dir
 
                     hardware
                         o.Leg
@@ -527,7 +534,10 @@ let main args =
 
                     nodeFigures side.Commit index run regions
 
-            { figure with Side = side.Name })
+            { figure with
+                Side = side.Name
+                Runtime = runtime
+            })
 
     let instrumented runtime side =
         scratch (fun dir ->
@@ -547,7 +557,7 @@ let main args =
 
             { figure with Side = side.Name })
 
-    for runtime in [ "node"; "dotnet" ] do
+    for runtime in Runtimes.measured o.Leg do
         let mutable baseAvailable = true
 
         for index in 0 .. o.Rounds - 1 do
@@ -571,7 +581,10 @@ let main args =
                         eprintfn "Base %s could not be measured: %s" runtime e.Message
 
         for side in [ baseSide; head ] do
-            if side.Name = "head" || baseAvailable then
+            if
+                Runtimes.instrumented runtime
+                && (side.Name = "head" || baseAvailable)
+            then
                 try
                     let figure = instrumented runtime side
 

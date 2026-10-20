@@ -60,7 +60,7 @@ squash commit message.
 | CI | Fable tests | the Fable suites fail under Node.js, or the Fable package compatibility check fails |
 | CI | Workflow scripts | a `node --test` suite under `.github/scripts` fails |
 | CI | **CI result** | any CI job above failed or was cancelled |
-| Perf | verdict | a scenario's instruction count regresses on arm64 and the regression is not accepted |
+| Perf | verdict | a scenario's .NET or `node-jitless` instruction count regresses on arm64 and the regression is not accepted |
 | Perf | **Perf result** | measuring or the verdict failed or was cancelled |
 | Contribution | **Conventional commits** | the pull-request title is not a conventional commit header |
 
@@ -81,17 +81,26 @@ the docs are still redeployed for it.
 The Perf workflow builds the pull request's merge base and its head, then runs them alternately,
 five processes each, for Node and for .NET, on two legs:
 
-- **`arm64-counters`** counts hardware instructions per operation. A scenario regresses when the
-  head median exceeds the base median by more than max(2%, 20 instructions per operation) *and*
-  every head process exceeds every base process, and the lower modes of the two sides pass the
-  same test. A side's lower mode is its lowest processes, up to the first gap between sorted
-  values wider than that limit. When only the medians separate, the scenario is a **state shift**:
-  some processes landed in a different discrete state, and the check passes. An unaccepted
-  regression fails the check.
+- **`arm64-counters`** counts hardware instructions per operation for three runtimes: .NET
+  (`dotnet`), Node under tiered V8 (`node`) and Node under `--jitless` (`node-jitless`).
+  - The gate covers `dotnet` and `node-jitless`. A scenario regresses when the head median exceeds
+    the base median by more than max(2%, 20 instructions per operation) *and* every head process
+    exceeds every base process, and the lower modes of the two sides pass the same test. A side's
+    lower mode is its lowest processes, up to the first gap between sorted values wider than that
+    limit. When only the medians separate, the scenario is a **state shift**: some processes landed
+    in a different discrete state, and the check passes. An unaccepted regression fails the check.
+  - Tiered `node` figures are reported and marked *not gated: JIT history-dependent*. V8's
+    optimisation decisions depend on which objects earlier runs left alive, so a change that only
+    frees memory sooner can move them by large amounts in either direction. They never fail the
+    check, warn or change the comment's headline.
+  - Under `--jitless` every function runs in the interpreter, and the count follows the work done.
+    The harness gives each `node-jitless` case one warm-up run and no settling runs.
 - Every worker process also measures `control`, a fixed workload with no Ranvier code. When the
   control regresses or improves by the same rule, the runtime's regressions on that leg are
   **inconclusive** and do not fail the check.
-- **`x64-timing`** measures thread CPU time with a 15% threshold. It only emits warnings.
+- **`x64-timing`** measures thread CPU time with a 15% threshold for `dotnet` and tiered `node`.
+  It has no `node-jitless` runtime, so tiered `node` regressions warn there, and the leg only emits
+  warnings.
 
 The results arrive as one pull-request comment, updated on each run, with regressions,
 improvements and library-counter changes.

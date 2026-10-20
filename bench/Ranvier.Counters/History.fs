@@ -61,8 +61,11 @@ let private gate (run: AbRun) =
     else
         "cpu_ns"
 
-/// <summary>Validates five-round artifacts and commit identities, then records accepted gate regressions and available timing medians.</summary>
-let create commit parent date subject messages (runs: AbRun[]) =
+/// <summary>
+/// Validates five-round artifacts against the runtimes <c>runtimesOf</c> returns for each, and commit identities, then
+/// records accepted gate regressions and available timing medians.
+/// </summary>
+let createFrom (runtimesOf: AbRun -> string list) commit parent date subject messages (runs: AbRun[]) =
     require
         (not (String.IsNullOrWhiteSpace commit)
          && not (String.IsNullOrWhiteSpace parent))
@@ -73,7 +76,7 @@ let create commit parent date subject messages (runs: AbRun[]) =
     require ((runs |> Array.map _.Leg |> Set.ofArray).Count = runs.Length) "Duplicate benchmark leg."
 
     for run in runs do
-        Compare.validate (gate run) run
+        Compare.validateWith (runtimesOf run) (gate run) run
         require (run.Head = commit && run.Base = parent) "Recorded commit/parent differ from AB head/base."
 
     let known =
@@ -94,7 +97,7 @@ let create commit parent date subject messages (runs: AbRun[]) =
             let arm = run.Leg = "arm64-counters"
 
             let verdict =
-                Compare.verdict (gate run) (if arm then 0.02 else 0.15) (if arm then 20. else 0.) arm acceptance run
+                Compare.verdictWith (runtimesOf run) (gate run) (if arm then 0.02 else 0.15) (if arm then 20. else 0.) arm acceptance run
 
             verdict.Findings
             |> Array.choose (fun f ->
@@ -164,6 +167,17 @@ let create commit parent date subject messages (runs: AbRun[]) =
         Medians = medians
         Runs = runs
     }
+
+/// <summary><c>createFrom</c> requiring every runtime each leg measures (<c>Runtimes.measured</c>).</summary>
+let create commit parent date subject messages (runs: AbRun[]) =
+    createFrom (fun run -> Runtimes.measured run.Leg) commit parent date subject messages runs
+
+/// <summary>
+/// <c>createFrom</c> for a stored record: each artifact is validated against the runtimes it was recorded with
+/// (<c>Runtimes.recorded</c>).
+/// </summary>
+let recreate commit parent date subject messages (runs: AbRun[]) =
+    createFrom Runtimes.recorded commit parent date subject messages runs
 
 let private escape (s: string) =
     s
@@ -369,7 +383,7 @@ let main args =
             Directory.GetFiles (one "--runs", "*.json")
             |> Array.map (fun path ->
                 let r = read<RecordedRun> path
-                let validated = create r.Commit r.Parent r.Date r.Subject [] r.Runs
+                let validated = recreate r.Commit r.Parent r.Date r.Subject [] r.Runs
                 require (r.Medians = validated.Medians) "Recorded medians differ from raw figures."
                 r)
 

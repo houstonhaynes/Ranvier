@@ -11,7 +11,9 @@ function usable(run, leg, base, head) {
   assert.equal(run.Head, head);
   assert.equal(run.Rounds, 5);
   assert.ok(Array.isArray(run.NoBaseline) && Array.isArray(run.Versions));
-  for (const runtime of ['node', 'dotnet']) {
+  // The runtimes Compare.validate requires; node-jitless (the gated Node runtime) has no library-counter run.
+  const runtimes = leg === 'arm64-counters' ? ['node', 'node-jitless', 'dotnet'] : ['node', 'dotnet'];
+  for (const runtime of runtimes) {
     for (const side of ['base', 'head']) {
       const rows = run.Processes.filter(p => p.Runtime === runtime && p.Side === side);
       if (side === 'base' && run.NoBaseline.some(n => n.Name === runtime && typeof n.Value === 'string')) {
@@ -28,6 +30,7 @@ function usable(run, leg, base, head) {
           assert.ok(scenario.Metrics.every(m => Number.isFinite(m.Value)));
         }
       }
+      if (runtime === 'node-jitless') continue;
       const counters = run.Counters.filter(p => p.Side === side && p.Runtime === runtime);
       if (side === 'base' && run.Versions.some(v => v.Name === `base:${runtime}:counters` && v.Value.startsWith('unavailable:'))) continue;
       assert.equal(counters.length, 1);

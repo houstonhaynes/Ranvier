@@ -56,3 +56,11 @@ test('state-shift and inconclusive findings are valid kinds; unknown kinds are r
     assert.equal(github.calls.length, valid ? 1 : 0);
   }
 });
+test('the oversize fallback counts gated findings only', () => {
+  const data = report(); data.comment += '\n' + 'x'.repeat(70000);
+  data.verdict.Verdicts[0].Findings = [
+    { Kind: 'Regressed', Accepted: false, Gated: false }, { Kind: 'Regressed', Accepted: false, Gated: true },
+    { Kind: 'Regressed', Accepted: false }, { Kind: 'Improved', Accepted: false, Gated: false }];
+  const body = bodyFor(data, run);
+  assert.match(body, /\| arm64-counters \| passed \| 2 \| 0 \| 0 \|/);
+});
