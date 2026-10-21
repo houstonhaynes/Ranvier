@@ -1,0 +1,8 @@
+generated/
+generated-tests/
+generated-server/
+dist/
+node_modules/
+test-results/
+playwright-report/
+scratch/

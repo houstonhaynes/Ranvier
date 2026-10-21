@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Metrics arrive from a core stream. A skeleton pulses until the first sample, gauges follow each reading, the ring draws the CPU load, the chart morphs to every new window, and the request rate counts up through a tracked tween." />
+    <title>Dashboard · Ranvier Motion</title>
+    <link rel="stylesheet" href="../styles/motion.css" />
+    <link rel="stylesheet" href="./dashboard.css" />
+  </head>
+  <body>
+    <div class="frame">
+      <header class="site-header">
+        <a class="brand" href="../"><span class="brand-mark"></span>Ranvier Motion</a>
+        <nav>
+          <a href="../kanban/">Kanban</a>
+          <a href="../dashboard/" aria-current="page">Dashboard</a>
+          <a href="../story/">Story</a>
+          <a href="../physics/">Physics</a>
+          <a href="../routes/">Routes</a>
+        </nav>
+      </header>
+      <section class="intro">
+        <span class="tag">stream · follow · draw · morph · track · boundary</span>
+        <h1>Dashboard</h1>
+        <p>Metrics arrive from a core stream. A skeleton pulses until the first sample, gauges follow each reading, the ring draws the CPU load, the chart morphs to every new window, and the request rate counts up through a tracked tween.</p>
+      </section>
+      <main id="app"></main>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

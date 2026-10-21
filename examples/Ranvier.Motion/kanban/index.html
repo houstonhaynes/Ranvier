@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Cards enter and leave with presence, glide between lanes with FLIP, and drop into the lane you drag them to. Every change goes through one Elmish loop, so undo is a list of earlier boards." />
+    <title>Kanban · Ranvier Motion</title>
+    <link rel="stylesheet" href="../styles/motion.css" />
+    <link rel="stylesheet" href="./kanban.css" />
+  </head>
+  <body>
+    <div class="frame">
+      <header class="site-header">
+        <a class="brand" href="../"><span class="brand-mark"></span>Ranvier Motion</a>
+        <nav>
+          <a href="../kanban/" aria-current="page">Kanban</a>
+          <a href="../dashboard/">Dashboard</a>
+          <a href="../story/">Story</a>
+          <a href="../physics/">Physics</a>
+          <a href="../routes/">Routes</a>
+        </nav>
+      </header>
+      <section class="intro">
+        <span class="tag">Elmish · presence · flip · drag</span>
+        <h1>Kanban</h1>
+        <p>Cards enter and leave with presence, glide between lanes with FLIP, and drop into the lane you drag them to. Every change goes through one Elmish loop, so undo is a list of earlier boards.</p>
+      </section>
+      <main id="app"></main>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

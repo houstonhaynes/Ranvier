@@ -11,6 +11,12 @@ test('any other path, or no path, runs everything', () => {
     assert.equal(docsOnly(p), false, JSON.stringify(p));
   }
 });
+test('the Motion examples app runs everything, its README aside', () => {
+  for (const p of [['examples/Ranvier.Motion/src/Kanban.fs'], ['examples/Ranvier.Motion/tests/kanban.spec.mjs'], ['examples/Ranvier.Motion/package.json'], ['examples/Ranvier.Motion/kanban/kanban.css'], ['examples/Ranvier.Motion/Server/ServerChecks.fsproj']]) {
+    assert.equal(docsOnly(p), false, JSON.stringify(p));
+  }
+  assert.equal(docsOnly(['examples/Ranvier.Motion/README.md']), true);
+});
 test('ranges need two commits; new branches and manual runs have none', () => {
   assert.deepEqual(range({ eventName: 'pull_request', base: a, head: b }), { from: a, to: b });
   assert.deepEqual(range({ eventName: 'push', before: a, after: b }), { from: a, to: b });
