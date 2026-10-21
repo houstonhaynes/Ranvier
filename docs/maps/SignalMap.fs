@@ -8,11 +8,8 @@ open Browser
 open Browser.Types
 open Partas.Solid
 open Ranvier
+open Ranvier.Anime
 open Ranvier.Docs.Maps
-
-module private Anime =
-    [<Import("animate", "animejs")>]
-    let animate (targets: obj) (parameters: obj) : obj = jsNative
 
 module private Dom =
     let svgNs = "http://www.w3.org/2000/svg"
@@ -30,6 +27,9 @@ module private Dom =
     let attrs (e: Element) (pairs: (string * string) list) =
         for name, value in pairs do
             e.setAttribute (name, value)
+
+    /// <summary>The element as the animation bindings type it.</summary>
+    let target (e: Element) : TS.Dom.Element = unbox e
 
     let toggle (e: Element) (cls: string) (on: bool) =
         if on then e.classList.add cls else e.classList.remove cls
@@ -69,6 +69,8 @@ type private NodeView =
         Value: Element
         Timing: Element
         mutable At: float * float
+        /// <summary>The group's position as an animatable, created by its first animated placement.</summary>
+        mutable Mover: Animatable
     }
 
 module private Look =
@@ -472,6 +474,7 @@ module SignalMapComponent =
                 Value = value
                 Timing = timing
                 At = 0.0, 0.0
+                Mover = null
             }
 
         let place (view: NodeView) (x: float, y: float) (animate: bool) =
@@ -483,22 +486,14 @@ module SignalMapComponent =
                 && not reduced
                 && (fromX, fromY) <> (0.0, 0.0)
             then
-                let at = createObj [ "x" ==> fromX; "y" ==> fromY ]
+                if isNull view.Mover then
+                    view.Mover <- Anime.animatable (Dom.target view.Group, AnimatableParams (x = 360, y = 360, ease = Ease.outQuart))
 
-                Anime.animate
-                    at
-                    (createObj
-                        [
-                            "x" ==> x
-                            "y" ==> y
-                            "duration" ==> 360
-                            "ease" ==> "outQuart"
-                            "onUpdate"
-                            ==> fun () -> view.Group.setAttribute ("transform", $"translate({at?x} {at?y})")
-                        ])
-                |> ignore
+                view.Mover.set ("x", x)
+                view.Mover.set ("y", y)
             else
-                view.Group.setAttribute ("transform", $"translate({x} {y})")
+                Utils.set (Dom.target view.Group, Anim (x = x, y = y))
+                |> ignore
 
         /// <summary>Draws <c>scene</c>: nodes, edges, positions, values and state classes.</summary>
         let sync (scene: Scene) =
@@ -826,8 +821,6 @@ module SignalMapComponent =
         let travel (s: int) (t: int) (bright: bool) =
             match edges.TryGetValue $"{s}>{t}" with
             | true, path ->
-                let length: float = path?getTotalLength ()
-
                 let dot =
                     Dom.svg
                         "circle"
@@ -838,25 +831,18 @@ module SignalMapComponent =
 
                 dot.setAttribute ("r", (if bright then "4.5" else "3.5"))
                 dotLayer.appendChild dot |> ignore
-                let at = createObj [ "t" ==> 0.0 ]
+                let along = Svg.motionPath (Dom.target path)
 
-                let move () =
-                    let p = path?getPointAtLength (at?t * length)
-                    Dom.attrs dot [ "cx", string p?x; "cy", string p?y ]
-
-                move ()
-
-                Anime.animate
-                    at
-                    (createObj
-                        [
-                            "t" ==> 1.0
-                            "duration"
-                            ==> duration (if bright then 460 else 380)
-                            "ease" ==> "inOutSine"
-                            "onUpdate" ==> move
-                            "onComplete" ==> fun () -> dot.remove ()
-                        ])
+                Anime.animate (
+                    Dom.target dot,
+                    Anim (
+                        translateX = along.translateX,
+                        translateY = along.translateY,
+                        duration = duration (if bright then 460 else 380),
+                        ease = Ease.inOutSine,
+                        onComplete = fun _ -> dot.remove ()
+                    )
+                )
                 |> ignore
             | _ -> ()
 
@@ -870,14 +856,14 @@ module SignalMapComponent =
             | Flash id ->
                 shape id
                 |> Option.iter (fun v ->
-                    Anime.animate
-                        v.Shape
-                        (createObj
-                            [
-                                "scale" ==> [| box 1.0; box 1.35; box 1.0 |]
-                                "duration" ==> duration 420
-                                "ease" ==> "outQuad"
-                            ])
+                    Anime.animate (
+                        Dom.target v.Shape,
+                        Anim (
+                            scale = Value.keys [| Value.op_Implicit 1.0; Value.op_Implicit 1.35; Value.op_Implicit 1.0 |],
+                            duration = duration 420,
+                            ease = Ease.outQuad
+                        )
+                    )
                     |> ignore
 
                     Dom.flash v.Group "is-flash" (duration 700))

@@ -1,0 +1,102 @@
+---
+title: Owning and driving animations
+description: "Ranvier.Anime.Reactive: animations reverted by owners, playback as memos, signals that seek and drive, and the reduced-motion policy."
+---
+
+`Ranvier.Anime.Reactive` ties anime objects to Ranvier's ownership tree and signals. It depends on
+the core alone, so code outside the view uses it as the [Motion parts](motion-parts.md) do. The
+samples use the opens of [Animation](motion.md#animating-an-element) and `open global.Ranvier`.
+
+```fsharp
+open global.Ranvier
+open Fable.Core
+open Ranvier.Anime
+
+/// Fades the panel in, marks it shown once the fade completes, and scales the bar with the level.
+let animatePanel (panel: TS.Dom.Element) (bar: TS.Dom.Element) (level: Signal<float>) (shown: Signal<bool>) =
+    let fade =
+        Reactive.own (Anime.animate (panel, Anim (opacity = Value.fromTo (0, 1), duration = 600)))
+
+    let playback = Reactive.track fade
+    Api.createEffect (fun () -> if playback.Completed.Value then shown.Value <- true)
+
+    let fill =
+        Reactive.own (Anime.animatable (bar, AnimatableParams (scaleX = 400, ease = Ease.outQuart)))
+
+    Reactive.drive (fun () -> level.Value) fill "scaleX"
+```
+
+Called inside a root or an instance's setup, `animatePanel` creates four objects owned by the
+current owner: the fade, its playback memos, the effect, and the animatable with its driving effect.
+Disposing the owner reverts the fade and the animatable and disposes the effects.
+
+## `own`
+
+`Reactive.own revertible` registers `revertible.revert ()` as a cleanup of the current owner and
+returns `revertible`. It takes any `IRevertible`: an animation, a timeline, an animatable, a
+draggable, a scroll observer, a layout, a text splitter or a scope. Outside every root, the owner is
+the graph's own scope, which reverts the object when the graph is disposed.
+
+`revert` stops the object and restores the inline styles and attributes it changed.
+
+## `track`
+
+`Reactive.track tickable` returns the tickable's playback as memos:
+
+| Field | Holds |
+| --- | --- |
+| `Progress: Memo<float>` | the overall progress in 0..1 |
+| `Running: Memo<bool>` | whether the tickable is playing and not completed |
+| `Completed: Memo<bool>` | whether the tickable has completed |
+
+The memos are written from the tickable's `onBegin`, `onUpdate`, `onLoop`, `onPause` and
+`onComplete` callbacks, in one batch per callback. A callback the tickable already had still runs,
+first. When the owner is disposed, each callback slot that still holds `track`'s chain gets back its
+earlier callback; a slot assigned after `track` keeps its new callback.
+
+## `scrub`
+
+```fsharp
+let scrubbed (stage: TS.Dom.Element) (position: Signal<float>) =
+    let tour =
+        Reactive.own (
+            Anime
+                .timeline(TimelineParams (autoplay = false))
+                .add(stage, Anim (x = Value.fromTo (0, 240), duration = 1000))
+                .add(stage, Anim (rotate = 90, duration = 500))
+        )
+
+    Reactive.scrub (fun () -> position.Value) tour
+```
+
+`Reactive.scrub read tickable` is an effect that sets the tickable's `progress` to `read ()`, in
+0..1, once with the current value and then whenever it changes. A tickable created with `autoplay = false` seeks to the first value and then follows each change of the
+value, so a range input bound to the signal seeks the timeline.
+
+## `drive`
+
+`Reactive.drive read animatable property` is an effect that animates `property` of the animatable to
+`read ()`, once with the current value and then whenever it changes, with the property's duration and ease. The animation starts from
+the property's current value, so a change while a previous one plays continues from where it is.
+
+## `policy`
+
+```fsharp
+let honoured (card: TS.Dom.Element) =
+    let duration = if (Reactive.policy ()).Value = Reactive.Reduced then 0 else 400
+    Anime.animate (card, Anim (opacity = Value.fromTo (0, 1), duration = duration))
+```
+
+`Reactive.policy ()` is the motion policy of the current graph, a `Signal<MotionPolicy>`:
+
+- `Full` or `Reduced`, seeded from `(prefers-reduced-motion: reduce)` on the first call and written
+  on each change of the media query.
+- Every call on a graph returns the same signal. A write overrides the media query until its next
+  change, which makes the policy a user setting as well as a system one.
+- Disposing the graph detaches the media query listener.
+- Without `matchMedia`, as on .NET and in jsdom, the seed is `Full`.
+- The first call on a graph runs outside pure derivations, as `onCleanup` does.
+
+The Motion parts read the policy: under `Reduced`, enters and FLIP do not play and exits finish at
+once ([Reduced motion](motion-parts.md#reduced-motion)). Other animations read it themselves, as
+`honoured` does.

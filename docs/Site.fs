@@ -128,6 +128,14 @@ let theme =
                         Menu.page "view/authored.md"
                     ]
                 Menu.section
+                    "Motion"
+                    [
+                        Menu.page "view/motion.md"
+                        Menu.page "view/motion-reactive.md"
+                        Menu.page "view/motion-parts.md"
+                        Menu.page "view/motion-testing.md"
+                    ]
+                Menu.section
                     "Running views"
                     [
                         Menu.page "view/lifetimes.md"

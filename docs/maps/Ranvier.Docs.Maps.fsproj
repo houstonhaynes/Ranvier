@@ -19,6 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="model\Ranvier.Docs.MapModel.fsproj" />
+        <ProjectReference Include="..\..\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
     </ItemGroup>
 
 </Project>

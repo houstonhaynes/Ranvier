@@ -59,6 +59,25 @@ created inside an arms function or a list read. Bind it with `let` before the te
 **`InvalidOperationException` from `CreateId`**: the id was requested after the instance's setup
 returned. Call `setup.CreateId ()` in setup and store the id in the instance.
 
+**"Script elements are not created by templates or typed views; load scripts through the server
+document shell"**: a template or typed view holds a `script` element. Load the script through the
+server's [document shell](../server/deployment.md#the-page). See [Element names](templates.md#element-names)
+for the other refused elements: **"Raw-text elements require an explicit HTML serialization
+policy"**, **"Template elements are not supported in templates"** and **"A void element has
+children"**.
+
+**"Tag names must contain lowercase letters, digits or hyphens, or be a case-sensitive SVG name"**
+or **"Attribute names must be lowercase or a case-sensitive SVG name, …"**: a tag name holds a character other than lowercase letters, digits and hyphens, an attribute name one other than those and underscores, or a name has uppercase
+letters and is not one of the SVG names, or, under Fable, the module defining the template loads
+before any module with an SVG tag. Write the name in lowercase, or import an SVG tag in that module.
+
+**"An element takes viewBox and viewbox, which differ only by case"** (on .NET, when the template is
+defined): give the element one spelling.
+
+**"An exit hook requires a row or arm root element"** (Debug builds): a `Motion.exit`,
+`Motion.presence` or `Hooks.exit` part sits on an element other than a list row's or an arm's root.
+Move it to the root. See [Leaving](motion-parts.md#leaving).
+
 **"An element takes at most one content part"** or **"An element with a content part has no template
 children"**: an element has two of `Unsafe.html` and `Hooks.widget`, or one of them with children.
 Give the content its own element.

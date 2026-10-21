@@ -32,5 +32,8 @@ module and the page that covers it.
 | Project | Page |
 | --- | --- |
 | [`src/Fable.Ranvier`](https://github.com/shayanhabibi/Ranvier/tree/master/src/Fable.Ranvier) | [Other authoring layers](authored.md) |
+| [`src/Fable.Ranvier.Anime`](https://github.com/shayanhabibi/Ranvier/tree/master/src/Fable.Ranvier.Anime) | [Animation](motion.md), [Owning and driving animations](motion-reactive.md), [Testing and costs](motion-testing.md) |
+| [`experiments/Ranvier.View.Anime`](https://github.com/shayanhabibi/Ranvier/tree/master/experiments/Ranvier.View.Anime) | [Motion parts](motion-parts.md) |
+| [`examples/Ranvier.Motion`](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Motion) | [Motion parts](motion-parts.md#examples) |
 | [`src/Ranvier.Wire`](https://github.com/shayanhabibi/Ranvier/tree/master/src/Ranvier.Wire) | [State transfer](../server/state-transfer.md) |
 | [`examples/Fable.Ranvier.Playground`](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Fable.Ranvier.Playground) | [Getting started](getting-started.md), [Testing views](testing.md) |

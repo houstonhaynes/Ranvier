@@ -60,6 +60,11 @@ content of `show`, write `(img (parts)).View`. A [component tag](components.md#a
 is used the same way.
 [Templates and bindings](templates.md) walks through each kind of part.
 
+The SVG tags `svg`, `g`, `path`, `circle`, `rect`, `text'`, `use'`, `title'` and the others create
+SVG elements under both commit modes; `text'`, `use'` and `title'` take an apostrophe because `text`
+is the text slot, `use` an F# keyword and `title` the HTML tag. See [SVG](motion-parts.md#svg) and
+[Element names](templates.md#element-names).
+
 ## The inference rule
 
 Each lambda in a sugared template infers its instance type from its own body. A lambda that reads a

@@ -334,7 +334,7 @@ Perf: Playground `keyed-rows.mjs` and `run.mjs --template-comparison` ranges ove
 ## Docs
 
 - `experiments/Ranvier.View.Anime/README.md`: the reference for `Motion.*`, in the shape of the Portable README (opening lines, each part with a sample, enter/exit rules, flip requirements: the container is positioned and its rows are direct element children, reduced motion, SSR rules, costs). Its samples compile as fixtures in `tests/MotionTests.fsproj`.
-- `docs/content/guide/animation.md`: the bindings and `Reactive` (owning, playback signals, scrub, drive, policy), deterministic testing, the bundle table; links to the README and the examples.
+- A "Motion" section of the Views navigation, beside the other authoring pages: `view/motion.md` (the bindings), `view/motion-reactive.md` (`Reactive`: owning, playback signals, scrub, drive, policy), `view/motion-parts.md` (the rules the parts share, linking to the README and the examples) and `view/motion-testing.md` (deterministic testing, the bundle table). Their F# samples compile and are drift-checked in `docs/samples/view`.
 - `docs/maps/SignalMap.fs`: replace the private `Anime` module and `createObj` options with `Ranvier.Anime`; the dot travel uses `Svg.motionPath` instead of `getPointAtLength` in `onUpdate`; node placement tweens an `Animatable` over `x`/`y` instead of a proxy object.
 - `docs/content/index.md` (`StateDial`): typed `Anime.animate`/`Utils.set`; the `setTimeout` arrival sequencing becomes one `Anime.timeline` with `.call`; `reduced ()` becomes `Reactive.policy ()`.
 - `docs/maps/Ranvier.Docs.Maps.fsproj` references `src/Fable.Ranvier.Anime`; `docs/Site.fs:170` keeps `npm "animejs" "4.5.0"`.

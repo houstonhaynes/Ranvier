@@ -72,14 +72,10 @@ Every reader observes one of six states. The docs, the marks and the API use the
 open Browser
 open Browser.Types
 open Partas.Solid.Svg
+open Ranvier.Anime
 
-[<Import("animate", "animejs")>]
-let animate (targets: obj) (parameters: obj) : obj = jsNative
-
-[<Import("utils", "animejs")>]
-let animeUtils: obj = jsNative
-
-let tween (target: Element) (parameters: obj) = animate target parameters |> ignore
+/// The element as the animation bindings type it.
+let el (element: Element) : TS.Dom.Element = unbox element
 
 /// A state as a signal map draws it: the values and map classes of an async source and the boundary reading it.
 type DialState =
@@ -110,7 +106,13 @@ let StateDial () =
     let mutable step = 0
     let mutable timer = 0.0
     let interval = 2400
-    let reduced () : bool = window?matchMedia("(prefers-reduced-motion: reduce)")?matches
+    let graph = new Ranvier.Graph ()
+
+    let policy =
+        use _ = graph.Activate ()
+        Reactive.policy ()
+
+    let reduced () = policy.Value = Reactive.Reduced
     let find (selector: string) : Element = root.querySelector selector
 
     /// Sets a node's state class and value. A changed value drops into place unless instant.
@@ -124,39 +126,30 @@ let StateDial () =
             label.textContent <- value
 
             if not instant then
-                tween label {| translateY = {| from = -6; ``to`` = 0 |}; scale = {| from = 0.7; ``to`` = 1 |}; duration = 420; ease = "outBack(2)" |}
+                Anime.animate (el label, Anim (translateY = Value.fromTo (-6, 0), scale = Value.fromTo (0.7, 1), duration = 420, ease = Ease.outBackBy 2.))
+                |> ignore
 
-    let pulse (shape: Element) (delay: int) =
-        tween shape {| scale = 1.14; duration = 220; delay = delay; alternate = true; loop = 1; ease = "outQuad" |}
+    let pulse () = Anim (scale = 1.14, duration = 220, alternate = true, loop = 1, ease = Ease.outQuad)
 
-    let shake (shape: Element) (delay: int) =
-        tween shape {| translateX = [| box -3; 3; -2; 2; 0 |]; duration = 400; delay = delay; ease = "inOutSine" |}
+    let shake () =
+        Anim (translateX = Value.keys (Array.map (fun (x: int) -> Value.op_Implicit x) [| -3; 3; -2; 2; 0 |]), duration = 400, ease = Ease.inOutSine)
 
     /// Carries a dot along the edge from the source to the boundary.
     let travel (tone: string) =
-        let edge = find ".rv-map-edge"
+        let along = Svg.motionPath (el (find ".rv-map-edge"))
         let dot = find ".rv-dial__dot"
-        let length: float = edge?getTotalLength ()
-        let at = createObj [ "t" ==> 0.0 ]
-
-        let move () =
-            let p = edge?getPointAtLength (at?t * length)
-            dot.setAttribute ("cx", string p?x)
-            dot.setAttribute ("cy", string p?y)
-
         dot.setAttribute ("class", $"rv-dial__dot is-moving {tone}")
-        move ()
 
-        animate
-            at
-            (createObj
-                [
-                    "t" ==> 1.0
-                    "duration" ==> 460
-                    "ease" ==> "inOutSine"
-                    "onUpdate" ==> move
-                    "onComplete" ==> fun () -> dot.setAttribute ("class", "rv-dial__dot")
-                ])
+        Anime.animate (
+            el dot,
+            Anim (
+                translateX = along.translateX,
+                translateY = along.translateY,
+                duration = 460,
+                ease = Ease.inOutSine,
+                onComplete = fun _ -> dot.setAttribute ("class", "rv-dial__dot")
+            )
+        )
         |> ignore
 
     let show (n: int) (instant: bool) =
@@ -175,34 +168,35 @@ let StateDial () =
 
         if instant then
             paint view state.ViewClass state.View true
-            animeUtils?set (ring, {| opacity = (if state.Flight then 1 else 0); scale = 1 |})
+            Utils.set (el ring, Anim (opacity = (if state.Flight then 1 else 0), scale = 1)) |> ignore
         else
-            let sourceShape = find ".rv-dial__source .rv-map-node__shape"
-            let viewShape = find ".rv-dial__view .rv-map-node__shape"
+            let sourceShape = el (find ".rv-dial__source .rv-map-node__shape")
+            let viewShape = el (find ".rv-dial__view .rv-map-node__shape")
             // A write reaches the boundary as its dot arrives; a boundary's own change is immediate.
-            let arrives = if n = 1 || n = 5 then 0 else 460
-            window.setTimeout ((fun () -> if step = n then paint view state.ViewClass state.View false), arrives) |> ignore
+            let arrives = if n = 1 || n = 5 then 0. else 460.
+            let sequence = Anime.timeline ()
 
             if n = 4 then
-                tween ring {| opacity = {| from = 1; ``to`` = 0 |}; scale = {| from = 1; ``to`` = 1.5 |}; duration = 700; ease = "outQuad" |}
+                Anime.animate (el ring, Anim (opacity = Value.fromTo (1, 0), scale = Value.fromTo (1, 1.5), duration = 700, ease = Ease.outQuad))
+                |> ignore
             elif state.Flight then
-                animeUtils?set (ring, {| scale = 1 |})
-                tween ring {| opacity = 1; duration = 250 |}
+                Utils.set (el ring, Anim (scale = 1)) |> ignore
+                Anime.animate (el ring, Anim (opacity = 1, duration = 250)) |> ignore
             else
-                tween ring {| opacity = 0; duration = 250 |}
+                Anime.animate (el ring, Anim (opacity = 0, duration = 250)) |> ignore
 
             match n with
             | 0 | 3 -> travel "rv-map-dot"
             | 2 ->
-                pulse sourceShape 0
+                sequence.add(sourceShape, pulse (), At.ms 0.).add (viewShape, pulse (), At.ms 460.) |> ignore
                 travel "rv-map-dot rv-map-dot--bright"
-                pulse viewShape 460
             | 4 ->
-                shake sourceShape 0
+                sequence.add(sourceShape, shake (), At.ms 0.).add (viewShape, shake (), At.ms 460.) |> ignore
                 travel "rv-dial__dot--error"
-                shake viewShape 460
-            | 5 -> pulse viewShape 0
+            | 5 -> sequence.add (viewShape, pulse (), At.ms 0.) |> ignore
             | _ -> ()
+
+            sequence.call ((fun _ -> if step = n then paint view state.ViewClass state.View false), At.ms arrives) |> ignore
 
     /// Resumes the cycle. While it runs, the active row's bar fills over the time to the next state.
     let play () =
@@ -239,11 +233,15 @@ let StateDial () =
         if reduced () then
             show 2 true
         else
-            tween (find ".rv-dial__source .rv-map-node__flight") {| rotate = 360; duration = interval; loop = true; ease = "linear" |}
+            Anime.animate (el (find ".rv-dial__source .rv-map-node__flight"), Anim (rotate = 360, duration = interval, loop = Loop.forever, ease = Ease.linear))
+            |> ignore
+
             show 0 true
             play ())
 
-    onCleanup (fun () -> window.clearInterval timer)
+    onCleanup (fun () ->
+        window.clearInterval timer
+        graph.Dispose ())
 
     div(class' = "rv-dial").ref (root) {
         svg (class' = "rv-dial__map", viewBox = "0 0 200 92") {
@@ -259,7 +257,7 @@ let StateDial () =
                 text (class' = "rv-map-node__name", x = 160.0, y = 88.0) { "view" }
                 text (class' = "rv-map-node__value", x = 160.0, y = 22.0)
             }
-            circle (class' = "rv-dial__dot", cx = 62.0, cy = 48.0, r = 4.5)
+            circle (class' = "rv-dial__dot", r = 4.5)
         }
         div (
             class' = "rv-statelist",

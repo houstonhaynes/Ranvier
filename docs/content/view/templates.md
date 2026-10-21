@@ -51,6 +51,30 @@ let avatar =
 let rule = Component.template (fun _ () -> ()) (hr (Attrs.className "rule")).View
 ```
 
+## Element names
+
+Tag names are lowercase letters, digits and hyphens, starting with a letter; attribute names also allow underscores. The
+case-sensitive SVG names the HTML parser restores (`viewBox`, `preserveAspectRatio`,
+`linearGradient`, `foreignObject`, `feGaussianBlur`, `refX` and the others) are written as given,
+each matched as a whole name. Under Fable the module of the sugar's SVG tags registers them when it
+loads, so a module defining a template with such a name imports an SVG tag or follows a module that
+does; on .NET they are always accepted. Any other mixed-case name, such as `className`, raises, as
+does an attribute name that is empty, null, starts with `on` or is `srcdoc`.
+
+Some elements are refused when a template or typed view mounts, under both commit modes:
+
+- a `script` element, with or without children, in either namespace (`t.element (HtmlTag "script")`,
+  `t.script`, an SVG `script`): pages load scripts through the server
+  [document shell](../server/deployment.md#the-page);
+- a raw-text element with children (`style`, `iframe` and the others), and `plaintext`;
+- a `template` element;
+- a void element with children.
+
+A childless `iframe` mounts. The server render refuses every raw-text element. The server's
+definition path also refuses an RCDATA element (`textarea`, `title`) with element children, and one
+element's attribute names that differ only by case, such as `viewBox` and `viewbox`; a Fable client
+bundle accepts those last two.
+
 ## Text
 
 An element body yields text in three forms:

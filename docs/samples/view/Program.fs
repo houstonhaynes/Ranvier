@@ -129,6 +129,18 @@ let main _ =
              | Error _ -> "pending"
              | Ok html -> html)
 
+        let tasks: MotionParts.Task array =
+            [|
+                { Id = 1; Title = "Write" }
+                { Id = 2; Title = "Ship" }
+            |]
+
+        let taskListHtml =
+            root """<section><ul class="tasks"><!--[--><li>Write</li><li>Ship</li><!--]--></ul><div class="progress"></div></section>"""
+
+        expect "motion-parts taskList" taskListHtml (Server.render omit MotionParts.taskList tasks)
+        expect "motion-parts taskList under Reject" taskListHtml (Server.render Server.Options.defaults MotionParts.taskList tasks)
+
         CounterHtml.rendersStartValue ())
 
     if failures.Count = 0 then

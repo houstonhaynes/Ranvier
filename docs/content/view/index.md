@@ -63,6 +63,8 @@ render effect writes the button's text.
 | DOM mounting, hydration, document head | `experiments/Ranvier.View.Foundation` | Experimental. Fable only. |
 | Authored views (`Program.View`, `Generated.Html.Program`) | `experiments/Ranvier.View.Foundation` | Experimental. See [Other authoring layers](authored.md). |
 | DOM helper library | `src/Fable.Ranvier` | Proof of concept. See [Other authoring layers](authored.md). |
+| anime.js bindings, owners and signals for animations | `src/Fable.Ranvier.Anime` | Experimental. Compiles for .NET and Fable. See [Animation](motion.md). |
+| Motion template parts | `experiments/Ranvier.View.Anime` | Experimental. See [Motion parts](motion-parts.md). |
 | Wire codecs for state transfer | `src/Ranvier.Wire` | Packaged (`Ranvier.Wire`). See [State transfer](../server/state-transfer.md). |
 | Runnable reference | `examples/Fable.Ranvier.Playground` | Vite app and test suite. |
 
@@ -76,6 +78,10 @@ render effect writes the button's text.
 - [Boundaries](boundaries.md): pending and error views for async reads.
 - [Events and hooks](events.md): handlers, element references, widgets and lent elements.
 - [Document head](document-head.md): titles, meta and link entries owned by components.
+- [Animation](motion.md): typed anime.js parameters, values, eases, staggers and timelines.
+- [Owning and driving animations](motion-reactive.md): `own`, `track`, `scrub`, `drive` and the motion policy.
+- [Motion parts](motion-parts.md): enter, exit, FLIP and signal-driven animation in templates.
+- [Testing and costs](motion-testing.md): a manual anime clock in tests, and the bundle cost of animation.
 - [Mounts and lifetimes](lifetimes.md): mounting, commit modes, failures and disposal.
 - [Elmish components](elmish.md): an `Mvu` loop per component.
 - [Sugar](sugar.md): the free-tag vocabulary, its inference rule and its compile errors.
