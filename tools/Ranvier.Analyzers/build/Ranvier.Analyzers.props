@@ -1,0 +1,6 @@
+<Project>
+    <!-- Evaluated before the project body, so a project's own value wins. An error-promoted finding fails the build. -->
+    <PropertyGroup>
+        <FSharpAnalyzersContinueOnError Condition="'$(FSharpAnalyzersContinueOnError)' == ''">false</FSharpAnalyzersContinueOnError>
+    </PropertyGroup>
+</Project>

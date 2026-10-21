@@ -404,6 +404,8 @@ let tests =
                 let state = createSignal model
 
                 let outer =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createMemo (fun _ -> (createOptionMemo (fun () -> state.Value.Todos |> List.tryHead)).Value)
 
                 Expect.throwsT<InvalidOperationException> (fun () -> outer.Value |> ignore) "the owned-node rule applies"

@@ -378,6 +378,8 @@ let tests =
                 let m =
                     createMemo (fun _ ->
                         (try
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             createEffect ignore
                          with _ ->
                              ())
@@ -397,6 +399,8 @@ let tests =
                 let m =
                     createMemo (fun _ ->
                         (try
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup ignore
                          with _ ->
                              ())
@@ -414,6 +418,8 @@ let tests =
                 let a =
                     createAsync (fun _ _ ->
                         (try
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup ignore
                          with _ ->
                              ())
@@ -433,6 +439,8 @@ let tests =
                     createLookup
                         (fun (_: int) (k: int) ->
                             (try
+                                // Asserts the runtime failure of an owned node created in a pure derivation.
+                                // fsharpanalyzer: ignore-line-next RAN010
                                 onCleanup ignore
                              with _ ->
                                  ())

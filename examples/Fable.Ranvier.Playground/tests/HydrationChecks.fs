@@ -320,6 +320,8 @@ let private queuedRaises () =
 
     let error =
         ServerChecks.failure (fun () ->
+            // Asserts that hydration refuses queued commits.
+            // fsharpanalyzer: ignore-line-next RAN025
             Hydration.hydrateWith (Scheduling.QueuedCommits (Scheduling.CollectAndContinue, ignore)) graph None strict strictOptions host card "a"
             |> ignore)
 
@@ -889,6 +891,8 @@ let private equalShapes () =
     mounted.Dispose ()
 
 let private tableArm =
+    // A client arm whose server render the hydration check rejects.
+    // fsharpanalyzer: ignore-line-next RAN024
     Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.table [||] [| t.tr [||] [| t.td [||] [| t.text "row" |] |] |])
 
 let private rejectable =

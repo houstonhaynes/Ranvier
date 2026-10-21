@@ -124,6 +124,92 @@ System.Console.WriteLine("Package consumer runs with FSharp.Core 8.0.100");
             $fableEntries += $entryPoints[0].FullName
         }
     }
+    if (-not $CheckFable) {
+        # F# consumers of Ranvier.Analyzers. RanvierAnalyze runs the rules through the package's build/ targets and the
+        # fsharp-analyzers tool:
+        # - a consumer whose manifest declares Fable 5.21 reports RAN002, and an error-severity RAN010 fails its build;
+        # - a .NET-only consumer reports neither RAN001 nor RAN002, and RanvierFableAnalyzers=true enables RAN001.
+        Invoke-DotNet pack (Join-Path $repo 'tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj') -c Release -o $feed
+        $analyzerVersion = ([xml](Get-Content -LiteralPath (Join-Path $repo 'tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj') -Raw)).Project.PropertyGroup.Version | Where-Object { $_ }
+        $ranvierVersion = ([xml](Get-Content -LiteralPath (Join-Path $repo 'src/Ranvier/Ranvier.fsproj') -Raw)).Project.PropertyGroup.Version | Where-Object { $_ }
+        function New-AnalyzerConsumer([string] $name, [string] $tools) {
+            $directory = Join-Path $temp $name
+            New-Item -ItemType Directory -Path (Join-Path $directory '.config') | Out-Null
+            Copy-Item (Join-Path $consumer 'NuGet.Config') $directory
+            Copy-Item (Join-Path $repo 'global.json') $directory
+            "{ ""version"": 1, ""isRoot"": true, ""tools"": { ""fsharp-analyzers"": { ""version"": ""0.41.0"", ""commands"": [ ""fsharp-analyzers"" ], ""rollForward"": false }$tools } }" |
+                Set-Content -LiteralPath (Join-Path $directory '.config/dotnet-tools.json')
+            @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RanvierAnalyze>true</RanvierAnalyze>
+    <RestorePackagesPath>$temp/packages</RestorePackagesPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Loops.fs" />
+    <Compile Include="Library.fs" />
+    <Compile Include="Error.fs" Condition="'`$(WithError)' == 'true'" />
+    <PackageReference Include="Ranvier" Version="$ranvierVersion" />
+    <PackageReference Include="Ranvier.Analyzers" Version="$analyzerVersion" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
+"@ | Set-Content -LiteralPath (Join-Path $directory 'AnalyzerConsumer.fsproj')
+            @'
+module Loops
+
+let mutable childSetups = 0
+let setup () = childSetups <- childSetups + 1
+'@ | Set-Content -LiteralPath (Join-Path $directory 'Loops.fs')
+            @'
+module Library
+
+type Policy =
+    | Queue
+    | Drop of int
+
+let queued (policy: Policy) = policy.IsQueue
+
+let snapshot () =
+    let setups = Loops.childSetups
+    Loops.setup ()
+    Loops.childSetups - setups
+'@ | Set-Content -LiteralPath (Join-Path $directory 'Library.fs')
+            @'
+module Error
+
+open Ranvier
+
+let label () = createMemo (fun _ -> onCleanup ignore; 1)
+'@ | Set-Content -LiteralPath (Join-Path $directory 'Error.fs')
+            $directory
+        }
+        function Invoke-AnalyzerBuild([string[]] $arguments) {
+            $output = & dotnet build AnalyzerConsumer.fsproj -c Release @arguments 2>&1 | Out-String
+            [pscustomobject]@{ Output = $output; ExitCode = $LASTEXITCODE }
+        }
+        Push-Location (New-AnalyzerConsumer 'analyzer-consumer-fable' ', "fable": { "version": "5.21.0", "commands": [ "fable" ], "rollForward": false }')
+        try {
+            Invoke-DotNet tool restore
+            $build = Invoke-AnalyzerBuild @()
+            if ($build.ExitCode -ne 0) { throw "The Fable analyzer consumer failed to build:`n$($build.Output)" }
+            if ($build.Output -notmatch 'warning RAN002') { throw "The Fable 5.21 consumer's build reported no RAN002:`n$($build.Output)" }
+            $failing = Invoke-AnalyzerBuild @('-p:WithError=true')
+            if ($failing.ExitCode -eq 0) { throw "An error-severity RAN010 did not fail the analyzer consumer's build:`n$($failing.Output)" }
+            if ($failing.Output -notmatch 'error RAN010') { throw "The failing build reported no RAN010:`n$($failing.Output)" }
+        } finally { Pop-Location }
+        Push-Location (New-AnalyzerConsumer 'analyzer-consumer-dotnet' '')
+        try {
+            Invoke-DotNet tool restore
+            $build = Invoke-AnalyzerBuild @()
+            if ($build.ExitCode -ne 0) { throw "The .NET analyzer consumer failed to build:`n$($build.Output)" }
+            if ($build.Output -match 'RAN00[12]') { throw "The .NET-only consumer's build reported a Fable rule:`n$($build.Output)" }
+            $optedIn = Invoke-AnalyzerBuild @('-p:RanvierFableAnalyzers=true')
+            if ($optedIn.ExitCode -ne 0) { throw "The opted-in analyzer consumer failed to build:`n$($optedIn.Output)" }
+            if ($optedIn.Output -notmatch 'warning RAN001') { throw "RanvierFableAnalyzers=true reported no RAN001:`n$($optedIn.Output)" }
+        } finally { Pop-Location }
+        Write-Host 'Analyzer package consumers: Fable 5.21 reports RAN002, RAN010 fails the build, a .NET-only consumer reports no Fable rule, and the opt-in enables RAN001'
+    }
     if ($CheckFable) {
         & node (Join-Path $repo 'fable/Ranvier.Tests.Fable/Report.mjs') @fableEntries (Join-Path $temp 'fable-compat.md')
         if ($LASTEXITCODE -ne 0) { throw 'Fable package consumer compatibility check failed' }

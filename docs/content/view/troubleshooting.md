@@ -44,6 +44,8 @@ the read under a [boundary](boundaries.md).
 the browser's parser rebuilds. Write the parser's structure, here `table`, `tbody`, `tr`. See
 [Markup the parser would change](../server/rendering.md#markup-the-parser-would-change).
 
+The analyzers report this at build time: [RAN024](../analyzers/ran024.md).
+
 **"Hydration mismatch at 0/1: expected &lt;button&gt;, found span"** (`HydrationMismatchException`,
 under `Strict`, or reported otherwise): the server HTML differs from the client's template. Check that
 the client hydrates the same definition with the server's props, the same `IdPrefix`, and no `if` that
@@ -53,8 +55,12 @@ depends on the target. See [Mismatches](../server/hydration.md#mismatches).
 function"** (Fable Debug builds): a definition (`armOf`, a declaration helper, `Component.define`) is
 created inside an arms function or a list read. Bind it with `let` before the template.
 
+The analyzers report this at build time: [RAN022](../analyzers/ran022.md).
+
 **"Hydration supports synchronous commits only"** (`NotSupportedException`): `hydrateWith` was given
 `QueuedCommits`. Hydrate with `SynchronousCommits`.
+
+The analyzers report this at build time: [RAN025](../analyzers/ran025.md).
 
 **`InvalidOperationException` from `CreateId`**: the id was requested after the instance's setup
 returned. Call `setup.CreateId ()` in setup and store the id in the instance.
@@ -82,10 +88,14 @@ Move it to the root. See [Leaving](motion-parts.md#leaving).
 children"**: an element has two of `Unsafe.html` and `Hooks.widget`, or one of them with children.
 Give the content its own element.
 
+The analyzers report this at build time: [RAN023](../analyzers/ran023.md).
+
 ## Symptoms
 
 **An arm remounts on every update.** Its definition is created inside the arms function or read from a
 `static member` property. Bind it with `let`. See [Conditional arms](arms.md).
+
+The analyzers report this at build time: [RAN022](../analyzers/ran022.md).
 
 **A row keeps showing an old value after its item was replaced.** The list uses `forEachFixed`, whose
 row keeps the item it was created for. Use `forEach`, or hold the changing value in a signal on the
@@ -93,6 +103,8 @@ item. See [Lists and keyed rows](collections.md).
 
 **A child does not follow a parent value.** `render`'s props reader runs once per instance. Pass the
 child a `Signal`, a `Memo` or a reader.
+
+The analyzers report this at build time: [RAN020](../analyzers/ran020.md).
 
 **Several effects run for one click.** Handlers run unbatched. Wrap the handler's writes in
 `Api.batch`. See [Events and hooks](events.md).

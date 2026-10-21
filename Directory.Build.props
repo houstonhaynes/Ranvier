@@ -31,4 +31,12 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
+    <!--
+    `RanvierAnalyze=true` runs the Ranvier analyzers after each compile; Directory.Build.targets sets the flags. The
+    item condition is evaluated after every property, so a project file can set RanvierAnalyze itself.
+    -->
+    <ItemGroup Condition="'$(RanvierAnalyze)' == 'true'">
+        <PackageReference Include="FSharp.Analyzers.Build" Version="0.5.0" PrivateAssets="all" IncludeAssets="build" />
+    </ItemGroup>
+
 </Project>

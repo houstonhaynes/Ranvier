@@ -1,0 +1,13 @@
+<Project>
+    <!-- RanvierAnalyze=true runs the analyzers after each compile; `dotnet msbuild -t:AnalyzeFSharpProject` runs them on
+         demand. -->
+    <PropertyGroup>
+        <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) --analyzers-path &quot;$(MSBuildThisFileDirectory)../analyzers/dotnet/fs&quot;</FSharpAnalyzersOtherFlags>
+        <RunAnalyzersDuringBuild Condition="'$(RanvierAnalyze)' == 'true'">true</RunAnalyzersDuringBuild>
+    </PropertyGroup>
+    <!-- RanvierFableAnalyzers=true enables RAN001 and RAN002 in a project that Fable compiles without a tool manifest
+         entry, such as a global or dnx Fable install. -->
+    <PropertyGroup Condition="'$(RanvierFableAnalyzers)' == 'true'">
+        <DefineConstants>$(DefineConstants);RANVIER_FABLE_ANALYZERS</DefineConstants>
+    </PropertyGroup>
+</Project>

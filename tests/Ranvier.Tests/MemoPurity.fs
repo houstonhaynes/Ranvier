@@ -29,6 +29,8 @@ let tests =
                 use g = new Graph ()
                 use _ = g.Activate ()
                 let s = createSignal 1
+                // Asserts the runtime failure of an owned node created in a pure derivation.
+                // fsharpanalyzer: ignore-line-next RAN010
                 let m = createMemo (fun _ -> (createMemo (fun _ -> s.Value)).Value)
 
                 let ex = invalidOp (fun () -> m.Value |> ignore) "creation fails the run"
@@ -43,6 +45,8 @@ let tests =
 
                 let m =
                     createMemo (fun _ ->
+                        // Asserts the runtime failure of an owned node created in a pure derivation.
+                        // fsharpanalyzer: ignore-line-next RAN010
                         onCleanup (fun () -> cleaned <- cleaned + 1)
                         s.Value)
 
@@ -60,6 +64,8 @@ let tests =
 
                 let m =
                     createMemo (fun _ ->
+                        // Asserts the runtime failure of an owned node created in a pure derivation.
+                        // fsharpanalyzer: ignore-line-next RAN010
                         createEffect (fun () -> ran <- true)
                         1)
 
@@ -73,6 +79,8 @@ let tests =
                 let s = createSignal 1
 
                 let m =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createMemo (fun _ -> (untrack (fun () -> createMemo (fun _ -> s.Value))).Value)
 
                 Expect.throwsT<InvalidOperationException> (fun () -> m.Value |> ignore) "untrack does not hide a creation"
@@ -85,6 +93,8 @@ let tests =
                 let m =
                     createMemo (fun _ ->
                         try
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             createRoot (fun _ -> 1)
                         with _ ->
                             0)
@@ -100,6 +110,8 @@ let tests =
                 let m =
                     createMemo (fun _ ->
                         if create.Value then
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup ignore
 
                         42)
@@ -174,6 +186,8 @@ let tests =
 
                 let a =
                     createAsync (fun _ _ ->
+                        // Asserts the runtime failure of an owned node created in a pure derivation.
+                        // fsharpanalyzer: ignore-line-next RAN010
                         onCleanup ignore
                         completed 1)
 
@@ -190,6 +204,8 @@ let tests =
                     createLookup
                         (fun (sel: int) (k: int) ->
                             if k = 2 then
+                                // Asserts the runtime failure of an owned node created in a pure derivation.
+                                // fsharpanalyzer: ignore-line-next RAN010
                                 onCleanup ignore
 
                             sel = k)
@@ -210,6 +226,8 @@ let tests =
                     createLookup
                         (fun (sel: int) (k: int) ->
                             if k = 2 then
+                                // Asserts the runtime failure of an owned node created in a pure derivation.
+                                // fsharpanalyzer: ignore-line-next RAN010
                                 onCleanup ignore
 
                             sel = k)

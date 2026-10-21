@@ -48,3 +48,7 @@ test('a master push is classified by its diff against the parent', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+test('an analyzer rule page runs the analyzer suite, which compiles its examples', () => {
+  assert.equal(docsOnly(['docs/content/analyzers/ran001.md']), false);
+  assert.equal(docsOnly(['docs/content/analyzers/index.md', 'docs/content/guide/memos.md']), false);
+});

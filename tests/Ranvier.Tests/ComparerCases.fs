@@ -121,6 +121,8 @@ let pureMemoRemainsPure () =
     graph.Run (fun () ->
         let memo =
             createMemoWithComparer sameInt (fun _ ->
+                // Asserts the runtime failure of an owned node created in a pure derivation.
+                // fsharpanalyzer: ignore-line-next RAN010
                 onCleanup ignore
                 1)
 

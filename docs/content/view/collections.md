@@ -62,6 +62,8 @@ immutable items, and `forEachFixed` for items that hold their own signals.
 - Duplicate keys fail before any row changes.
 - The items reader is tracked: the list re-runs when a signal it read changes.
 
+The analyzers report this at build time: [RAN021](../analyzers/ran021.md).
+
 ## Rows and the outer instance
 
 A row's bindings receive the row's instance only. A row reads the enclosing instance's state through

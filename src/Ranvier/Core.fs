@@ -4503,7 +4503,11 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
                     not disposed
                     && (queued = 2 || freshness <> Freshness.Clean)
                 then
-                    if outcome.IsCompleted then
+                    if
+                        (match outcome with
+                         | Platform.FlightOutcome.Completed _ -> true
+                         | _ -> false)
+                    then
                         discardAtSettle gen
                     else
                         // A Check is a discarded change only once a source resolves it to Dirty.
@@ -4560,7 +4564,16 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             // A cancellation of the current flight is a failure.
             | Platform.FlightOutcome.Faulted ex
             | Platform.FlightOutcome.Canceled ex ->
-                Tracer.FlightSettled (graph, id, gen, (if outcome.IsCanceled then 2 else 1), 0, ex)
+                Tracer.FlightSettled (
+                    graph,
+                    id,
+                    gen,
+                    (match outcome with
+                     | Platform.FlightOutcome.Canceled _ -> 2
+                     | _ -> 1),
+                    0,
+                    ex
+                )
                 // The owner link is the one reference to this node in reach of a let-bound function.
                 failure <- graph.FailureOf (ex, (link.Child :?> INode), null)
                 status <- Status.Error

@@ -372,6 +372,8 @@ let tests =
                 s.Value <- 2
                 Expect.equal m.Value 3 "folded"
 
+                // Asserts the runtime failure of an owned node created in a pure derivation.
+                // fsharpanalyzer: ignore-line-next RAN010
                 let pureMemo = Memo<int>(g, 0, (fun _ -> (Memo<int>(g, (fun _ -> 1))).Value))
                 Expect.throws (fun () -> pureMemo.Value |> ignore) "a pure one raises"
             }

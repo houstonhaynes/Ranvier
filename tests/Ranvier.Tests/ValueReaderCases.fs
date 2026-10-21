@@ -131,6 +131,8 @@ let purityFailuresDoNotPublish () =
             createIndexProjection
                 (fun _ ->
                     if violate.Value then
+                        // Asserts the runtime failure of an owned node created in a pure derivation.
+                        // fsharpanalyzer: ignore-line-next RAN010
                         onCleanup ignore
 
                     if violate.Value then 99 else 1)

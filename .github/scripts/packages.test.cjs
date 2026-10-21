@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), zlib = require('node:zlib');
-const { traceMarker, projectPackage, expectedPackages, zipEntries, checkPackage, check } = require('./packages.cjs');
+const { traceMarker, projectPackage, expectedPackages, zipEntries, checkPackage, checkAnalyzerPackage, check } = require('./packages.cjs');
 
 // A zip archive of the entries, the even-indexed ones deflated and the rest stored.
 function zip(entries) {
@@ -113,4 +113,24 @@ test('a directory must hold exactly the expected packages', () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+test('an analyzer package holds its assembly under analyzers/dotnet/fs and its build assets', () => {
+  const expected = { id: 'Ranvier.Analyzers', version: '0.1.0-preview.1', assembly: 'Ranvier.Analyzers', analyzer: true };
+  const good = zip({
+    'Ranvier.Analyzers.nuspec': '<package><metadata><id>Ranvier.Analyzers</id><version>0.1.0-preview.1</version></metadata></package>',
+    'analyzers/dotnet/fs/Ranvier.Analyzers.dll': 'x',
+    'build/Ranvier.Analyzers.props': '<Project />',
+    'build/Ranvier.Analyzers.targets': '<Project />',
+  });
+  assert.deepEqual(checkAnalyzerPackage(good, expected), []);
+  const withLib = zip({
+    'Ranvier.Analyzers.nuspec': '<package><metadata><id>Ranvier.Analyzers</id><version>0.1.0-preview.1</version></metadata></package>',
+    'lib/net10.0/Ranvier.Analyzers.dll': 'x',
+  });
+  assert.deepEqual(checkAnalyzerPackage(withLib, expected), [
+    'Ranvier.Analyzers: has lib/ entries',
+    'Ranvier.Analyzers: missing analyzers/dotnet/fs/Ranvier.Analyzers.dll',
+    'Ranvier.Analyzers: missing build/Ranvier.Analyzers.props',
+    'Ranvier.Analyzers: missing build/Ranvier.Analyzers.targets',
+  ]);
 });

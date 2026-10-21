@@ -80,6 +80,8 @@ let private widgetChildrenAtDefinition () =
     equal
         (true, true)
         (raisesArgument (fun () ->
+            // Asserts that the definition refuses the content parts.
+            // fsharpanalyzer: ignore-line-next RAN023
             Component.define (fun _ () -> ()) (fun t -> t.div [| t.Hooks.widget (fun _ (_: HTMLDivElement) -> ignore) |] [| t.text "child" |])
             |> ignore),
          raisesArgument (fun () ->
@@ -87,6 +89,8 @@ let private widgetChildrenAtDefinition () =
                  t.div
                      [|
                          t.Hooks.widget (fun _ (_: HTMLDivElement) -> ignore)
+                         // Asserts that the definition refuses the content parts.
+                         // fsharpanalyzer: ignore-line-next RAN023
                          t.Hooks.widget (fun _ (_: HTMLDivElement) -> ignore)
                      |]
                      [||])

@@ -213,6 +213,8 @@ let voidChildren =
     Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.element (HtmlTag "br") [||] [| t.text "x" |] |])
 
 let rowInTable =
+    // A fixture for the server render's content-model refusal.
+    // fsharpanalyzer: ignore-line-next RAN024
     Component.define (fun _ () -> ()) (fun t -> t.table [||] [| t.tr [||] [| t.td [||] [| t.text "x" |] |] |])
 
 type ComponentLine =

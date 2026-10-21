@@ -1,10 +1,10 @@
-// Paths whose changes affect no build, test or measurement. The view sugar README is the exception: CheckDocs compiles its samples. Formatting still checks the F# sources under docs/.
+// Paths whose changes affect no build, test or measurement. The view sugar README and the analyzer rule pages are the exceptions: CheckDocs compiles the README's samples, and the analyzer suite compiles each rule page's examples. Formatting still checks the F# sources under docs/.
 // docs/maps holds the signal map model and its tests, which the .NET job runs.
 const docsPatterns = [
-  /^docs\/(?!maps\/)/,
+  /^docs\/(?!maps\/|content\/analyzers\/)/,
   /^brand\//,
   /^\.claude\//,
-  /^(?!experiments\/Ranvier\.View\.Portable\/README\.md$).*\.md$/i,
+  /^(?!experiments\/Ranvier\.View\.Portable\/README\.md$|docs\/content\/analyzers\/).*\.md$/i,
   /^LICENSE[^/]*$/,
   /^\.github\/FUNDING\.yml$/,
 ];

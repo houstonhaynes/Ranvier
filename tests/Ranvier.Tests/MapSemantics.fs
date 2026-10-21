@@ -305,6 +305,8 @@ let tests =
                 let source = createSignal users
 
                 let proj =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createProjection _.Id (fun u -> (createMemo (fun _ -> u.Name)).Value) (fun () -> source.Value)
 
                 let ex = Expect.throwsC (fun () -> proj.Get 1 |> ignore) id
@@ -324,6 +326,8 @@ let tests =
                     createProjection
                         _.Id
                         (fun (u: User) ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             (createAsync (fun _ _ -> flight.Task)).Value
                             + u.Name)
                         (fun () -> source.Value)
@@ -343,6 +347,8 @@ let tests =
                     createProjection
                         _.Id
                         (fun (u: User) ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             createEffect (fun () ->
                                 tick.Value |> ignore
                                 effectRuns.Value <- effectRuns.Value + 1)
@@ -368,6 +374,8 @@ let tests =
                         _.Id
                         (fun (u: User) ->
                             try
+                                // Asserts the runtime failure of an owned node created in a pure derivation.
+                                // fsharpanalyzer: ignore-line-next RAN010
                                 (createMemo (fun _ -> u.Name)).Value
                             with _ ->
                                 u.Name)
@@ -422,6 +430,8 @@ let tests =
                         (fun (u: User) ->
                             if u.Name = "x" then
                                 try
+                                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                                    // fsharpanalyzer: ignore-line-next RAN010
                                     (createMemo (fun _ -> u.Name)).Value
                                 with _ ->
                                     u.Name
@@ -445,6 +455,8 @@ let tests =
                     createProjection
                         _.Id
                         (fun (u: User) ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup (fun () -> cleaned <- cleaned + 1)
                             u.Name)
                         (fun () -> source.Value)
@@ -464,6 +476,8 @@ let tests =
                 let source = createSignal users
 
                 let proj =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createProjectionWith _.Id (fun item -> fun () -> (createMemo (fun _ -> (item ()).Name)).Value) (fun () -> source.Value)
 
                 let ex = Expect.throwsC (fun () -> proj.Get 1 |> ignore) id
@@ -504,6 +518,8 @@ let tests =
                         (fun item ->
                             let m =
                                 createMemoWith (fun _ ->
+                                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                                    // fsharpanalyzer: ignore-line-next RAN010
                                     let inner = createMemo (fun _ -> (item ()).Name)
                                     inner.Value)
 
@@ -607,6 +623,8 @@ let tests =
                             let m =
                                 createMemoWith (fun _ ->
                                     let id = (item ()).Id
+                                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                                    // fsharpanalyzer: ignore-line-next RAN010
                                     onCleanup (fun () -> cleaned.Add id)
                                     id)
 
@@ -627,6 +645,8 @@ let tests =
                 let source = createSignal users
 
                 let proj =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createProjection _.Id (fun (u: User) -> (untrack (fun () -> createMemo (fun _ -> u.Name))).Value) (fun () -> source.Value)
 
                 Expect.throwsT<InvalidOperationException> (fun () -> proj.Get 1 |> ignore) "untrack does not hide a creation"
@@ -996,6 +1016,8 @@ let tests =
                 let source = createSignal users
 
                 let proj =
+                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                    // fsharpanalyzer: ignore-line-next RAN010
                     createProjection _.Id (fun (u: User) -> (createMemo (fun _ -> u.Name)).Value) (fun () -> source.Value)
 
                 let first = Expect.throwsC (fun () -> proj.Get 1 |> ignore) id
@@ -1106,6 +1128,8 @@ let tests =
                                 with _ ->
                                     "fallback"
                             else
+                                // Asserts the runtime failure of an owned node created in a pure derivation.
+                                // fsharpanalyzer: ignore-line-next RAN010
                                 onCleanup ignore
                                 "two")
                         (fun () -> source.Value)

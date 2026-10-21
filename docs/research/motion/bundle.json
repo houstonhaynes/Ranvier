@@ -2,27 +2,27 @@
   "glue": {
     "presence": {
       "motion": {
-        "raw": 244555,
-        "gzip": 73744
+        "raw": 244533,
+        "gzip": 73709
       },
       "handWritten": {
-        "raw": 242715,
-        "gzip": 73013
+        "raw": 242693,
+        "gzip": 72974
       },
-      "deltaGzip": 731,
+      "deltaGzip": 735,
       "budgetGzip": 900,
       "withinBudget": true
     },
     "flip": {
       "motion": {
-        "raw": 272834,
-        "gzip": 81609
+        "raw": 272812,
+        "gzip": 81578
       },
       "handWritten": {
-        "raw": 270528,
-        "gzip": 81030
+        "raw": 270506,
+        "gzip": 80998
       },
-      "deltaGzip": 579,
+      "deltaGzip": 580,
       "budgetGzip": 600,
       "withinBudget": true
     }

@@ -208,6 +208,8 @@ let tests =
                 g.Run (fun () ->
                     createEffectOn
                         (fun () ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             createEffect ignore
                             s.Value)
                         (fun v -> seen.Add v))

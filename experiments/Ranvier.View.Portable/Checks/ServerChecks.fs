@@ -1664,24 +1664,54 @@ let private spanChild =
 let private contentModel () =
     let cases =
         [
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun (t: TemplateBuilder<unit>) -> t.table [||] [| t.tr [||] [| t.td [||] [||] |] |]), restructures "table-row" "table/tr"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.div [||] [| t.tbody [||] [||] |]), restructures "table-section" "div/tbody"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.table [||] [| t.tbody [||] [| t.td [||] [||] |] |]), restructures "table-cell" "table/tbody/td"
             (fun t -> t.table [||] [| t.element (HtmlTag "col") [||] [||] |]), restructures "table-column" "table/col"
             (fun t -> t.table [||] [| t.text "x" |]), restructures "table-foster" "table/#text"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.table [||] [| t.tbody [||] [| t.tr [||] [| t.div [||] [||] |] |] |]), restructures "table-foster" "table/tbody/tr/div"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.p [||] [| t.span [||] [| t.div [||] [||] |] |]), restructures "paragraph-close" "p/span/div"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.p [||] [| t.li [||] [||] |]), restructures "paragraph-close" "p/li"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.a [||] [| t.span [||] [| t.a [||] [||] |] |]), restructures "nested-anchor" "a/span/a"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.form [||] [| t.div [||] [| t.form [||] [||] |] |]), restructures "nested-form" "form/div/form"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.select [||] [| t.div [||] [||] |]), restructures "select-content" "select/div"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.textarea [||] [| t.span [||] [||] |]), restructures "rcdata-content" "textarea/span"
             (fun t -> t.textarea [||] [| t.render spanChild (fun _ -> ()) |]), restructures "rcdata-content" "textarea/span"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.table [||] [| t.element (HtmlTag "colgroup") [||] [| t.div [||] [||] |] |]), restructures "table-foster" "table/colgroup/div"
             (fun t -> t.table [||] [| t.element (HtmlTag "colgroup") [||] [| t.text "x" |] |]), restructures "table-foster" "table/colgroup/#text"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.select [||] [| t.option [||] [| t.option [||] [||] |] |]), restructures "select-content" "select/option/option"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.ul [||] [| t.li [||] [| t.li [||] [||] |] |]), restructures "nested-list-item" "ul/li/li"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.ul [||] [| t.li [||] [| t.div [||] [| t.li [||] [||] |] |] |]), restructures "nested-list-item" "ul/li/div/li"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.ul [||] [| t.li [||] [| t.span [||] [| t.li [||] [||] |] |] |]), restructures "nested-list-item" "ul/li/span/li"
             (fun t -> t.element (HtmlTag "dl") [||] [| t.element (HtmlTag "dd") [||] [| t.element (HtmlTag "dt") [||] [||] |] |]),
             restructures "nested-description" "dl/dd/dt"
@@ -1695,8 +1725,14 @@ let private contentModel () =
             restructures "nested-description" "dl/dt/div/dd"
             (fun t -> t.element (HtmlTag "dl") [||] [| t.element (HtmlTag "dd") [||] [| t.element (HtmlTag "dd") [||] [||] |] |]),
             restructures "nested-description" "dl/dd/dd"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.h1 [||] [| t.h2 [||] [||] |]), restructures "nested-heading" "h1/h2"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.button [||] [| t.button [||] [||] |]), restructures "nested-button" "button/button"
+            // Asserts the server render's content-model refusal.
+            // fsharpanalyzer: ignore-line-next RAN024
             (fun t -> t.button [||] [| t.span [||] [| t.button [||] [||] |] |]), restructures "nested-button" "button/span/button"
         ]
 

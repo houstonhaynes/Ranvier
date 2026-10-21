@@ -136,6 +136,8 @@ let tests =
                         (fun sel k ->
                             if k = 1 then
                                 (try
+                                    // Asserts the runtime failure of an owned node created in a pure derivation.
+                                    // fsharpanalyzer: ignore-line-next RAN010
                                     createRoot (fun _ -> ()) |> ignore
                                  with _ ->
                                      ())
@@ -163,6 +165,8 @@ let tests =
                     createLookup
                         (fun sel k -> sel + k)
                         (fun prev next ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup ignore
                             [ prev; next ])
                         (fun () -> s.Value)
@@ -197,6 +201,8 @@ let tests =
                     createLookup
                         (fun sel k -> sel + k)
                         (fun prev next ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             onCleanup (fun () -> cleaned <- cleaned + 1)
                             [ prev; next ])
                         (fun () -> s.Value)

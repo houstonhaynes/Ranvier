@@ -410,6 +410,8 @@ let tests =
                 let bad =
                     graph.Run (fun () ->
                         Api.createMemo (fun _ ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             Api.createStream (fun _ -> feed.Source) |> ignore
                             0))
 

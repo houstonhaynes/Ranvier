@@ -102,8 +102,8 @@ jobs:
         run: ./artifacts/aot/Ranvier.AotSmoke
 
   # The publish command's release pipeline with the push replaced by a listing: builds, packs every source project
-  # untraced and traced, then checks each package's id, version, lib frameworks and trace build. The .NET tests job
-  # runs the suites, so --skip-tests leaves them out here.
+  # untraced and traced and the analyzers, then checks each package's id, version, lib frameworks and trace build, and
+  # the analyzer package's layout. The .NET tests job runs the suites, so --skip-tests leaves them out here.
   packages:
     name: Packages
     needs: changes
@@ -120,7 +120,7 @@ jobs:
       - name: Pack and dry-publish
         run: dotnet fsi build.fsx -- publish --dry-publish --skip-tests
       - name: Check the packages
-        run: node .github/scripts/packages.cjs bin src
+        run: node .github/scripts/packages.cjs bin src tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj
 
   format:
     name: Formatting
@@ -366,11 +366,99 @@ jobs:
             examples/Ranvier.Motion/test-results/
           if-no-files-found: ignore
 
+  # Runs the Ranvier analyzers' unit tests, then the analyzers over the repository's projects with every RAN code
+  # promoted to an error: any finding fails the job.
+  # The analyzer suite in three shards whose filters partition it: the Fable rules with the shared tests, the core
+  # rules, and the view rules.
+  analyzer-tests:
+    name: Analyzer tests (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: fable
+            filter: FullyQualifiedName!~RAN01&FullyQualifiedName!~RAN02
+          - shard: core
+            filter: FullyQualifiedName~RAN01
+          - shard: view
+            filter: FullyQualifiedName~RAN02
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-analyzer-tests-${{ hashFiles('Directory.Packages.props', 'tools/**/*.fsproj', 'src/**/*.fsproj', 'experiments/**/*.fsproj') }}
+          restore-keys: nuget-analyzer-tests-
+      - name: Test the analyzers
+        run: dotnet test tools/Ranvier.Analyzers.Tests -c Release --filter "${{ matrix.filter }}"
+
+  # The repository run, one group of analyzed projects per leg (build.fsx Spec.analyzedGroups): each leg builds its
+  # projects once, in parallel, and the CLI reads those outputs.
+  analyzers:
+    name: Analyzers (${{ matrix.group }})
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [library, view, examples]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-analyzers-${{ matrix.group }}-${{ hashFiles('Directory.Packages.props', '**/*.fsproj') }}
+          restore-keys: nuget-analyzers-${{ matrix.group }}-
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Build the group and run the analyzers over it
+        run: dotnet fsi build.fsx -- analyze --group ${{ matrix.group }} --build
+      - name: Annotate the findings
+        if: always()
+        run: node .github/scripts/sarif-annotations.cjs artifacts/analyzers
+      - name: Upload the SARIF report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: analyzers-sarif-${{ matrix.group }}
+          path: artifacts/analyzers/*.sarif
+
+  # The external facts the analyzers describe: Fable Release's inlining of module-mutable snapshots (RAN001), the Fable
+  # precompile failure on union testers (RAN002), and the MSBuild integration. A failure means a rule needs retiring or
+  # rescoping.
+  analyzer-truth:
+    name: Analyzer truth fixtures
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Check the truth fixtures
+        run: dotnet fsi tools/Ranvier.Analyzers.Truth/Truth.fsx
+
   # The one CI check that branch rules require: it fails when any job failed or was cancelled, and passes when the
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, analyzer-tests, analyzers, analyzer-truth]
     if: always()
     runs-on: ubuntu-latest
     steps:

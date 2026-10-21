@@ -933,6 +933,8 @@ let tests =
                     createProjection
                         id
                         (fun _ ->
+                            // Asserts the runtime failure of an owned node created in a pure derivation.
+                            // fsharpanalyzer: ignore-line-next RAN010
                             let flight = createAsyncSource<int>()
                             created.Add flight
                             flight.Value)

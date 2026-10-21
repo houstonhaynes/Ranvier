@@ -1,5 +1,6 @@
 // The packages `build.fsx -- publish` pushes: for each src/<Name>/<Name>.fsproj, `<PackageId>` and `<PackageId>.Traced`
 // at the project's `<Version>`, each with a lib/<tfm>/<AssemblyName>.dll per `<TargetFrameworks>` entry.
+// Each analyzer project passed on the command line packs once, with its assembly under analyzers/dotnet/fs.
 const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
@@ -83,9 +84,25 @@ function checkPackage(buffer, expected) {
   return problems;
 }
 
-// The problems of a package directory against the packable projects under src; empty when it holds exactly the expected
-// packages.
-function check(packagesDirectory, sourceDirectory) {
+// The problems of an analyzer .nupkg: no lib/ entries, the assembly under analyzers/dotnet/fs, and the build assets.
+function checkAnalyzerPackage(buffer, expected) {
+  const problems = [];
+  const entries = zipEntries(buffer);
+  const nuspec = [...entries.keys()].find(name => !name.includes('/') && name.endsWith('.nuspec'));
+  if (!nuspec) return [`${expected.id}: no .nuspec`];
+  const manifest = entries.get(nuspec)().toString('utf8');
+  if (property(manifest, 'id') !== expected.id) problems.push(`${expected.id}: nuspec id is ${property(manifest, 'id')}`);
+  if (property(manifest, 'version') !== expected.version) problems.push(`${expected.id}: nuspec version is ${property(manifest, 'version')}`);
+  if ([...entries.keys()].some(name => name.startsWith('lib/'))) problems.push(`${expected.id}: has lib/ entries`);
+  for (const file of [`analyzers/dotnet/fs/${expected.assembly}.dll`, `build/${expected.id}.props`, `build/${expected.id}.targets`]) {
+    if (!entries.has(file)) problems.push(`${expected.id}: missing ${file}`);
+  }
+  return problems;
+}
+
+// The problems of a package directory against the packable projects under src and the analyzer projects; empty when
+// it holds exactly the expected packages.
+function check(packagesDirectory, sourceDirectory, analyzerProjects = []) {
   const projects = fs.readdirSync(sourceDirectory, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`)))
     .map(entry => ({ name: entry.name, xml: fs.readFileSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`), 'utf8') }))
@@ -93,9 +110,13 @@ function check(packagesDirectory, sourceDirectory) {
     .map(({ name, xml }) => projectPackage(xml, name));
   if (projects.length === 0) return [`no project under ${sourceDirectory}`];
   const expected = expectedPackages(projects);
+  const analyzers = new Map(analyzerProjects.map(file => {
+    const pkg = { ...projectPackage(fs.readFileSync(file, 'utf8'), path.basename(file, '.fsproj')), analyzer: true };
+    return [`${pkg.id}.${pkg.version}.nupkg`, pkg];
+  }));
   const files = fs.existsSync(packagesDirectory) ? fs.readdirSync(packagesDirectory) : [];
   const problems = [];
-  for (const file of files.filter(f => f.endsWith('.nupkg') && !expected.has(f))) problems.push(`unexpected package ${file}`);
+  for (const file of files.filter(f => f.endsWith('.nupkg') && !expected.has(f) && !analyzers.has(f))) problems.push(`unexpected package ${file}`);
   for (const [file, pkg] of expected) {
     if (!files.includes(file)) {
       problems.push(`missing package ${file}`);
@@ -103,15 +124,19 @@ function check(packagesDirectory, sourceDirectory) {
     }
     problems.push(...checkPackage(fs.readFileSync(path.join(packagesDirectory, file)), pkg));
   }
+  for (const [file, pkg] of analyzers) {
+    if (!files.includes(file)) problems.push(`missing package ${file}`);
+    else problems.push(...checkAnalyzerPackage(fs.readFileSync(path.join(packagesDirectory, file)), pkg));
+  }
   return problems;
 }
 
-module.exports = { traceMarker, projectPackage, expectedPackages, zipEntries, checkPackage, check };
+module.exports = { traceMarker, projectPackage, expectedPackages, zipEntries, checkPackage, checkAnalyzerPackage, check };
 
 if (require.main === module) {
-  // node packages.cjs <packages directory> <src directory>: exits non-zero listing each problem.
-  const [packagesDirectory = 'bin', sourceDirectory = 'src'] = process.argv.slice(2);
-  const problems = check(packagesDirectory, sourceDirectory);
+  // node packages.cjs <packages directory> <src directory> [analyzer .fsproj ...]: exits non-zero listing each problem.
+  const [packagesDirectory = 'bin', sourceDirectory = 'src', ...analyzerProjects] = process.argv.slice(2);
+  const problems = check(packagesDirectory, sourceDirectory, analyzerProjects);
   for (const problem of problems) console.error(problem);
   if (problems.length > 0) process.exit(1);
   console.log(`Packages in ${packagesDirectory} match the projects in ${sourceDirectory}.`);

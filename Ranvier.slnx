@@ -48,6 +48,8 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Ranvier.Dom.Generate/Ranvier.Dom.Generate.fsproj" />
+    <Project Path="tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj" />
+    <Project Path="tools/Ranvier.Analyzers.Tests/Ranvier.Analyzers.Tests.fsproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Ranvier/Ranvier.fsproj" />

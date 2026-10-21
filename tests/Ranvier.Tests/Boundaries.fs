@@ -374,6 +374,8 @@ let tests =
                 let seen = ResizeArray<int>()
 
                 createEffect (fun () ->
+                    // Asserts the flight restarted by an owner that recreates its async value.
+                    // fsharpanalyzer: ignore-line-next RAN011
                     let a =
                         createAsync (fun _ _ ->
                             let flight = TaskCompletionSource<int>()
@@ -398,6 +400,8 @@ let tests =
 
                 let m =
                     createMemoWith (fun _ ->
+                        // Asserts the flight restarted by an owner that recreates its async value.
+                        // fsharpanalyzer: ignore-line-next RAN011
                         let a =
                             createAsync (fun _ _ ->
                                 let flight = TaskCompletionSource<int>()

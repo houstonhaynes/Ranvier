@@ -192,6 +192,28 @@ let theme =
             ]
         >> Theme.menu "fable" [ Menu.section "Fable" [ Menu.page "fable/index.md" ] ]
         >> Theme.menu
+            "analyzers"
+            [
+                Menu.section
+                    "Analyzers"
+                    [
+                        Menu.page "analyzers/index.md"
+                        Menu.page "analyzers/ran001.md"
+                        Menu.page "analyzers/ran002.md"
+                        Menu.page "analyzers/ran010.md"
+                        Menu.page "analyzers/ran011.md"
+                        Menu.page "analyzers/ran012.md"
+                        Menu.page "analyzers/ran013.md"
+                        Menu.page "analyzers/ran015.md"
+                        Menu.page "analyzers/ran020.md"
+                        Menu.page "analyzers/ran021.md"
+                        Menu.page "analyzers/ran022.md"
+                        Menu.page "analyzers/ran023.md"
+                        Menu.page "analyzers/ran024.md"
+                        Menu.page "analyzers/ran025.md"
+                    ]
+            ]
+        >> Theme.menu
             "blog"
             [
                 Menu.section "Blog" [ Menu.page "blog/index.md"; Menu.page "blog/desktop-adaptive.md" ]

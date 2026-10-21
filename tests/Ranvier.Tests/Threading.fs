@@ -149,6 +149,8 @@ let private holdFlush (context: SynchronizationContext) (g: Graph) : HeldFlush =
                     release.Wait (TimeSpan.FromSeconds 5.0) |> ignore)))
 
     let worker =
+        // The worker runs under the Serialised graph's synchronisation context, which the graph accepts.
+        // fsharpanalyzer: ignore-line-next RAN013
         Thread ((fun () -> within context (fun () -> trigger.Value <- 1)), IsBackground = true)
 
     worker.Start ()
@@ -489,6 +491,8 @@ let tests =
                         (fun () ->
                             if inFlush.Wait timeout then
                                 try
+                                    // Asserts that an off-thread write during a flush raises.
+                                    // fsharpanalyzer: ignore-line-next RAN013
                                     target.Value <- 1
                                 with ex ->
                                     writeError.Value <- ex

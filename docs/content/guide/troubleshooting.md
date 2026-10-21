@@ -92,6 +92,8 @@ on that thread and leaves the work queued.
 thread. On a thread with a `SynchronizationContext` (a UI thread), the graph posts the drain to that
 context and `Pump` is unnecessary.
 
+The analyzers report this at build time: [RAN013](../analyzers/ran013.md).
+
 :::details Example
 
 ```fsharp
@@ -196,6 +198,8 @@ and it fails with this message even when the body then throws an exception of it
 **Fix.** Use `createMemoWith`, or `Memo (graph, compute, true)`, when the memo creates nodes on
 purpose. Its nodes and cleanups are disposed before each re-run and with the memo. Otherwise create
 the node outside the memo and read it inside.
+
+The analyzers report this at build time: [RAN010](../analyzers/ran010.md).
 
 :::details Example
 
@@ -511,6 +515,8 @@ inside a continuation is untracked.
 
 **Fix.** Read every reactive value before the first `await` and bind it to a local.
 
+The analyzers report this at build time: [RAN012](../analyzers/ran012.md).
+
 `pumpUntil` is the helper defined in [Async and pending](async-memos.md).
 
 :::details Example
@@ -555,6 +561,8 @@ re-run. The settle wakes the owner, and the re-run disposes the settled value an
 with a new flight.
 
 **Fix.** Create the async value outside the owner and read it inside the body.
+
+The analyzers report this at build time: [RAN011](../analyzers/ran011.md).
 
 :::details Example
 

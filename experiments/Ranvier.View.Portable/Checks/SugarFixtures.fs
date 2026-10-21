@@ -168,6 +168,8 @@ let definitionCounter = definitionGraph.Run (fun () -> Api.createSignal 1)
 
 /// <summary>A body line that reads a module-level signal while the definition is built.</summary>
 let definitionTimeRead =
+    // A fixture for the snapshot that a build-time read takes.
+    // fsharpanalyzer: ignore-line-next RAN020
     Component.template (fun _ () -> ()) (span () { string definitionCounter.Value })
 
 // tagsExplicit and tagsFree: free tags with t. parts, as a ParamArray of two parts, a void tag and option'.
@@ -885,12 +887,16 @@ let untrackedExplicit =
         t.div
             [||]
             [|
+                // A fixture for the snapshot that a build-time read takes.
+                // fsharpanalyzer: ignore-line-next RAN020
                 t.render MixedExplicit.counter (fun (s: Captioned) -> { Start = 0; Caption = s.Caption.Value })
             |])
 
 let untrackedSugar =
     Component.template
         (fun _ (state: Captioned) -> state)
+        // A fixture for the snapshot that a build-time read takes.
+        // fsharpanalyzer: ignore-line-next RAN020
         (div () { render counterRecord (fun (s: Captioned) -> { Start = 0; Caption = s.Caption.Value }) })
 
 // Void and component tags as views outside an element body, through VoidElement.View: show content, armOf views,

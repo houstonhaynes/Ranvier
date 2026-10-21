@@ -367,6 +367,8 @@ let private rawTextElement () =
     let host = host ()
 
     let framed =
+        // Asserts the server render's refusal of a raw-text element.
+        // fsharpanalyzer: ignore-line-next RAN024
         Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.iframe [| t.Attrs.title "map" |] [||] |])
 
     let mounted = mount graph host (Component.render framed ())
@@ -377,9 +379,13 @@ let private rawTextElement () =
 
 let private rawTextChildrenRejected () =
     let filled =
+        // Asserts the server render's refusal of a raw-text element.
+        // fsharpanalyzer: ignore-line-next RAN024
         Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.iframe [||] [| t.text "x" |] |])
 
     let empty =
+        // Asserts the server render's refusal of a raw-text element.
+        // fsharpanalyzer: ignore-line-next RAN024
         Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.iframe [||] [||] |])
 
     let raises action =

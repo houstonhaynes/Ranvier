@@ -77,14 +77,34 @@ let private definitionChecks () =
     equal
         [ true; true; true; true; true; true; true; true; true; false ]
         [
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.div [| t.Unsafe.html raw |] [| t.text "child" |])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.div [| t.Unsafe.html raw |] [| t.fragment [||] |])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.div [| t.Hooks.widget (fun _ (_: HTMLDivElement) -> ignore) |] [| t.fragment [||] |])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.div [| t.Unsafe.html raw; t.Hooks.widget (fun _ (_: HTMLDivElement) -> ignore) |] [||])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.br [| t.Unsafe.html raw |])
+            // Asserts that the definition refuses the content part.
+            // Asserts that the definition refuses raw HTML on this element.
+            // fsharpanalyzer: ignore-line-next RAN023, RAN024
             defines (fun t -> t.script [| t.Unsafe.html raw |] [||])
+            // Asserts that the definition refuses the content part.
+            // Asserts that the definition refuses raw HTML on this element.
+            // fsharpanalyzer: ignore-line-next RAN023, RAN024
             defines (fun t -> t.template [| t.Unsafe.html raw |] [||])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.textarea [| t.Unsafe.html raw |] [||])
+            // Asserts that the definition refuses the content part.
+            // fsharpanalyzer: ignore-line-next RAN023
             defines (fun t -> t.title [| t.Unsafe.html raw |] [||])
             defines (fun t ->
                 t.div

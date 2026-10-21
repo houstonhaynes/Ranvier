@@ -36,4 +36,16 @@
             Condition="'$(RanvierTrace)' == 'true' and !$(PackageId.EndsWith('.Traced'))">
         <Error Text="$(PackageId) is built with RanvierTrace=true, the Debug default. Pack with -c Release, or pass -p:RanvierTrace=true to pack $(PackageId).Traced." />
     </Target>
+
+    <!--
+    `RanvierAnalyze=true` runs the analyzers built at tools/Ranvier.Analyzers/bin/Release/net10.0 after CoreCompile, and
+    a finding promoted to an error fails the build. `RanvierAnalyzersFlags` passes further CLI flags, such as a code
+    promoted to an error; the analyzers run only when CoreCompile does.
+    -->
+    <PropertyGroup Condition="'$(RanvierAnalyze)' == 'true'">
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+        <FSharpAnalyzersContinueOnError>false</FSharpAnalyzersContinueOnError>
+        <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) $(RanvierAnalyzersFlags) --analyzers-path &quot;$(MSBuildThisFileDirectory)tools/Ranvier.Analyzers/bin/Release/net10.0&quot; --code-root &quot;$(MSBuildThisFileDirectory).&quot;</FSharpAnalyzersOtherFlags>
+    </PropertyGroup>
+
 </Project>

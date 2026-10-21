@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateProgramFile>false</GenerateProgramFile>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="Options.fs" />
+        <Compile Include="IndexTests.fs" />
+        <Compile Include="Ran001.fs" />
+        <Compile Include="Ran002.fs" />
+        <Compile Include="Ran010.fs" />
+        <Compile Include="Ran011.fs" />
+        <Compile Include="Ran012.fs" />
+        <Compile Include="Ran013.fs" />
+        <Compile Include="Ran015.fs" />
+        <Compile Include="Ran020.fs" />
+        <Compile Include="Ran021.fs" />
+        <Compile Include="Ran022.fs" />
+        <Compile Include="Ran023.fs" />
+        <Compile Include="Ran024.fs" />
+        <Compile Include="Ran025.fs" />
+        <Compile Include="DocsExamples.fs" />
+        <Compile Include="Budget.fs" />
+        <Compile Include="Main.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Expecto" Version="11.0.0-alpha8" />
+        <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+        <PackageReference Include="FSharp.Analyzers.SDK.Testing" Version="0.41.0" />
+        <PackageReference Update="FSharp.Core" Version="10.1.402" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Ranvier.Analyzers/Ranvier.Analyzers.fsproj" />
+        <!-- Copies Ranvier, the view assemblies, Fable.Core and Xantham into the output directory, where the fixtures
+             reference them. -->
+        <ProjectReference Include="../../experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+    </ItemGroup>
+</Project>
