@@ -4542,7 +4542,15 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             | Platform.FlightOutcome.Faulted _
             | Platform.FlightOutcome.Canceled _ when suspended ->
                 // An older flight's failure is dropped; the node stays pending on the source or the run owed.
-                Tracer.FlightFailureDrop (graph, id, gen, owed, policy.IsFinishCurrent)
+                Tracer.FlightFailureDrop (
+                    graph,
+                    id,
+                    gen,
+                    owed,
+                    (match policy with
+                     | FlightPolicy.FinishCurrent -> true
+                     | _ -> false)
+                )
             | Platform.FlightOutcome.Completed v ->
                 Tracer.FlightSettled (graph, id, gen, 0, 0, box v)
                 write v
@@ -4642,10 +4650,23 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// <c>Drop</c> and <c>DropWhilePending</c> discards the change and keeps the scope.
     /// </summary>
     member private this.Start() =
-        if queued <> 0 && not policy.IsQueue then
+        if
+            queued <> 0
+            && (match policy with
+                | FlightPolicy.Queue -> false
+                | _ -> true)
+        then
             freshness <- Freshness.Clean
             queued <- 2
-            Tracer.RunDeferred (graph, id, generation, policy.IsFinishCurrent)
+
+            Tracer.RunDeferred (
+                graph,
+                id,
+                generation,
+                (match policy with
+                 | FlightPolicy.FinishCurrent -> true
+                 | _ -> false)
+            )
         elif Platform.isNull (box scope) then
             this.Launch ()
         else
