@@ -259,15 +259,16 @@ a motion hook. The server omits all three kinds.
 ## Examples
 
 `examples/Ranvier.Motion` is a Vite app with five pages, each a sugar component tree run as a
-CI test under jsdom and Playwright:
+CI test under jsdom and Playwright. The site serves the built pages, with an
+[index](/Ranvier/examples/motion/index.html) of all five:
 
-| Page | Shows |
-| --- | --- |
-| [kanban](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Kanban.fs) | `presence` cards, `flip` across columns, `drag` with drop to a column and a spring back to the card's slot, undo |
-| [dashboard](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Dashboard.fs) | `follow` gauges, a `draw` and `morph` line chart, a number tween through `Reactive.track`, a boundary skeleton |
-| [story](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Story.fs) | `scroll` timelines, a `split` headline, a staggered grid, `appear` tiles; rendered on .NET as a whole document by `Server.renderDocument` under `Omit`, and hydrated |
-| [physics](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Physics.fs) | a thrown `drag` puck and a spring home, chained `follow`, a timeline scrubbed by `Reactive.scrub`, a policy toggle |
-| [routes](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Routes.fs) | hash routing with `presence` page arms and `flip` on the shell |
+| Page | Shows | Live |
+| --- | --- | --- |
+| [kanban](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Kanban.fs) | `presence` cards, `flip` across columns, `drag` with drop to a column and a spring back to the card's slot, undo | [kanban](/Ranvier/examples/motion/kanban/index.html) |
+| [dashboard](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Dashboard.fs) | `follow` gauges, a `draw` and `morph` line chart, a number tween through `Reactive.track`, a boundary skeleton | [dashboard](/Ranvier/examples/motion/dashboard/index.html) |
+| [story](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Story.fs) | `scroll` timelines, a `split` headline, a staggered grid, `appear` tiles; rendered on .NET as a whole document by `Server.renderDocument` under `Omit`, and hydrated | [story](/Ranvier/examples/motion/story/index.html) |
+| [physics](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Physics.fs) | a thrown `drag` puck and a spring home, chained `follow`, a timeline scrubbed by `Reactive.scrub`, a policy toggle | [physics](/Ranvier/examples/motion/physics/index.html) |
+| [routes](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Routes.fs) | hash routing with `presence` page arms and `flip` on the shell | [routes](/Ranvier/examples/motion/routes/index.html) |
 
 The kanban and physics springs run in a `Motion.slot` given to their draggables as the
 `DragBinding`'s `Slot` (see [animations from handlers](#animations-from-handlers)), and a card

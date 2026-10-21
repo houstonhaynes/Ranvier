@@ -43,6 +43,10 @@ module Spec =
     /// The signal map model reads the trace log, so its tests compile only in a traced build.
     let mapsTests = "docs/maps/tests"
 
+    /// The Motion example pages, which the docs site serves under examples/motion/.
+    let motionExamples =
+        System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Ranvier.Motion")
+
     let sourceProjectsMap =
         sourceProjects
         |> List.map (_.Name >> Str.replaceChar '.' '-' >> Str.toLower)
@@ -407,6 +411,17 @@ module Stage =
                         run "git worktree add --detach .docs-perf-data origin/perf-data"
                         run "node" ".github/scripts/perf-site-data.cjs .docs-perf-data/runs docs/static/perf-data/index.json"
                         run "git" "worktree remove --force .docs-perf-data"
+                    }
+
+                    // The site publishes the dist directory under examples/motion/ (docs/Site.fs). The story page is the
+                    // document rendered by the .NET server.
+                    stage "motion examples" {
+                        when' (not watch)
+                        workingDir Spec.motionExamples
+                        run "npm ci"
+                        run "npm run compile"
+                        run "npm run server"
+                        run "npx vite build"
                     }
 
                     run (

@@ -26,6 +26,8 @@ const serverRender = {
 
 export default defineConfig({
   root: here,
+  // Relative asset urls, so the build serves from any subpath (the docs site publishes it under examples/motion/).
+  base: "./",
   plugins: [serverRender],
   // Pre-bundled at start, so the dev server does not reload a page mid-test when it discovers the dependency.
   optimizeDeps: { include: ["animejs"] },
