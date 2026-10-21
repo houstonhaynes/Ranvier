@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateProgramFile>false</GenerateProgramFile>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="NativeTests.fs" />
+        <Compile Include="ModuleInitTests.fs" />
+        <Compile Include="SeamTests.fs" />
+        <Compile Include="TreeTests.fs" />
+        <Compile Include="HtmlTests.fs" />
+        <Compile Include="BridgeTests.fs" />
+        <Compile Include="EventTests.fs" />
+        <Compile Include="SelectorTests.fs" />
+        <Compile Include="Fixtures.fs" />
+        <Compile Include="ClockTests.fs" />
+        <Compile Include="SessionTests.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Portable/Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
+        <Compile Include="OracleTests.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/RangeChecks.fs" Link="Checks/RangeChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DelegationChecks.fs" Link="Checks/DelegationChecks.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Foundation/Browser.fs" Link="Checks/Browser.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TemplateChecks.fs" Link="Checks/TemplateChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TestingApiChecks.fs" Link="Checks/TestingApiChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/BoundaryChecks.fs" Link="Checks/BoundaryChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/CheckSupport.fs" Link="Checks/CheckSupport.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PlacementChecks.fs" Link="Checks/PlacementChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/ConformanceCases.fs" Link="Checks/ConformanceCases.fs" />
+        <Compile Include="TwinHarness.fs" />
+        <Compile Include="ConformanceTests.fs" />
+        <Compile Include="MembersTests.fs" />
+        <Compile Include="TestingApiTests.fs" />
+        <Compile Include="Main.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Expecto" Version="11.0.0-alpha8" />
+        <!-- A test-only oracle for the twin parser and serialiser (spec decision 2); never a dependency of Ranvier.View.Twin. -->
+        <PackageReference Include="AngleSharp" Version="1.8.5" />
+        <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../src/Ranvier/Ranvier.fsproj" />
+        <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
+        <ProjectReference Include="../../experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
+        <ProjectReference Include="../../experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+        <ProjectReference Include="../../experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
+    </ItemGroup>
+</Project>

@@ -53,60 +53,7 @@ let internal numberText (value: float) : string =
 #if FABLE_COMPILER
     string value
 #else
-    if Double.IsNaN value then
-        "NaN"
-    elif Double.IsPositiveInfinity value then
-        "Infinity"
-    elif Double.IsNegativeInfinity value then
-        "-Infinity"
-    elif value = 0.0 then
-        "0"
-    else
-        let roundTrip =
-            (abs value).ToString("R", Globalization.CultureInfo.InvariantCulture)
-
-        let mantissa, exponent =
-            match roundTrip.IndexOf 'E' with
-            | -1 -> roundTrip, 0
-            | at -> roundTrip.Substring (0, at), int (roundTrip.Substring (at + 1))
-
-        let whole, fraction =
-            match mantissa.IndexOf '.' with
-            | -1 -> mantissa, ""
-            | at -> mantissa.Substring (0, at), mantissa.Substring (at + 1)
-
-        // The value is 0.digits × 10^point.
-        let mutable digits = whole + fraction
-        let mutable point = whole.Length + exponent
-
-        while digits.Length > 1 && digits[0] = '0' do
-            digits <- digits.Substring 1
-            point <- point - 1
-
-        digits <- digits.TrimEnd '0'
-        let k = digits.Length
-        let n = point
-
-        let body =
-            if k <= n && n <= 21 then
-                digits + String ('0', n - k)
-            elif 0 < n && n <= 21 then
-                digits.Substring (0, n) + "." + digits.Substring n
-            elif -6 < n && n <= 0 then
-                "0." + String ('0', -n) + digits
-            else
-                let power = n - 1
-                let sign = if power >= 0 then "+" else "-"
-
-                let significand =
-                    if k = 1 then
-                        digits
-                    else
-                        digits.Substring (0, 1) + "." + digits.Substring 1
-
-                significand + "e" + sign + string (abs power)
-
-        if value < 0.0 then "-" + body else body
+    Native.numberText value
 #endif
 
 /// <summary>Server serialisations of reflected properties.</summary>

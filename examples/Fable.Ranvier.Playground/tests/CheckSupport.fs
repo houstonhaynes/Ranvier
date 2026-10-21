@@ -7,6 +7,23 @@ open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Scheduling
 open Ranvier.View.Foundation.Mounting
+open Ranvier.View.Testing
+
+#if FABLE_COMPILER
+[<Global>]
+let private globalThis: TS.Es.GlobalThis = jsNative
+#endif
+
+// The running conformance case's document, or the page's outside a case.
+let private document () : Document =
+#if FABLE_COMPILER
+    if Conformance.isRunning () then
+        Conformance.document ()
+    else
+        globalThis.document
+#else
+    Conformance.document ()
+#endif
 
 let equal expected actual =
     if expected <> actual then
@@ -14,7 +31,7 @@ let equal expected actual =
 
 /// <summary>A detached div to mount into.</summary>
 let host () : HTMLElement =
-    globalThis.document.createElement "div"
+    (document ()).createElement "div"
 
 let modeOf queued =
     if queued then
@@ -22,7 +39,14 @@ let modeOf queued =
     else
         SynchronousCommits
 
-let private strictReports = ResizeArray<string list>()
+let private pageReports = ResizeArray<string list>()
+
+// The reports strict received: the running case's, or the page's outside a case.
+let private strictReports () =
+    if Conformance.isRunning () then
+        Conformance.local "strictReports" (fun () -> ResizeArray<string list>())
+    else
+        pageReports
 
 /// <summary>
 /// A report callback that raises on every report. Under <c>strictCases</c>, the report also fails its test when the
@@ -30,7 +54,7 @@ let private strictReports = ResizeArray<string list>()
 /// </summary>
 let strict (errors: exn list) =
     let reported = [ for error in errors -> error.Message ]
-    strictReports.Add reported
+    (strictReports ()).Add reported
     failwithf "Unexpected report %A" reported
 
 /// <summary>
@@ -40,9 +64,11 @@ let strict (errors: exn list) =
 /// </summary>
 let strictCases (cases: (string * (unit -> unit)) array) =
     let lateReport (message: string) =
-        if strictReports.Count > 0 then
-            let reported = List.ofSeq strictReports
-            strictReports.Clear ()
+        let reports = strictReports ()
+
+        if reports.Count > 0 then
+            let reported = List.ofSeq reports
+            reports.Clear ()
             failwithf "%s %A" message reported
 
     Array.append
@@ -71,18 +97,25 @@ let mountTemplate queued graph report (target: HTMLElement) (view: Program.View)
 let span (ops: Operations<'view>) (modifiers: Typed.Modifier<HTMLSpanElement> array) children =
     Typed.element ops (HtmlTag "span") modifiers children
 
-[<Emit("document.body.appendChild($0)")>]
-let attachToBody (node: Node) : unit = jsNative
+let attachToBody (node: Node) : unit =
+    (document ()).body.appendChild node |> ignore
 
-[<Emit("document.activeElement")>]
-let activeElement () : obj = jsNative
+let activeElement () : obj =
+    match (document ()).activeElement with
+    | Some element -> box element
+    | None -> null
 
 /// <summary>
 /// Replaces the children of <c>target</c> with <c>html</c> parsed by <c>Range.createContextualFragment</c> in the
 /// context of <c>target</c>, with the nodes a document parse of the served page gives.
 /// </summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const r = $0.ownerDocument.createRange(); r.selectNodeContents($0); $0.replaceChildren(r.createContextualFragment($1)); })()")>]
 let loadServed (target: HTMLElement) (html: string) : unit = jsNative
+#else
+let loadServed (target: HTMLElement) (html: string) : unit =
+    target.innerHTML <- html
+#endif
 
 /// <summary>The template variant of a check, under synchronous and queued commits.</summary>
 let templated (name: string) (check: bool -> unit -> unit) =

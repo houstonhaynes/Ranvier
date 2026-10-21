@@ -9,35 +9,86 @@ open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View.Foundation.Representation
 
+#if FABLE_COMPILER
 [<Emit("$0.createElement($1)")>]
 let private createElement (document: Document) (tag: string) : Element = jsNative
+#else
+let private createElement (document: Document) (tag: string) : Element =
+    Native.createElementIn document tag
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.replaceWith($1)")>]
 let private replaceWith (node: Element) (next: Element) : unit = jsNative
+#else
+let private replaceWith (node: Element) (next: Element) : unit =
+    Native.replaceWith node next
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.remove()")>]
 let private detach (node: Element) : unit = jsNative
+#else
+let private detach (node: Element) : unit =
+    Native.removeNode node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.isConnected")>]
 let private isConnected (node: Element) : bool = jsNative
+#else
+let private isConnected (node: Element) : bool =
+    node.isConnected
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.getAttribute('data-ranvier-head')")>]
 let private markOf (node: Element) : string = jsNative
+#else
+let private markOf (node: Element) : string =
+    Option.toObj (node.getAttribute "data-ranvier-head")
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.head.appendChild($1)")>]
 let private appendToHead (document: Document) (node: Element) : unit = jsNative
+#else
+let private appendToHead (document: Document) (node: Element) : unit =
+    Native.appendNode (Native.headOf document) node
+#endif
 
 /// <summary>The head element of the document marked with the key and absent from <c>claimed</c>; null when there is none.</summary>
+#if FABLE_COMPILER
 [<Emit("(Array.from($0.head.querySelectorAll('[data-ranvier-head]')).find(node => node.getAttribute('data-ranvier-head') === $1 && !$2.includes(node)) ?? null)")>]
 let private marked (document: Document) (key: string) (claimed: ResizeArray<Element>) : Element = jsNative
+#else
+let private marked (document: Document) (key: string) (claimed: ResizeArray<Element>) : Element =
+    Native.markedIn document
+    |> Array.tryFind (fun node ->
+        Option.toObj (node.getAttribute "data-ranvier-head") = key
+        && not (claimed.Contains node))
+    |> Native.valueOrNull
+#endif
 
 /// <summary>Whether the document's head holds a marked element.</summary>
+#if FABLE_COMPILER
 [<Emit("!!$0.head?.querySelector('[data-ranvier-head]')")>]
 let private hasMarked (document: Document) : bool = jsNative
+#else
+let private hasMarked (document: Document) : bool =
+    Native.markedIn document |> Array.isEmpty |> not
+#endif
 
 /// <summary>Removes the marked head elements of the document absent from <c>claimed</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("Array.from($0.head.querySelectorAll('[data-ranvier-head]')).filter(node => !$1.includes(node)).forEach(node => node.remove())")>]
 let private removeUnclaimed (document: Document) (claimed: ResizeArray<Element>) : unit = jsNative
+#else
+let private removeUnclaimed (document: Document) (claimed: ResizeArray<Element>) : unit =
+    for node in Native.markedIn document do
+        if not (claimed.Contains node) then
+            Native.removeNode node
+#endif
 
 /// <summary>The document's head as it was when <c>keep</c> returned it.</summary>
 type Served =
@@ -49,6 +100,7 @@ type Served =
     /// <summary>Ends the recording of the head's edits.</summary>
     abstract Release: unit -> unit
 
+#if FABLE_COMPILER
 // While the document has a window, an observer records the head's edits and `Restore` applies their inverses, newest
 // first; observers return to `idle` at `Release`. Without a window, the head's child list, the attributes of each child
 // element and the children of each title element are copied instead.
@@ -120,6 +172,72 @@ let private keepHead: Func<Document, Served> =
   return d => new Kept(d);
 })()"""
 
+#else
+let private setAttributes (element: Element) (attributes: (string * string) array) =
+    if Native.attributesOf element <> attributes then
+        Native.setAttributesBack element attributes
+
+[<Sealed>]
+type private KeptCopy(document: Document) =
+    let head: Node = document.head :> Node
+
+    let children =
+        if Native.isNullish head then
+            [||]
+        else
+            Native.childNodesOf head
+
+    let attributes =
+        children
+        |> Array.map (fun n ->
+            if n.nodeType = 1.0 then
+                Native.attributesOf (unbox<Element> n)
+            else
+                null)
+
+    let titles =
+        children
+        |> Array.map (fun n -> if n.nodeName = "TITLE" then Native.childNodesOf n else null)
+
+    interface Served with
+        member _.Restore() =
+            if not (Native.isNullish head) then
+                for i in 0 .. children.Length - 1 do
+                    let current = Native.childNodesOf head |> Array.tryItem i
+
+                    match current with
+                    | Some n when obj.ReferenceEquals (n, children[i]) -> ()
+                    | Some n -> head.insertBefore (children[i], n) |> ignore
+                    | None -> head.insertBefore children[i] |> ignore
+
+                while (Native.childNodesOf head).Length > children.Length do
+                    Native.removeNode (Native.lastChildOf head)
+
+                for i in 0 .. children.Length - 1 do
+                    if not (isNull attributes[i]) then
+                        setAttributes (unbox<Element> children[i]) attributes[i]
+
+                    let kept = titles[i]
+
+                    if not (isNull kept) then
+                        let present = Native.childNodesOf children[i]
+
+                        if
+                            present.Length <> kept.Length
+                            || Array.exists2 (fun a b -> not (obj.ReferenceEquals (a, b))) present kept
+                        then
+                            for child in present do
+                                Native.removeNode child
+
+                            for child in kept do
+                                Native.appendNode children[i] child
+
+        member _.Release() = ()
+
+let private keepHead: Func<Document, Served> =
+    Func<Document, Served>(fun document -> KeptCopy document :> Served)
+#endif
+
 /// <summary>
 /// The head of the document as it is now. While the document has a window, the head's edits are recorded as they
 /// happen and only the marked elements' attribute lists are copied. Without a window, the head's child list, the
@@ -128,18 +246,38 @@ let private keepHead: Func<Document, Served> =
 let keep (document: Document) : Served =
     keepHead.Invoke document
 
+#if FABLE_COMPILER
 [<Emit("$0.title")>]
 let private titleOf (document: Document) : string = jsNative
+#else
+let private titleOf (document: Document) : string =
+    document.title
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.textContent")>]
 let private textOf (node: Element) : string = jsNative
+#else
+let private textOf (node: Element) : string =
+    Native.textContentOf node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.title = $1")>]
 let private setTitleOf (document: Document) (value: string) : unit = jsNative
+#else
+let private setTitleOf (document: Document) (value: string) : unit =
+    document.title <- value
+#endif
 
 /// <summary>The document owning the node; the global document when the node is itself a document.</summary>
+#if FABLE_COMPILER
 [<Emit("($0.ownerDocument ?? document)")>]
 let documentOf (node: Node) : Document = jsNative
+#else
+let documentOf (node: Node) : Document =
+    Native.documentOf node
+#endif
 
 /// <summary>A head entry of a document, shown by <c>activate</c> and removed by <c>withdraw</c>.</summary>
 [<Sealed; AllowNullLiteral>]

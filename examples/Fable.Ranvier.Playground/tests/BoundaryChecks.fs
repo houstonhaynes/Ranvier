@@ -4,6 +4,7 @@ open System
 open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
+open Ranvier.View.Testing
 open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Scheduling
@@ -39,7 +40,7 @@ let private server (ops: Operations<'view>) (run: 'view -> Backend -> unit) =
             equal "<!--[-->&lt;failed&gt;<!--]-->" (render ())))
 
 let private host () : HTMLElement =
-    globalThis.document.createElement "div"
+    (Conformance.document ()).createElement "div"
 
 let private modeOf queued =
     if queued then
@@ -48,12 +49,35 @@ let private modeOf queued =
         SynchronousCommits
 
 /// <summary>Counts the node's own <c>insertBefore</c> calls; the returned function restores it and returns the count.</summary>
-[<Emit("(() => { let count = 0; const old = $0.insertBefore; $0.insertBefore = function(n, b) { count++; return old.call(this, n, b); }; return () => { $0.insertBefore = old; return count; }; })()")>]
-let private countInserts (node: Node) : unit -> int = jsNative
+let private countInserts (node: Node) : unit -> int =
+    let count = ref 0
+
+    let restore =
+        Conformance.intercept node "insertBefore" (fun original args ->
+            count.Value <- count.Value + 1
+            original args)
+
+    fun () ->
+        restore ()
+        count.Value
 
 /// <summary>Records the text of each node inserted into the node by <c>insertBefore</c>; the returned function restores it and returns the records.</summary>
-[<Emit("(() => { const texts = []; const old = $0.insertBefore; $0.insertBefore = function(n, b) { texts.push(n.textContent); return old.call(this, n, b); }; return () => { $0.insertBefore = old; return texts; }; })()")>]
-let private recordInserts (node: Node) : unit -> string array = jsNative
+let private recordInserts (node: Node) : unit -> string array =
+    let texts = ResizeArray<string>()
+
+    let restore =
+        Conformance.intercept node "insertBefore" (fun original args ->
+            texts.Add (
+                match (unbox<Node> args[0]).textContent with
+                | Some text -> text
+                | None -> null
+            )
+
+            original args)
+
+    fun () ->
+        restore ()
+        texts.ToArray ()
 
 let private strict (errors: exn list) =
     failwithf "Unexpected report %A" [ for error in errors -> error.Message ]
@@ -196,6 +220,7 @@ let private movedWhilePending (ops: Operations<'view>) (run: 'view -> Backend ->
     equal ("", "moved") (first.textContent, second.textContent)
 
     (second.querySelector "button"
+     |> Option.get
      |> unbox<HTMLButtonElement>)
         .click()
 
@@ -620,6 +645,7 @@ let private retry (ops: Operations<'view>) (run: 'view -> Backend -> unit) queue
 
     let click () =
         (host.querySelector "button"
+         |> Option.get
          |> unbox<HTMLButtonElement>)
             .click()
 
@@ -681,12 +707,29 @@ let private errorViewFailure (ops: Operations<'view>) (run: 'view -> Backend -> 
     equal ("outer: error view", [ [ "content" ]; [ "error view" ] ]) (host.textContent, messages reports)
     mounted.Dispose ()
 
-[<Emit("$0.dispatchEvent(new FocusEvent('focus'))")>]
-let private dispatchFocus (node: HTMLElement) : unit = jsNative
+let private dispatchFocus (node: HTMLElement) : unit =
+    node.dispatchEvent (
+        EventSpec.create
+            (Conformance.document ())
+            {
+                Type = "focus"
+                Kind = Focus
+                Bubbles = false
+                Cancelable = false
+                Init = []
+            }
+    )
+    |> ignore
 
-/// <summary>Runs <c>action</c> and returns the messages of the errors the window reported meanwhile; a report is marked handled.</summary>
-[<Emit("(() => { const seen = []; const listener = e => { seen.push(e.error ? e.error.message : String(e.message)); e.preventDefault(); }; window.addEventListener('error', listener); try { $0(); } finally { window.removeEventListener('error', listener); } return seen; })()")>]
-let private windowErrors (action: unit -> unit) : string[] = jsNative
+/// <summary>Runs <c>action</c> and returns the messages of the listener failures the host reported meanwhile.</summary>
+let private windowErrors (action: unit -> unit) : string[] =
+    (Conformance.harness ()).ListenerErrors()
+    |> ignore
+
+    action ()
+
+    (Conformance.harness ()).ListenerErrors()
+    |> Array.ofList
 
 let private fire (eventName: string) (button: HTMLButtonElement) =
     if eventName = "focus" then
@@ -706,6 +749,7 @@ let private handlerNotReady (ops: Operations<'view>) (run: 'view -> Backend -> u
 
     let button =
         host.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     let escaped = windowErrors (fun () -> fire eventName button)
@@ -726,6 +770,7 @@ let private handlerFailure (ops: Operations<'view>) (run: 'view -> Backend -> un
 
     let button =
         host.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     let escaped = windowErrors (fun () -> fire eventName button)
@@ -777,16 +822,17 @@ let private pendingAfterReveal (ops: Operations<'view>) (run: 'view -> Backend -
     equal ("two.", 1) (host.textContent, log.Count)
     mounted.Dispose ()
 
-let private templateLog = ResizeArray<string>()
+let private templateLog () =
+    Conformance.local "BoundaryChecks.templateLog" (fun () -> ResizeArray<string>())
 
-let mutable private templateFlight: Signal<AsyncSource<string>> =
-    Unchecked.defaultof<_>
+let private templateFlight () =
+    Conformance.local "BoundaryChecks.templateFlight" (fun () -> ref (Unchecked.defaultof<_>: Signal<AsyncSource<string>>))
 
 let private templatePending =
     Component.define
         (fun setup () ->
-            templateLog.Add "pending"
-            setup.OnCleanup (fun () -> templateLog.Add "pending cleanup"))
+            (templateLog ()).Add "pending"
+            setup.OnCleanup (fun () -> (templateLog ()).Add "pending cleanup"))
         (fun t -> t.span [||] [| t.text "loading" |])
 
 let private templateFailed =
@@ -795,23 +841,29 @@ let private templateFailed =
 
 let private templateRow =
     Component.define (fun _ (item: unit -> int) -> item) (fun t ->
-        t.span [||] [| t.text (fun item -> templateFlight.Value.Value + string (item ())) |])
+        t.span
+            [||]
+            [|
+                t.text (fun item ->
+                    (templateFlight ()).Value.Value.Value
+                    + string (item ()))
+            |])
 
 let private templateArm =
-    Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.span [||] [| t.text (fun () -> "|" + templateFlight.Value.Value) |])
+    Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.span [||] [| t.text (fun () -> "|" + (templateFlight ()).Value.Value.Value) |])
 
 let private templateContent =
     Component.define
         (fun setup (status: BoundaryStatus) ->
-            templateLog.Add "content"
-            setup.OnCleanup (fun () -> templateLog.Add "content cleanup")
+            (templateLog ()).Add "content"
+            setup.OnCleanup (fun () -> (templateLog ()).Add "content cleanup")
             status)
         (fun t ->
             t.div
                 [||]
                 [|
-                    t.text (fun _ -> templateFlight.Value.Value)
-                    t.isolated (t.text (fun _ -> templateFlight.Value.Value))
+                    t.text (fun _ -> (templateFlight ()).Value.Value.Value)
+                    t.isolated (t.text (fun _ -> (templateFlight ()).Value.Value.Value))
                     t.each id (fun _ -> [| 1; 2 |]) templateRow
                     t.branch (fun _ -> 0) (fun _ -> t.arm templateArm ())
                     t.text (fun status -> if status.IsPending () then "*" else ".")
@@ -823,37 +875,50 @@ let private guarded =
 /// <summary>A template boundary reveals rows and arms in one insertion, then keeps them through a refetch.</summary>
 let private templateReveal queued () =
     use graph = new Graph ()
-    templateLog.Clear ()
-    templateFlight <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
+    (templateLog ()).Clear()
+    (templateFlight ()).Value <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
     let host = host ()
 
     let mounted =
         mountWith (modeOf queued) graph None strict host None (fun context -> Program.run (Component.render guarded ()) context.Backend)
 
-    equal ("loading", [ "content"; "pending" ]) (host.textContent, List.ofSeq templateLog)
-    let outer = host.querySelector "div" |> unbox<HTMLElement>
+    equal ("loading", [ "content"; "pending" ]) (host.textContent, List.ofSeq (templateLog ()))
+
+    let outer =
+        host.querySelector "div"
+        |> Option.get
+        |> unbox<HTMLElement>
+
     let inserts = countInserts outer
-    graph.Run (fun () -> templateFlight.Value.Settle "A")
+    graph.Run (fun () -> (templateFlight ()).Value.Value.Settle "A")
     mounted.Flush ()
     equal ("AAA1A2|A.", 1) (host.textContent, inserts ())
-    equal [ "content"; "pending"; "pending cleanup" ] (List.ofSeq templateLog)
-    graph.Run (fun () -> templateFlight.Value <- Api.createAsyncSource<string>())
+    equal [ "content"; "pending"; "pending cleanup" ] (List.ofSeq (templateLog ()))
+    graph.Run (fun () -> (templateFlight ()).Value.Value <- Api.createAsyncSource<string>())
     mounted.Flush ()
     equal "AAA1A2|A*" host.textContent
-    graph.Run (fun () -> templateFlight.Value.Settle "B")
+    graph.Run (fun () -> (templateFlight ()).Value.Value.Settle "B")
     mounted.Flush ()
     // The flush that releases the waiting bindings writes IsPending; its text commits in the next flush.
     mounted.Flush ()
     equal "BBB1B2|B." host.textContent
     mounted.Dispose ()
-    equal ("content cleanup", "") (templateLog[templateLog.Count - 1], host.textContent)
+    equal ("content cleanup", "") ((templateLog ())[(templateLog ()).Count - 1], host.textContent)
 
-let mutable private rowNever: AsyncSource<string> = Unchecked.defaultof<_>
-let mutable private rowOther: AsyncSource<string> = Unchecked.defaultof<_>
-let mutable private rowItems: Signal<int array> = Unchecked.defaultof<_>
+let private rowNever () =
+    Conformance.local "BoundaryChecks.rowNever" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
+
+let private rowOther () =
+    Conformance.local "BoundaryChecks.rowOther" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
+
+let private rowItems () =
+    Conformance.local "BoundaryChecks.rowItems" (fun () -> ref (Unchecked.defaultof<_>: Signal<int array>))
 
 let private rowText (item: int) =
-    if item = 2 then rowNever.Value else rowOther.Value
+    if item = 2 then
+        (rowNever ()).Value.Value
+    else
+        (rowOther ()).Value.Value
 
 let private pendingRow =
     Component.define (fun _ (item: unit -> int) -> item) (fun t ->
@@ -865,7 +930,7 @@ let private pendingRow =
             |])
 
 let private pendingRows =
-    Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t -> t.div [||] [| t.each id (fun () -> rowItems.Value) pendingRow |])
+    Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t -> t.div [||] [| t.each id (fun () -> (rowItems ()).Value.Value) pendingRow |])
 
 let private guardedRows =
     Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.boundary templatePending templateFailed pendingRows |])
@@ -873,32 +938,36 @@ let private guardedRows =
 /// <summary>Removes the one template row still pending before the reveal; the boundary reveals the remaining row.</summary>
 let private templateRemovedPendingRow () =
     use graph = new Graph ()
-    rowNever <- graph.Run (fun () -> Api.createAsyncSource<string>())
-    rowOther <- graph.Run (fun () -> Api.createAsyncSource<string>())
-    rowItems <- graph.Run (fun () -> Api.createSignal [| 1; 2 |])
+    (rowNever ()).Value <- graph.Run (fun () -> Api.createAsyncSource<string>())
+    (rowOther ()).Value <- graph.Run (fun () -> Api.createAsyncSource<string>())
+    (rowItems ()).Value <- graph.Run (fun () -> Api.createSignal [| 1; 2 |])
     let host = host ()
 
     let mounted =
         Mounting.mount graph None strict host None (fun context -> Program.run (Component.render guardedRows ()) context.Backend)
 
-    graph.Run (fun () -> rowOther.Settle "x")
+    graph.Run (fun () -> (rowOther ()).Value.Settle "x")
     equal "loading" host.textContent
-    graph.Run (fun () -> rowItems.Value <- [| 1 |])
+    graph.Run (fun () -> (rowItems ()).Value.Value <- [| 1 |])
     equal "xx" host.textContent
     mounted.Dispose ()
 
-let mutable private armSources: AsyncSource<string> array = null
-let mutable private armChoice: Signal<int> = Unchecked.defaultof<_>
+let private armSources () =
+    Conformance.local "BoundaryChecks.armSources" (fun () -> ref (null: AsyncSource<string> array))
+
+let private armChoice () =
+    Conformance.local "BoundaryChecks.armChoice" (fun () -> ref (Unchecked.defaultof<_>: Signal<int>))
 
 let private sourceArm =
-    Component.define (fun _ (choice: unit -> int) -> choice) (fun t -> t.span [||] [| t.text (fun choice -> armSources[choice ()].Value) |])
+    Component.define (fun _ (choice: unit -> int) -> choice) (fun t ->
+        t.span [||] [| t.text (fun choice -> (armSources ()).Value[choice ()].Value) |])
 
 let private sourceArms =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
         t.div
             [||]
             [|
-                t.branch (fun () -> armChoice.Value) (fun choice -> t.arm sourceArm choice)
+                t.branch (fun () -> (armChoice ()).Value.Value) (fun choice -> t.arm sourceArm choice)
             |])
 
 let private guardedArms =
@@ -907,32 +976,41 @@ let private guardedArms =
 /// <summary>Replacing a pending template arm with another pending arm keeps the boundary hidden until the new arm has a value.</summary>
 let private templateArmReplacedWhilePending queued () =
     use graph = new Graph ()
-    armSources <- graph.Run (fun () -> [| Api.createAsyncSource<string>(); Api.createAsyncSource<string>() |])
-    armChoice <- graph.Run (fun () -> Api.createSignal 0)
+    (armSources ()).Value <- graph.Run (fun () -> [| Api.createAsyncSource<string>(); Api.createAsyncSource<string>() |])
+    (armChoice ()).Value <- graph.Run (fun () -> Api.createSignal 0)
     let host = host ()
 
     let mounted =
         mountWith (modeOf queued) graph None strict host None (fun context -> Program.run (Component.render guardedArms ()) context.Backend)
 
-    let inserted = recordInserts (host.querySelector "div" |> unbox<Node>)
-    graph.Run (fun () -> armChoice.Value <- 1)
+    let inserted =
+        recordInserts (
+            host.querySelector "div"
+            |> Option.get
+            |> unbox<Node>
+        )
+
+    graph.Run (fun () -> (armChoice ()).Value.Value <- 1)
     mounted.Flush ()
     equal "loading" host.textContent
-    graph.Run (fun () -> armSources[1].Settle "B")
+    graph.Run (fun () -> (armSources ()).Value[1].Settle "B")
     mounted.Flush ()
     equal ("B", [| "B" |]) (host.textContent, inserted ())
     mounted.Dispose ()
 
-let mutable private renderSource: AsyncSource<string> = Unchecked.defaultof<_>
-let mutable private isolatedSource: AsyncSource<string> = Unchecked.defaultof<_>
+let private renderSource () =
+    Conformance.local "BoundaryChecks.renderSource" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
+
+let private isolatedSource () =
+    Conformance.local "BoundaryChecks.isolatedSource" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
 
 let private slotKinds =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
         t.span
             [||]
             [|
-                t.text (fun () -> renderSource.Value)
-                t.isolated (t.text (fun () -> isolatedSource.Value))
+                t.text (fun () -> (renderSource ()).Value.Value)
+                t.isolated (t.text (fun () -> (isolatedSource ()).Value.Value))
             |])
 
 let private guardedSlots =
@@ -941,8 +1019,8 @@ let private guardedSlots =
 /// <summary>A boundary over a pending render slot and a pending isolated slot reveals once both settle, in either order.</summary>
 let private templateSlotKinds renderFirst () =
     use graph = new Graph ()
-    renderSource <- graph.Run (fun () -> Api.createAsyncSource<string>())
-    isolatedSource <- graph.Run (fun () -> Api.createAsyncSource<string>())
+    (renderSource ()).Value <- graph.Run (fun () -> Api.createAsyncSource<string>())
+    (isolatedSource ()).Value <- graph.Run (fun () -> Api.createAsyncSource<string>())
     let host = host ()
 
     let mounted =
@@ -950,9 +1028,9 @@ let private templateSlotKinds renderFirst () =
 
     let first, second =
         if renderFirst then
-            renderSource, isolatedSource
+            (renderSource ()).Value, (isolatedSource ()).Value
         else
-            isolatedSource, renderSource
+            (isolatedSource ()).Value, (renderSource ()).Value
 
     graph.Run (fun () -> first.Settle "a")
     equal "loading" host.textContent
@@ -963,18 +1041,21 @@ let private templateSlotKinds renderFirst () =
 
 type private Fragile = { Value: Signal<string> }
 
-let mutable private fragileValue: Signal<string> = Unchecked.defaultof<_>
-let mutable private fragileBroken = false
+let private fragileValue () =
+    Conformance.local "BoundaryChecks.fragileValue" (fun () -> ref (Unchecked.defaultof<_>: Signal<string>))
+
+let private fragileBroken () =
+    Conformance.local "BoundaryChecks.fragileBroken" (fun () -> ref false)
 
 let private fragileContent =
     Component.define
         (fun setup (_: BoundaryStatus) ->
-            if fragileBroken then
+            if (fragileBroken ()).Value then
                 failwith "setup"
 
-            templateLog.Add "content"
-            setup.OnCleanup (fun () -> templateLog.Add "content cleanup")
-            { Value = fragileValue })
+            (templateLog ()).Add "content"
+            setup.OnCleanup (fun () -> (templateLog ()).Add "content cleanup")
+            { Value = (fragileValue ()).Value })
         (fun t ->
             t.button
                 [|
@@ -999,9 +1080,9 @@ let private fragile =
 /// </summary>
 let private templateFailure queued (trigger: Graph -> HTMLElement -> unit) (message: string) () =
     use graph = new Graph ()
-    templateLog.Clear ()
-    fragileBroken <- false
-    fragileValue <- graph.Run (fun () -> Api.createSignal "ok")
+    (templateLog ()).Clear()
+    (fragileBroken ()).Value <- false
+    (fragileValue ()).Value <- graph.Run (fun () -> Api.createSignal "ok")
     let host = host ()
     let reports = ResizeArray<exn list>()
 
@@ -1012,19 +1093,20 @@ let private templateFailure queued (trigger: Graph -> HTMLElement -> unit) (mess
     trigger graph host
     mounted.Flush ()
 
-    equal ("failed: " + message, [ [ message ] ], [ "content"; "content cleanup" ]) (host.textContent, messages reports, List.ofSeq templateLog)
+    equal ("failed: " + message, [ [ message ] ], [ "content"; "content cleanup" ]) (host.textContent, messages reports, List.ofSeq (templateLog ()))
 
     mounted.Dispose ()
 
 let private button (host: HTMLElement) =
     host.querySelector "button"
+    |> Option.get
     |> unbox<HTMLButtonElement>
 
 /// <summary>A template content whose setup fails while broken; the error view's button retries it.</summary>
 let private templateRetry () =
     use graph = new Graph ()
-    fragileBroken <- true
-    fragileValue <- graph.Run (fun () -> Api.createSignal "ok")
+    (fragileBroken ()).Value <- true
+    (fragileValue ()).Value <- graph.Run (fun () -> Api.createSignal "ok")
     let host = host ()
     let reports = ResizeArray<exn list>()
 
@@ -1034,19 +1116,20 @@ let private templateRetry () =
     equal "failed: setup" host.textContent
     (button host).click()
     equal ("failed: setup", 2) (host.textContent, reports.Count)
-    fragileBroken <- false
+    (fragileBroken ()).Value <- false
     (button host).click()
     equal ("ok", 2) (host.textContent, reports.Count)
     mounted.Dispose ()
 
-let mutable private handlerSource: AsyncSource<string> = Unchecked.defaultof<_>
+let private handlerSource () =
+    Conformance.local "BoundaryChecks.handlerSource" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
 
 let private waitingHandler =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
         t.button
             [|
-                t.Events.onClick (fun _ _ -> handlerSource.Value |> ignore)
-                t.Events.onFocus (fun _ _ -> handlerSource.Value |> ignore)
+                t.Events.onClick (fun _ _ -> (handlerSource ()).Value.Value |> ignore)
+                t.Events.onFocus (fun _ _ -> (handlerSource ()).Value.Value |> ignore)
             |]
             [| t.text "press" |])
 
@@ -1056,7 +1139,7 @@ let private guardedHandler =
 /// <summary>A template handler reading a pending source under a boundary shows the error view and is reported once.</summary>
 let private templateHandlerNotReady (trigger: HTMLButtonElement -> unit) () =
     use graph = new Graph ()
-    handlerSource <- graph.Run (fun () -> Api.createAsyncSource<string>())
+    (handlerSource ()).Value <- graph.Run (fun () -> Api.createAsyncSource<string>())
     let host = host ()
     let reports = ResizeArray<exn list>()
 
@@ -1068,16 +1151,17 @@ let private templateHandlerNotReady (trigger: HTMLButtonElement -> unit) () =
     equal (1, true, [||]) (reports.Count, host.textContent.StartsWith "failed: ", escaped)
     mounted.Dispose ()
 
-let private secondHandlerLog = ResizeArray<string>()
+let private secondHandlerLog () =
+    Conformance.local "BoundaryChecks.secondHandlerLog" (fun () -> ResizeArray<string>())
 
 let private twoHandlers =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
         t.button
             [|
                 t.Events.onClick (fun _ _ -> failwith "first")
-                t.Events.onClick (fun _ _ -> secondHandlerLog.Add "second")
+                t.Events.onClick (fun _ _ -> (secondHandlerLog ()).Add "second")
                 t.Events.onFocus (fun _ _ -> failwith "first")
-                t.Events.onFocus (fun _ _ -> secondHandlerLog.Add "second")
+                t.Events.onFocus (fun _ _ -> (secondHandlerLog ()).Add "second")
             |]
             [| t.text "press" |])
 
@@ -1087,7 +1171,7 @@ let private guardedTwoHandlers =
 /// <summary>Two handlers on one node and event under a boundary: the first throws and tears the content down, and the second is skipped.</summary>
 let private templateSecondHandler (trigger: HTMLButtonElement -> unit) () =
     use graph = new Graph ()
-    secondHandlerLog.Clear ()
+    (secondHandlerLog ()).Clear()
     let host = host ()
     let reports = ResizeArray<exn list>()
 
@@ -1096,11 +1180,12 @@ let private templateSecondHandler (trigger: HTMLButtonElement -> unit) () =
 
     trigger (button host)
 
-    equal ("failed: first", [ [ "first" ] ], []) (host.textContent, messages reports, List.ofSeq secondHandlerLog)
+    equal ("failed: first", [ [ "first" ] ], []) (host.textContent, messages reports, List.ofSeq (secondHandlerLog ()))
 
     mounted.Dispose ()
 
-let mutable private serverSource: AsyncSource<string> = Unchecked.defaultof<_>
+let private serverSource () =
+    Conformance.local "BoundaryChecks.serverSource" (fun () -> ref (Unchecked.defaultof<_>: AsyncSource<string>))
 
 let private serverPending =
     Component.define (fun _ () -> ()) (fun t -> t.span [||] [| t.text "loading" |])
@@ -1109,7 +1194,7 @@ let private serverFailed =
     Component.define (fun _ (failure: BoundaryFailure) -> failure) (fun t -> t.span [||] [| t.text (fun failure -> failure.Error.Message) |])
 
 let private serverContent =
-    Component.define (fun _ (status: BoundaryStatus) -> status) (fun t -> t.span [||] [| t.text (fun _ -> serverSource.Value) |])
+    Component.define (fun _ (status: BoundaryStatus) -> status) (fun t -> t.span [||] [| t.text (fun _ -> (serverSource ()).Value.Value) |])
 
 let private guardedServer =
     Component.define (fun _ () -> ()) (fun t -> t.div [||] [| t.boundary serverPending serverFailed serverContent |])
@@ -1120,15 +1205,15 @@ let private templateServer () =
 
     graph.Run (fun () ->
         Api.createRoot (fun _ ->
-            serverSource <- Api.createAsyncSource<string>()
+            (serverSource ()).Value <- Api.createAsyncSource<string>()
 
             let render () =
                 Html.render Omit (Program.run (Component.render guardedServer ()))
 
             equal "<div><!--[p--><span>loading</span><!--]--></div>" (render ())
-            serverSource.Settle "<A>"
+            (serverSource ()).Value.Settle "<A>"
             equal "<div><!--[c--><span>&lt;A&gt;</span><!--]--></div>" (render ())
-            serverSource.Fail (Exception "<bad>")
+            (serverSource ()).Value.Fail(Exception "<bad>")
             equal "<div><!--[e--><span>&lt;bad&gt;</span><!--]--></div>" (render ())))
 
 /// <summary>A handler outside every boundary throws out of its dispatch.</summary>
@@ -1144,6 +1229,7 @@ let private handlerOutsideBoundary (ops: Operations<'view>) (run: 'view -> Backe
 
     let button =
         host.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     let escaped = windowErrors (fun () -> fire eventName button)
@@ -1181,6 +1267,7 @@ let private handlerAfterFailure (ops: Operations<'view>) (run: 'view -> Backend 
 
     let button =
         host.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     let escaped = windowErrors (fun () -> button.click ())
@@ -1230,6 +1317,7 @@ let private retryCachedFailure (ops: Operations<'view>) (run: 'view -> Backend -
         mountWith (modeOf queued) graph None reports.Add host None (fun context -> run view context.Backend)
 
     (host.querySelector "button"
+     |> Option.get
      |> unbox<HTMLButtonElement>)
         .click()
 
@@ -1479,159 +1567,166 @@ let private overlappingWaits (ops: Operations<'view>) (run: 'view -> Backend -> 
     equal "34." host.textContent
     mounted.Dispose ()
 
-let cases: (string * (unit -> unit)) array =
-    [|
-        "tree HTML renders a boundary's pending, content or error view between markers", fun () -> server Tree.ops Tree.run
-        "program HTML renders a boundary's pending, content or error view between markers", fun () -> server Program.ops Program.run
-        "tree synchronous: a boundary reveals its content in one insertion once every binding, row and arm has a value",
-        fun () -> initialReveal Tree.ops Tree.run false
-        "tree queued: a boundary reveals its content in one insertion once every binding, row and arm has a value",
-        fun () -> initialReveal Tree.ops Tree.run true
-        "program synchronous: a boundary reveals its content in one insertion once every binding, row and arm has a value",
-        fun () -> initialReveal Program.ops Program.run false
-        "program queued: a boundary reveals its content in one insertion once every binding, row and arm has a value",
-        fun () -> initialReveal Program.ops Program.run true
-        "tree synchronous: a nested boundary reveals after its outer boundary", fun () -> nestedReveal Tree.ops Tree.run false false
-        "program queued: a nested boundary reveals after its outer boundary", fun () -> nestedReveal Program.ops Program.run true false
-        "tree queued: a nested boundary revealed first appears with its outer boundary", fun () -> nestedReveal Tree.ops Tree.run true true
-        "program synchronous: a nested boundary revealed first appears with its outer boundary",
-        fun () -> nestedReveal Program.ops Program.run false true
-        "tree synchronous: disposal during the pending phase disposes the hidden content and the pending view",
-        fun () -> disposedWhilePending Tree.ops Tree.run false
-        "program queued: disposal during the pending phase disposes the hidden content and the pending view",
-        fun () -> disposedWhilePending Program.ops Program.run true
-        "tree queued: a boundary moved while pending reveals at its new parent and handles clicks there",
-        fun () -> movedWhilePending Tree.ops Tree.run true
-        "program synchronous: a boundary moved while pending reveals at its new parent and handles clicks there",
-        fun () -> movedWhilePending Program.ops Program.run false
-        "tree synchronous: removing the last pending row reveals the boundary", fun () -> removedPendingRow Tree.ops Tree.run false
-        "program queued: removing the last pending row reveals the boundary", fun () -> removedPendingRow Program.ops Program.run true
-        "tree synchronous: replacing the last pending row reveals both rows after the pass", fun () -> replacedPendingRow Tree.ops Tree.run false
-        "program queued: replacing the last pending row reveals both rows after the pass", fun () -> replacedPendingRow Program.ops Program.run true
-        "tree synchronous: replacing a pending arm with another pending arm keeps the boundary hidden",
-        fun () -> armReplacedWhilePending Tree.ops Tree.run false
-        "tree queued: replacing a pending arm with another pending arm keeps the boundary hidden",
-        fun () -> armReplacedWhilePending Tree.ops Tree.run true
-        "program synchronous: replacing a pending arm with another pending arm keeps the boundary hidden",
-        fun () -> armReplacedWhilePending Program.ops Program.run false
-        "program queued: replacing a pending arm with another pending arm keeps the boundary hidden",
-        fun () -> armReplacedWhilePending Program.ops Program.run true
+let cases: Conformance.Case array =
+    Conformance.ofChecks
+        [|
+            "tree HTML renders a boundary's pending, content or error view between markers", fun () -> server Tree.ops Tree.run
+            "program HTML renders a boundary's pending, content or error view between markers", fun () -> server Program.ops Program.run
+            "tree synchronous: a boundary reveals its content in one insertion once every binding, row and arm has a value",
+            fun () -> initialReveal Tree.ops Tree.run false
+            "tree queued: a boundary reveals its content in one insertion once every binding, row and arm has a value",
+            fun () -> initialReveal Tree.ops Tree.run true
+            "program synchronous: a boundary reveals its content in one insertion once every binding, row and arm has a value",
+            fun () -> initialReveal Program.ops Program.run false
+            "program queued: a boundary reveals its content in one insertion once every binding, row and arm has a value",
+            fun () -> initialReveal Program.ops Program.run true
+            "tree synchronous: a nested boundary reveals after its outer boundary", fun () -> nestedReveal Tree.ops Tree.run false false
+            "program queued: a nested boundary reveals after its outer boundary", fun () -> nestedReveal Program.ops Program.run true false
+            "tree queued: a nested boundary revealed first appears with its outer boundary", fun () -> nestedReveal Tree.ops Tree.run true true
+            "program synchronous: a nested boundary revealed first appears with its outer boundary",
+            fun () -> nestedReveal Program.ops Program.run false true
+            "tree synchronous: disposal during the pending phase disposes the hidden content and the pending view",
+            fun () -> disposedWhilePending Tree.ops Tree.run false
+            "program queued: disposal during the pending phase disposes the hidden content and the pending view",
+            fun () -> disposedWhilePending Program.ops Program.run true
+            "tree queued: a boundary moved while pending reveals at its new parent and handles clicks there",
+            fun () -> movedWhilePending Tree.ops Tree.run true
+            "program synchronous: a boundary moved while pending reveals at its new parent and handles clicks there",
+            fun () -> movedWhilePending Program.ops Program.run false
+            "tree synchronous: removing the last pending row reveals the boundary", fun () -> removedPendingRow Tree.ops Tree.run false
+            "program queued: removing the last pending row reveals the boundary", fun () -> removedPendingRow Program.ops Program.run true
+            "tree synchronous: replacing the last pending row reveals both rows after the pass", fun () -> replacedPendingRow Tree.ops Tree.run false
+            "program queued: replacing the last pending row reveals both rows after the pass",
+            fun () -> replacedPendingRow Program.ops Program.run true
+            "tree synchronous: replacing a pending arm with another pending arm keeps the boundary hidden",
+            fun () -> armReplacedWhilePending Tree.ops Tree.run false
+            "tree queued: replacing a pending arm with another pending arm keeps the boundary hidden",
+            fun () -> armReplacedWhilePending Tree.ops Tree.run true
+            "program synchronous: replacing a pending arm with another pending arm keeps the boundary hidden",
+            fun () -> armReplacedWhilePending Program.ops Program.run false
+            "program queued: replacing a pending arm with another pending arm keeps the boundary hidden",
+            fun () -> armReplacedWhilePending Program.ops Program.run true
 #if RANVIER_VIEW_COUNTERS
-        "tree synchronous: a boundary writes no wake while its content sets up", fun () -> setupWakes Tree.ops Tree.run false
-        "program queued: a boundary writes no wake while its content sets up", fun () -> setupWakes Program.ops Program.run true
+            "tree synchronous: a boundary writes no wake while its content sets up", fun () -> setupWakes Tree.ops Tree.run false
+            "program queued: a boundary writes no wake while its content sets up", fun () -> setupWakes Program.ops Program.run true
 #endif
-        "tree synchronous: replacing the one pending row with another pending row keeps the boundary hidden",
-        fun () -> rowReplacedWhilePending Tree.ops Tree.run false
-        "program queued: replacing the one pending row with another pending row keeps the boundary hidden",
-        fun () -> rowReplacedWhilePending Program.ops Program.run true
-        "tree synchronous: rows added after the reveal set IsPending only while one of them is pending",
-        fun () -> rowsAddedAfterReveal Tree.ops Tree.run false
-        "program queued: rows added after the reveal set IsPending only while one of them is pending",
-        fun () -> rowsAddedAfterReveal Program.ops Program.run true
-        "tree synchronous: a failed reader under a boundary shows the error view, cleans up once and reports once",
-        fun () -> readerFailure Tree.ops Tree.run false
-        "program queued: a failed reader under a boundary shows the error view, cleans up once and reports once",
-        fun () -> readerFailure Program.ops Program.run true
-        "tree synchronous: a live setter failure under a boundary replaces the content with the error view",
-        fun () -> setterFailure Tree.ops Tree.run false
-        "program synchronous: a live setter failure under a boundary replaces the content with the error view",
-        fun () -> setterFailure Program.ops Program.run false
-        "tree queued: a queued setter failure under a boundary replaces the content after the flush", fun () -> setterFailure Tree.ops Tree.run true
-        "program queued: a queued setter failure under a boundary replaces the content after the flush",
-        fun () -> setterFailure Program.ops Program.run true
-        "tree queued: a row setup failure under a boundary shows the error view", fun () -> rowSetupFailure Tree.ops Tree.run true
-        "program synchronous: a row setup failure under a boundary shows the error view", fun () -> rowSetupFailure Program.ops Program.run false
-        "tree synchronous: an arm setup failure under a boundary shows the error view", fun () -> armSetupFailure Tree.ops Tree.run false
-        "program queued: an arm setup failure under a boundary shows the error view", fun () -> armSetupFailure Program.ops Program.run true
-        "tree: two setters failing in one queued flush tear the content down once", fun () -> twoQueuedFailures Tree.ops Tree.run
-        "program: two setters failing in one queued flush tear the content down once", fun () -> twoQueuedFailures Program.ops Program.run
-        "tree synchronous: retry remounts the content with a new setup and pending phase", fun () -> retry Tree.ops Tree.run false
-        "program queued: retry remounts the content with a new setup and pending phase", fun () -> retry Program.ops Program.run true
-        "tree queued: a failing pending view goes to the enclosing boundary", fun () -> pendingViewFailure Tree.ops Tree.run true
-        "program synchronous: a failing pending view goes to the enclosing boundary", fun () -> pendingViewFailure Program.ops Program.run false
-        "tree synchronous: a failing error view goes to the enclosing boundary", fun () -> errorViewFailure Tree.ops Tree.run false
-        "program queued: a failing error view goes to the enclosing boundary", fun () -> errorViewFailure Program.ops Program.run true
-        "tree synchronous: a retry reports again an exception object reported before the retry", fun () -> retryCachedFailure Tree.ops Tree.run false
-        "program queued: a retry reports again an exception object reported before the retry",
-        fun () -> retryCachedFailure Program.ops Program.run true
-        "tree queued: two readers of one failed memo under a boundary report it once and tear down once",
-        fun () -> sharedReaderFailure Tree.ops Tree.run true
-        "program synchronous: two readers of one failed memo under a boundary report it once and tear down once",
-        fun () -> sharedReaderFailure Program.ops Program.run false
-        "tree: an inner and an outer failure in one queued flush are each reported once", fun () -> nestedQueuedFailures Tree.ops Tree.run
-        "program: an inner and an outer failure in one queued flush are each reported once", fun () -> nestedQueuedFailures Program.ops Program.run
-        "tree synchronous: a content binding failing on its first read shows the error view", fun () -> initialReaderFailure Tree.ops Tree.run false
-        "tree queued: a content binding failing on its first read shows the error view", fun () -> initialReaderFailure Tree.ops Tree.run true
-        "program synchronous: a content binding failing on its first read shows the error view",
-        fun () -> initialReaderFailure Program.ops Program.run false
-        "program queued: a content binding failing on its first read shows the error view",
-        fun () -> initialReaderFailure Program.ops Program.run true
-        "tree synchronous: a throwing delegated handler under a boundary shows the error view",
-        fun () -> handlerFailure Tree.ops Tree.run false "click"
-        "program queued: a throwing delegated handler under a boundary shows the error view",
-        fun () -> handlerFailure Program.ops Program.run true "click"
-        "tree queued: a throwing direct handler under a boundary shows the error view", fun () -> handlerFailure Tree.ops Tree.run true "focus"
-        "program synchronous: a throwing direct handler under a boundary shows the error view",
-        fun () -> handlerFailure Program.ops Program.run false "focus"
-        "tree synchronous: a pending read after the reveal keeps the content and sets IsPending", fun () -> pendingAfterReveal Tree.ops Tree.run false
-        "tree queued: a pending read after the reveal keeps the content and sets IsPending", fun () -> pendingAfterReveal Tree.ops Tree.run true
-        "program synchronous: a pending read after the reveal keeps the content and sets IsPending",
-        fun () -> pendingAfterReveal Program.ops Program.run false
-        "program queued: a pending read after the reveal keeps the content and sets IsPending",
-        fun () -> pendingAfterReveal Program.ops Program.run true
-        "program queued: a fail-fast flush stopped outside a revealed boundary clears IsPending after a refetch settles",
-        fun () -> cancelledAfterReveal Program.ops Program.run
-        "program queued: a fail-fast flush stopped outside a hidden boundary still reveals it once every source settles",
-        fun () -> cancelledBeforeReveal Program.ops Program.run
-        "tree synchronous: overlapping refetches after the reveal keep IsPending set until both settle",
-        fun () -> overlappingWaits Tree.ops Tree.run false
-        "program queued: overlapping refetches after the reveal keep IsPending set until both settle",
-        fun () -> overlappingWaits Program.ops Program.run true
-        "tree synchronous: a delegated handler throwing NotReadyException under a boundary shows the error view",
-        fun () -> handlerNotReady Tree.ops Tree.run false "click"
-        "program queued: a delegated handler throwing NotReadyException under a boundary shows the error view",
-        fun () -> handlerNotReady Program.ops Program.run true "click"
-        "tree queued: a direct handler throwing NotReadyException under a boundary shows the error view",
-        fun () -> handlerNotReady Tree.ops Tree.run true "focus"
-        "program synchronous: a direct handler throwing NotReadyException under a boundary shows the error view",
-        fun () -> handlerNotReady Program.ops Program.run false "focus"
-        "tree synchronous: a throwing delegated handler outside every boundary throws out of its dispatch",
-        fun () -> handlerOutsideBoundary Tree.ops Tree.run false "click"
-        "program queued: a throwing direct handler outside every boundary throws out of its dispatch",
-        fun () -> handlerOutsideBoundary Program.ops Program.run true "focus"
-        "tree synchronous: a handler exception after the error view is shown tears down once and is reported once",
-        fun () -> handlerAfterFailure Tree.ops Tree.run false false
-        "program synchronous: a handler exception after the error view is shown tears down once and is reported once",
-        fun () -> handlerAfterFailure Program.ops Program.run false false
-        "tree queued: a handler exception tears the content down before a failing setter commits and is reported once",
-        fun () -> handlerAfterFailure Tree.ops Tree.run true false
-        "tree synchronous: the same exception object from a handler and a setter is reported once",
-        fun () -> handlerAfterFailure Tree.ops Tree.run false true
-        "tree queued: the same exception object from a handler and a setter is reported once",
-        fun () -> handlerAfterFailure Tree.ops Tree.run true true
-        "program synchronous: the same exception object from a handler and a setter is reported once",
-        fun () -> handlerAfterFailure Program.ops Program.run false true
-        "template synchronous: a boundary reveals rows and arms in one insertion and keeps them through a refetch", templateReveal false
-        "template queued: a boundary reveals rows and arms in one insertion and keeps them through a refetch", templateReveal true
-        "template synchronous: a live setter failure under a boundary shows the error view",
-        templateFailure false (fun graph _ -> graph.Run (fun () -> fragileValue.Value <- "bad")) "setter"
-        "template queued: a live setter failure under a boundary shows the error view",
-        templateFailure true (fun graph _ -> graph.Run (fun () -> fragileValue.Value <- "bad")) "setter"
-        "template: a throwing delegated handler under a boundary shows the error view",
-        templateFailure false (fun _ host -> (button host).click()) "handler"
-        "template: a throwing direct handler under a boundary shows the error view",
-        templateFailure false (fun _ host -> dispatchFocus (button host)) "focus handler"
-        "template: a delegated handler throwing NotReadyException under a boundary shows the error view",
-        templateHandlerNotReady (fun button -> button.click ())
-        "template: a direct handler throwing NotReadyException under a boundary shows the error view", templateHandlerNotReady dispatchFocus
-        "template: a boundary waits for a pending isolated slot after its render slots settle", templateSlotKinds true
-        "template: a boundary waits for a pending render slot after its isolated slots settle", templateSlotKinds false
-        "template: a delegated handler after one whose failure tore the content down is skipped",
-        templateSecondHandler (fun button -> button.click ())
-        "template: a direct handler after one whose failure tore the content down is skipped", templateSecondHandler dispatchFocus
-        "template: retry remounts a content whose setup failed", templateRetry
-        "template: removing the one pending row before the reveal reveals the remaining row", templateRemovedPendingRow
-        "template synchronous: replacing a pending arm with another pending arm keeps the boundary hidden", templateArmReplacedWhilePending false
-        "template queued: replacing a pending arm with another pending arm keeps the boundary hidden", templateArmReplacedWhilePending true
-        "template HTML renders a boundary's pending, content or error view between markers", templateServer
-    |]
+            "tree synchronous: replacing the one pending row with another pending row keeps the boundary hidden",
+            fun () -> rowReplacedWhilePending Tree.ops Tree.run false
+            "program queued: replacing the one pending row with another pending row keeps the boundary hidden",
+            fun () -> rowReplacedWhilePending Program.ops Program.run true
+            "tree synchronous: rows added after the reveal set IsPending only while one of them is pending",
+            fun () -> rowsAddedAfterReveal Tree.ops Tree.run false
+            "program queued: rows added after the reveal set IsPending only while one of them is pending",
+            fun () -> rowsAddedAfterReveal Program.ops Program.run true
+            "tree synchronous: a failed reader under a boundary shows the error view, cleans up once and reports once",
+            fun () -> readerFailure Tree.ops Tree.run false
+            "program queued: a failed reader under a boundary shows the error view, cleans up once and reports once",
+            fun () -> readerFailure Program.ops Program.run true
+            "tree synchronous: a live setter failure under a boundary replaces the content with the error view",
+            fun () -> setterFailure Tree.ops Tree.run false
+            "program synchronous: a live setter failure under a boundary replaces the content with the error view",
+            fun () -> setterFailure Program.ops Program.run false
+            "tree queued: a queued setter failure under a boundary replaces the content after the flush",
+            fun () -> setterFailure Tree.ops Tree.run true
+            "program queued: a queued setter failure under a boundary replaces the content after the flush",
+            fun () -> setterFailure Program.ops Program.run true
+            "tree queued: a row setup failure under a boundary shows the error view", fun () -> rowSetupFailure Tree.ops Tree.run true
+            "program synchronous: a row setup failure under a boundary shows the error view", fun () -> rowSetupFailure Program.ops Program.run false
+            "tree synchronous: an arm setup failure under a boundary shows the error view", fun () -> armSetupFailure Tree.ops Tree.run false
+            "program queued: an arm setup failure under a boundary shows the error view", fun () -> armSetupFailure Program.ops Program.run true
+            "tree: two setters failing in one queued flush tear the content down once", fun () -> twoQueuedFailures Tree.ops Tree.run
+            "program: two setters failing in one queued flush tear the content down once", fun () -> twoQueuedFailures Program.ops Program.run
+            "tree synchronous: retry remounts the content with a new setup and pending phase", fun () -> retry Tree.ops Tree.run false
+            "program queued: retry remounts the content with a new setup and pending phase", fun () -> retry Program.ops Program.run true
+            "tree queued: a failing pending view goes to the enclosing boundary", fun () -> pendingViewFailure Tree.ops Tree.run true
+            "program synchronous: a failing pending view goes to the enclosing boundary", fun () -> pendingViewFailure Program.ops Program.run false
+            "tree synchronous: a failing error view goes to the enclosing boundary", fun () -> errorViewFailure Tree.ops Tree.run false
+            "program queued: a failing error view goes to the enclosing boundary", fun () -> errorViewFailure Program.ops Program.run true
+            "tree synchronous: a retry reports again an exception object reported before the retry",
+            fun () -> retryCachedFailure Tree.ops Tree.run false
+            "program queued: a retry reports again an exception object reported before the retry",
+            fun () -> retryCachedFailure Program.ops Program.run true
+            "tree queued: two readers of one failed memo under a boundary report it once and tear down once",
+            fun () -> sharedReaderFailure Tree.ops Tree.run true
+            "program synchronous: two readers of one failed memo under a boundary report it once and tear down once",
+            fun () -> sharedReaderFailure Program.ops Program.run false
+            "tree: an inner and an outer failure in one queued flush are each reported once", fun () -> nestedQueuedFailures Tree.ops Tree.run
+            "program: an inner and an outer failure in one queued flush are each reported once",
+            fun () -> nestedQueuedFailures Program.ops Program.run
+            "tree synchronous: a content binding failing on its first read shows the error view",
+            fun () -> initialReaderFailure Tree.ops Tree.run false
+            "tree queued: a content binding failing on its first read shows the error view", fun () -> initialReaderFailure Tree.ops Tree.run true
+            "program synchronous: a content binding failing on its first read shows the error view",
+            fun () -> initialReaderFailure Program.ops Program.run false
+            "program queued: a content binding failing on its first read shows the error view",
+            fun () -> initialReaderFailure Program.ops Program.run true
+            "tree synchronous: a throwing delegated handler under a boundary shows the error view",
+            fun () -> handlerFailure Tree.ops Tree.run false "click"
+            "program queued: a throwing delegated handler under a boundary shows the error view",
+            fun () -> handlerFailure Program.ops Program.run true "click"
+            "tree queued: a throwing direct handler under a boundary shows the error view", fun () -> handlerFailure Tree.ops Tree.run true "focus"
+            "program synchronous: a throwing direct handler under a boundary shows the error view",
+            fun () -> handlerFailure Program.ops Program.run false "focus"
+            "tree synchronous: a pending read after the reveal keeps the content and sets IsPending",
+            fun () -> pendingAfterReveal Tree.ops Tree.run false
+            "tree queued: a pending read after the reveal keeps the content and sets IsPending", fun () -> pendingAfterReveal Tree.ops Tree.run true
+            "program synchronous: a pending read after the reveal keeps the content and sets IsPending",
+            fun () -> pendingAfterReveal Program.ops Program.run false
+            "program queued: a pending read after the reveal keeps the content and sets IsPending",
+            fun () -> pendingAfterReveal Program.ops Program.run true
+            "program queued: a fail-fast flush stopped outside a revealed boundary clears IsPending after a refetch settles",
+            fun () -> cancelledAfterReveal Program.ops Program.run
+            "program queued: a fail-fast flush stopped outside a hidden boundary still reveals it once every source settles",
+            fun () -> cancelledBeforeReveal Program.ops Program.run
+            "tree synchronous: overlapping refetches after the reveal keep IsPending set until both settle",
+            fun () -> overlappingWaits Tree.ops Tree.run false
+            "program queued: overlapping refetches after the reveal keep IsPending set until both settle",
+            fun () -> overlappingWaits Program.ops Program.run true
+            "tree synchronous: a delegated handler throwing NotReadyException under a boundary shows the error view",
+            fun () -> handlerNotReady Tree.ops Tree.run false "click"
+            "program queued: a delegated handler throwing NotReadyException under a boundary shows the error view",
+            fun () -> handlerNotReady Program.ops Program.run true "click"
+            "tree queued: a direct handler throwing NotReadyException under a boundary shows the error view",
+            fun () -> handlerNotReady Tree.ops Tree.run true "focus"
+            "program synchronous: a direct handler throwing NotReadyException under a boundary shows the error view",
+            fun () -> handlerNotReady Program.ops Program.run false "focus"
+            "tree synchronous: a throwing delegated handler outside every boundary throws out of its dispatch",
+            fun () -> handlerOutsideBoundary Tree.ops Tree.run false "click"
+            "program queued: a throwing direct handler outside every boundary throws out of its dispatch",
+            fun () -> handlerOutsideBoundary Program.ops Program.run true "focus"
+            "tree synchronous: a handler exception after the error view is shown tears down once and is reported once",
+            fun () -> handlerAfterFailure Tree.ops Tree.run false false
+            "program synchronous: a handler exception after the error view is shown tears down once and is reported once",
+            fun () -> handlerAfterFailure Program.ops Program.run false false
+            "tree queued: a handler exception tears the content down before a failing setter commits and is reported once",
+            fun () -> handlerAfterFailure Tree.ops Tree.run true false
+            "tree synchronous: the same exception object from a handler and a setter is reported once",
+            fun () -> handlerAfterFailure Tree.ops Tree.run false true
+            "tree queued: the same exception object from a handler and a setter is reported once",
+            fun () -> handlerAfterFailure Tree.ops Tree.run true true
+            "program synchronous: the same exception object from a handler and a setter is reported once",
+            fun () -> handlerAfterFailure Program.ops Program.run false true
+            "template synchronous: a boundary reveals rows and arms in one insertion and keeps them through a refetch", templateReveal false
+            "template queued: a boundary reveals rows and arms in one insertion and keeps them through a refetch", templateReveal true
+            "template synchronous: a live setter failure under a boundary shows the error view",
+            templateFailure false (fun graph _ -> graph.Run (fun () -> (fragileValue ()).Value.Value <- "bad")) "setter"
+            "template queued: a live setter failure under a boundary shows the error view",
+            templateFailure true (fun graph _ -> graph.Run (fun () -> (fragileValue ()).Value.Value <- "bad")) "setter"
+            "template: a throwing delegated handler under a boundary shows the error view",
+            templateFailure false (fun _ host -> (button host).click()) "handler"
+            "template: a throwing direct handler under a boundary shows the error view",
+            templateFailure false (fun _ host -> dispatchFocus (button host)) "focus handler"
+            "template: a delegated handler throwing NotReadyException under a boundary shows the error view",
+            templateHandlerNotReady (fun button -> button.click ())
+            "template: a direct handler throwing NotReadyException under a boundary shows the error view", templateHandlerNotReady dispatchFocus
+            "template: a boundary waits for a pending isolated slot after its render slots settle", templateSlotKinds true
+            "template: a boundary waits for a pending render slot after its isolated slots settle", templateSlotKinds false
+            "template: a delegated handler after one whose failure tore the content down is skipped",
+            templateSecondHandler (fun button -> button.click ())
+            "template: a direct handler after one whose failure tore the content down is skipped", templateSecondHandler dispatchFocus
+            "template: retry remounts a content whose setup failed", templateRetry
+            "template: removing the one pending row before the reveal reveals the remaining row", templateRemovedPendingRow
+            "template synchronous: replacing a pending arm with another pending arm keeps the boundary hidden", templateArmReplacedWhilePending false
+            "template queued: replacing a pending arm with another pending arm keeps the boundary hidden", templateArmReplacedWhilePending true
+            "template HTML renders a boundary's pending, content or error view between markers", templateServer
+        |]

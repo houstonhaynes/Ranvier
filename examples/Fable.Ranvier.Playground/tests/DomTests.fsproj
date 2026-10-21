@@ -13,6 +13,7 @@
     <Compile Include="../../../tests/Ranvier.Tests/ComparerCases.fs" Link="ComparerCases.fs" />
     <Compile Include="DomChecks.fs" />
     <Compile Include="ScheduledChecks.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Portable/Native.fs" Link="Native.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Lifetime.fs" Link="Lifetime.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Scope.fs" Link="Scope.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Identity.fs" Link="Identity.fs" />
@@ -39,6 +40,13 @@
     <Compile Include="../../../experiments/Ranvier.View.Foundation/DocumentHead.fs" Link="DocumentHead.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Mounting.fs" Link="Mounting.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Hydration.fs" Link="Hydration.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/EventSpec.fs" Link="Testing/EventSpec.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Selector.fs" Link="Testing/Selector.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Conformance.fs" Link="Testing/Conformance.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Query.fs" Link="Testing/Query.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Interact.fs" Link="Testing/Interact.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Expect.fs" Link="Testing/Expect.fs" />
+    <Compile Include="JsdomHarness.fs" />
     <Compile Include="RangeChecks.fs" />
     <Compile Include="BindingChecks.fs" />
     <Compile Include="BindingIntegrationChecks.fs" />
@@ -70,6 +78,7 @@
     <Compile Include="PreparedChecks.fs" />
     <Compile Include="DelegationChecks.fs" />
     <Compile Include="TemplateChecks.fs" />
+    <Compile Include="TestingApiChecks.fs" />
     <Compile Include="TemplateCatalogueChecks.fs" />
     <Compile Include="BoundaryChecks.fs" />
     <Compile Include="CheckSupport.fs" />
@@ -95,6 +104,7 @@
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Fixtures.fs" Link="Fixtures.fs" />
     <Compile Include="RepresentationBench.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/SnapshotBench.fs" Link="SnapshotBench.fs" />
+    <Compile Include="ConformanceCases.fs" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />

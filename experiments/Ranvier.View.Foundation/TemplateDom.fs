@@ -8,9 +8,6 @@ open Ranvier
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Template
 
-[<Global "document">]
-let private document: Document = jsNative
-
 [<Literal>]
 let FirstChild = 0
 
@@ -153,21 +150,48 @@ type internal HydrationCursor(next: Node, strict: bool) =
 
 let private noNode: Node = Unchecked.defaultof<_>
 
+#if FABLE_COMPILER
 [<Emit("$0 == null")>]
 let private absent (node: Node) : bool = jsNative
+#else
+let private absent (node: Node) : bool =
+    Native.isNullish node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.nodeType === 8")>]
 let private isComment (node: Node) : bool = jsNative
+#else
+let private isComment (node: Node) : bool =
+    node.nodeType = 8.0
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.data")>]
 let private dataOf (node: Node) : string = jsNative
+#else
+let private dataOf (node: Node) : string =
+    Native.dataOf node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.nextSibling")>]
 let private following (node: Node) : Node = jsNative
+#else
+let private following (node: Node) : Node =
+    Native.nextOrNull node
+#endif
 
 /// <summary>Whether the node is a comment whose data starts with <c>[</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 8 && $0.data.startsWith('[')")>]
 let internal isStartMarker (node: Node) : bool = jsNative
+#else
+let internal isStartMarker (node: Node) : bool =
+    not (Native.isNullish node)
+    && node.nodeType = 8.0
+    && (Native.dataOf node).StartsWith "["
+#endif
 
 /// <summary>The sibling <c>]</c> comment closing the region that <c>start</c> opens.</summary>
 /// <exception cref="T:Ranvier.View.Foundation.TemplateDom.HydrationMismatchException">The siblings end first.</exception>
@@ -364,16 +388,30 @@ let walkProgram (paths: int array array) : int array =
     ops.ToArray ()
 
 /// <summary>Marks an event node of a template instance under a boundary with the boundary.</summary>
+#if FABLE_COMPILER
 [<Emit("$0.$$ranvierScope = $1")>]
 let private attachScope (node: obj) (scope: ViewScope) : unit = jsNative
+#else
+let private attachScope (node: obj) (scope: ViewScope) : unit =
+    Native.setExpando node "$$ranvierScope" scope
+#endif
 
 /// <summary>The boundary of an event node, or null outside every boundary.</summary>
+#if FABLE_COMPILER
 [<Emit("$0.$$ranvierScope")>]
 let private scopeOf (node: Node) : ViewScope = jsNative
+#else
+let private scopeOf (node: Node) : ViewScope =
+    Native.expando<ViewScope> node "$$ranvierScope"
+#endif
 
 let private dispatchFor (nodeCount: int) (events: (int * string * Func<obj, obj, unit>) array) (eventNames: string array) =
     Func<obj array, Node, obj, unit>(fun state node event ->
+#if FABLE_COMPILER
         let eventType: string = event?``type``
+#else
+        let eventType: string = (unbox<Event> event).``type``
+#endif
         let mutable handled = false
 
         for eventName in eventNames do
@@ -421,11 +459,32 @@ let private restructured (detail: string) =
         + detail
     )
 
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 8 && $0.data === '[' && $0.nextSibling != null && $0.nextSibling.nodeType === 8 && $0.nextSibling.data === ']'")>]
 let private isRegionStart (node: Node) : bool = jsNative
+#else
+let private isRegionStart (node: Node) : bool =
+    let next =
+        if Native.isNullish node then
+            Unchecked.defaultof<Node>
+        else
+            Native.nextOrNull node
 
+    not (Native.isNullish node)
+    && node.nodeType = 8.0
+    && Native.dataOf node = "["
+    && not (Native.isNullish next)
+    && next.nodeType = 8.0
+    && Native.dataOf next = "]"
+#endif
+
+#if FABLE_COMPILER
 [<Emit("document.importNode($0, true)")>]
 let private importDeep (node: Node) : Node = jsNative
+#else
+let private importDeep (node: Node) : Node =
+    Native.importDeep node
+#endif
 
 let private validateParsed (content: DocumentFragment) (walk: int array) (targets: (TemplateNode * int array) array) (rootCount: int) =
     let parsedRoots = int content.childNodes.length
@@ -469,11 +528,23 @@ let private validateParsed (content: DocumentFragment) (walk: int array) (target
             count <- count + 1
         elif not (isNull (box cursor)) then
             if op = FirstChild then
+#if FABLE_COMPILER
                 cursor <- unbox cursor.firstChild
+#else
+                cursor <- Native.firstChildOf cursor
+#endif
             elif op = NextSibling then
+#if FABLE_COMPILER
                 cursor <- unbox cursor.nextSibling
+#else
+                cursor <- Native.nextOrNull cursor
+#endif
             else
+#if FABLE_COMPILER
                 cursor <- unbox cursor.parentNode
+#else
+                cursor <- Native.parentOrNull cursor
+#endif
 
 let private tables (targets: (TemplateNode * int array) array) (owners: int array) (part: int) (first: int) (count: int) =
     let renderSlots = ResizeArray<int * Slot>()
@@ -615,7 +686,7 @@ let compile (definition: TemplateComponent) : Compiled =
                 | _ -> ()
         |]
 
-    let template = document.createElement "template" :?> HTMLTemplateElement
+    let template = Native.createElement "template" :?> HTMLTemplateElement
     let parse = Departures.seam.Parse
 
     if isNull parse then
@@ -650,7 +721,11 @@ let compile (definition: TemplateComponent) : Compiled =
         0
         targets.Length
         (if rootCount = 1 then
+#if FABLE_COMPILER
              unbox content.firstChild
+#else
+             Native.firstChildOf content
+#endif
          else
              content :> Node)
         rootCount
@@ -711,26 +786,56 @@ type internal MountServices =
 let private unset = obj ()
 
 /// <summary>An array of <c>length</c> unassigned elements.</summary>
+#if FABLE_COMPILER
 [<Emit("new Array($0)")>]
 let private allocate (length: int) : obj array = jsNative
+#else
+let private allocate (length: int) : obj array =
+    Native.allocate length
+#endif
 
 /// <summary>Reads the element at an index; an index past the end reads <c>undefined</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("$0[$1]")>]
 let private at (array: 'T array) (index: int) : 'T = jsNative
+#else
+let private at (array: 'T array) (index: int) : 'T =
+    Native.arrayAt array index
+#endif
 
-/// <summary>Writes the element at an index; an index past the end grows the array.</summary>
+/// <summary>Writes the element at an index. Under Fable an index past the end grows the array; on .NET it raises.</summary>
+#if FABLE_COMPILER
 [<Emit("$0[$1] = $2")>]
 let private store (array: obj array) (index: int) (value: obj) : unit = jsNative
+#else
+let private store (array: obj array) (index: int) (value: obj) : unit =
+    Native.arraySet array index value
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.data = $1 == null ? '' : $1")>]
 let private setData (node: obj) (value: obj) : unit = jsNative
+#else
+let private setData (node: obj) (value: obj) : unit =
+    Native.setData node value
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$1 == null ? $0.removeAttribute($2) : $0.setAttribute($2, $1)")>]
 let private setAttribute (node: obj) (value: obj) (name: string) : unit = jsNative
+#else
+let private setAttribute (node: obj) (value: obj) (name: string) : unit =
+    Native.setAttributeOrRemove node value name
+#endif
 
 /// <summary>Marks a node as an event node of a template instance.</summary>
+#if FABLE_COMPILER
 [<Emit("$0.$$ranvier = $1")>]
 let attachState (node: obj) (state: obj array) : unit = jsNative
+#else
+let attachState (node: obj) (state: obj array) : unit =
+    Native.setExpando node "$$ranvier" state
+#endif
 
 let private write (slot: Slot) (node: obj) (value: obj) =
     match slot.Target with
@@ -739,30 +844,79 @@ let private write (slot: Slot) (node: obj) (value: obj) =
     | TextTarget -> setData node value
     | ContentTarget -> (unbox<HTMLElement> node).innerHTML <- markupOf value
 
+#if FABLE_COMPILER
 [<Emit("$0.data !== ($1 == null ? '' : String($1))")>]
 let private dataDiffers (node: obj) (value: obj) : bool = jsNative
+#else
+let private dataDiffers (node: obj) (value: obj) : bool =
+    Native.dataOf (unbox<Node> node)
+    <> (if isNull value then "" else Native.jsString value)
+#endif
 
 /// <summary>Whether the attribute differs from <c>value</c>, a string, or null for an absent attribute.</summary>
+#if FABLE_COMPILER
 [<Emit("$0.getAttribute($1) !== ($2 == null ? null : String($2))")>]
 let private attributeDiffers (node: obj) (name: string) (value: obj) : bool = jsNative
+#else
+let private attributeDiffers (node: obj) (name: string) (value: obj) : bool =
+    Option.toObj ((unbox<Element> node).getAttribute name)
+    <> (if isNull value then null else Native.jsString value)
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.defaultValue !== ($1 == null ? '' : String($1))")>]
 let private defaultValueDiffers (node: obj) (value: obj) : bool = jsNative
+#else
+let private defaultValueDiffers (node: obj) (value: obj) : bool =
+    Native.defaultValueOf node
+    <> (if isNull value then "" else Native.jsString value)
+#endif
 
 /// <summary>The inverse of a change to the node's data.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const n = $0, d = n.data; return () => { n.data = d; }; })()")>]
 let private keepData (node: obj) : unit -> unit = jsNative
+#else
+let private keepData (node: obj) : unit -> unit =
+    let data = Native.dataOf (unbox<Node> node)
+    fun () -> Native.setData node (box data)
+#endif
 
 /// <summary>The inverse of a change to the element's attributes: the attribute set is set back, in its order.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const n = $0, a = Array.from(n.attributes, x => [x.name, x.value]); return () => { for (const x of Array.from(n.attributes)) n.removeAttribute(x.name); for (const [x, y] of a) n.setAttribute(x, y); }; })()")>]
 let private keepAttributes (node: obj) : unit -> unit = jsNative
+#else
+let private keepAttributes (node: obj) : unit -> unit =
+    let element = unbox<Element> node
+    let attributes = Native.attributesOf element
+    fun () -> Native.setAttributesBack element attributes
+#endif
 
 /// <summary>
 /// The inverse of a property write: the element's children, its attribute set in order and its form state are set
 /// back. A form value that is already equal is left untouched; a restored one marks its control as edited.
 /// </summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const n = $0, c = Array.from(n.childNodes), a = Array.from(n.attributes, x => [x.name, x.value]), v = n.value, k = n.checked, s = n.selected; return () => { n.replaceChildren(...c); for (const x of Array.from(n.attributes)) n.removeAttribute(x.name); for (const [x, y] of a) n.setAttribute(x, y); if ('value' in n && n.value !== v) n.value = v; if ('checked' in n && n.checked !== k) n.checked = k; if ('selected' in n && n.selected !== s) n.selected = s; }; })()")>]
 let private keepElement (node: obj) : unit -> unit = jsNative
+#else
+let private keepElement (node: obj) : unit -> unit =
+    let element = unbox<Element> node
+    let children = Native.childNodesOf element
+    let attributes = Native.attributesOf element
+    let value, isChecked, selected = Native.formStateOf node
+
+    fun () ->
+        for child in Native.childNodesOf element do
+            Native.removeNode child
+
+        for child in children do
+            Native.appendNode element child
+
+        Native.setAttributesBack element attributes
+        Native.restoreFormState node value isChecked selected
+#endif
 
 /// <summary>
 /// Writes a property's value during hydration when the server HTML differs from the client's serialisation: an
@@ -859,11 +1013,23 @@ let private collect (root: Node) (walk: int array) (state: obj array) =
         let op = at walk i
 
         if op = FirstChild then
+#if FABLE_COMPILER
             cursor <- unbox cursor.firstChild
+#else
+            cursor <- Native.firstChildOf cursor
+#endif
         elif op = NextSibling then
+#if FABLE_COMPILER
             cursor <- unbox cursor.nextSibling
+#else
+            cursor <- Native.nextOrNull cursor
+#endif
         elif op = Parent then
+#if FABLE_COMPILER
             cursor <- unbox cursor.parentNode
+#else
+            cursor <- Native.parentOrNull cursor
+#endif
         else
             store state (StateNodes + count) (box cursor)
             count <- count + 1
@@ -1136,21 +1302,43 @@ let internal describe (node: Node) : string =
     elif isComment node then "<!--" + dataOf node + "-->"
     else node.nodeName.ToLowerInvariant ()
 
+#if FABLE_COMPILER
 [<Emit("$0.parentNode.replaceChild($1, $2)")>]
 let private replaceNode (existing: Node) (replacement: Node) (replaced: Node) : unit = jsNative
+#else
+let private replaceNode (existing: Node) (replacement: Node) (replaced: Node) : unit =
+    Native.replaceNode existing replacement replaced
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.appendChild($1)")>]
 let private appendNode (parent: Node) (node: Node) : unit = jsNative
+#else
+let private appendNode (parent: Node) (node: Node) : unit =
+    Native.appendNode parent node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.remove()")>]
 let private removeNode (node: Node) : unit = jsNative
+#else
+let private removeNode (node: Node) : unit =
+    Native.removeNode node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 8 && $0.data === '_'")>]
 let private isEmptyText (node: Node) : bool = jsNative
+#else
+let private isEmptyText (node: Node) : bool =
+    not (Native.isNullish node)
+    && node.nodeType = 8.0
+    && Native.dataOf node = "_"
+#endif
 
 /// <summary>Replaces the <c>&lt;!--_--&gt;</c> placeholder with an empty text node, recording the inverse, and returns the text node.</summary>
 let private replacePlaceholder (cursor: HydrationCursor) (placeholder: Node) : Node =
-    let text = document.createTextNode "" :> Node
+    let text = Native.createTextNode "" :> Node
     replaceNode placeholder text placeholder
     cursor.Undo (fun () -> replaceNode text placeholder text)
     text
@@ -1173,8 +1361,16 @@ let private adoptedPath (roots: Node array) (node: Node) : string =
     let mutable root = rootIndex current
 
     while root.IsNone do
+#if FABLE_COMPILER
         let parent: Node = unbox current.parentNode
+#else
+        let parent: Node = Native.parentOrNull current
+#endif
+#if FABLE_COMPILER
         let mutable sibling: Node = unbox parent.firstChild
+#else
+        let mutable sibling: Node = Native.firstChildOf parent
+#endif
         let mutable position = 0
 
         while not (obj.ReferenceEquals (sibling, current)) do
@@ -1192,12 +1388,31 @@ let private adoptedPath (roots: Node array) (node: Node) : string =
         pathText steps
 
 /// <summary>Whether <c>node</c> is an element whose lowercased name equals the lowercased name of the element <c>expected</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 1 && (($0.localName === $1.localName && $0.prefix === null && $1.prefix === null) || $0.nodeName.toLowerCase() === $1.nodeName.toLowerCase())")>]
 let private sameElementName (node: Node) (expected: Node) : bool = jsNative
+#else
+let private sameElementName (node: Node) (expected: Node) : bool =
+    not (Native.isNullish node)
+    && node.nodeType = 1.0
+    && ((Native.localNameOf node = Native.localNameOf expected
+         && Native.isNullish (Native.prefixOf node)
+         && Native.isNullish (Native.prefixOf expected))
+        || node.nodeName.ToLowerInvariant () = expected.nodeName.ToLowerInvariant ())
+#endif
 
 /// <summary>Whether <c>node</c> is an element whose lowercased name equals the lowercased <c>tag</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 1 && (($0.localName === $1 && $0.prefix === null) || $0.nodeName.toLowerCase() === $1.toLowerCase())")>]
 let private isElementNamed (node: Node) (tag: string) : bool = jsNative
+#else
+let private isElementNamed (node: Node) (tag: string) : bool =
+    not (Native.isNullish node)
+    && node.nodeType = 1.0
+    && ((Native.localNameOf node = tag
+         && Native.isNullish (Native.prefixOf node))
+        || node.nodeName.ToLowerInvariant () = tag.ToLowerInvariant ())
+#endif
 
 /// <summary>The mismatch at the root position <c>#index</c>.</summary>
 let private rootMismatch (index: int) (description: string) (found: Node) =
@@ -1216,7 +1431,11 @@ let private adoptRoots (cursor: HydrationCursor) (compiled: Compiled) : Node arr
     let skeleton = compiled.Skeleton
 
     let mutable expected: Node =
+#if FABLE_COMPILER
         if count = 1 then skeleton else unbox skeleton.firstChild
+#else
+        if count = 1 then skeleton else Native.firstChildOf skeleton
+#endif
 
     let mutable node = cursor.Next
 
@@ -1262,8 +1481,16 @@ let private marksRegion (kind: RegionKind) (node: Node) =
            let data = dataOf node
            data = "[c" || data = "[p" || data = "[e"
 
+#if FABLE_COMPILER
 [<Emit("$0 != null && $0.nodeType === 1 && ($0.localName === 'textarea' || $0.localName === 'title')")>]
 let private isRcdataElement (node: Node) : bool = jsNative
+#else
+let private isRcdataElement (node: Node) : bool =
+    not (Native.isNullish node)
+    && node.nodeType = 1.0
+    && (Native.localNameOf node = "textarea"
+        || Native.localNameOf node = "title")
+#endif
 
 /// <summary>
 /// The mismatch path of the position <c>walk</c> reaches before its op at <c>index</c>: the child index at each level,
@@ -1312,7 +1539,7 @@ let private adoptTarget
         if isEmptyText node then
             replacePlaceholder cursor node
         elif absent node && isRcdataElement parent then
-            let text = document.createTextNode "" :> Node
+            let text = Native.createTextNode "" :> Node
             appendNode parent text
             cursor.Undo (fun () -> removeNode text)
             text
@@ -1355,7 +1582,11 @@ let private collectAdopted (roots: Node array) (compiled: Compiled) (state: obj 
             elif absent node then
                 node <- noNode
             else
+#if FABLE_COMPILER
                 node <- unbox node.firstChild
+#else
+                node <- Native.firstChildOf node
+#endif
         elif op = NextSibling then
             if depth = 1 then
                 rootIndex <- rootIndex + 1
@@ -1379,18 +1610,52 @@ let private collectAdopted (roots: Node array) (compiled: Compiled) (state: obj 
         elif op = Parent then
             depth <- depth - 1
             node <- parent
+#if FABLE_COMPILER
             parent <- if absent node then noNode else unbox node.parentNode
+#else
+            parent <- if absent node then noNode else Native.parentOrNull node
+#endif
         else
             node <- adoptTarget cursor (at compiled.Expect count) walk single index parent node
             store state (StateNodes + count) (box node)
             count <- count + 1
 
+#if FABLE_COMPILER
 /// <summary>The definition's compiled form, compiling it on first use.</summary>
 let internal compiledOf (definition: TemplateDefinition) : Compiled =
     if isNull definition.Compiled then
         definition.Compiled <- box (compile (definition :?> TemplateComponent))
 
     definition.Compiled :?> Compiled
+#else
+// Per document: the compiled forms, whose template nodes belong to that document and its thread.
+let private compiledByDocument =
+    System.Runtime.CompilerServices.ConditionalWeakTable<obj, System.Collections.Generic.Dictionary<TemplateDefinition, Compiled>>()
+
+/// <summary>The definition's compiled form in the host document, compiling it on first use there.</summary>
+let internal compiledOf (definition: TemplateDefinition) : Compiled =
+    let compiled =
+        compiledByDocument.GetValue (
+            box (Native.document ()),
+            fun _ -> System.Collections.Generic.Dictionary<TemplateDefinition, Compiled>(HashIdentity.Reference)
+        )
+
+    match compiled.TryGetValue definition with
+    | true, existing -> existing
+    | false, _ ->
+        let created = compile (definition :?> TemplateComponent)
+        compiled[definition] <- created
+        created
+
+/// <summary>The definition's compiled form in the host document, or <c>null</c> before its first use there.</summary>
+let internal compiledIn (definition: TemplateDefinition) : obj =
+    match compiledByDocument.TryGetValue (box (Native.document ())) with
+    | true, compiled ->
+        match compiled.TryGetValue definition with
+        | true, existing -> box existing
+        | false, _ -> null
+    | false, _ -> null
+#endif
 
 /// <summary>
 /// Materialises one instance at the position one step of <c>kind</c> below <c>parent</c>: runs setup, clones the
@@ -1471,10 +1736,18 @@ let rec internal materialise
     elif compiled.RootCount = 1 then
         services.Append clone
     else
+#if FABLE_COMPILER
         let mutable root: Node = unbox clone.firstChild
+#else
+        let mutable root: Node = Native.firstChildOf clone
+#endif
 
         while not (isNull (box root)) do
+#if FABLE_COMPILER
             let next: Node = unbox root.nextSibling
+#else
+            let next: Node = Native.nextOrNull root
+#endif
             services.Append root
             root <- next
 
@@ -1502,7 +1775,11 @@ let rec internal materialise
 
         let finish: Node =
             if isNull cursor then
+#if FABLE_COMPILER
                 unbox start.nextSibling
+#else
+                Native.nextOrNull start
+#endif
             else
                 try
                     matchingEnd start

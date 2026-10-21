@@ -3,6 +3,7 @@ module PlacementChecks
 open System
 open Ranvier
 open Fable.Core.TS.Dom
+open Ranvier.View.Testing
 open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Scheduling
@@ -342,7 +343,7 @@ let private nodeRefLifetime (ops: Operations<'view>) (run: 'view -> Backend -> u
 
     let placed =
         match field.Current with
-        | Some node -> obj.ReferenceEquals (node, target.querySelector "input")
+        | Some node -> obj.ReferenceEquals (node, target.querySelector "input" |> Option.get)
         | None -> false
 
     mounted.Dispose ()
@@ -761,14 +762,15 @@ let private templatePlacedInHost queued () =
     mounted.Dispose ()
     equal ([ "hook true"; "cleanup true" ], 0.) (List.ofSeq probe.Log, probe.Host.childNodes.length)
 
-let private orderLog = ResizeArray<string>()
+let private orderLog () =
+    Conformance.local "PlacementChecks.orderLog" (fun () -> ResizeArray<string>())
 
 let private orderChild =
     Component.define (fun _ () -> ()) (fun t ->
         t.span
             [|
                 t.Hooks.mounted (fun _ (_: HTMLSpanElement) ->
-                    orderLog.Add "child"
+                    (orderLog ()).Add "child"
                     ignore)
             |]
             [||])
@@ -778,7 +780,7 @@ let private orderRow =
         t.span
             [|
                 t.Hooks.mounted (fun item (_: HTMLSpanElement) ->
-                    orderLog.Add ("row " + string (item ()))
+                    (orderLog ()).Add("row " + string (item ()))
                     ignore)
             |]
             [||])
@@ -788,19 +790,19 @@ let private orderParent =
         t.div
             [|
                 t.Hooks.mounted (fun _ (_: HTMLDivElement) ->
-                    orderLog.Add "parent"
+                    (orderLog ()).Add "parent"
                     ignore)
             |]
             [| t.render orderChild id; t.each id (fun _ -> [| 1; 2 |]) orderRow |])
 
 let private templateSetupOrder queued () =
     use graph = new Graph ()
-    orderLog.Clear ()
+    (orderLog ()).Clear()
 
     let mounted =
         mountTemplate queued graph strict (host ()) (Component.render orderParent ())
 
-    equal [ "parent"; "child"; "row 1"; "row 2" ] (List.ofSeq orderLog)
+    equal [ "parent"; "child"; "row 1"; "row 2" ] (List.ofSeq (orderLog ()))
     mounted.Dispose ()
 
 /// <summary>A span whose mounted hook logs <c>name</c>.</summary>
@@ -809,7 +811,7 @@ let private orderMark (name: string) =
         t.span
             [|
                 t.Hooks.mounted (fun _ (_: HTMLSpanElement) ->
-                    orderLog.Add name
+                    (orderLog ()).Add name
                     ignore)
             |]
             [||])
@@ -820,7 +822,7 @@ let private orderHolder (name: string) (after: string) (children: TemplateBuilde
         t.div
             [|
                 t.Hooks.mounted (fun _ (_: HTMLDivElement) ->
-                    orderLog.Add name
+                    (orderLog ()).Add name
                     ignore)
             |]
             [|
@@ -828,7 +830,7 @@ let private orderHolder (name: string) (after: string) (children: TemplateBuilde
                 t.span
                     [|
                         t.Hooks.mounted (fun _ (_: HTMLSpanElement) ->
-                            orderLog.Add after
+                            (orderLog ()).Add after
                             ignore)
                     |]
                     [||]
@@ -854,11 +856,11 @@ let private orderHoleThenChild =
 
 let private templateOrder (view: Component<unit>) (expected: string list) queued () =
     use graph = new Graph ()
-    orderLog.Clear ()
+    (orderLog ()).Clear()
 
     let mounted = mountTemplate queued graph strict (host ()) (Component.render view ())
 
-    let seen = List.ofSeq orderLog
+    let seen = List.ofSeq (orderLog ())
     mounted.Dispose ()
     equal expected seen
 
@@ -867,7 +869,7 @@ let private orderInner =
         t.span
             [|
                 t.Hooks.mounted (fun item (_: HTMLSpanElement) ->
-                    orderLog.Add ("inner " + string (item ()))
+                    (orderLog ()).Add("inner " + string (item ()))
                     ignore)
             |]
             [||])
@@ -877,7 +879,7 @@ let private orderOuterRow =
         t.div
             [|
                 t.Hooks.mounted (fun item (_: HTMLDivElement) ->
-                    orderLog.Add ("row " + string (item ()))
+                    (orderLog ()).Add("row " + string (item ()))
                     ignore)
             |]
             [|
@@ -885,7 +887,7 @@ let private orderOuterRow =
                 t.span
                     [|
                         t.Hooks.mounted (fun item (_: HTMLSpanElement) ->
-                            orderLog.Add ("row " + string (item ()) + " after")
+                            (orderLog ()).Add("row " + string (item ()) + " after")
                             ignore)
                     |]
                     [||]
@@ -896,7 +898,7 @@ let private orderSiblings =
         t.div
             [|
                 t.Hooks.mounted (fun _ (_: HTMLDivElement) ->
-                    orderLog.Add "parent"
+                    (orderLog ()).Add "parent"
                     ignore)
             |]
             [|
@@ -904,7 +906,7 @@ let private orderSiblings =
                 t.span
                     [|
                         t.Hooks.mounted (fun _ (_: HTMLSpanElement) ->
-                            orderLog.Add "after"
+                            (orderLog ()).Add "after"
                             ignore)
                     |]
                     [||]
@@ -912,7 +914,7 @@ let private orderSiblings =
 
 let private templateRowsAfterSiblings queued () =
     use graph = new Graph ()
-    orderLog.Clear ()
+    (orderLog ()).Clear()
 
     let mounted =
         mountTemplate queued graph strict (host ()) (Component.render orderSiblings ())
@@ -928,18 +930,19 @@ let private templateRowsAfterSiblings queued () =
             "inner 10"
             "inner 20"
         ]
-        (List.ofSeq orderLog)
+        (List.ofSeq (orderLog ()))
 
     mounted.Dispose ()
 
-let mutable private rowsProbe: Probe = Unchecked.defaultof<_>
+let private rowsProbe () =
+    Conformance.local "PlacementChecks.rowsProbe" (fun () -> ref (Unchecked.defaultof<_>: Probe))
 
 let private hookedRow =
     Component.define (fun _ (item: unit -> int) -> item) (fun t ->
         t.span
             [|
                 t.Hooks.mounted (fun item (node: HTMLSpanElement) ->
-                    rowsProbe.Log.Add (sprintf "row %d %b" (item ()) (rowsProbe.Host.contains node))
+                    (rowsProbe ()).Value.Log.Add(sprintf "row %d %b" (item ()) ((rowsProbe ()).Value.Host.contains node))
                     ignore)
             |]
             [| t.text (fun item -> string (item ())) |])
@@ -955,14 +958,14 @@ let private hookedRows =
 let private templateRowsAfterLayout queued () =
     use graph = new Graph ()
     let rows = graph.Run (fun () -> Api.createSignal [ 1 ])
-    rowsProbe <- { Log = ResizeArray (); Host = host () }
+    (rowsProbe ()).Value <- { Log = ResizeArray (); Host = host () }
 
     let mounted =
-        mountTemplate queued graph strict rowsProbe.Host (Component.render hookedRows rows)
+        mountTemplate queued graph strict (rowsProbe ()).Value.Host (Component.render hookedRows rows)
 
     graph.Run (fun () -> rows.Value <- [ 1; 2 ])
     mounted.Flush ()
-    equal [ "row 1 true"; "row 2 true" ] (List.ofSeq rowsProbe.Log)
+    equal [ "row 1 true"; "row 2 true" ] (List.ofSeq (rowsProbe ()).Value.Log)
 
     graph.Run (fun () ->
         Api.batch (fun () ->
@@ -970,10 +973,11 @@ let private templateRowsAfterLayout queued () =
             rows.Value <- [ 1; 2 ]))
 
     mounted.Flush ()
-    equal ([ "row 1 true"; "row 2 true" ], "12") (List.ofSeq rowsProbe.Log, rowsProbe.Host.textContent)
+    equal ([ "row 1 true"; "row 2 true" ], "12") (List.ofSeq (rowsProbe ()).Value.Log, (rowsProbe ()).Value.Host.textContent)
     mounted.Dispose ()
 
-let mutable private armProbe: Probe = Unchecked.defaultof<_>
+let private armProbe () =
+    Conformance.local "PlacementChecks.armProbe" (fun () -> ref (Unchecked.defaultof<_>: Probe))
 
 let private armSpan =
     Component.define (fun _ (payload: unit -> int) -> payload) (fun t ->
@@ -981,8 +985,8 @@ let private armSpan =
             [|
                 t.Hooks.mounted (fun payload (node: HTMLSpanElement) ->
                     let key = payload ()
-                    armProbe.Log.Add (sprintf "arm %d %b" key (armProbe.Host.contains node))
-                    fun () -> armProbe.Log.Add (sprintf "arm cleanup %d" key))
+                    (armProbe ()).Value.Log.Add(sprintf "arm %d %b" key ((armProbe ()).Value.Host.contains node))
+                    fun () -> (armProbe ()).Value.Log.Add(sprintf "arm cleanup %d" key))
             |]
             [| t.text (fun payload -> string (payload ())) |])
 
@@ -997,23 +1001,24 @@ let private armHost =
 let private templateArmsReplace queued () =
     use graph = new Graph ()
     let arm = graph.Run (fun () -> Api.createSignal 0)
-    armProbe <- { Log = ResizeArray (); Host = host () }
+    (armProbe ()).Value <- { Log = ResizeArray (); Host = host () }
 
     let mounted =
-        mountTemplate queued graph strict armProbe.Host (Component.render armHost arm)
+        mountTemplate queued graph strict (armProbe ()).Value.Host (Component.render armHost arm)
 
     graph.Run (fun () -> arm.Value <- 1)
     mounted.Flush ()
-    equal [ "arm 0 true"; "arm cleanup 0"; "arm 1 true" ] (List.ofSeq armProbe.Log)
+    equal [ "arm 0 true"; "arm cleanup 0"; "arm 1 true" ] (List.ofSeq (armProbe ()).Value.Log)
     mounted.Dispose ()
 
-let mutable private reselect: Signal<int> = Unchecked.defaultof<_>
+let private reselect () =
+    Conformance.local "PlacementChecks.reselect" (fun () -> ref (Unchecked.defaultof<_>: Signal<int>))
 
 let private reselectingSpan =
     Component.define
         (fun _ (payload: unit -> int) ->
             if payload () = 1 then
-                reselect.Value <- 2
+                (reselect ()).Value.Value <- 2
 
             payload)
         (fun t ->
@@ -1021,8 +1026,8 @@ let private reselectingSpan =
                 [|
                     t.Hooks.mounted (fun payload (node: HTMLSpanElement) ->
                         let key = payload ()
-                        armProbe.Log.Add (sprintf "arm %d %b" key (armProbe.Host.contains node))
-                        fun () -> armProbe.Log.Add (sprintf "arm cleanup %d" key))
+                        (armProbe ()).Value.Log.Add(sprintf "arm %d %b" key ((armProbe ()).Value.Host.contains node))
+                        fun () -> (armProbe ()).Value.Log.Add(sprintf "arm cleanup %d" key))
                 |]
                 [| t.text (fun payload -> string (payload ())) |])
 
@@ -1036,19 +1041,22 @@ let private reselectingHost =
 
 let private reentrantArmSelection queued () =
     use graph = new Graph ()
-    reselect <- graph.Run (fun () -> Api.createSignal 1)
-    armProbe <- { Log = ResizeArray (); Host = host () }
+    (reselect ()).Value <- graph.Run (fun () -> Api.createSignal 1)
+    (armProbe ()).Value <- { Log = ResizeArray (); Host = host () }
 
     let mounted =
-        mountTemplate queued graph strict armProbe.Host (Component.render reselectingHost reselect)
+        mountTemplate queued graph strict (armProbe ()).Value.Host (Component.render reselectingHost (reselect ()).Value)
 
-    let first = List.ofSeq armProbe.Log, armProbe.Host.textContent
-    graph.Run (fun () -> reselect.Value <- 0)
+    let first = List.ofSeq (armProbe ()).Value.Log, (armProbe ()).Value.Host.textContent
+    graph.Run (fun () -> (reselect ()).Value.Value <- 0)
     mounted.Flush ()
-    graph.Run (fun () -> reselect.Value <- 1)
+    graph.Run (fun () -> (reselect ()).Value.Value <- 1)
     mounted.Flush ()
-    let second = List.ofSeq armProbe.Log, armProbe.Host.textContent
-    graph.Run (fun () -> reselect.Value <- 3)
+
+    let second =
+        List.ofSeq (armProbe ()).Value.Log, (armProbe ()).Value.Host.textContent
+
+    graph.Run (fun () -> (reselect ()).Value.Value <- 3)
     mounted.Flush ()
 
     equal
@@ -1065,7 +1073,11 @@ let private reentrantArmSelection queued () =
          ],
          "3",
          1.)
-        (first, second, List.ofSeq armProbe.Log, armProbe.Host.textContent, (armProbe.Host.querySelectorAll "span").length)
+        (first,
+         second,
+         List.ofSeq (armProbe ()).Value.Log,
+         (armProbe ()).Value.Host.textContent,
+         ((armProbe ()).Value.Host.querySelectorAll "span").length)
 
     mounted.Dispose ()
 
@@ -1180,20 +1192,21 @@ let private templateNodeRef queued () =
 
     let placed =
         match field.Field.Current with
-        | Some node -> obj.ReferenceEquals (node, target.querySelector "input")
+        | Some node -> obj.ReferenceEquals (node, target.querySelector "input" |> Option.get)
         | None -> false
 
     mounted.Dispose ()
     equal ([ false ], true, false) (List.ofSeq field.Seen, placed, field.Field.Current.IsSome)
 
-let private moveRuns = ref 0
+let private moveRuns () =
+    Conformance.local "PlacementChecks.moveRuns" (fun () -> ref 0)
 
 let private countedRow =
     Component.define (fun _ (item: unit -> int) -> item) (fun t ->
         t.span
             [|
                 t.Hooks.mounted (fun _ (_: HTMLSpanElement) ->
-                    moveRuns.Value <- moveRuns.Value + 1
+                    (moveRuns ()).Value <- (moveRuns ()).Value + 1
                     ignore)
             |]
             [| t.text (fun item -> string (item ())) |])
@@ -1210,7 +1223,7 @@ let private templateMovesKeepHooks queued () =
     use graph = new Graph ()
     let rows = graph.Run (fun () -> Api.createSignal [ 1; 2 ])
     let first, second = host (), host ()
-    moveRuns.Value <- 0
+    (moveRuns ()).Value <- 0
 
     let mounted =
         mountTemplate queued graph strict first (Component.render countedRows rows)
@@ -1218,7 +1231,7 @@ let private templateMovesKeepHooks queued () =
     graph.Run (fun () -> rows.Value <- [ 2; 1 ])
     mounted.Flush ()
     mounted.MoveBefore (second, None)
-    equal (2, "21") (moveRuns.Value, second.textContent)
+    equal (2, "21") ((moveRuns ()).Value, second.textContent)
     mounted.Dispose ()
 
 type RefRow =
@@ -1227,7 +1240,8 @@ type RefRow =
         Button: NodeRef<HTMLButtonElement>
     }
 
-let private refReads = ResizeArray<string>()
+let private refReads () =
+    Conformance.local "PlacementChecks.refReads" (fun () -> ResizeArray<string>())
 
 let private refRow =
     Component.define
@@ -1242,13 +1256,14 @@ let private refRow =
                     t.Attrs.attribute ("data-item", (fun (row: RefRow) -> Some (string (row.Item ()))))
                     t.Hooks.ref (fun row -> row.Button)
                     t.Events.onClick (fun row _ ->
-                        refReads.Add (
-                            match row.Button.Current with
-                            | Some node ->
-                                node.getAttribute "data-item"
-                                |> Option.defaultValue "absent"
-                            | None -> "none"
-                        ))
+                        (refReads ())
+                            .Add(
+                                match row.Button.Current with
+                                | Some node ->
+                                    node.getAttribute "data-item"
+                                    |> Option.defaultValue "absent"
+                                | None -> "none"
+                            ))
                 |]
                 [||])
 
@@ -1265,7 +1280,7 @@ let private templateRefAcrossReorder queued () =
     use graph = new Graph ()
     let rows = graph.Run (fun () -> Api.createSignal [ 1; 2 ])
     let target = host ()
-    refReads.Clear ()
+    (refReads ()).Clear()
 
     let mounted =
         mountTemplate queued graph strict target (Component.render refRows rows)
@@ -1276,10 +1291,11 @@ let private templateRefAcrossReorder queued () =
 
     let first =
         target.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     first.click ()
-    equal ([ "2" ], true) (List.ofSeq refReads, obj.ReferenceEquals (first, second))
+    equal ([ "2" ], true) (List.ofSeq (refReads ()), obj.ReferenceEquals (first, second))
     mounted.Dispose ()
 
 let private serverHooked =
@@ -1302,29 +1318,32 @@ let private templateServerHook () =
          rejected
          |> Option.map (fun message -> message.StartsWith "Browser capability requires explicit Omit policy"))
 
-let mutable private hiddenSource: Signal<AsyncSource<string>> =
-    Unchecked.defaultof<_>
+let private hiddenSource () =
+    Conformance.local "PlacementChecks.hiddenSource" (fun () -> ref (Unchecked.defaultof<_>: Signal<AsyncSource<string>>))
 
-let private hiddenLog = ResizeArray<string>()
-let mutable private hiddenHost: HTMLElement = Unchecked.defaultof<_>
+let private hiddenLog () =
+    Conformance.local "PlacementChecks.hiddenLog" (fun () -> ResizeArray<string>())
+
+let private hiddenHost () =
+    Conformance.local "PlacementChecks.hiddenHost" (fun () -> ref (Unchecked.defaultof<_>: HTMLElement))
 
 let private hiddenContent =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
         t.span
             [|
                 t.Hooks.mounted (fun _ (node: HTMLSpanElement) ->
-                    hiddenLog.Add (sprintf "hook %b" (hiddenHost.contains node))
-                    fun () -> hiddenLog.Add "cleanup")
+                    (hiddenLog ()).Add(sprintf "hook %b" ((hiddenHost ()).Value.contains node))
+                    fun () -> (hiddenLog ()).Add "cleanup")
             |]
-            [| t.text (fun () -> hiddenSource.Value.Value) |])
+            [| t.text (fun () -> (hiddenSource ()).Value.Value.Value) |])
 
 let private hiddenPending =
     Component.define (fun _ () -> ()) (fun t ->
         t.span
             [|
                 t.Hooks.mounted (fun _ (node: HTMLSpanElement) ->
-                    hiddenLog.Add (sprintf "pending %b" (hiddenHost.contains node))
-                    fun () -> hiddenLog.Add "pending cleanup")
+                    (hiddenLog ()).Add(sprintf "pending %b" ((hiddenHost ()).Value.contains node))
+                    fun () -> (hiddenLog ()).Add "pending cleanup")
             |]
             [| t.text "loading" |])
 
@@ -1333,8 +1352,8 @@ let private hiddenFailed =
         t.button
             [|
                 t.Hooks.mounted (fun _ (_: HTMLButtonElement) ->
-                    hiddenLog.Add "error"
-                    fun () -> hiddenLog.Add "error cleanup")
+                    (hiddenLog ()).Add "error"
+                    fun () -> (hiddenLog ()).Add "error cleanup")
                 t.Events.onClick (fun failure _ -> failure.Retry ())
             |]
             [| t.text (fun failure -> "failed " + failure.Error.Message) |])
@@ -1345,25 +1364,26 @@ let private hiddenGuarded =
 /// <summary>A template content torn down before its reveal, retried from its error view's button, then revealed.</summary>
 let private templateHiddenLifecycle queued () =
     use graph = new Graph ()
-    hiddenLog.Clear ()
-    hiddenSource <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
-    hiddenHost <- host ()
+    (hiddenLog ()).Clear()
+    (hiddenSource ()).Value <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
+    (hiddenHost ()).Value <- host ()
     let reports = ResizeArray<exn list>()
 
     let mounted =
-        mountTemplate queued graph reports.Add hiddenHost (Component.render hiddenGuarded ())
+        mountTemplate queued graph reports.Add (hiddenHost ()).Value (Component.render hiddenGuarded ())
 
-    equal [ "pending true" ] (List.ofSeq hiddenLog)
-    graph.Run (fun () -> hiddenSource.Value.Fail (Exception "first"))
+    equal [ "pending true" ] (List.ofSeq (hiddenLog ()))
+    graph.Run (fun () -> (hiddenSource ()).Value.Value.Fail(Exception "first"))
     mounted.Flush ()
-    equal ([ "pending true"; "pending cleanup"; "error" ], "failed first") (List.ofSeq hiddenLog, hiddenHost.textContent)
-    graph.Run (fun () -> hiddenSource.Value <- Api.createAsyncSource<string>())
+    equal ([ "pending true"; "pending cleanup"; "error" ], "failed first") (List.ofSeq (hiddenLog ()), (hiddenHost ()).Value.textContent)
+    graph.Run (fun () -> (hiddenSource ()).Value.Value <- Api.createAsyncSource<string>())
 
-    (hiddenHost.querySelector "button"
+    ((hiddenHost ()).Value.querySelector "button"
+     |> Option.get
      |> unbox<HTMLButtonElement>)
         .click()
 
-    graph.Run (fun () -> hiddenSource.Value.Settle "ready")
+    graph.Run (fun () -> (hiddenSource ()).Value.Value.Settle "ready")
     mounted.Flush ()
 
     equal
@@ -1378,12 +1398,13 @@ let private templateHiddenLifecycle queued () =
          ],
          "ready",
          [ [ "first" ] ])
-        (List.ofSeq hiddenLog, hiddenHost.textContent, messages reports)
+        (List.ofSeq (hiddenLog ()), (hiddenHost ()).Value.textContent, messages reports)
 
     mounted.Dispose ()
-    equal "cleanup" hiddenLog[hiddenLog.Count - 1]
+    equal "cleanup" ((hiddenLog ())[(hiddenLog ()).Count - 1])
 
-let mutable private hiddenField: Field = Unchecked.defaultof<_>
+let private hiddenField () =
+    Conformance.local "PlacementChecks.hiddenField" (fun () -> ref (Unchecked.defaultof<_>: Field))
 
 let private hiddenInput =
     Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
@@ -1392,12 +1413,12 @@ let private hiddenInput =
             [|
                 t.input
                     [|
-                        t.Hooks.ref (fun _ -> hiddenField.Field)
+                        t.Hooks.ref (fun _ -> (hiddenField ()).Value.Field)
                         t.Hooks.mounted (fun _ (_: HTMLInputElement) ->
-                            hiddenField.Seen.Add hiddenField.Field.Current.IsSome
+                            (hiddenField ()).Value.Seen.Add (hiddenField ()).Value.Field.Current.IsSome
                             ignore)
                     |]
-                t.text (fun () -> hiddenSource.Value.Value)
+                t.text (fun () -> (hiddenSource ()).Value.Value.Value)
             |])
 
 let private hiddenInputGuarded =
@@ -1406,33 +1427,33 @@ let private hiddenInputGuarded =
 /// <summary>A template input with a ref and a mounted hook, in a boundary content pending at the mount and revealed later.</summary>
 let private templateHiddenNodeRef queued () =
     use graph = new Graph ()
-    hiddenLog.Clear ()
-    hiddenSource <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
+    (hiddenLog ()).Clear()
+    (hiddenSource ()).Value <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
 
-    hiddenField <-
+    (hiddenField ()).Value <-
         {
             Field = NodeRef.create ()
             Seen = ResizeArray ()
         }
 
     let target = host ()
-    hiddenHost <- target
+    (hiddenHost ()).Value <- target
 
     let mounted =
         mountTemplate queued graph strict target (Component.render hiddenInputGuarded ())
 
-    let hidden = hiddenField.Field.Current.IsSome
-    graph.Run (fun () -> hiddenSource.Value.Settle "ready")
+    let hidden = (hiddenField ()).Value.Field.Current.IsSome
+    graph.Run (fun () -> (hiddenSource ()).Value.Value.Settle "ready")
     mounted.Flush ()
 
     let shown =
-        match hiddenField.Field.Current with
-        | Some node -> obj.ReferenceEquals (node, target.querySelector "input")
+        match (hiddenField ()).Value.Field.Current with
+        | Some node -> obj.ReferenceEquals (node, target.querySelector "input" |> Option.get)
         | None -> false
 
     mounted.Dispose ()
 
-    equal (false, [ true ], true, false) (hidden, List.ofSeq hiddenField.Seen, shown, hiddenField.Field.Current.IsSome)
+    equal (false, [ true ], true, false) (hidden, List.ofSeq (hiddenField ()).Value.Seen, shown, (hiddenField ()).Value.Field.Current.IsSome)
 
 /// <summary>An input in a host attached to the document; its mounted hook focuses and measures it.</summary>
 let private focusAndMeasure () =
@@ -1455,7 +1476,8 @@ let private focusAndMeasure () =
     let mounted =
         mountWith SynchronousCommits graph None strict target None (fun context -> Program.run view context.Backend)
 
-    let focused = obj.ReferenceEquals (activeElement (), target.querySelector "input")
+    let focused =
+        obj.ReferenceEquals (activeElement (), target.querySelector "input" |> Option.get)
 
     mounted.Dispose ()
     target.remove ()
@@ -1481,7 +1503,7 @@ let private passRequestAfterPlace () =
         ("A pass placement container was requested after its Place", true, false, false)
         (message, first.IsPlaced, obj.ReferenceEquals (first, next), next.IsPlaced)
 
-let cases: (string * (unit -> unit)) array =
+let private checks: (string * (unit -> unit)) array =
     strictCases
     <| Array.concat
         [
@@ -1617,5 +1639,9 @@ let cases: (string * (unit -> unit)) array =
             |]
         ]
 
-let browserCases: (string * (unit -> unit)) array =
+let private browserChecks: (string * (unit -> unit)) array =
     strictCases [| "a mounted hook can focus and measure its element", focusAndMeasure |]
+
+let cases: Conformance.Case array = Conformance.ofChecks checks
+
+let browserCases: Conformance.Case array = Conformance.ofChecks browserChecks

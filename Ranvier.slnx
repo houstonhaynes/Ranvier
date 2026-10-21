@@ -33,6 +33,12 @@
     <Project Path="experiments/Ranvier.View.Foundation/SnapshotBench/SnapshotBench.fsproj" />
     <Project Path="experiments/Ranvier.View.Foundation/AuthoringPerf/AuthoringPerf.fsproj" />
   </Folder>
+  <Folder Name="/experiments/Ranvier.View.Testing/">
+    <Project Path="experiments/Ranvier.View.Testing/Ranvier.View.Testing.fsproj" />
+  </Folder>
+  <Folder Name="/experiments/Ranvier.View.Twin/">
+    <Project Path="experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
+  </Folder>
   <Folder Name="/experiments/Ranvier.View.Portable/">
     <Project Path="experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
     <Project Path="experiments/Ranvier.View.Portable/ServerBench/ServerBench.fsproj" />
@@ -54,6 +60,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />
+    <Project Path="tests/Ranvier.View.Twin.Tests/Ranvier.View.Twin.Tests.fsproj" />
     <Project Path="tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj" />
     <Project Path="tests/Ranvier.CSharp.Tests/Ranvier.CSharp.Tests.csproj" />
     <Project Path="fable/Ranvier.Tests.Fable/Ranvier.Tests.Fable.fsproj" />

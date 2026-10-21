@@ -17,25 +17,22 @@ type internal Backend() =
     abstract Apply: HTMLElement * ModifierAction array -> unit
     abstract BindText: Node * (unit -> string) -> unit
 
-[<Global "document">]
-let private document: Document = jsNative
-
 let private unsupported () =
     raise (InvalidOperationException "Prepared skeletons accept static elements, text and attributes")
 
 let private build (view: Program.View) =
-    let staging = document.createDocumentFragment ()
+    let staging = Native.createDocumentFragment ()
     let mutable parent: Node = staging
     let mutable target: HTMLElement = Unchecked.defaultof<_>
 
     let backend =
         { new Representation.Backend() with
             member _.Text value =
-                parent.appendChild (document.createTextNode value)
+                parent.appendChild (Native.createTextNode value)
                 |> ignore
 
             member this.Element(tag, modifiers, children) =
-                let node = document.createElement (name tag)
+                let node = Native.createElement (name tag)
                 parent.appendChild node |> ignore
                 let previousTarget = target
                 target <- node

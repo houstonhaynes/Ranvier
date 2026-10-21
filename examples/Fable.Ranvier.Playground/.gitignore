@@ -21,3 +21,6 @@ generated-keyed-identity/
 generated-keyed-passes/
 generated-sugar-size/
 generated-keyed-profile/
+generated-tests-base/
+generated-conformance/
+generated-inspect/

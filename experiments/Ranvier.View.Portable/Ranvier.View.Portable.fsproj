@@ -6,6 +6,7 @@
     <FSharpCoreImplicitPackageVersion>8.0.100</FSharpCoreImplicitPackageVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Native.fs" />
     <Compile Include="Lifetime.fs" />
     <Compile Include="Scope.fs" />
     <Compile Include="Identity.fs" />
@@ -20,7 +21,10 @@
     <Compile Include="Server.fs" />
     <ProjectReference Include="../../src/Ranvier/Ranvier.fsproj" />
     <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />
+    <InternalsVisibleTo Include="Ranvier.View.Foundation" />
     <InternalsVisibleTo Include="RepresentationChecks" />
     <InternalsVisibleTo Include="ServerBench" />
+    <InternalsVisibleTo Include="Ranvier.View.Twin" />
+    <InternalsVisibleTo Include="Ranvier.View.Twin.Tests" />
   </ItemGroup>
 </Project>

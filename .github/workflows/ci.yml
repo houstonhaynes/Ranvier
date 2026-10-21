@@ -210,6 +210,12 @@ jobs:
       # and the Chromium suite (test:browser), plus any suites the script gains.
       - name: Run the playground tests
         run: npm test
+      # The conformance cases on the DOM twin, then the byte comparison with the jsdom run's artefacts (spec §6.3).
+      - name: Run the conformance cases on the twin
+        run: dotnet test tests/Ranvier.View.Twin.Tests -c Release
+        working-directory: .
+      - name: Compare the jsdom and twin artefacts
+        run: node tests/conformance-diff.mjs
 
   # The DOM generator's three script gates: generated usage compiles or fails with the expected FS code
   # (CheckTypes), the generator's output and corrupt-catalogue rejection (GeneratorTests), and the view sugar

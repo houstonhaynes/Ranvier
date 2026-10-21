@@ -23,38 +23,33 @@ module HydrationOptions =
     /// <summary>The prefix of <c>Server.Options.defaults</c>, with mismatches re-rendered and reported.</summary>
     let defaults = { IdPrefix = "r"; Strict = false }
 
-[<Emit("$0.firstChild")>]
-let private firstChildOf (node: Node) : Node = jsNative
-
-[<Emit("$0.nextSibling")>]
-let private following (node: Node) : Node = jsNative
-
-[<Emit("$0 == null")>]
-let private absent (node: Node) : bool = jsNative
-
+#if FABLE_COMPILER
 [<Emit("$0.nodeType === 8 && $0.data === '[r'")>]
 let private isRootMarker (node: Node) : bool = jsNative
+#else
+let private isRootMarker (node: Node) : bool =
+    node.nodeType = 8.0
+    && (unbox<CharacterData> node).data = "[r"
+#endif
 
 /// <summary>The first <c>&lt;!--[r--&gt;</c> child of <c>host</c>, or null.</summary>
 let private rootMarker (host: Node) : Node =
-    let mutable node = firstChildOf host
+    let mutable node = Native.firstChildOf host
 
-    while not (absent node) && not (isRootMarker node) do
-        node <- following node
+    while not (Native.isNullish node)
+          && not (isRootMarker node) do
+        node <- Native.nextOrNull node
 
     node
 
-[<Emit("$0.remove()")>]
-let private removeNode (node: Node) : unit = jsNative
-
 /// <summary>Removes the siblings after <c>start</c> up to <c>finish</c>, or to the last sibling when <c>finish</c> is null.</summary>
 let private clearAfter (start: Node) (finish: Node) =
-    let mutable node = following start
+    let mutable node = Native.nextOrNull start
 
     while not (isNull (box node))
           && not (obj.ReferenceEquals (node, finish)) do
-        let next = following node
-        removeNode node
+        let next = Native.nextOrNull node
+        Native.removeNode node
         node <- next
 
 /// <summary>
@@ -118,7 +113,7 @@ let private freshRoot
         )
 
     if not markers.IsEmpty then
-        created.Root.OnCleanup (fun () -> List.iter removeNode markers)
+        created.Root.OnCleanup (fun () -> List.iter Native.removeNode markers)
 
     mounted
 
@@ -149,7 +144,7 @@ let private adoptHost
 
         let rootStart = rootMarker host
 
-        if absent rootStart then
+        if Native.isNullish rootStart then
             let error = TemplateDom.mismatch "root" "<!--[r-->" "absent"
 
             if options.Strict then
@@ -166,10 +161,10 @@ let private adoptHost
                     clearAfter rootStart Unchecked.defaultof<_>
                     Unchecked.defaultof<_>
 
-            if absent rootEnd then
+            if Native.isNullish rootEnd then
                 freshRoot graph owner report options atEnd host definition props None [ rootStart ]
             else
-                let first = following rootStart
+                let first = Native.nextOrNull rootStart
                 let cursor = TemplateDom.HydrationCursor (first, options.Strict)
                 let adopting = rootState graph owner report options host cursor rootStart rootEnd
 
@@ -294,20 +289,17 @@ let hydrateWith
     finally
         served.Release ()
 
-[<Emit("document.getElementById($0)")>]
-let private elementById (id: string) : Element = jsNative
-
-[<Emit("$0.textContent")>]
-let private textOf (element: Element) : string = jsNative
-
 /// <summary>
 /// The <c>textContent</c> of the global <c>document</c>'s element with id <c>id</c>, such as the JSON a
 /// <c>Server.stateScript</c> element holds; <c>None</c> when the id is absent from that document.
 /// </summary>
 let readState (id: string) : string option =
-    let element = elementById id
+    let element = Native.elementById id
 
-    if isNull (box element) then None else Some (textOf element)
+    if isNull (box element) then
+        None
+    else
+        Some (Native.textContentOf element)
 
 /// <summary>Hydrates as <c>hydrateWith SynchronousCommits</c> does.</summary>
 let hydrate graph parentOwner report options host (definition: Component<'props>) (props: 'props) : Mounted =

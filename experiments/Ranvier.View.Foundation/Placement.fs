@@ -219,12 +219,23 @@ type internal PlacementPass(parent: Placement) =
 
 /// <summary>Element hooks registered with a placement container.</summary>
 module internal PlacedHook =
+#if FABLE_COMPILER
     [<Emit("$0.parentNode")>]
     let private parentOf (node: Node) : Node = jsNative
+#else
+    let private parentOf (node: Node) : Node =
+        Native.parentOrNull node
+#endif
 
     /// <summary>Whether the node is a root of its row or mount: detached, or a child of a document fragment.</summary>
+#if FABLE_COMPILER
     [<Emit("($0.parentNode == null || $0.parentNode.nodeType === 11)")>]
     let atRoot (node: Node) : bool = jsNative
+#else
+    let atRoot (node: Node) : bool =
+        let parent = Native.parentOrNull node
+        Native.isNullish parent || parent.nodeType = 11.0
+#endif
 
     /// <summary>
     /// Adds <c>hook</c> for <c>node</c> to <c>container</c>; its returned cleanup runs when <c>owner</c> is disposed. A

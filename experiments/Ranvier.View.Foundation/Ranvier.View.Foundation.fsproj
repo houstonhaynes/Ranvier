@@ -20,5 +20,7 @@
         <Compile Include="Components.fs" />
         <Compile Include="Authoring.fs" />
         <ProjectReference Include="../Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
+        <InternalsVisibleTo Include="Ranvier.View.Twin" />
+        <InternalsVisibleTo Include="Ranvier.View.Twin.Tests" />
     </ItemGroup>
 </Project>

@@ -22,15 +22,25 @@ let metrics () =
         Writes = 0
     }
 
+#if FABLE_COMPILER
 [<Global>]
 let globalThis: TS.Es.GlobalThis = jsNative
+#endif
 
 let private element (tag: string) : HTMLElement =
     refuseScript tag
+#if FABLE_COMPILER
     globalThis.document.createElement tag
+#else
+    Native.createElement tag
+#endif
 
 let private text (value: string) : Node =
+#if FABLE_COMPILER
     globalThis.document.createTextNode value
+#else
+    Native.createTextNode value
+#endif
 
 let private remove (node: #ChildNode) : unit =
     node.remove ()

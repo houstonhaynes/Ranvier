@@ -71,51 +71,186 @@ type Seam =
     /// </summary>
     abstract Parse: System.Action<HTMLTemplateElement, string> with get, set
 
-/// <summary>The seam, an empty object until the first registration; null on .NET, where any access raises.</summary>
 #if FABLE_COMPILER
+/// <summary>The seam, an empty object until the first registration.</summary>
 let seam: Seam = Fable.Core.JsInterop.emitJsExpr () "{}"
 #else
-let seam: Seam = null
+[<Sealed>]
+type private SeamObject() =
+    let mutable enabled = false
+    let mutable reflowEnabled = false
+    let mutable retire: System.Func<Node, ResizeArray<unit -> unit>, bool> = null
+    let mutable nextLive: System.Func<Node, Node> = null
+    let mutable holds: System.Func<Node, Node, bool> = null
+    let mutable within: System.Func<Node, bool> = null
+
+    let mutable finish: System.Action<ResizeArray<unit -> unit>, ResizeArray<exn>, ResizeArray<unit -> unit>> =
+        null
+
+    let mutable before: System.Func<Node, (unit -> unit) -> unit, unit -> unit> = null
+    let mutable createElement: System.Func<Node, string, HTMLElement> = null
+    let mutable nest: System.Action<Node, Node> = null
+    let mutable parse: System.Action<HTMLTemplateElement, string> = null
+
+    interface Seam with
+        member _.Enabled
+            with get () = enabled
+            and set value = enabled <- value
+
+        member _.ReflowEnabled
+            with get () = reflowEnabled
+            and set value = reflowEnabled <- value
+
+        member _.Retire
+            with get () = retire
+            and set value = retire <- value
+
+        member _.NextLive
+            with get () = nextLive
+            and set value = nextLive <- value
+
+        member _.Holds
+            with get () = holds
+            and set value = holds <- value
+
+        member _.Within
+            with get () = within
+            and set value = within <- value
+
+        member _.End
+            with get () = finish
+            and set value = finish <- value
+
+        member _.Before
+            with get () = before
+            and set value = before <- value
+
+        member _.CreateElement
+            with get () = createElement
+            and set value = createElement <- value
+
+        member _.Nest
+            with get () = nest
+            and set value = nest <- value
+
+        member _.Parse
+            with get () = parse
+            and set value = parse <- value
+
+/// <summary>A seam with every flag off and every operation null, as the first registration finds it.</summary>
+let internal createSeam () : Seam =
+    SeamObject ()
+
+/// <summary>
+/// The seam, an empty object until the first registration. On .NET it is one object for the process: a registration
+/// on any thread turns <c>Enabled</c> or <c>ReflowEnabled</c> on for every later mount.
+/// </summary>
+let seam: Seam = createSeam ()
 #endif
 
+#if FABLE_COMPILER
 [<Emit("new WeakMap()")>]
 let private weakMap () : obj = jsNative
+#else
+let private weakMap () : obj =
+    Native.newWeakMap ()
+#endif
 
+#if FABLE_COMPILER
 [<Emit("new WeakSet()")>]
 let private weakSet () : obj = jsNative
+#else
+let private weakSet () : obj =
+    Native.newWeakSet ()
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.get($1)")>]
 let private lookup (table: obj) (key: 'K) : 'T = jsNative
+#else
+let private lookup (table: obj) (key: 'K) : 'T =
+    Native.get table key
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.set($1, $2)")>]
 let private store (table: obj) (key: 'K) (value: 'T) : unit = jsNative
+#else
+let private store (table: obj) (key: 'K) (value: 'T) : unit =
+    Native.set table key value
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.has($1)")>]
 let private holds (table: obj) (key: 'K) : bool = jsNative
+#else
+let private holds (table: obj) (key: 'K) : bool =
+    Native.has table key
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.delete($1)")>]
 let private forget (table: obj) (key: 'K) : unit = jsNative
+#else
+let private forget (table: obj) (key: 'K) : unit =
+    Native.delete table key
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.add($1)")>]
 let private mark (table: obj) (node: Node) : unit = jsNative
+#else
+let private mark (table: obj) (node: Node) : unit =
+    Native.add table node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0 == null")>]
 let private isNullish (value: 'T) : bool = jsNative
+#else
+let private isNullish (value: 'T) : bool =
+    Native.isNullish value
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.nextSibling")>]
 let private nextOrNull (node: Node) : Node = jsNative
+#else
+let private nextOrNull (node: Node) : Node =
+    Native.nextOrNull node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.parentNode")>]
 let private parentOf (node: Node) : Node = jsNative
+#else
+let private parentOf (node: Node) : Node =
+    Native.parentOrNull node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.parentNode != null && $0.parentNode.removeChild($0)")>]
 let private detach (node: Node) : unit = jsNative
+#else
+let private detach (node: Node) : unit =
+    Native.detach node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("setTimeout($0, $1)")>]
 let private startTimer (action: unit -> unit) (milliseconds: int) : obj = jsNative
+#else
+let private startTimer (action: unit -> unit) (milliseconds: int) : obj =
+    Native.setTimeout action milliseconds
+#endif
 
+#if FABLE_COMPILER
 [<Emit("clearTimeout($0)")>]
 let private stopTimer (timer: obj) : unit = jsNative
+#else
+let private stopTimer (timer: obj) : unit =
+    Native.clearTimeout timer
+#endif
 
 /// <summary>The milliseconds after which a held exit is finished.</summary>
 let internal safetyTimeout = 10000
@@ -346,21 +481,41 @@ let internal registerReflow (node: Node) (reflow: Reflow) : unit -> unit =
 let private nests = weakMap ()
 
 // The lowercase SVG element names that HTML does not also define, and svg.
+#if FABLE_COMPILER
 [<Emit("new Set('svg g path circle ellipse line polyline polygon rect text tspan textpath use defs symbol marker pattern lineargradient radialgradient stop clippath mask foreignobject'.split(' '))")>]
 let private svgNames () : obj = jsNative
+#else
+let private svgNames () : obj =
+    raise (System.NotSupportedException "SVG elements are not bridged on .NET")
+#endif
 
 // An SVG element for an SVG name, or under an SVG parent other than a foreignObject; an HTML element otherwise.
+#if FABLE_COMPILER
 [<Emit("((p, tag, names) => names.has(tag.toLowerCase()) || p.namespaceURI === 'http://www.w3.org/2000/svg' && p.localName !== 'foreignObject' ? p.ownerDocument.createElementNS('http://www.w3.org/2000/svg', tag) : p.ownerDocument.createElement(tag))($2.get($0) || $0, $1, $3)")>]
 let private createUnder (parent: Node) (tag: string) (nested: obj) (names: obj) : HTMLElement = jsNative
+#else
+let private createUnder (parent: Node) (tag: string) (nested: obj) (names: obj) : HTMLElement =
+    raise (System.NotSupportedException "SVG elements are not bridged on .NET")
+#endif
 
 // Parses the markup; when its root elements have SVG names, parses it again inside an svg element and lifts the nodes
 // into the template's content. Root elements with SVG and HTML names together raise.
+#if FABLE_COMPILER
 [<Emit("((t, m, names) => { t.innerHTML = m; const roots = Array.from(t.content.children); const svg = roots.filter(r => names.has(r.localName)).length; if (svg > 0) { if (svg < roots.length) throw new Error('A row or arm template mixes SVG and HTML root elements; under synchronous commits wrap them in one element'); t.innerHTML = '<svg>' + m + '</svg>'; t.content.replaceChildren(...t.content.firstChild.childNodes); } })($0, $1, $2)")>]
 let private parseUnder (template: HTMLTemplateElement) (markup: string) (names: obj) : unit = jsNative
+#else
+let private parseUnder (template: HTMLTemplateElement) (markup: string) (names: obj) : unit =
+    raise (System.NotSupportedException "SVG elements are not bridged on .NET")
+#endif
 
 // Records the region start's parent, or the parent recorded for the fragment holding the region start.
+#if FABLE_COMPILER
 [<Emit("((m, f, s) => { const p = s.parentNode; if (p != null) m.set(f, m.get(p) || p); })($0, $1, $2)")>]
 let private nestUnder (nested: obj) (fragment: Node) (regionStart: Node) : unit = jsNative
+#else
+let private nestUnder (nested: obj) (fragment: Node) (regionStart: Node) : unit =
+    raise (System.NotSupportedException "SVG elements are not bridged on .NET")
+#endif
 
 /// <summary>
 /// Makes the elements with SVG names, and every element under an SVG element other than a foreignObject, SVG elements on

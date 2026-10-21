@@ -4,10 +4,16 @@ open System
 open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
+open Ranvier.View.Testing
 open Fable.Ranvier
 open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Representation
 open Ranvier.View.Foundation.Mounting
+
+/// <summary>The elements the range checks build, created in the running case's document.</summary>
+module private Dom =
+    let element (tag: string) (_: obj list) (_: obj list) : HTMLElement =
+        (Conformance.document ()).createElement tag
 
 let private equal expected actual =
     if expected <> actual then
@@ -26,23 +32,48 @@ let private rejected action =
 
     equal true caught
 
+#if FABLE_COMPILER
 [<Emit("$0.remove()")>]
 let private remove (node: Node) : unit = jsNative
+#else
+let private remove (node: Node) : unit =
+    Ranvier.View.Foundation.Native.removeNode node
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.childNodes[$1]")>]
 let private at (node: Node) (index: int) : Node = jsNative
+#else
+let private at (node: Node) (index: int) : Node =
+    Ranvier.View.Foundation.Native.arrayAt (Ranvier.View.Foundation.Native.childNodesOf node) index
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.querySelector($1)")>]
 let private query (node: Node) (selector: string) : HTMLElement option = jsNative
+#else
+let private query (node: Node) (selector: string) : HTMLElement option =
+    (unbox<Element> node).querySelector selector
+    |> Option.map unbox<HTMLElement>
+#endif
 
-[<Emit("(() => { const old = $0.insertBefore; $0.insertBefore = function(n,b) { old.call(this,n,b); throw $1; }; return () => $0.insertBefore = old; })()")>]
-let private failAttachment (node: Node) (error: exn) : unit -> unit = jsNative
+// insertBefore on the node inserts, then raises `error`.
+let private failAttachment (node: Node) (error: exn) : unit -> unit =
+    Conformance.intercept node "insertBefore" (fun original args ->
+        original args |> ignore
+        raise error)
 
+#if FABLE_COMPILER
 [<Emit("(() => { const f = () => $1(); $0.addEventListener('click', f); return () => $0.removeEventListener('click', f); })()")>]
 let private listen (node: HTMLElement) (handler: unit -> unit) : unit -> unit = jsNative
+#else
+let private listen (node: HTMLElement) (handler: unit -> unit) : unit -> unit =
+    Ranvier.View.Foundation.Native.listen node "click" (fun _ -> handler ())
+#endif
 
-[<Emit("(() => { const old = $0.remove; $0.remove = () => { throw new Error('remove'); }; return () => $0.remove = old; })()")>]
-let private failRemoval (node: Node) : unit -> unit = jsNative
+// remove () on the node raises.
+let private failRemoval (node: Node) : unit -> unit =
+    Conformance.intercept node "remove" (fun _ _ -> raise (exn "remove"))
 
 let private mounted graph parent host before build =
     mount graph parent ignore host before build
@@ -365,8 +396,12 @@ let cases =
         "disposal during setup cannot attach or acquire further nodes", disposedDuringSetup
     |]
 
-[<Emit("(() => { const old = $0.insertBefore; $0.insertBefore = function(n,b) { const result = old.call(this,n,b); $1(); return result; }; return () => $0.insertBefore = old; })()")>]
-let private afterAttachment (node: Node) (action: unit -> unit) : unit -> unit = jsNative
+// insertBefore on the node inserts, then runs `action`.
+let private afterAttachment (node: Node) (action: unit -> unit) : unit -> unit =
+    Conformance.intercept node "insertBefore" (fun original args ->
+        let result = original args
+        action ()
+        result)
 
 let private reactiveMoves () =
     use graph = new Graph ()
@@ -503,8 +538,9 @@ let private keyedForeignMutation () =
     same host foreign.parentNode.Value
     remove foreign
 
-[<Emit("(() => { const old = $0.remove; $0.remove = () => { throw new Error('remove start'); }; return () => $0.remove = old; })()")>]
-let private failRegionRemoval (node: Node) : unit -> unit = jsNative
+// remove () on the node raises.
+let private failRegionRemoval (node: Node) : unit -> unit =
+    Conformance.intercept node "remove" (fun _ _ -> raise (exn "remove start"))
 
 let private keyedReleaseFailure () =
     use graph = new Graph ()
@@ -582,8 +618,14 @@ let private attachmentReentry () =
     finally
         restore ()
 
+#if FABLE_COMPILER
 [<Emit("document.body.appendChild($0)")>]
 let private appendToBody (node: Node) : unit = jsNative
+#else
+let private appendToBody (node: Node) : unit =
+    (Conformance.document ()).body.appendChild node
+    |> ignore
+#endif
 
 let private movedBeforeStaging () =
     use graph = new Graph ()
@@ -612,8 +654,18 @@ let private movedBeforeStaging () =
     equal None moved.Value.parentNode
     equal None native.parentNode
 
+#if FABLE_COMPILER
 [<Emit("Array.from($0.childNodes, n => n.nodeType === 1 ? n.tagName : n.nodeType === 3 ? 'text:' + n.data : n.data)")>]
 let private describe (node: Node) : string array = jsNative
+#else
+let private describe (node: Node) : string array =
+    Ranvier.View.Foundation.Native.childNodesOf node
+    |> Array.map (fun n ->
+        match n.nodeType with
+        | 1.0 -> (unbox<Element> n).tagName
+        | 3.0 -> "text:" + Ranvier.View.Foundation.Native.dataOf n
+        | _ -> Ranvier.View.Foundation.Native.dataOf n)
+#endif
 
 let private stagedAfterDetachedRoot () =
     use graph = new Graph ()
@@ -650,11 +702,28 @@ let private stagedAfterDetachedRoot () =
     handle.Dispose ()
     equal [| "ASIDE" |] (describe host)
 
-[<Emit("(() => { const old = $0.insertBefore; let done = false; $0.insertBefore = function(n,b) { const result = old.call(this,n,b); if (!done) { done = true; $1.remove(); } return result; }; return () => $0.insertBefore = old; })()")>]
-let private removeAnchorAfterFirstInsert (host: Node) (anchor: Node) : unit -> unit = jsNative
+// The host's first insertBefore inserts, then removes `anchor`.
+let private removeAnchorAfterFirstInsert (host: Node) (anchor: Node) : unit -> unit =
+    let isDone = ref false
 
+    Conformance.intercept host "insertBefore" (fun original args ->
+        let result = original args
+
+        if not isDone.Value then
+            isDone.Value <- true
+            (unbox<ChildNode> anchor).remove()
+
+        result)
+
+#if FABLE_COMPILER
 [<Emit("$0.name")>]
 let private errorName (error: exn) : string = jsNative
+#else
+let private errorName (error: exn) : string =
+    match error.GetType().GetProperty "name" with
+    | null -> error.GetType().Name
+    | property -> string (property.GetValue error)
+#endif
 
 let private anchorRemovedDuringAttach () =
     use graph = new Graph ()
@@ -774,7 +843,8 @@ let private failedMovementRollback () =
         try
             handle.MoveBefore (other, None)
         with error ->
-            equal "Range movement and rollback failed" error.Message
+            // .NET's AggregateException appends the inner messages to its own.
+            equal true (error.Message.StartsWith "Range movement and rollback failed")
             caught <- true
 
         equal true caught
@@ -1206,39 +1276,40 @@ let private authoredSwitch () =
     handle.Dispose ()
     equal 0. host.childNodes.length
 
-let allCases =
-    Array.append
-        cases
-        [|
-            "an authored switch disposes the previous arm before the next arm's setup and keeps an equal key", authoredSwitch
-            "array key callbacks cannot change unread snapshot slots", arrayKeyMutation
-            "reusable bindings retain identity across range movement", reactiveMoves
-            "keyed rows preserve identity and current data across reorder and removal", keyedReconciliation
-            "top-level keyed regions retain sibling order and move with their mount", keyedRootMovement
-            "foreign mutations inside keyed rows reject outer movement", keyedForeignMutation
-            "keyed range release attempts both endpoints after a removal failure", keyedReleaseFailure
-            "duplicate keys fail before mounting mutates the host", duplicateKeys
-            "disposal during attachment cannot revive a mount", attachmentReentry
-            "native ownership cannot overlap another live mount", overlappingMounts
-            "staging rejects a root moved elsewhere by a browser hook and unwinds", movedBeforeStaging
-            "detached roots keep their order and before sibling when a keyed region stages them", stagedAfterDetachedRoot
-            "an anchor removed during attachment fails with NotFoundError and unwinds the mount", anchorRemovedDuringAttach
-            "equality-triggered disposal prevents a late DOM write", equalityDisposal
-            "direct child mount disposal uses its explicit reporter", childReporter
-            "failed movement rollback disposes resources instead of stranding bindings", failedMovementRollback
-            "reparented generated descendants can be adopted and outlive their mount", reparentedGeneratedDescendants
-            "duplicate keyed updates report once and recover without replacing retained rows", keyedReportsAndRecovery
-            "initial keyed row setup failure unwinds the entire mount", fun () -> keyedSetupRecovery true
-            "failed live row setup retains prior rows and permits recovery", fun () -> keyedSetupRecovery false
-            "a failed keyed layout disposes the mount and reports once", keyedLayoutFailure
-            "nested keyed rows update and dispose after outer movement", keyedNestedMovement
-            "keyed reader disposal prevents further reconciliation", fun () -> keyedDisposal "read"
-            "keyed row setup disposal cannot attach new rows", fun () -> keyedDisposal "setup"
-            "keyed movement disposal cannot revive row ranges", fun () -> keyedDisposal "move"
-            "keyed row cleanup disposal cancels the remaining update", fun () -> keyedDisposal "cleanup"
-            "keyed error reporting does not subscribe to reporter reads", fun () -> keyedReporter false
-            "throwing keyed reporters cannot prevent later recovery or disposal", fun () -> keyedReporter true
-            "keyed reconciliation tracks snapshots but not comparers or cleanup", keyedTracksOnlySnapshot
-            "initial keyed reader disposal stops before row callbacks", keyedInitialDisposal
-            "keyed setup and its cleanup failure report together and recover", keyedSetupAndCleanupFailure
-        |]
+let private moreCases =
+    [|
+        "an authored switch disposes the previous arm before the next arm's setup and keeps an equal key", authoredSwitch
+        "array key callbacks cannot change unread snapshot slots", arrayKeyMutation
+        "reusable bindings retain identity across range movement", reactiveMoves
+        "keyed rows preserve identity and current data across reorder and removal", keyedReconciliation
+        "top-level keyed regions retain sibling order and move with their mount", keyedRootMovement
+        "foreign mutations inside keyed rows reject outer movement", keyedForeignMutation
+        "keyed range release attempts both endpoints after a removal failure", keyedReleaseFailure
+        "duplicate keys fail before mounting mutates the host", duplicateKeys
+        "disposal during attachment cannot revive a mount", attachmentReentry
+        "native ownership cannot overlap another live mount", overlappingMounts
+        "staging rejects a root moved elsewhere by a browser hook and unwinds", movedBeforeStaging
+        "detached roots keep their order and before sibling when a keyed region stages them", stagedAfterDetachedRoot
+        "an anchor removed during attachment fails with NotFoundError and unwinds the mount", anchorRemovedDuringAttach
+        "equality-triggered disposal prevents a late DOM write", equalityDisposal
+        "direct child mount disposal uses its explicit reporter", childReporter
+        "failed movement rollback disposes resources instead of stranding bindings", failedMovementRollback
+        "reparented generated descendants can be adopted and outlive their mount", reparentedGeneratedDescendants
+        "duplicate keyed updates report once and recover without replacing retained rows", keyedReportsAndRecovery
+        "initial keyed row setup failure unwinds the entire mount", fun () -> keyedSetupRecovery true
+        "failed live row setup retains prior rows and permits recovery", fun () -> keyedSetupRecovery false
+        "a failed keyed layout disposes the mount and reports once", keyedLayoutFailure
+        "nested keyed rows update and dispose after outer movement", keyedNestedMovement
+        "keyed reader disposal prevents further reconciliation", fun () -> keyedDisposal "read"
+        "keyed row setup disposal cannot attach new rows", fun () -> keyedDisposal "setup"
+        "keyed movement disposal cannot revive row ranges", fun () -> keyedDisposal "move"
+        "keyed row cleanup disposal cancels the remaining update", fun () -> keyedDisposal "cleanup"
+        "keyed error reporting does not subscribe to reporter reads", fun () -> keyedReporter false
+        "throwing keyed reporters cannot prevent later recovery or disposal", fun () -> keyedReporter true
+        "keyed reconciliation tracks snapshots but not comparers or cleanup", keyedTracksOnlySnapshot
+        "initial keyed reader disposal stops before row callbacks", keyedInitialDisposal
+        "keyed setup and its cleanup failure report together and recover", keyedSetupAndCleanupFailure
+    |]
+
+let allCases: Conformance.Case array =
+    Conformance.ofChecks (Array.append cases moreCases)
