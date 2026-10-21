@@ -6,7 +6,7 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "compile": "dotnet fable Ranvier.Anime.Tests.fsproj --outDir generated --configuration Release",
+    "compile": "dotnet fickl Ranvier.Anime.Tests.fsproj --outDir generated --configuration Release",
     "test": "npm run compile && node --test anime.test.mjs emit.test.mjs && node size.mjs"
   },
   "devDependencies": {

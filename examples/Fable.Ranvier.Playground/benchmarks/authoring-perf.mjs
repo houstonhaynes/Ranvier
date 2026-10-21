@@ -12,8 +12,8 @@ const port = 5185;
 if (process.argv.includes("--build")) {
   for (const [args, counters] of [
     [["dotnet", "build", "../../experiments/Ranvier.View.Foundation/AuthoringPerf/AuthoringPerf.fsproj", "-c", "Release", "-p:RanvierCounters=false", "--nologo"], "false"],
-    [["dotnet", "fable", "tests/DomTests.fsproj", "--outDir", "generated-authoring-counters", "--configuration", "Release", "--noCache"], "true"],
-    [["dotnet", "fable", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], "false"]
+    [["dotnet", "fickl", "tests/DomTests.fsproj", "--outDir", "generated-authoring-counters", "--configuration", "Release", "--noCache"], "true"],
+    [["dotnet", "fickl", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], "false"]
   ]) execFileSync("rtk", args, { cwd, env: { ...process.env, RanvierCounters: counters }, stdio: "inherit", windowsHide: true });
 }
 const server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--config", "benchmarks/view-vite.config.mjs", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], { cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });

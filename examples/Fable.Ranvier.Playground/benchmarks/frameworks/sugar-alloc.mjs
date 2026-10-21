@@ -23,8 +23,8 @@ const env = { ...process.env, RanvierCounters: "false", RANVIER_PERF_OUTPUT: out
 const port = Number(argument("port", 5188));
 
 if (process.argv.includes("--build")) {
-  execFileSync("dotnet", ["fable", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env });
-  execFileSync("dotnet", ["fable", "benchmarks/ripple/RipplePerf.fsproj", "--outDir", "generated-ripple", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env });
+  execFileSync("dotnet", ["fickl", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env });
+  execFileSync("dotnet", ["fickl", "benchmarks/ripple/RipplePerf.fsproj", "--outDir", "generated-ripple", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env });
 }
 execFileSync(process.execPath, ["node_modules/vite/bin/vite.js", "build", "--config", "benchmarks/frameworks/vite.config.mjs"], { cwd, stdio: ["ignore", 2, 2], windowsHide: true, env });
 

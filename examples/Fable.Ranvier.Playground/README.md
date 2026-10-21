@@ -18,7 +18,7 @@ app-level consumer of the experiment, not a separately packaged library. The pro
 
 ## Run
 
-Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fable 5.18.0 in its
+Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fickl 0.3.0 (a Fable fork) in its
 local .NET tool manifest.
 
 From the repository root:
@@ -31,7 +31,7 @@ rtk proxy npm run dev
 ```
 
 Open the localhost URL printed by Vite (normally `http://127.0.0.1:5173`). Edit `App.fs` to change
-the demo. The development command compiles once, then runs Fable watch and Vite together. Ctrl+C
+the demo. The development command compiles once, then runs Fickl watch and Vite together. Ctrl+C
 stops both. Vite hot reload disposes the old app's mounts and graph before starting a replacement;
 hot reload resets app state. The demo's own unmount/remount control preserves its state.
 
@@ -61,7 +61,7 @@ input node identity/focus/caret, the disabled property, and listener cleanup acr
 Scheduling checks cover mutation counts, disposal before commit, setter failures and a synthetic
 composition-input echo. Node checks also exercise Pending/Failed invalidation, shared graphs,
 setter ownership, reentrant writes and mounting inside a graph batch.
-It also edits and restores `App.fs` to verify the Fable watch/Vite cleanup path without reloading
+It also edits and restores `App.fs` to verify the Fickl watch/Vite cleanup path without reloading
 the page. Run the browser suite in a checkout where `App.fs` is not being edited concurrently.
 The suites can be run separately with `npm run test:dom` and `npm run test:browser`.
 
@@ -88,7 +88,7 @@ See [the benchmark method and results](../../docs/.ai/benchmarks/dom-scheduling/
 - `tests/playground.spec.mjs`: real browser interaction checks.
 
 `generated/`, `generated-tests/` and `dist/` are generated and ignored. The Node project references
-the local `src/Fable.Ranvier` project, so library edits are part of the Fable watch loop.
+the local `src/Fable.Ranvier` project, so library edits are part of the Fickl watch loop.
 
 ## PoC limits
 

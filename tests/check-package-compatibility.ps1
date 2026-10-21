@@ -115,7 +115,7 @@ System.Console.WriteLine("Package consumer runs with FSharp.Core 8.0.100");
             $fableXml.Save($fableConsumer)
             Invoke-DotNet restore $fableConsumer --configfile (Join-Path $consumer 'NuGet.Config')
             $output = Join-Path $consumer $(if ($traced) { 'fable-traced' } else { 'fable' })
-            $fableArgs = @('fable', $fableConsumer, '-e', '.fs.js', '-o', $output, '-c', 'Release')
+            $fableArgs = @('fickl', $fableConsumer, '-e', '.fs.js', '-o', $output, '-c', 'Release')
             if ($traced) { $fableArgs += @('--define', 'RANVIER_TRACE') }
             Invoke-DotNet @fableArgs
             '{"type":"module"}' | Set-Content -LiteralPath (Join-Path $output 'package.json')

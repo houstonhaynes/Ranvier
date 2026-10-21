@@ -149,10 +149,10 @@ module Stage =
             let! quick = Options.quick
 
             return
-                stage "fable clean" {
+                stage "fickl clean" {
                     when' (not quick)
                     workingDir Repo.FileSystem.``.``
-                    run "dotnet fable clean -e .fs.js --yes"
+                    run "dotnet fickl clean -e .fs.js --yes"
                 }
         }
 
@@ -221,10 +221,10 @@ module Stage =
 
                     if watch then
                         for project in projects do
-                            stage "watch" { run (cmd $"dotnet fable watch {project} -e .fs.js -c {config} -o output -s --optimize") }
+                            stage "watch" { run (cmd $"dotnet fickl watch {project} -e .fs.js -c {config} -o output -s --optimize") }
                     else
                         for project in projects do
-                            stage $"compile {project}" { run (cmd $"dotnet fable {project} -e .fs.js -c {config} --noCache -o output") }
+                            stage $"compile {project}" { run (cmd $"dotnet fickl {project} -e .fs.js -c {config} --noCache -o output") }
                 }
         }
 
@@ -369,13 +369,13 @@ module Stage =
 
                     stage "compile tests" {
                         quiet
-                        run "dotnet fable fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests -c Release"
+                        run "dotnet fickl fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests -c Release"
                     }
                     // RanvierTrace compiles the trace log into the Release build.
                     stage "compile traced tests" {
                         quiet
                         envVars [ ("RanvierTrace", "true") ]
-                        run "dotnet fable fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests-traced -c Release"
+                        run "dotnet fickl fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests-traced -c Release"
                     }
 
                     stage "run and report" { run "node fable/Ranvier.Tests.Fable/Report.mjs" }
@@ -402,7 +402,7 @@ module Stage =
                     stage "map expectations" {
                         run "dotnet fsi docs/maps/validation/Generate.fsx"
                         envVars [ ("RanvierTrace", "true") ]
-                        run "dotnet fable docs/.nacara/map-validation/Checks.fsproj -o docs/.nacara/map-validation/out -e .mjs --noCache"
+                        run "dotnet fickl docs/.nacara/map-validation/Checks.fsproj -o docs/.nacara/map-validation/out -e .mjs --noCache"
                         run "node docs/.nacara/map-validation/out/Main.mjs"
                     }
 
@@ -511,6 +511,24 @@ module private Perf =
     let private readJson file =
         JsonDocument.Parse (File.ReadAllText file)
 
+    /// <summary>
+    /// The F#-to-JavaScript compiler command and version a revision's tool manifest declares: <c>fickl</c> when the
+    /// manifest has it, otherwise <c>fable</c> (revisions before the switch to Fickl).
+    /// </summary>
+    let private compilerTool source =
+        use manifest = readJson (combine source ".config/dotnet-tools.json")
+        let tools = manifest.RootElement.GetProperty "tools"
+        let mutable entry = Unchecked.defaultof<JsonElement>
+
+        let command =
+            if tools.TryGetProperty ("fickl", &entry) then
+                "fickl"
+            else
+                entry <- tools.GetProperty "fable"
+                "fable"
+
+        command, entry.GetProperty("version").GetString()
+
     let private tool output =
         combine output "../head/worker/Ranvier.Counters.dll"
         |> Path.GetFullPath
@@ -559,19 +577,23 @@ module private Perf =
                             workingDir source
                             envVars [ "RanvierCounters", string counters; "RanvierTrace", "false" ]
 
-                            run (
-                                dotnet
-                                    [
-                                        "fable"
-                                        "fable/Ranvier.Counters"
-                                        "-e"
-                                        ".fs.js"
-                                        "-o"
-                                        combine output ("fable/" + folder)
-                                        "--noCache"
-                                        "--configuration"
-                                        "Release"
-                                    ]
+                            runOperation (
+                                effect (fun () -> compilerTool source)
+                                |> Operation.bind (fun (command, _) ->
+                                    execute (
+                                        dotnet
+                                            [
+                                                command
+                                                "fable/Ranvier.Counters"
+                                                "-e"
+                                                ".fs.js"
+                                                "-o"
+                                                combine output ("fable/" + folder)
+                                                "--noCache"
+                                                "--configuration"
+                                                "Release"
+                                            ]
+                                    ))
                             )
                         }
 
@@ -579,15 +601,19 @@ module private Perf =
                         workingDir source
 
                         runOperation (
-                            executeCapture (dotnet [ "fable"; "--version" ])
-                            |> Operation.bind (fun version ->
+                            effect (fun () -> compilerTool source)
+                            |> Operation.bind (fun (command, version) ->
+                                executeCapture (dotnet [ command; "--help" ])
+                                |> Operation.map (fun help -> version, help))
+                            |> Operation.bind (fun (manifestVersion, help) ->
                                 effect (fun () ->
-                                    use tools = readJson (combine source ".config/dotnet-tools.json")
-
                                     let compiler =
-                                        tools.RootElement.GetProperty("tools").GetProperty("fable").GetProperty("version").GetString()
+                                        help.Stdout.Split ('\n')
+                                        |> Array.tryFind (fun line -> line.Contains "F# to JavaScript compiler")
+                                        |> Option.map (fun line -> line.Substring(0, line.IndexOf ':').Trim())
+                                        |> Option.defaultValue ""
 
-                                    require (version.Stdout.Contains compiler) "Resolved Fable compiler differs from the side's tool manifest."
+                                    require (compiler.Contains manifestVersion) "Resolved Fable compiler differs from the side's tool manifest."
 
                                     let libraryVersions =
                                         Directory.GetFiles (combine output "fable/plain", "package.json", SearchOption.AllDirectories)

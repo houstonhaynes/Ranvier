@@ -72,7 +72,7 @@ async function runWorker(replicate) {
 
 async function runMain() {
   if (process.argv.includes("--build"))
-    execFileSync("dotnet", ["fable", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env: { ...process.env, RanvierCounters: "false" } });
+    execFileSync("dotnet", ["fickl", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], { cwd, stdio: "inherit", windowsHide: true, env: { ...process.env, RanvierCounters: "false" } });
   const { transform } = await import("@solidjs/compiler");
   const source = fileURLToPath(new URL("./server-solid.jsx", import.meta.url));
   const { code } = transform(await readFile(source, "utf8"), { filename: source, generate: "ssr", hydratable: true });

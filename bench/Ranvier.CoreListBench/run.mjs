@@ -147,7 +147,7 @@ if (process.argv.includes("--child")) {
   const expectedBase = argument("base-commit", "");
   if (expectedBase && baseCommit !== expectedBase) throw Error(`The base build is at ${baseCommit}, not ${expectedBase}`);
   if (process.argv.includes("--build")) {
-    run("dotnet", ["fable", "Ranvier.CoreListBench.fsproj", "--outDir", "out", "--configuration", "Release", "--noCache"]);
+    run("dotnet", ["fickl", "Ranvier.CoreListBench.fsproj", "--outDir", "out", "--configuration", "Release", "--noCache"]);
     await writeFile(`${here}out/package.json`, "{\"type\":\"module\"}\n");
   }
   const processes = Number(argument("processes", 7)), warmup = argument("warmup", "10"), rounds = argument("rounds", "31");
@@ -178,7 +178,7 @@ if (process.argv.includes("--child")) {
     commit: git(root, "rev-parse", "HEAD"),
     dirtyAtStart, dirty: status(root),
     ...(baseDir ? { baseDir, baseCommit, baseDirty } : {}),
-    node: process.version, solidSignals: solidVersion, fable: run("dotnet", ["fable", "--version"]).trim().split("\n").at(-1),
+    node: process.version, solidSignals: solidVersion, fable: run("dotnet", ["fickl", "--help"]).split("\n").find(line => line.includes("F# to JavaScript compiler")).split(":")[0].trim(),
     cpu: os.cpus()[0].model, cores: os.cpus().length, memoryGb: Math.round(os.totalmem() / 2 ** 30), platform: `${os.platform()} ${os.release()}`,
     processes, warmup: Number(warmup), rounds: Number(rounds), unit: "milliseconds per operation",
     notes: [

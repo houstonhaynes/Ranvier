@@ -154,9 +154,9 @@ jobs:
       - name: Restore tools
         run: dotnet tool restore
       - name: Compile the tests
-        run: dotnet fable fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests -c Release
+        run: dotnet fickl fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests -c Release
       - name: Compile the traced tests
-        run: dotnet fable fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests-traced -c Release
+        run: dotnet fickl fable/Ranvier.Tests.Fable -e .fs.js -o dist/tests-traced -c Release
         env:
           RanvierTrace: 'true'
       - name: Run the tests and report

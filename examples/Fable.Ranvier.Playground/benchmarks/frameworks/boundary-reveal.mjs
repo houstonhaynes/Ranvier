@@ -21,8 +21,8 @@ const counts = { 1: 64, 16: 32, 128: 8 };
 
 if (process.argv.includes("--build")) {
   for (const args of [
-    ["dotnet", "fable", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"],
-    ["dotnet", "fable", "benchmarks/ripple/RipplePerf.fsproj", "--outDir", "generated-ripple", "--configuration", "Release", "--noCache"],
+    ["dotnet", "fickl", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"],
+    ["dotnet", "fickl", "benchmarks/ripple/RipplePerf.fsproj", "--outDir", "generated-ripple", "--configuration", "Release", "--noCache"],
     ["node", "node_modules/vite/bin/vite.js", "build", "--config", "benchmarks/frameworks/vite.config.mjs"]
   ]) execFileSync("rtk", args, { cwd, stdio: "inherit", windowsHide: true, env });
 }

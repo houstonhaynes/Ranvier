@@ -3,26 +3,26 @@
     "presence": {
       "motion": {
         "raw": 244555,
-        "gzip": 73745
+        "gzip": 73744
       },
       "handWritten": {
         "raw": 242715,
         "gzip": 73013
       },
-      "deltaGzip": 732,
+      "deltaGzip": 731,
       "budgetGzip": 900,
       "withinBudget": true
     },
     "flip": {
       "motion": {
         "raw": 272834,
-        "gzip": 81610
+        "gzip": 81609
       },
       "handWritten": {
         "raw": 270528,
         "gzip": 81030
       },
-      "deltaGzip": 580,
+      "deltaGzip": 579,
       "budgetGzip": 600,
       "withinBudget": true
     }

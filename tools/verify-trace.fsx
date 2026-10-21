@@ -682,7 +682,7 @@ let fable (project: string) (outDir: string) (env: (string * string) list) (extr
         env
         "dotnet"
         ([
-            "fable"
+            "fickl"
             project
             "-e"
             ".fs.js"

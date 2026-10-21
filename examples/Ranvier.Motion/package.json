@@ -6,10 +6,10 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "compile": "dotnet fable Motion.fsproj --outDir generated --configuration Release",
-    "compile:tests": "dotnet fable tests/MotionTests.fsproj --outDir generated-tests --configuration Release",
+    "compile": "dotnet fickl Motion.fsproj --outDir generated --configuration Release",
+    "compile:tests": "dotnet fickl tests/MotionTests.fsproj --outDir generated-tests --configuration Release",
     "server": "dotnet run --project Server/ServerChecks.fsproj -c Release -- --write generated-server/story.html",
-    "dev": "npm run server && dotnet fable watch Motion.fsproj --outDir generated --configuration Release --run vite --host 127.0.0.1",
+    "dev": "npm run server && dotnet fickl watch Motion.fsproj --outDir generated --configuration Release --run vite --host 127.0.0.1",
     "serve:test": "vite --host 127.0.0.1 --port 5179 --strictPort",
     "build": "npm run compile && vite build",
     "size": "npm run build && node size.mjs",

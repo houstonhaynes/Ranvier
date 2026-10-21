@@ -27,7 +27,7 @@ The view projects are consumed from a checkout of the repository. Reference
 </Project>
 ```
 
-Install Fable 5.18.0, the version the repository pins, as a local tool:
+Install Fable 5.18.0 as a local tool:
 
 ```bash
 dotnet new tool-manifest

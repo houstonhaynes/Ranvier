@@ -81,12 +81,12 @@ $savedCounters = $env:RanvierCounters
 try {
     Invoke-Checked dotnet @('tool', 'restore')
 
-    # Fable cracks the project with MSBuild, which reads RanvierCounters from the
+    # Fickl cracks the project with MSBuild, which reads RanvierCounters from the
     # environment.
     Remove-Item Env:RanvierCounters -ErrorAction SilentlyContinue
-    Invoke-Checked dotnet @('fable', $fableProject, '-e', '.fs.js', '-o', "$fableOutput/plain", '--noCache', '--configuration', 'Release')
+    Invoke-Checked dotnet @('fickl', $fableProject, '-e', '.fs.js', '-o', "$fableOutput/plain", '--noCache', '--configuration', 'Release')
     $env:RanvierCounters = 'true'
-    Invoke-Checked dotnet @('fable', $fableProject, '-e', '.fs.js', '-o', "$fableOutput/counters", '--noCache', '--configuration', 'Release')
+    Invoke-Checked dotnet @('fickl', $fableProject, '-e', '.fs.js', '-o', "$fableOutput/counters", '--noCache', '--configuration', 'Release')
     Remove-Item Env:RanvierCounters
 
     $countersWorker = 'bench/Ranvier.Counters/bin/counters'
