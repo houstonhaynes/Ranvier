@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node --test .github/scripts/*.test.cjs
@@ -114,7 +114,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Pack and dry-publish
@@ -146,7 +146,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Install npm packages
@@ -183,7 +183,7 @@ jobs:
         with:
           global-json-file: global.json
       # The playground requires Node 26 or newer (package.json engines).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
@@ -226,7 +226,7 @@ jobs:
         with:
           global-json-file: global.json
       # GeneratorTests runs the generator, which reads the TypeScript compiler from this directory's node_modules.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
@@ -257,7 +257,7 @@ jobs:
         with:
           global-json-file: global.json
       # The suite requires Node 26 or newer (package.json engines).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
@@ -292,7 +292,7 @@ jobs:
         with:
           global-json-file: global.json
       # The suite requires Node 26 or newer (package.json engines).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
@@ -330,7 +330,7 @@ jobs:
         with:
           global-json-file: global.json
       # The examples require Node 26 or newer (package.json engines).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
@@ -352,7 +352,7 @@ jobs:
         run: npm run size:only
       - name: Upload the Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: motion-playwright
           path: |

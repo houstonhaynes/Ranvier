@@ -46,7 +46,7 @@ jobs:
       # A `Perf-Ignore: <reason>` footer keeps a master commit out of the performance history.
       - id: ignore
         if: github.event_name == 'push'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const {ignoreReason} = require('./.github/scripts/perf-ignore.cjs');
@@ -65,7 +65,7 @@ jobs:
       # master, supplies the measurement.
       - id: previous
         if: steps.ignore.outputs.ignored != 'true' && steps.changes.outputs.docs != 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           HEAD: ${{ steps.refs.outputs.head }}
           BASE: ${{ steps.refs.outputs.base }}
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '26'
       - run: sudo sysctl -w kernel.perf_event_paranoid=-1
@@ -114,7 +114,7 @@ jobs:
       - run: dotnet fsi build.fsx -- perf build "$HEAD" "$RUNNER_TEMP/perf/head"
       - name: Alternating measurements (arm64 asserts hardware in every region)
         run: dotnet fsi build.fsx -- perf ab "$LEG" "$BASE" "$RUNNER_TEMP/perf/base" "$HEAD" "$RUNNER_TEMP/perf/head" "out/ab-$LEG.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ab-${{ matrix.leg }}
           path: out/ab-${{ matrix.leg }}.json
@@ -137,7 +137,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: ab-*
           merge-multiple: true
@@ -150,13 +150,13 @@ jobs:
           RUN: ${{ needs.find.outputs.run }}
         run: node .github/scripts/perf-reuse.cjs out "$BASE" "$HEAD" "$RUN"
       - if: needs.find.outputs.run != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ab-arm64-counters
           path: out/ab-arm64-counters.json
           if-no-files-found: error
       - if: needs.find.outputs.run != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ab-x64-timing
           path: out/ab-x64-timing.json
@@ -166,7 +166,7 @@ jobs:
         run: dotnet fsi build.fsx -- perf compare "$BASE" "$HEAD" "$ACCEPTED" out/report out/ab-arm64-counters.json out/ab-x64-timing.json
       - name: Bind report to this run
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR: ${{ github.event.pull_request.number }}
         with:
@@ -176,7 +176,7 @@ jobs:
             fs.writeFileSync('out/report/provenance.json', JSON.stringify({run: String(context.runId), repository: process.env.GITHUB_REPOSITORY, event: context.eventName, pr: process.env.PR, base: process.env.BASE, head: process.env.HEAD}));
             for (const leg of ['arm64-counters', 'x64-timing']) fs.copyFileSync(`out/ab-${leg}.json`, `out/report/ab-${leg}.json`);
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-report
           path: out/report

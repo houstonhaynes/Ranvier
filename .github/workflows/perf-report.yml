@@ -27,20 +27,20 @@ jobs:
           sparse-checkout: .github/scripts
       # A documentation-only pull request has no measurement and no report.
       - id: report
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: context.payload.workflow_run.id, per_page: 100});
             core.setOutput('present', String(artifacts.some(a => a.name === 'perf-report')));
       - if: steps.report.outputs.present == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: perf-report
           path: ${{ runner.temp }}/report
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
       - if: steps.report.outputs.present == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const {publish, readReport} = require('./.github/scripts/perf-report.cjs');
@@ -54,7 +54,7 @@ jobs:
       skipped: ${{ steps.report.outputs.skipped }}
     steps:
       - id: report
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const run = context.payload.workflow_run;
@@ -80,14 +80,14 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: perf-report
           path: ${{ runner.temp }}/report
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
       - name: Validate provenance
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('node:fs'), assert = require('node:assert/strict');
@@ -109,7 +109,7 @@ jobs:
           HEAD: ${{ github.event.workflow_run.head_sha }}
         run: node .github/scripts/perf-history.cjs "$RUNNER_TEMP/record/runs/$HEAD.json" out/head/worker/Ranvier.Counters.dll
       - name: Write docs provenance after history publication
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('node:fs');
@@ -118,7 +118,7 @@ jobs:
             fs.writeFileSync(`${process.env.RUNNER_TEMP}/docs-perf/provenance.json`, JSON.stringify({
               repository: process.env.GITHUB_REPOSITORY, run: String(run.id), head: run.head_sha, recorded: true
             }));
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: docs-perf-provenance
           path: ${{ runner.temp }}/docs-perf/provenance.json
@@ -131,7 +131,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Write docs provenance without a history record
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('node:fs');
@@ -140,7 +140,7 @@ jobs:
             fs.writeFileSync(`${process.env.RUNNER_TEMP}/docs-perf/provenance.json`, JSON.stringify({
               repository: process.env.GITHUB_REPOSITORY, run: String(run.id), head: run.head_sha, recorded: false
             }));
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: docs-perf-provenance
           path: ${{ runner.temp }}/docs-perf/provenance.json

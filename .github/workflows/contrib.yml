@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         with:
           script: |
             const fs = require('node:fs');
