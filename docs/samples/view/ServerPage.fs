@@ -9,14 +9,10 @@ open Shared
 let options = { Server.Options.defaults with Policy = Omit }
 
 let page (props: CounterProps) : string =
-    let rendered = Server.renderPage options counter props
+    let document =
+        { Server.DocumentShell.defaults with
+            Lang = Some "en"
+            State = [ stateId, counterProps.Encode props ]
+            Scripts = [ Server.ModuleScript.Src "/main.js" ] }
 
-    $"""<!doctype html>
-<html>
-<head><meta charset="utf-8">{rendered.Head}</head>
-<body>
-<div id="app">{rendered.Body}</div>
-{Server.stateScript stateId (counterProps.Encode props)}
-<script type="module">import "/main.js";</script>
-</body>
-</html>"""
+    Server.renderDocument options document counter props

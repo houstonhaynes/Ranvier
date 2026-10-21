@@ -82,3 +82,5 @@ lists the form of every type and the remaining differences between the targets.
   element; the client then starts with it settled, and a [boundary](../view/boundaries.md) over the
   same read hydrates its ready content.
 - **One element per value.** Several `stateScript` elements with distinct ids can share a page.
+  `Server.renderDocument` writes one per entry of `DocumentShell.State`, after the host element; see
+  [Deployment](deployment.md#the-page).

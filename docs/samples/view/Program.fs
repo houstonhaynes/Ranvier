@@ -105,6 +105,13 @@ let main _ =
             """<script type="application/json" id="counter-props">{"start":2,"label":"\u003c/script>"}</script>"""
             (StateTransfer.stateElement { Start = 2; Label = "</script>" })
 
+        expect
+            "deployment page"
+            ("""<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body><div id="app">"""
+             + counterHtml
+             + """</div><script type="application/json" id="counter-props">{"start":0,"label":"Clicks"}</script><script type="module" src="/main.js"></script></body></html>""")
+            (ServerPage.page { Start = 0; Label = "Clicks" })
+
 
         expect "templates rule root" (root """<hr class="rule">""") (Server.render omit Templates.rule ())
         expect "templates avatar" (root """<span class="avatar"><!--[a:b1b2a8ad--><img alt="avatar"><!--]--></span>""") (Server.render omit Templates.avatar (createSignal true))

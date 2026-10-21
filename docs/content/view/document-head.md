@@ -52,7 +52,8 @@ let page = Server.renderPage options articlePage { Title = createSignal "Tides";
 ```
 
 The head lists one element per key, in the order the keys first activated, and one element per
-unkeyed link. Place `page.Head` inside the page's `<head>`; see [Server rendering](../server/rendering.md#pages).
+unkeyed link. `Server.renderDocument` writes the head entries inside the document's `<head>`; see
+[Server rendering](../server/rendering.md#pages).
 
 ## When hydrating
 

@@ -92,22 +92,53 @@ open Shared
 let options = { Server.Options.defaults with Policy = Omit }
 
 let page (props: CounterProps) : string =
-    let rendered = Server.renderPage options counter props
+    let document =
+        { Server.DocumentShell.defaults with
+            Lang = Some "en"
+            State = [ stateId, counterProps.Encode props ]
+            Scripts = [ Server.ModuleScript.Src "/main.js" ] }
 
-    $"""<!doctype html>
-<html>
-<head><meta charset="utf-8">{rendered.Head}</head>
-<body>
-<div id="app">{rendered.Body}</div>
-{Server.stateScript stateId (counterProps.Encode props)}
-<script type="module">import "/main.js";</script>
-</body>
-</html>"""
+    Server.renderDocument options document counter props
 ```
 
-- The host element, `#app`, holds only the body: hydration's root marker is its first child.
-- The state script sits outside the host.
-- The client bundle loads after the body.
+`Server.renderDocument options document definition props` renders the component as `renderPage` does
+and writes the whole document around it:
+
+- the component's [head entries](../view/document-head.md) inside `<head>`, after
+  `<meta charset="utf-8">`;
+- the host element, `<div id="app">`, holding only the body, so hydration's root marker is its first
+  child;
+- each state element after the host, outside it;
+- each script after the state elements, so the client bundle loads after the body.
+
+| `Server.DocumentShell` field | Default | Writes |
+| --- | --- | --- |
+| `Lang` | `None` | The `lang` attribute of `<html>`. |
+| `HostId` | `"app"` | The id of the host element. |
+| `State` | `[]` | One [`stateScript`](state-transfer.md#writing-the-state) element per id and JSON pair. |
+| `Stylesheets` | `[]` | One `<link rel="stylesheet">` per URL, after the head entries. |
+| `Scripts` | `[]` | `Server.ModuleScript.Src src` writes `<script type="module" src>`; `Server.ModuleScript.Inline text` writes the text inside `<script type="module">`. |
+| `Nonce` | `None` | The `nonce` attribute of every script, state and stylesheet element, for a `Content-Security-Policy` of `script-src` or `style-src 'nonce-...'`. |
+| `HtmlAttributes`, `BodyAttributes` | `[]` | Further attributes of `<html>` and `<body>`. An `id` among them joins the document's ids. |
+
+Every attribute value is escaped. Script and stylesheet URLs are trusted author URLs, written as given
+apart from escaping: pass only URLs the application controls. `Some null` for `Lang` or `Nonce` writes
+nothing, as `None` does.
+
+`renderDocument` raises `ArgumentException` before the render for:
+
+- an id that is null, empty or contains ASCII whitespace (space, tab, line feed, form feed, carriage
+  return);
+- an id written twice among the host, the state elements and the `id` attributes of `<html>` and
+  `<body>`;
+- a state element whose JSON is null;
+- an attribute name that a template rejects, or one that an element repeats;
+- a nonce that is empty or holds a character other than ASCII letters, digits and `+ / = - _`;
+- inline module text containing `</script` in any letter case, or `<!--`.
+
+A failed render raises as [`renderPage`](rendering.md#failures) does.
+`Server.renderDocumentTo options document definition props write` passes the same document to `write`
+in segments, after a successful render.
 
 ## The endpoint
 
@@ -134,7 +165,7 @@ let main args =
     0
 ```
 
-Each `Server.render` and `renderPage` call creates and disposes its own graph, and concurrent requests
+Each `Server.render`, `renderPage` and `renderDocument` call creates and disposes its own graph, and concurrent requests
 each keep their own reactive state. State shared between requests (a cache, a configuration signal) is
 read as it is; see [Rendering](rendering.md#a-render-is-one-request).
 
@@ -180,9 +211,7 @@ dotnet run
 `GET /` returns the server-rendered counter with its props:
 
 ```html
-<div id="app"><!--[r--><div class="counter"><span class="label">Clicks</span><button type="button">0</button></div><!--]--></div>
-<script type="application/json" id="counter-props">{"start":0,"label":"Clicks"}</script>
-<script type="module">import "/main.js";</script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body><div id="app"><!--[r--><div class="counter"><span class="label">Clicks</span><button type="button">0</button></div><!--]--></div><script type="application/json" id="counter-props">{"start":0,"label":"Clicks"}</script><script type="module" src="/main.js"></script></body></html>
 ```
 
 `/main.js` hydrates the counter: the button the server wrote stays in the document and counts clicks.
@@ -193,5 +222,5 @@ dotnet run
 | --- | --- |
 | Server render and hydrate | The first paint should come from the server, and the page then runs in the browser. |
 | Client mount only | The page needs no server HTML: mount with [`Mounting.mount`](../view/lifetimes.md) into an empty host. |
-| Server render only | The page is static: render with `Server.render` and send no client bundle. |
+| Server render only | The page is static: render with `Server.renderDocument` and no `Scripts`. |
 | [Blazor Server](../guide/blazor-server.md) | The UI runs on the server over a circuit, with Ranvier holding the circuit's state. |

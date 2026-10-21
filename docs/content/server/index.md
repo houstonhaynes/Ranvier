@@ -31,13 +31,14 @@ let mounted = Hydration.hydrate graph None report Hydration.HydrationOptions.def
 
 ## Pages
 
-- [Rendering](rendering.md): `Server.render`, `renderTo` and `renderPage`, the HTML they write, escaping,
+- [Rendering](rendering.md): `Server.render`, `renderTo`, `renderPage` and `renderDocument`, the HTML they write, escaping,
   browser-only parts and pending reads.
 - [Hydration](hydration.md): what the client adopts, mismatches and `Strict`, ids, boundaries and the
   document head.
 - [State transfer](state-transfer.md): `Server.stateScript`, `Hydration.readState` and `Ranvier.Wire`
   codecs.
-- [Deployment](deployment.md): one component project compiled for the server and the client.
+- [Deployment](deployment.md): one component project compiled for the server and the client, and the
+  document `Server.renderDocument` writes around it.
 - [Performance](performance.md): what the server and hydration benchmarks measure, and the figures.
 
 ## Server rendering and other hosts

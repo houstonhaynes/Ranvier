@@ -171,6 +171,50 @@ let private updatesAndDisposes () =
     button.click ()
     equal "11" button.textContent
 
+/// <summary>
+/// Makes the document parsed from <c>html</c> the global document's element; the returned function restores the
+/// previous element.
+/// </summary>
+[<Emit("(() => { const parsed = new window.DOMParser().parseFromString($0, 'text/html'); const previous = document.documentElement; document.replaceChild(document.importNode(parsed.documentElement, true), previous); return () => { document.replaceChild(previous, document.documentElement); }; })()")>]
+let private loadDocument (html: string) : unit -> unit = jsNative
+
+let private hydratesRenderedDocument () =
+    let json = "{\"title\":\"a\"}"
+
+    let document =
+        { Server.DocumentShell.defaults with
+            Lang = Some "en"
+            State = [ "card-props", json ]
+            Scripts = [ Server.ModuleScript.Src "/main.js" ]
+            Nonce = Some "n0nce"
+        }
+
+    let restore = loadDocument (Server.renderDocument omit document card "a")
+
+    try
+        let host = unbox<HTMLElement>(globalThis.document.getElementById "app")
+        let first = host.firstChild.Value
+
+        let shape =
+            first.nodeType = 8.
+            && (unbox<Comment> first).data = "[r",
+            host.childNodes.length,
+            Hydration.readState "card-props",
+            (all globalThis.document.body "script").Length,
+            obj.ReferenceEquals (host.parentNode.Value, globalThis.document.body)
+
+        use graph = new Graph ()
+        let before = nodesOf host
+        let mounted = hydrate graph strictOptions host card "a"
+        let adopted = sameNodes before (nodesOf host)
+        let button = element host "button"
+        button.click ()
+        let shown = cardShown host, button.textContent
+        mounted.Dispose ()
+        equal ((true, 3., Some json, 2, true), true, ((Some "a", "Title: a1", "a"), "1")) (shape, adopted, shown)
+    finally
+        restore ()
+
 let private matchingValuesWriteNothing () =
     use graph = new Graph ()
     let host = serve card "a"
@@ -3799,6 +3843,7 @@ let cases: (string * (unit -> unit)) array =
             "hydrating server HTML adopts every node", adoptsEveryNode
             "an element with a prefix is a mismatch for a template element of its local name, named at its path", prefixedElementsMismatch
             "a hydrated template updates, dispatches delegated and direct events, and disposes like a mount", updatesAndDisposes
+            "a parsed renderDocument page hydrates its host with the transferred state and handles a click", hydratesRenderedDocument
             "hydration writes no text or attribute when values match", matchingValuesWriteNothing
             "hydration corrects differing values without a report", differingValuesCorrected
             "empty text slots hydrate through their placeholder and update", emptyTextHydrates

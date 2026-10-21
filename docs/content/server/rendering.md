@@ -36,27 +36,29 @@ synchronous.
 | `IdPrefix` | `"r"` | The root prefix of the ids `Setup.CreateId` returns. Hydration's `IdPrefix` must match. |
 | `GraphOptions` | `GraphOptions.Default` | The options of the request graph. |
 
-## Three entry points
+## Entry points
 
 | Function | Returns |
 | --- | --- |
 | `Server.render options definition props` | The body HTML as a `string`. |
 | `Server.renderTo options definition props write` | Passes the same HTML to `write` in segments, in order. |
 | `Server.renderPage options definition props` | A `Page` with `Body`, the same HTML, and `Head`, the [document head](../view/document-head.md) entries' HTML. |
+| `Server.renderDocument options document definition props` | The whole HTML document around the page, as a `string`. See [Deployment](deployment.md#the-page). |
+| `Server.renderDocumentTo options document definition props write` | Passes the same document to `write` in segments, in order. |
 
 ```fsharp
 let writeCounter (output: System.IO.TextWriter) =
     Server.renderTo options counter { Start = 0; Label = "Clicks" } output.Write
 ```
 
-`renderTo` renders the whole body before its first `write`, and `write` runs only after a successful render. Under
-Fable it writes one segment.
+`renderTo` and `renderDocumentTo` render the whole body before their first `write`, and `write` runs only after a
+successful render. Under Fable `renderTo` writes one segment.
 
 ### Pages
 
-`renderPage` collects the head entries of every instance in the request, whatever the policy. Place
-`Head` inside the page's `<head>` and `Body` inside the element the client hydrates. See
-[Deployment](deployment.md) for a complete page.
+`renderPage` collects the head entries of every instance in the request, whatever the policy. `renderDocument`
+writes `Head` inside the document's `<head>` and `Body` inside the host element the client hydrates, with the state
+elements and scripts after the host. See [Deployment](deployment.md#the-page) for a complete page.
 
 ## The HTML
 
