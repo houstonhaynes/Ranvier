@@ -132,6 +132,72 @@ let private nestedRowsDoNotEnter queued () =
         ]
         added
 
+let private pendingRowMotion (row: unit -> int) (_: HTMLLIElement) (motion: MotionContext) =
+    context ("li " + string (row ())) motion
+    ignore
+
+let private pendingArmMotion (_: 'inst) (_: HTMLSpanElement) (motion: MotionContext) =
+    context "span" motion
+    ignore
+
+/// <summary>
+/// Rows and a shown arm over a source that is pending at mount: the first rows and arm laid out once it settles are not
+/// inserted, inside a boundary and outside every boundary. A refetch keeps the arm, and the row it adds is inserted.
+/// </summary>
+let private pendingFirstPass bounded queued () =
+    use graph = new Graph ()
+    log.Clear ()
+    let source = graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<int>()))
+
+    let inner () : TemplateView<'inst> =
+        div () {
+            ul () {
+                forEach
+                    id
+                    (fun (_: 'inst) -> Array.init source.Value.Value (fun index -> index + 1))
+                    (li (Hooks.motion pendingRowMotion) { fun (row: unit -> int) -> string (row ()) })
+            }
+
+            show (fun _ -> source.Value.Value > 0) (span (Hooks.motion pendingArmMotion) { "on" })
+        }
+
+    let content =
+        Component.template (fun _ (status: BoundaryStatus) -> status) (inner ())
+
+    let view =
+        if bounded then
+            let waiting = Component.template (fun _ () -> ()) (p () { "pending" })
+
+            let failed =
+                Component.template (fun _ (failure: BoundaryFailure) -> failure) (p () { fun failure -> failure.Error.Message })
+
+            Component.template (fun _ () -> ()) (section () { boundary waiting failed content })
+        else
+            Component.template (fun _ () -> ()) (section () { inner () })
+
+    let mounted = mountTemplate queued graph strict (host ()) (Component.render view ())
+
+    mounted.Flush ()
+    let first = taken ()
+    write graph mounted (fun () -> source.Value.Settle 2)
+    mounted.Flush ()
+    let settled = taken ()
+    write graph mounted (fun () -> source.Value <- Api.createAsyncSource<int>())
+    write graph mounted (fun () -> source.Value.Settle 3)
+    mounted.Flush ()
+    let added = taken ()
+    mounted.Dispose ()
+
+    equal
+        ([],
+         [
+             "li 1 hydrated=false inserted=false"
+             "li 2 hydrated=false inserted=false"
+             "span hydrated=false inserted=false"
+         ],
+         [ "li 3 hydrated=false inserted=true" ])
+        (first, List.sort settled, added)
+
 let private omit =
     { Server.Options.defaults with
         Policy = Omit
@@ -839,6 +905,8 @@ let cases: (string * (unit -> unit)) array =
 #endif
                 templated "rows and a shown arm are inserted only after their region's first pass" insertedAfterFirstPass
                 templated "an arm shown by the first pass is not inserted" shownOnFirstPass
+                templated "rows and an arm first laid out after a pending read inside a boundary are not inserted" (pendingFirstPass true)
+                templated "rows and an arm first laid out after a pending read outside every boundary are not inserted" (pendingFirstPass false)
                 templated "rows created by the first pass of a region inside an inserted row are not inserted" nestedRowsDoNotEnter
                 [|
                     "hydrated rows and arms are hydrated and not inserted; later ones are inserted", hydratedThenInserted

@@ -1350,6 +1350,12 @@ and private RegionSite(state: MountState, regionStart: Node, regionEnd: Node, re
     let mutable owner: Owner = Unchecked.defaultof<_>
     let mutable builder: RowBuilder = Unchecked.defaultof<_>
     let mutable created = 0
+    // The binding state word of the region's source read; `BindingState.Waiting` while a pending read is registered.
+    let mutable sourceState = 0
+    // Whether server nodes the region did not adopt remain between the markers.
+    let mutable stale = false
+    // Whether the source read of the latest pass raised a pending read.
+    let mutable sourcePending = false
 
     member _.LaidOut = laidOut
     member _.Errors = errors
@@ -1533,17 +1539,59 @@ and private RegionSite(state: MountState, regionStart: Node, regionEnd: Node, re
     /// <summary>
     /// Runs <c>body</c> in a new root owner of the region, then raises the setup failure recorded during that first pass.
     /// </summary>
-    member _.Own(body: unit -> unit) =
+    member this.Own(body: unit -> unit) =
         Api.createRoot (fun created ->
             owner <- created
+
+            if state.Scope.Tracks then
+                Api.onCleanup (fun () -> this.ReleaseSource ())
+
             body ())
 
         errors.Initializing <- false
         errors.SetupFailure |> Option.iter raise
 
+    member private _.ReleaseSource() =
+        let previous = sourceState
+        sourceState <- BindingState.released previous
+        BindingState.ready state.Scope previous
+
+    /// <summary>The value of <c>read</c>, the region's source read for a pass; a pending read marks the pass for <c>Settle</c> and is raised.</summary>
+    member _.ReadSource(read: unit -> 'value) : 'value =
+        sourcePending <- false
+
+        try
+            read ()
+        with NotReadyException _ ->
+            sourcePending <- true
+            reraise ()
+
+    /// <summary>Whether the source read of the latest pass, through <c>ReadSource</c>, was pending.</summary>
+    member _.SourcePending = sourcePending
+
+    /// <summary>True when the pass's source read was pending; registers the read with the mount's scope.</summary>
+    member private _.Pends(failure: exn option, hydrating: bool) =
+        if sourcePending then
+            sourceState <- BindingState.rejected state.Scope sourceState failure.Value
+            stale <- stale || hydrating
+            true
+        else
+            false
+
     /// <summary>
-    /// Ends a pass. A region disposed during the pass reports <c>recorded</c>; otherwise a failure is recorded or
-    /// reported with <c>recorded</c>, and a success runs <c>settle recorded</c>.
+    /// Removes the server nodes left between the markers by a hydrating pass whose source read was pending. Call after
+    /// the source read of a pass that lays out rows.
+    /// </summary>
+    member this.Resume() =
+        if stale then
+            stale <- false
+            Row.ClearBetween (this.Parent (), regionStart, regionEnd)
+
+    /// <summary>
+    /// Ends a pass. A region disposed during the pass reports <c>recorded</c>. A pass whose source read is pending keeps
+    /// the region's rows and waits with the mount's boundary until a later pass ends; a hydrating pass keeps the server
+    /// nodes until <c>Resume</c>. Otherwise a failure is recorded or reported with <c>recorded</c>, and a success runs
+    /// <c>settle recorded</c>.
     /// </summary>
     /// <remarks>
     /// A failed <c>hydrating</c> pass passes a structural mismatch to <c>Recover</c> when it is set, with the failure's
@@ -1562,7 +1610,11 @@ and private RegionSite(state: MountState, regionStart: Node, regionEnd: Node, re
 
         if not (this.Live ()) then
             errors.Report recorded
+        elif this.Pends (failure, hydrating) then
+            errors.Report recorded
         else
+            this.ReleaseSource ()
+
             match failure with
             | Some error when recovering ->
                 state.HydrationFailed error
@@ -3226,7 +3278,6 @@ and internal MountState
 
         let reconcile () =
             if site.Live () then
-                passPlacement.Begin ()
                 // A hydrating pass adopts its rows in place, without window validation or a flush of released rows.
                 let hydrating = site.Hydrating
 
@@ -3274,7 +3325,10 @@ and internal MountState
                             graph,
                             report,
                             fun () ->
-                                let current = items.Read ()
+                                let current = site.ReadSource items.Read
+                                // A pass whose source read is pending begins no placement pass.
+                                passPlacement.Begin ()
+                                site.Resume ()
                                 snapshot <- current
                                 Api.untrack (fun () -> version.Value <- version.Value + 1)
                                 parent.Value <- site.Parent ()
@@ -3552,6 +3606,13 @@ and internal MountState
                             site.Errors.Report recorded
                 )
 
+                // A pass whose source read was pending keeps the last pass's rows, so the next pass compares against them.
+                if site.SourcePending then
+                    previousKeys <- priorKeys
+                    previousVersion <- priorVersion
+                    previousRows <- priorRows
+                    previousItems <- priorItems
+
                 if not (isNull (box measured)) then
                     measured ()
 
@@ -3683,11 +3744,13 @@ and internal MountState
 
                     reraise ()
 
+        let select () =
+            selection.Value
+
         let reconcile () =
             if site.Live () then
                 let hydrating = site.Hydrating
                 let resumed = if hydrating then cursor.Next else Unchecked.defaultof<_>
-                armPlacement.Begin ()
 
                 let measured =
                     if Departures.seam.ReflowEnabled && not hydrating then
@@ -3704,16 +3767,30 @@ and internal MountState
                             graph,
                             report,
                             fun () ->
-                                let selected = selection.Value
+                                let selected = site.ReadSource select
+                                // A pass whose source read is pending begins no placement pass.
+                                armPlacement.Begin ()
 
                                 Api.untrack (fun () ->
-                                    if hydrating then
-                                        site.Parent () |> ignore
-                                    else
-                                        site.Validate ()
+                                    site.Resume ()
 
-                                    disposeArm ()
-                                    mountArm selected hydrating)
+                                    // A selection read again after a pending or failed read keeps an arm of the same key.
+                                    let kept =
+                                        not hydrating
+                                        && not (isNull selected)
+                                        && not (isNull (box armItem))
+                                        && fst (unbox<obj * obj> selected) = armKey
+
+                                    if kept then
+                                        armItem.Value <- snd (unbox<obj * obj> selected)
+                                    else
+                                        if hydrating then
+                                            site.Parent () |> ignore
+                                        else
+                                            site.Validate ()
+
+                                        disposeArm ()
+                                        mountArm selected hydrating)
                         )
                     finally
                         if hydrating then

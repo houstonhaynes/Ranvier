@@ -2649,7 +2649,9 @@ let private pendingRowsHydrate () =
     let mounted =
         Mounting.mount graph None reports.Add target None (fun context -> Program.run (Component.render definition ()) context.Backend)
 
-    let mountedShown = target.innerHTML, messages reports
+    let mountedPending = (element target "div").innerHTML
+    graph.Run (fun () -> case.Sources[0].Settle "ab")
+    let mountedShown = (element target "div").textContent, messages reports
     mounted.Dispose ()
 
     let host = serveCase case definition (Settles "ab") Pends
@@ -2659,16 +2661,21 @@ let private pendingRowsHydrate () =
     let mounted =
         Hydration.hydrate graph None reports.Add strictOptions host definition ()
 
+    let hydratedPending =
+        (element host "div").textContent, messages reports, List.ofSeq case.Log, host.contains (unbox<Node> list)
+
+    graph.Run (fun () -> case.Sources[0].Settle "cd")
+
     let hydratedShown =
-        (element host "div").innerHTML, messages reports, List.ofSeq case.Log, host.contains (unbox<Node> list)
+        (element host "div").textContent, messages reports, host.contains (unbox<Node> list)
 
     mounted.Dispose ()
 
-    // A mount shows the error view for the pending read of a list's items: the read fails the content's setup.
+    // A mount shows the pending view until the list's items settle; hydration shows the server rows' copy until then.
     equal
-        (("<!--ranvier:start--><div><!--[--><!--ranvier:start--><span></span><!--ranvier:end--><!--]--></div><!--ranvier:end-->", [ [ "" ] ]),
-         ("<!--[c--><!--ranvier:start--><span></span><!--ranvier:end--><!--]-->", [ [ "" ] ], [ "content setup" ], false))
-        (mountedShown, hydratedShown)
+        (("<!--[--><!--ranvier:start--><i>loading</i><!--ranvier:end--><!--]-->", ("ab", [])),
+         (("ab", [], [ "content setup" ], false), ("cd", [], true)))
+        ((mountedPending, mountedShown), (hydratedPending, hydratedShown))
 
 let private rootWidget =
     Component.define (fun _ (log: ResizeArray<string>) -> log) (fun t ->
@@ -3843,8 +3850,7 @@ let cases: (string * (unit -> unit)) array =
             boundariesInRows
             "boundaries in hydrated rows whose content is ready by the end of hydrate keep their nodes and focus in place", rowBoundariesKeepFocus
             "recovered rows whose read is pending show an empty text, as a client mount's rows do", pendingFreshRowsEmpty
-            "boundaries: a pending read of a list's items in hydrating content goes to the boundary, which shows its error view as in a mount",
-            pendingRowsHydrate
+            "boundaries: a pending read of a list's items waits with the boundary in a mount and in hydrating content", pendingRowsHydrate
             "a mismatch inside a row's nested region re-renders only that region and reports once per region; Strict raises and restores the host",
             nestedRowMismatch
             "adopted rows keep their positional ids and run their cleanups when removed, and later rows continue the row counter",

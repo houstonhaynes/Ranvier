@@ -106,7 +106,8 @@ A boundary hydrates the view the server recorded:
 
 - **Ready content (`[c`)** hydrates in place. When one of its reads is still pending at the end of the
   build, its bound nodes are held detached and a copy of the server's nodes stays on screen as the
-  pending view; the reveal replaces the copy with the bound nodes.
+  pending view; the reveal replaces the copy with the bound nodes. An arm or list whose source is
+  pending keeps the server's rows in place until its source settles, then mounts its rows fresh.
 - **A pending view (`[p`)** hydrates while the content mounts detached. When the content is ready, it
   replaces the server's nodes at once.
 - **An error view (`[e`)** is removed, and the boundary mounts fresh.

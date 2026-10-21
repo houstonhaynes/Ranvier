@@ -148,7 +148,7 @@ Each form is a free function that takes views. It creates its row or arm definit
 | `matchWith read arms` | the arm that `arms` selects for the union value; `arm definition payload` builds an arm from a definition made by `armOf view`. The same definition updates its payload; another definition remounts |
 | `branch key arms` | the arm selected for a key; a key change remounts |
 | `each key items row` | as `forEach`, with the row given as a definition, `Component<unit -> 'item>` |
-| `boundary pending failed content` | `content` once every binding under it has read a value, `pending` until then, and `failed` after a failure under the content; all three are definitions |
+| `boundary pending failed content` | `content` once every binding, row and arm under it has read a value, `pending` until then, and `failed` after a failure under the content; all three are definitions |
 
 ```fsharp
 type Todo = { Id: int; Title: Signal<string> }
