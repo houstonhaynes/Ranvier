@@ -1,0 +1,62 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/bench/Ranvier.CoreListBench"
+      - "/examples/Fable.Ranvier.Playground"
+      - "/examples/Ranvier.Motion"
+      - "/fable/Ranvier.Anime.Tests"
+      - "/fable/Ranvier.View.Anime.Tests"
+      - "/tools/Ranvier.Dom.Generate"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      npm-version-updates:
+        applies-to: version-updates
+        patterns: ["*"]
+      npm-security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # tools/Ranvier.Dom.Generate pins a TypeScript nightly build.
+      - dependency-name: "typescript"
+
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      nuget-version-updates:
+        applies-to: version-updates
+        patterns: ["*"]
+      nuget-security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "FSharp.Core"
+      - dependency-name: "Fable*"
+      - dependency-name: "fable"
+      - dependency-name: "Fickl"
+      - dependency-name: "Xantham.*"
+      # Exact-pinned [7.0.5] in tools/Ranvier.Dom.Generate.
+      - dependency-name: "Fantomas.Core"
+      # Local-feed builds committed under docs/feed.
+      - dependency-name: "Partas.Solid"
+      - dependency-name: "Partas.Nacara.Plugins.Solid"
+      - dependency-name: "Nacara.Plugin.LiveExample"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      actions-version-updates:
+        applies-to: version-updates
+        patterns: ["*"]
+      actions-security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
