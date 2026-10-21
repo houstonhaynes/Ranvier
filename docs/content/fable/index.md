@@ -42,11 +42,10 @@ NuGet packages, traced and untraced. The package consumer check is
 `tests/check-package-compatibility.ps1 -CheckFable`. These checks validate the package build;
 availability of a particular version on NuGet is a separate release step.
 
-**Published previews lag this packaging fix.** On 2026-10-16, the latest listed archives for
-`Ranvier` and `Ranvier.CSharp` (`0.1.0-preview.5`), `Ranvier.Elmish` (`0.1.0-preview.4`) and
-`Ranvier.Query` (`0.1.0-preview.1`) did not contain the standalone Fable project files. See
-[Installation](../guide/installation.md#from-nuget) for the package links. Until a release includes
-them, use packages built from the current checkout with a local package feed, or compile a repository
+**Packages ship the Fable sources.** `Ranvier` and `Ranvier.CSharp` from `0.1.0-preview.6`,
+`Ranvier.Elmish` from `0.1.0-preview.5` and `Ranvier.Query` from `0.1.0-preview.2` contain the
+standalone Fable project files. See [Installation](../guide/installation.md#from-nuget) for the package
+links. Earlier previews do not contain them; use a current version, a local package feed, or a repository
 project reference. The CI consumer script packs temporary packages and demonstrates the local-feed path.
 
 ## Known differences from .NET

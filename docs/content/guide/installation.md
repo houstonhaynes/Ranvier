@@ -31,12 +31,11 @@ exception costs. They are measurements of that path, not a guarantee of faster a
 Install `Ranvier` for F#, `Ranvier.CSharp` for C#, or `Ranvier.Elmish` for the MVU bridge.
 Versions are previews, so pass `--prerelease`.
 
-The guide describes the current source. Published previews can lag newly merged features.
-As checked on 2026-10-16, the latest listed versions are
-[`Ranvier` 0.1.0-preview.5](https://www.nuget.org/packages/Ranvier/0.1.0-preview.5),
-[`Ranvier.CSharp` 0.1.0-preview.5](https://www.nuget.org/packages/Ranvier.CSharp/0.1.0-preview.5),
-[`Ranvier.Elmish` 0.1.0-preview.4](https://www.nuget.org/packages/Ranvier.Elmish/0.1.0-preview.4), and
-[`Ranvier.Query` 0.1.0-preview.1](https://www.nuget.org/packages/Ranvier.Query/0.1.0-preview.1).
+The guide describes the current source. The current versions are
+[`Ranvier` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier/0.1.0-preview.6),
+[`Ranvier.CSharp` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier.CSharp/0.1.0-preview.6),
+[`Ranvier.Elmish` 0.1.0-preview.5](https://www.nuget.org/packages/Ranvier.Elmish/0.1.0-preview.5), and
+[`Ranvier.Query` 0.1.0-preview.2](https://www.nuget.org/packages/Ranvier.Query/0.1.0-preview.2).
 
 ::::::tabs
 :::::tab Core
@@ -52,7 +51,7 @@ dotnet add package Ranvier --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier" Version="0.1.0-preview.5" />
+<PackageReference Include="Ranvier" Version="0.1.0-preview.6" />
 ```
 
 :::
@@ -72,7 +71,7 @@ dotnet add package Ranvier.CSharp --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier.CSharp" Version="0.1.0-preview.5" />
+<PackageReference Include="Ranvier.CSharp" Version="0.1.0-preview.6" />
 ```
 :::
 ::::
@@ -92,7 +91,7 @@ dotnet add package Ranvier.Elmish --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier.Elmish" Version="0.1.0-preview.4" />
+<PackageReference Include="Ranvier.Elmish" Version="0.1.0-preview.5" />
 ```
 
 :::
