@@ -125,31 +125,20 @@ references `Ranvier.View`. See [Views](../view/index.md).
 <PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
 ```
 
-:::warning Not on nuget.org yet
-The view packages depend on `Xantham.Fable.Core.TS` 0.2.1, which the Xantham Cloudsmith feed carries and
-nuget.org does not. They ship to nuget.org once `Xantham.Fable.Core.TS` 0.2.1 or later is there; until then
-the release step holds them back. Pack them from a checkout into a local feed:
+:::warning Temporary: the Xantham feed
+The view packages are on nuget.org. Their dependency `Xantham.Fable.Core.TS` 0.2.1 is served by the Xantham
+Cloudsmith feed and is not on nuget.org, so a consumer adds that feed. The requirement ends when
+`Xantham.Fable.Core.TS` 0.2.1 or later is on nuget.org.
 
-```bash
-for p in Fable.Ranvier.Anime Ranvier.View Ranvier.View.Dom Ranvier.View.Anime; do
-  dotnet pack src/$p -c Release -o ../ranvier-feed
-done
-```
-
-The application's `nuget.config` then adds the local feed and the Xantham feed beside nuget.org:
+The application's `nuget.config` adds the Xantham feed beside nuget.org and maps `Xantham.*` to it:
 
 ```xml
 <configuration>
   <packageSources>
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="ranvier-local" value="../ranvier-feed" />
     <add key="xantham-cloudsmith" value="https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json" />
   </packageSources>
   <packageSourceMapping>
-    <packageSource key="ranvier-local">
-      <package pattern="Ranvier.View*" />
-      <package pattern="Fable.Ranvier.Anime*" />
-    </packageSource>
     <packageSource key="xantham-cloudsmith">
       <package pattern="Xantham.*" />
     </packageSource>

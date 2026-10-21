@@ -9,8 +9,8 @@ which is the runnable reference for everything in this section.
 ## Project
 
 Reference the `Ranvier.View.Dom` package; it brings in `Ranvier.View` and `Ranvier`. The view packages
-are not on nuget.org yet; [Installation](../guide/installation.md#views) shows the local feed and
-the `nuget.config` that restore them.
+are on nuget.org and need the temporary Xantham Cloudsmith feed;
+[Installation](../guide/installation.md#views) shows the `nuget.config`.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

@@ -51,13 +51,16 @@ squash commit message.
 
 ## Publishing
 
-`dotnet fsi build.fsx -- publish` pushes a package only when each of its dependencies resolves on nuget.org or
-among the packages of the same push ([`feed.cjs`](.github/scripts/feed.cjs)). It holds back the rest, then fails
-naming them. `--dry-publish` lists what a push would accept and refuse.
+`dotnet fsi build.fsx -- publish` pushes a package only when each of its dependencies resolves on nuget.org, on a
+source that [`nuget.config`](nuget.config) maps to its id, or among the packages of the same push ([`feed.cjs`](.github/scripts/feed.cjs)). It holds back the rest, then fails
+naming them. `--dry-publish` lists what a push would accept and refuse, and the feed that satisfies each external
+dependency.
 
 The view packages (`Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and `Fable.Ranvier.Anime`, with their
-`.Traced` twins) ship once `Xantham.Fable.Core.TS` 0.2.1 or later is on nuget.org. Until then a publish pushes the
-other packages and fails on these eight.
+`.Traced` twins) publish to nuget.org. Their `Xantham.Fable.Core.TS` 0.2.1 dependency is served by the Xantham
+Cloudsmith feed, which `nuget.config` maps for `Xantham.*`, so the publish check accepts it there. Consumers add that
+feed; see the [installation guide](docs/content/guide/installation.md#views). The arrangement is temporary and ends
+when `Xantham.Fable.Core.TS` is on nuget.org.
 
 ## Checks on a pull request
 

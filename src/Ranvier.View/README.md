@@ -2,7 +2,24 @@
 
 Template components for [Ranvier](https://www.nuget.org/packages/Ranvier), on .NET and under Fable: typed templates, the view sugar, keyed lists, arms and boundaries, and `Server.render`, which writes a component as HTML. The browser side is the companion package [Ranvier.View.Dom](https://www.nuget.org/packages/Ranvier.View.Dom): `Mounting.mount` and `Hydration.hydrate` take the components of this package unchanged, and its `Generated.Html` module holds the authored layer that some samples below alias. A server, or code shared between server and browser, references this package alone.
 
-The view packages depend on `Xantham.Fable.Core.TS` 0.2.1, which the Xantham Cloudsmith feed carries; the [installation guide](https://shayanhabibi.github.io/Ranvier/guide/installation/#views) gives the `nuget.config`.
+The view packages are on nuget.org. They depend on `Xantham.Fable.Core.TS` 0.2.1, which only the Xantham Cloudsmith feed serves, so a consumer adds that feed (temporary, until the package is on nuget.org). In `nuget.config`:
+
+```xml
+<packageSources>
+  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  <add key="xantham-cloudsmith" value="https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json" />
+</packageSources>
+<packageSourceMapping>
+  <packageSource key="xantham-cloudsmith">
+    <package pattern="Xantham.*" />
+  </packageSource>
+  <packageSource key="nuget.org">
+    <package pattern="*" />
+  </packageSource>
+</packageSourceMapping>
+```
+
+The [installation guide](https://shayanhabibi.github.io/Ranvier/guide/installation/#views) gives the full file.
 
 ## View sugar
 

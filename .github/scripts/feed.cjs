@@ -1,5 +1,5 @@
-// The publish gate of `build.fsx -- publish`: a package pushes only when every dependency of it resolves, either on the
-// target feed or among the packages that push with it. A package depending on a refused package is refused too.
+// The publish gate of `build.fsx -- publish`: a package pushes only when every dependency of it resolves, on nuget.org, on a
+// source that nuget.config maps to the dependency's id, or among the packages that push with it. A package depending on a refused package is refused too.
 const fs = require('node:fs');
 const path = require('node:path');
 const { zipEntries } = require('./packages.cjs');
@@ -69,14 +69,40 @@ function readPackage(buffer) {
   return { id: value('id'), version: value('version'), dependencies };
 }
 
+// The package sources of a nuget.config and the id patterns each is mapped to: `{ key, url, patterns }` per source.
+function parseNuGetConfig(xml) {
+  const attribute = (element, name) => new RegExp(String.raw`\b${name}="([^"]*)"`).exec(element)?.[1];
+  const section = name => new RegExp(String.raw`<${name}>([\s\S]*?)</${name}>`).exec(xml)?.[1] ?? '';
+  const sources = [...section('packageSources').matchAll(/<add\b[^>]*>/g)]
+    .map(([element]) => ({ key: attribute(element, 'key'), url: attribute(element, 'value'), patterns: [] }));
+  for (const [, key, body] of section('packageSourceMapping').matchAll(/<packageSource\s+key="([^"]+)"\s*>([\s\S]*?)<\/packageSource>/g)) {
+    const source = sources.find(s => s.key === key);
+    if (source !== undefined) source.patterns = [...body.matchAll(/<package\s+pattern="([^"]+)"/g)].map(m => m[1]);
+  }
+  return sources;
+}
+
+// Whether a package source mapping pattern (an id, or a prefix ending in `*`) covers `id`.
+function patternMatches(pattern, id) {
+  const [text, lower] = [pattern.toLowerCase(), id.toLowerCase()];
+  return text.endsWith('*') ? lower.startsWith(text.slice(0, -1)) : lower === text;
+}
+
+const nugetOrgIndex = /^https:\/\/api\.nuget\.org\//i;
+
+// The HTTP sources other than nuget.org that nuget.config maps to `id`.
+function mappedSources(sources, id) {
+  return sources.filter(s => /^https?:\/\//i.test(s.url ?? '') && !nugetOrgIndex.test(s.url) && s.patterns.some(p => patternMatches(p, id)));
+}
+
 // The packages that push and the ones refused, each refusal with the dependencies it lacks. `published` maps a lower-case
-// package id to the versions the target feed lists for it.
+// package id to `{ source, versions }` entries, one per feed that serves the id. `external` lists, for each package that
+// pushes, the dependencies outside the push with the first feed that satisfies them.
 function plan(packages, published) {
   const accepted = new Set(packages.map(pkg => pkg.file));
-  const lacking = pkg => pkg.dependencies.filter(({ id, range }) => {
-    const inPush = packages.some(other => accepted.has(other.file) && other.id.toLowerCase() === id.toLowerCase() && satisfies(other.version, range));
-    return !inPush && !(published.get(id.toLowerCase()) ?? []).some(version => satisfies(version, range));
-  });
+  const inPush = ({ id, range }) => packages.some(other => accepted.has(other.file) && other.id.toLowerCase() === id.toLowerCase() && satisfies(other.version, range));
+  const feedOf = ({ id, range }) => (published.get(id.toLowerCase()) ?? []).find(entry => entry.versions.some(version => satisfies(version, range)))?.source;
+  const lacking = pkg => pkg.dependencies.filter(dependency => !inPush(dependency) && feedOf(dependency) === undefined);
   let changed = true;
   while (changed) {
     changed = false;
@@ -85,31 +111,62 @@ function plan(packages, published) {
       changed = true;
     }
   }
+  const external = [];
+  for (const pkg of packages.filter(p => accepted.has(p.file))) {
+    for (const dependency of pkg.dependencies.filter(d => !inPush(d))) {
+      const source = feedOf(dependency);
+      if (!external.some(e => e.id === dependency.id && e.range === dependency.range)) external.push({ ...dependency, source });
+    }
+  }
   return {
     push: packages.filter(p => accepted.has(p.file)).map(p => p.file),
     refused: packages.filter(p => !accepted.has(p.file)).map(p => ({ file: p.file, missing: lacking(p) })),
+    external,
   };
 }
 
-// The versions `feed` (a NuGet v3 flat-container base URL) lists for each dependency id outside `packages`; an id the
-// feed does not know lists none.
-async function publishedVersions(packages, feed) {
+// The JSON at `url`, or null when the feed answers 404.
+async function getJson(url) {
+  const response = await fetch(url);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`${url} answered ${response.status}`);
+  return response.json();
+}
+
+// The versions each dependency id outside `packages` has on nuget.org (the flat-container base URL `feed`) and on the
+// sources of `sources` mapped to it: a Map from lower-case id to `{ source, versions }` entries. An id a feed does not
+// know lists none there.
+async function publishedVersions(packages, feed, sources = [], get = getJson) {
   const own = new Set(packages.map(p => p.id.toLowerCase()));
   const ids = [...new Set(packages.flatMap(p => p.dependencies.map(d => d.id.toLowerCase())))].filter(id => !own.has(id));
+  const bases = new Map();
+  const baseOf = async source => {
+    if (!bases.has(source.key)) {
+      const index = await get(source.url);
+      const resource = index?.resources?.find(r => String(r['@type']).startsWith('PackageBaseAddress/3.0.0'));
+      if (resource === undefined) throw new Error(`${source.url} lists no PackageBaseAddress/3.0.0 resource`);
+      bases.set(source.key, resource['@id'].replace(/\/?$/, '/'));
+    }
+    return bases.get(source.key);
+  };
   const published = new Map();
   for (const id of ids) {
-    const response = await fetch(`${feed}${id}/index.json`);
-    if (response.status === 404) published.set(id, []);
-    else if (!response.ok) throw new Error(`${feed}${id}/index.json answered ${response.status}`);
-    else published.set(id, (await response.json()).versions);
+    const entries = [];
+    const nugetOrg = await get(`${feed}${id}/index.json`);
+    entries.push({ source: 'nuget.org', versions: nugetOrg?.versions ?? [] });
+    for (const source of mappedSources(sources, id)) {
+      const listing = await get(`${await baseOf(source)}${id}/index.json`);
+      entries.push({ source: source.key, versions: listing?.versions ?? [] });
+    }
+    published.set(id, entries);
   }
   return published;
 }
 
-module.exports = { compareVersions, parseRange, satisfies, readPackage, plan, publishedVersions };
+module.exports = { compareVersions, parseRange, satisfies, readPackage, parseNuGetConfig, patternMatches, mappedSources, plan, publishedVersions };
 
 if (require.main === module) {
-  // node feed.cjs <packages directory> [--refuse <directory> | --dry] [--feed <flat-container url>]: prints each package
+  // node feed.cjs <packages directory> [--refuse <directory> | --dry] [--feed <nuget.org flat-container url>] [--config <nuget.config>]: prints each package
   // as accepted or refused, a refusal with the dependencies it lacks. With --refuse, moves the refused packages there and
   // exits 0, so a push of <packages directory>/*.nupkg pushes only the accepted ones. With --dry, exits 0 and moves
   // nothing. Otherwise exits 1 when any package is refused.
@@ -120,11 +177,14 @@ if (require.main === module) {
   const feed = option('--feed') ?? 'https://api.nuget.org/v3-flatcontainer/';
   const packages = fs.readdirSync(directory).filter(f => f.endsWith('.nupkg')).sort()
     .map(file => ({ file, ...readPackage(fs.readFileSync(path.join(directory, file))) }));
-  publishedVersions(packages, feed).then(published => {
-    const { push, refused } = plan(packages, published);
+  const configPath = option('--config') ?? 'nuget.config';
+  const sources = fs.existsSync(configPath) ? parseNuGetConfig(fs.readFileSync(configPath, 'utf8')) : [];
+  publishedVersions(packages, feed, sources).then(published => {
+    const { push, refused, external } = plan(packages, published);
+    for (const { id, range, source } of external) console.log(`Dependency ${id} ${range} satisfied on ${source}`);
     for (const file of push) console.log(`${args.includes('--dry') ? 'Would push' : 'Accepted'} ${file}`);
     for (const { file, missing } of refused) {
-      console.error(`${args.includes('--dry') ? 'Would refuse' : 'Refused'} ${file}: no ${missing.map(d => `${d.id} ${d.range}`).join(', ')} on ${feed} or in this push`);
+      console.error(`${args.includes('--dry') ? 'Would refuse' : 'Refused'} ${file}: no ${missing.map(d => `${d.id} ${d.range}`).join(', ')} on ${['nuget.org', ...new Set(missing.flatMap(d => mappedSources(sources, d.id).map(s => s.key)))].join(', ')} or in this push`);
     }
     if (refuse !== undefined && refused.length > 0) {
       fs.mkdirSync(refuse, { recursive: true });

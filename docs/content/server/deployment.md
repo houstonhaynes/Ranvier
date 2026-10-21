@@ -77,8 +77,8 @@ The `Ranvier.View` package holds `Server` and every template type; `Ranvier.View
 </Project>
 ```
 
-The view packages are not on nuget.org yet; the app's `nuget.config` restores them from a local feed,
-as [Installation](../guide/installation.md#views) shows.
+The view packages are on nuget.org; the app's `nuget.config` adds the temporary Xantham Cloudsmith feed
+for their `Xantham.Fable.Core.TS` dependency, as [Installation](../guide/installation.md#views) shows.
 
 ## The page
 
