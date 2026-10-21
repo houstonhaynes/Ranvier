@@ -296,7 +296,7 @@ let private isText node =
     | _ -> false
 
 let private rawText tag =
-    match name tag with
+    match (name tag).ToLowerInvariant() with
     | "script"
     | "style"
     | "iframe"
@@ -306,6 +306,50 @@ let private rawText tag =
     | "noframes"
     | "plaintext" -> true
     | _ -> false
+
+/// <summary>Elements whose content is parsed as a single text node.</summary>
+let private isRcdata (tagName: string) =
+    let tagName = tagName.ToLowerInvariant ()
+    tagName = "textarea" || tagName = "title"
+
+// Whether the nodes, looked into through fragments, hold a node that `counts` accepts; empty text never counts.
+let rec private holds (counts: TemplateNode -> bool) (nodes: TemplateNode array) =
+    let mutable found = false
+    let mutable index = 0
+
+    while not found && index < nodes.Length do
+        found <-
+            match nodes[index] with
+            | FragmentNode children -> holds counts children
+            | TextNode "" -> false
+            | node -> counts node
+
+        index <- index + 1
+
+    found
+
+/// <summary>
+/// The failure of an element that templates reject on both client paths, synchronous and queued: a <c>script</c>
+/// element, a raw-text element with children (or <c>plaintext</c>), a <c>template</c> element or a void element with
+/// children; null for any other element. The server rejects every raw-text element, and an RCDATA element with element children.
+/// </summary>
+let private refusal tag (children: TemplateNode array) : string =
+    let lowered = (name tag).ToLowerInvariant()
+
+    if lowered = "script" then
+        scriptRefused
+    elif
+        rawText tag
+        && (lowered = "plaintext"
+            || holds (fun _ -> true) children)
+    then
+        "Raw-text elements require an explicit HTML serialization policy"
+    elif lowered = "template" then
+        "Template elements are not supported in templates"
+    elif isVoid tag && holds (fun _ -> true) children then
+        "A void element has children"
+    else
+        null
 
 /// <summary>The number of skeleton sibling nodes occupied by a flattened node.</summary>
 let private width node =
@@ -428,11 +472,9 @@ let private writeMarkup (append: string -> unit) (state: WriterState) (root: Tem
         | ChildNode _
         | HeadNode _ -> invalidOp "Fragments, inlined children and head entries are flattened before writing"
         | ElementNode (tag, attributes, properties, slots, events, placed, children) ->
-            if
-                rawText tag
-                && (children.Length > 0 || name tag = "plaintext")
-            then
-                raise (InvalidOperationException "Raw-text elements require an explicit HTML serialization policy")
+            match refusal tag children with
+            | null -> ()
+            | message -> raise (InvalidOperationException message)
 
             if
                 properties.Length > 0
@@ -598,14 +640,12 @@ type internal ServerPlan =
     }
 
 /// <summary>Elements whose first child text loses one leading line feed when parsed.</summary>
-let private dropsLeadingLineFeed tagName =
+let private dropsLeadingLineFeed (tagName: string) =
+    let tagName = tagName.ToLowerInvariant ()
+
     tagName = "pre"
     || tagName = "textarea"
     || tagName = "listing"
-
-/// <summary>Elements whose content is parsed as a single text node.</summary>
-let private isRcdata tagName =
-    tagName = "textarea" || tagName = "title"
 
 /// <summary>
 /// Nesting rules from the HTML tree-construction algorithm. Markup matched by a rule parses to a different tree than
@@ -1183,25 +1223,26 @@ let private compilePlan (root: TemplateNode) : ServerPlan =
             emit (TextOp (slot, leading, marksEmpty))
         | ElementNode (tag, attributes, properties, slots, events, placed, nodes) ->
             let tagName = name tag
+            let lowered = tagName.ToLowerInvariant ()
 
             if rawText tag then
                 raise (InvalidOperationException "Raw-text elements require an explicit HTML serialization policy")
 
-            if tagName = "template" then
+            if lowered = "template" then
                 raise (
                     InvalidOperationException (
                         "Template elements are not supported in templates at "
-                        + ContentModel.path ancestors tagName
+                        + ContentModel.path ancestors lowered
                     )
                 )
 
-            ContentModel.check ancestors tagName
+            ContentModel.check ancestors lowered
 
             if isVoid tag && not (List.isEmpty (flatten nodes)) then
                 raise (
                     InvalidOperationException (
                         "A void element has children at "
-                        + ContentModel.path ancestors tagName
+                        + ContentModel.path ancestors lowered
                     )
                 )
 
@@ -1306,7 +1347,7 @@ let private compilePlan (root: TemplateNode) : ServerPlan =
                 match contentSlot slots with
                 | Some content -> emit (ContentOp (content, leadingLineFeed))
                 | None when childText.Length = 1 -> emit childText[0]
-                | None -> compileChildren nodes leadingLineFeed (not rcdata) (tagName :: ancestors)
+                | None -> compileChildren nodes leadingLineFeed (not rcdata) (lowered :: ancestors)
 
                 write ("</" + tagName + ">")
         | RegionNode region ->
@@ -1956,6 +1997,10 @@ let rec private expandNode (ops: Operations<'view>) (instance: obj) (node: Templ
     | TextSlotNode slot -> ops.Bind (fun left right -> slot.Same.Invoke (box left, box right)) (fun () -> unbox<string>(slot.Read.Invoke instance))
     | FragmentNode children -> ops.Fragment (Array.map (expandNode ops instance) children)
     | ElementNode (tag, attributes, properties, slots, events, placed, children) ->
+        match refusal tag children with
+        | null -> ()
+        | message -> raise (InvalidOperationException message)
+
         let modifiers: ModifierAction array =
             [|
                 for key, value in attributes -> Attribute (key, value)
@@ -2128,6 +2173,39 @@ let private elementNode tag (parts: Part<'native, 'inst> array) (children: Templ
     if contents > 1 then
         raise (ArgumentException ("An element takes at most one content part", "parts"))
 
+#if !FABLE_COMPILER
+    // Attribute names that differ only by case raise in the server's definition path only.
+    let attributeNames = ResizeArray<string>()
+
+    for attribute, _ in attributes do
+        attributeNames.Add attribute
+
+    for slot in slots do
+        match slot.Target with
+        | AttributeTarget attribute -> attributeNames.Add attribute
+        | _ -> ()
+
+    for first in 0 .. attributeNames.Count - 1 do
+        for second in first + 1 .. attributeNames.Count - 1 do
+            let earlier = attributeNames[first]
+            let later = attributeNames[second]
+
+            if
+                earlier <> later
+                && earlier.ToLowerInvariant () = later.ToLowerInvariant ()
+            then
+                raise (
+                    ArgumentException (
+                        "An element takes "
+                        + earlier
+                        + " and "
+                        + later
+                        + ", which differ only by case",
+                        "parts"
+                    )
+                )
+#endif
+
     if contents = 1 && children.Length > 0 then
         raise (ArgumentException ("An element with a content part has no template children", "children"))
 
@@ -2135,7 +2213,7 @@ let private elementNode tag (parts: Part<'native, 'inst> array) (children: Templ
         rawContents = 1
         && (isVoid tag
             || rawText tag
-            || (match name tag with
+            || (match (name tag).ToLowerInvariant() with
                 | "template"
                 | "textarea"
                 | "title" -> true
@@ -2321,21 +2399,22 @@ type HookBuilder<'inst> internal () =
     /// was created by a region pass after the region's first. The returned cleanup runs when the instance is disposed.
     /// The server omits the hook.
     /// </summary>
-    member _.motion(hook: 'inst -> 'native -> MotionContext -> (unit -> unit)) : Part<'native, 'inst> =
+    member _.motion(hook: Func<'inst, 'native, MotionContext, unit -> unit>) : Part<'native, 'inst> =
         PlacedPart (
             PlacedKind.Motion,
             Func<obj, obj, obj, obj>(fun instance node flags ->
                 let flags: int = unbox flags
 
                 box (
-                    hook
-                        (unbox instance)
-                        (unbox node)
+                    hook.Invoke (
+                        unbox instance,
+                        unbox node,
                         {
                             Hydrated = flags &&& 1 <> 0
                             Inserted = flags &&& 2 <> 0
-                            ExitPending = fun () -> Departures.hasExit (unbox node)
+                            ExitPending = fun () -> Departures.exitFollows (unbox node)
                         }
+                    )
                 ))
         )
 
@@ -2344,22 +2423,57 @@ type HookBuilder<'inst> internal () =
     /// runs with <c>finish</c>; the node leaves when <c>finish</c> is called. The returned function cancels the exit when
     /// the removal is forced. An exit applies once the element is placed. The server omits the hook.
     /// </summary>
-    member _.exit(exit: 'inst -> 'native -> (unit -> unit) -> (unit -> unit)) : Part<'native, 'inst> =
+    member _.exit(exit: Func<'inst, 'native, unit -> unit, unit -> unit>) : Part<'native, 'inst> =
         PlacedPart (
             PlacedKind.Exit,
             Func<obj, obj, obj, obj>(fun instance node _ ->
-                box (Departures.register (unbox node) (fun finish -> exit (unbox instance) (unbox node) finish)))
+                box (Departures.register (unbox node) (Func<_, _>(fun finish -> exit.Invoke (unbox instance, unbox node, finish)))))
         )
 
     /// <summary>
     /// On a region's parent element: <c>Before</c> runs before the first region pass under the element in a flush,
     /// <c>After</c> once the pass's nodes and commits are in place. The server omits the hook.
     /// </summary>
-    member _.reflow(measure: 'inst -> 'native -> Reflow) : Part<'native, 'inst> =
+    member _.reflow(measure: Func<'inst, 'native, Reflow>) : Part<'native, 'inst> =
         PlacedPart (
             PlacedKind.Reflow,
-            Func<obj, obj, obj, obj>(fun instance node _ -> box (Departures.registerReflow (unbox node) (measure (unbox instance) (unbox node))))
+            Func<obj, obj, obj, obj>(fun instance node _ ->
+                box (Departures.registerReflow (unbox node) (measure.Invoke (unbox instance, unbox node))))
         )
+
+    /// <summary>
+    /// <c>first</c> and <c>second</c> on one element as one part: the hook of <c>second</c> runs after the hook of
+    /// <c>first</c>, and the cleanup of <c>second</c> before the cleanup of <c>first</c>. Both are hook parts, at most one
+    /// of them other than a motion hook, and the part has that hook's kind; other parts raise. When the hook of <c>second</c>
+    /// raises, the cleanup of <c>first</c> runs.
+    /// </summary>
+    member _.both(first: Part<'native, 'inst>, second: Part<'native, 'inst>) : Part<'native, 'inst> =
+        match first, second with
+        | PlacedPart (PlacedKind.Motion, firstHook), PlacedPart (kind, secondHook)
+        | PlacedPart (kind, firstHook), PlacedPart (PlacedKind.Motion, secondHook) ->
+            PlacedPart (
+                kind,
+                Func<obj, obj, obj, obj>(fun instance node flags ->
+                    let before: unit -> unit = unbox (firstHook.Invoke (instance, node, flags))
+
+                    let after: unit -> unit =
+                        try
+                            unbox (secondHook.Invoke (instance, node, flags))
+                        with _ ->
+                            if not (isNull (box before)) then
+                                before ()
+
+                            reraise ()
+
+                    box (fun () ->
+                        try
+                            if not (isNull (box after)) then
+                                after ()
+                        finally
+                            if not (isNull (box before)) then
+                                before ()))
+            )
+        | _ -> invalidArg "second" "Hooks.both combines two hook parts, at most one of them other than a motion hook"
 
 /// <summary>Raw-HTML parts: the element's whole content, parsed without escaping.</summary>
 [<Sealed>]

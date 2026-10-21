@@ -47,8 +47,14 @@ let private contexts =
     Component.template
         (fun _ (state: Rows) -> state)
         (div () {
-            ul () { forEach id (fun (s: Rows) -> s.Items.Value) (li (Hooks.motion rowMotion) { fun (row: unit -> int) -> string (row ()) }) }
-            show (fun s -> s.Shown.Value) (span (Hooks.motion shownMotion) { "on" })
+            ul () {
+                forEach
+                    id
+                    (fun (s: Rows) -> s.Items.Value)
+                    (li (Hooks.motion (System.Func<_, _, _, _> rowMotion)) { fun (row: unit -> int) -> string (row ()) })
+            }
+
+            show (fun s -> s.Shown.Value) (span (Hooks.motion (System.Func<_, _, _, _> shownMotion)) { "on" })
         })
 
 let private innerMotion (row: unit -> int) (_: HTMLElement) (motion: MotionContext) =
@@ -63,11 +69,11 @@ let private nested =
             forEach
                 id
                 (fun (s: Rows) -> s.Items.Value)
-                (li (Hooks.motion rowMotion) {
+                (li (Hooks.motion (System.Func<_, _, _, _> rowMotion)) {
                     forEach
                         id
                         (fun (row: unit -> int) -> [| row () * 10; row () * 10 + 1 |])
-                        (b (Hooks.motion innerMotion) { fun (row: unit -> int) -> string (row ()) })
+                        (b (Hooks.motion (System.Func<_, _, _, _> innerMotion)) { fun (row: unit -> int) -> string (row ()) })
                 })
         })
 
@@ -155,10 +161,10 @@ let private pendingFirstPass bounded queued () =
                 forEach
                     id
                     (fun (_: 'inst) -> Array.init source.Value.Value (fun index -> index + 1))
-                    (li (Hooks.motion pendingRowMotion) { fun (row: unit -> int) -> string (row ()) })
+                    (li (Hooks.motion (System.Func<_, _, _, _> pendingRowMotion)) { fun (row: unit -> int) -> string (row ()) })
             }
 
-            show (fun _ -> source.Value.Value > 0) (span (Hooks.motion pendingArmMotion) { "on" })
+            show (fun _ -> source.Value.Value > 0) (span (Hooks.motion (System.Func<_, _, _, _> pendingArmMotion)) { "on" })
         }
 
     let content =
@@ -254,15 +260,15 @@ let private exiting =
                 forEach
                     id
                     (fun (s: Rows) -> s.Items.Value)
-                    (li (Hooks.exit (fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish)) {
+                    (li (Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish))) {
                         fun (row: unit -> int) -> string (row ())
                     })
             }
 
             showElse
                 (fun s -> s.Shown.Value)
-                (span (Hooks.exit (fun (_: Rows) (node: HTMLSpanElement) finish -> exitOf node finish)) { "on" })
-                (em (Hooks.exit (fun (_: Rows) (node: HTMLElement) finish -> exitOf node finish)) { "off" })
+                (span (Hooks.exit (System.Func<_, _, _, _>(fun (_: Rows) (node: HTMLSpanElement) finish -> exitOf node finish))) { "on" })
+                (em (Hooks.exit (System.Func<_, _, _, _>(fun (_: Rows) (node: HTMLElement) finish -> exitOf node finish))) { "off" })
         })
 
 /// <summary>A list whose row roots' exits call <c>finish</c> at once.</summary>
@@ -274,9 +280,11 @@ let private immediate =
                 id
                 (fun (s: Rows) -> s.Items.Value)
                 (li (
-                    Hooks.exit (fun (_: unit -> int) (_: HTMLLIElement) finish ->
-                        finish ()
-                        ignore)
+                    Hooks.exit (
+                        System.Func<_, _, _, _>(fun (_: unit -> int) (_: HTMLLIElement) finish ->
+                            finish ()
+                            ignore)
+                    )
                 ) {
                     fun (row: unit -> int) -> string (row ())
                 })
@@ -403,11 +411,11 @@ let private finishesAfterTimeout queued () =
     tick (Departures.safetyTimeout - 1)
     let before = items target
     tick 1
-    let after = items target
+    let after = items target, taken ()
     finish "2"
     let finishedLate = items target
     mounted.Dispose ()
-    equal ([ "1"; "2" ], [ "1" ], [ "1" ]) (before, after, finishedLate)
+    equal ([ "1"; "2" ], ([ "1" ], [ "exit 2"; "cancel 2" ]), [ "1" ]) (before, after, finishedLate)
 
 type Groups =
     {
@@ -431,7 +439,7 @@ let private grouped =
                         forEach
                             (fun (pair: int * int) -> pair)
                             (fun (row: unit -> int) -> [| for inner in sharedInner.Value -> row (), inner |])
-                            (b (Hooks.exit (fun (_: unit -> int * int) (node: HTMLElement) finish -> exitOf node finish)) {
+                            (b (Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int * int) (node: HTMLElement) finish -> exitOf node finish))) {
                                 fun (pair: unit -> int * int) -> string (fst (pair ())) + string (snd (pair ()))
                             })
                     }
@@ -737,7 +745,7 @@ let private nestedContent =
             forEach
                 id
                 (fun (s: Rows) -> s.Items.Value)
-                (li (Hooks.exit (fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish)) {
+                (li (Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish))) {
                     forEach id (fun (row: unit -> int) -> [| row () * 10 + 1; row () * 10 + 2 |]) (b () { fun (row: unit -> int) -> string (row ()) })
                     show (fun (_: unit -> int) -> true) (i () { "x" })
                     boundary waiting failed ready
@@ -781,7 +789,11 @@ let private raisingFirstRoot =
                 (fun (s: Rows) -> s.Items.Value)
                 (fragment
                     [|
-                        b (Hooks.exit (fun (_: unit -> int) (_: HTMLElement) _ -> raise (InvalidOperationException "exit failed"))) {
+                        b (
+                            Hooks.exit (
+                                System.Func<_, _, _, _>(fun (_: unit -> int) (_: HTMLElement) _ -> raise (InvalidOperationException "exit failed"))
+                            )
+                        ) {
                             fun (row: unit -> int) -> string (row ())
                         }
                         i () { "tail" }
@@ -823,14 +835,22 @@ let private pendingExits =
             forEach
                 id
                 (fun (s: Rows) -> s.Items.Value)
-                (li (Hooks.motion pendingMotion, Hooks.exit (fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish)) {
-                    b (Hooks.motion pendingMotion) { fun (row: unit -> int) -> string (row ()) }
+                (li (
+                    Hooks.motion (System.Func<_, _, _, _> pendingMotion),
+                    Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish))
+                ) {
+                    b (Hooks.motion (System.Func<_, _, _, _> pendingMotion)) { fun (row: unit -> int) -> string (row ()) }
                 })
 
             forEach
                 id
                 (fun (s: Rows) -> if s.Shown.Value then [| 7 |] else [||])
-                (li (Hooks.exit (fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish), Hooks.motion pendingMotion) { "after" })
+                (li (
+                    Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int) (node: HTMLLIElement) finish -> exitOf node finish)),
+                    Hooks.motion (System.Func<_, _, _, _> pendingMotion)
+                ) {
+                    "after"
+                })
         })
 
 let private motionCleanupSeesExit queued () =
@@ -851,7 +871,7 @@ let private motionCleanupSeesExit queued () =
     mounted.Dispose ()
 
     equal
-        ([ "cleanup 1 exit pending=false"; "cleanup 1 exit pending=true"; "exit 1" ], [ "cleanup 7 exit pending=true"; "exit after" ])
+        ([ "cleanup 1 exit pending=true"; "cleanup 1 exit pending=true"; "exit 1" ], [ "cleanup 7 exit pending=true"; "exit after" ])
         (first, second)
 
 #if RANVIER_VIEW_COUNTERS
@@ -917,7 +937,7 @@ let cases: (string * (unit -> unit)) array =
                 templated "a key re-added while its old root leaves gets a new row" readdedKeyGetsNewRow
                 templated "an arm switch leaves the old and new arm roots in order" armSwitchKeepsOrder
                 templated "disposing the mount cancels and removes every held root" disposalEndsExits
-                templated "an exit finishes after the safety timeout" finishesAfterTimeout
+                templated "an exit is cancelled and its node leaves after the safety timeout" finishesAfterTimeout
                 templated "a root held inside a removed row leaves with the row and runs until disposal" heldInsideRemovedRow
                 templated "an exit that finishes at once removes its root at once" finishedAtOnce
                 [|
@@ -934,7 +954,7 @@ let cases: (string * (unit -> unit)) array =
                 templated "a raising reflow Before or After is reported once and the list keeps updating" reflowFailuresReported
                 templated "a held root keeps its nested lists, arms and boundaries until finish" heldRootKeepsContent
                 templated "a raising exit on a row's first root removes every root and keeps the region valid" raisingExitKeepsRegion
-                templated "a motion hook's cleanup reads whether an exit of its element follows" motionCleanupSeesExit
+                templated "a motion hook's cleanup reads whether an exit of its element or an ancestor follows" motionCleanupSeesExit
                 [|
                     "a reflow skips the hydrating pass and measures later passes", reflowSkipsHydration
                 |]

@@ -1006,14 +1006,22 @@ let motionHooked =
                 forEach
                     (fun (line: Line) -> line.Id)
                     (fun (s: Lined) -> s.Lines.Value)
-                    (li (Hooks.motion (fun _ _ _ -> serverRan "motion hook"), Hooks.exit (fun _ _ _ -> serverRan "exit hook")) {
+                    (li (
+                        Hooks.motion (System.Func<_, _, _, _>(fun _ _ _ -> serverRan "motion hook")),
+                        Hooks.exit (System.Func<_, _, _, _>(fun _ _ _ -> serverRan "exit hook"))
+                    ) {
                         from (fun (row: unit -> Line) -> (row ()).Label)
                     })
             }
 
             show
                 (fun s -> s.Shown.Value)
-                (span (Hooks.motion (fun _ _ _ -> serverRan "motion hook"), Hooks.exit (fun _ _ _ -> serverRan "exit hook")) { "shown" })
+                (span (
+                    Hooks.motion (System.Func<_, _, _, _>(fun _ _ _ -> serverRan "motion hook")),
+                    Hooks.exit (System.Func<_, _, _, _>(fun _ _ _ -> serverRan "exit hook"))
+                ) {
+                    "shown"
+                })
         })
 
 /// <summary><c>motionHooked</c> without its hooks.</summary>

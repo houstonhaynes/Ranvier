@@ -616,7 +616,12 @@ let compile (definition: TemplateComponent) : Compiled =
         |]
 
     let template = document.createElement "template" :?> HTMLTemplateElement
-    template.innerHTML <- layout.Markup
+    let parse = Departures.seam.Parse
+
+    if isNull parse then
+        template.innerHTML <- layout.Markup
+    else
+        parse.Invoke (template, layout.Markup)
 
     let content =
         if regions.Length = 0 then

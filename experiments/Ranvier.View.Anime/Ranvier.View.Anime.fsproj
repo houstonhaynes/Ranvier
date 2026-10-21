@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Motion.fs" />
+    <ProjectReference Include="../Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
+    <ProjectReference Include="../../src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    <InternalsVisibleTo Include="Ranvier.View.Anime.Tests" />
+  </ItemGroup>
+</Project>

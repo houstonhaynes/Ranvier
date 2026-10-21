@@ -28,6 +28,7 @@
     <Compile Include="../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplate.fs" Link="Generated/HtmlTemplate.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/TemplateSugar.fs" Link="TemplateSugar.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.fs" Link="Generated/HtmlTemplateSugar.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Portable/SvgSugar.fs" Link="SvgSugar.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Portable/Server.fs" Link="Server.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Generated/Html.fs" Link="Generated/Html.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Foundation/Browser.fs" Link="Browser.fs" />

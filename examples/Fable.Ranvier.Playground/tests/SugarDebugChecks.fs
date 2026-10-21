@@ -138,11 +138,18 @@ let private boundArmMountsOnce () =
 let private innerExit =
     Component.template
         (fun _ (items: int array) -> items)
-        (ul () { forEach id (fun (items: int array) -> items) (li () { b (Hooks.exit (fun (_: unit -> int) (_: HTMLElement) _ -> ignore)) { "x" } }) })
+        (ul () {
+            forEach
+                id
+                (fun (items: int array) -> items)
+                (li () { b (Hooks.exit (System.Func<_, _, _, _>(fun (_: unit -> int) (_: HTMLElement) _ -> ignore))) { "x" } })
+        })
 
 /// <summary>A template whose root element, a root of the mount, has an exit.</summary>
 let private rootExit =
-    Component.template (fun _ (items: int array) -> items) (ul (Hooks.exit (fun (_: int array) (_: HTMLUListElement) _ -> ignore)) { "x" })
+    Component.template
+        (fun _ (items: int array) -> items)
+        (ul (Hooks.exit (System.Func<_, _, _, _>(fun (_: int array) (_: HTMLUListElement) _ -> ignore))) { "x" })
 
 /// <summary>The messages of mounting <c>definition</c> on one row: raised during the mount or reported.</summary>
 let private exitMessages (definition: Component<int array>) =

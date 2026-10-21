@@ -32,6 +32,9 @@
     <Project Path="experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
     <Project Path="experiments/Ranvier.View.Portable/ServerBench/ServerBench.fsproj" />
   </Folder>
+  <Folder Name="/experiments/Ranvier.View.Anime/">
+    <Project Path="experiments/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+  </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Ranvier.Dom.Generate/Ranvier.Dom.Generate.fsproj" />
   </Folder>
@@ -50,6 +53,7 @@
     <Project Path="tests/Ranvier.CSharp.Tests/Ranvier.CSharp.Tests.csproj" />
     <Project Path="fable/Ranvier.Tests.Fable/Ranvier.Tests.Fable.fsproj" />
     <Project Path="fable/Ranvier.Anime.Tests/Ranvier.Anime.Tests.fsproj" />
+    <Project Path="fable/Ranvier.View.Anime.Tests/Ranvier.View.Anime.Tests.fsproj" />
     <Project Path="tests/Ranvier.AotSmoke/Ranvier.AotSmoke.fsproj" />
   </Folder>
   <Folder Name="/bench/">

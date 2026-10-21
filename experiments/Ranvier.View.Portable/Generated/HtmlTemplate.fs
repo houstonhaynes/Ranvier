@@ -546,130 +546,130 @@ type TemplateBuilder<'inst> with
         TemplateParts.element (HtmlTag "wbr") parts [||]
 
 type AttributeBuilder<'inst> with
-    member _.data<'native when 'native :> Dom.HTMLElement>(suffix: string, value: string) : Part<'native, 'inst> =
+    member _.data<'native when 'native :> Dom.Element>(suffix: string, value: string) : Part<'native, 'inst> =
         TemplateParts.attribute (Typed.prefixedAttributeName "data-" suffix) value
 
-    member _.data<'native when 'native :> Dom.HTMLElement>(suffix: string, read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.data<'native when 'native :> Dom.Element>(suffix: string, read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute (Typed.prefixedAttributeName "data-" suffix) read
 
-    member _.data<'native when 'native :> Dom.HTMLElement>(suffix: string, source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.data<'native when 'native :> Dom.Element>(suffix: string, source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute (Typed.prefixedAttributeName "data-" suffix) source
 
-    member _.aria<'native when 'native :> Dom.HTMLElement>(suffix: string, value: string) : Part<'native, 'inst> =
+    member _.aria<'native when 'native :> Dom.Element>(suffix: string, value: string) : Part<'native, 'inst> =
         TemplateParts.attribute (Typed.prefixedAttributeName "aria-" suffix) value
 
-    member _.aria<'native when 'native :> Dom.HTMLElement>(suffix: string, read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.aria<'native when 'native :> Dom.Element>(suffix: string, read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute (Typed.prefixedAttributeName "aria-" suffix) read
 
-    member _.aria<'native when 'native :> Dom.HTMLElement>(suffix: string, source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.aria<'native when 'native :> Dom.Element>(suffix: string, source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute (Typed.prefixedAttributeName "aria-" suffix) source
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "id" value
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "id" value
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "id" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "id" read
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "id" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``id``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``id``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "id" source
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "class" value
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "class" value
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "class" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "class" read
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "class" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``className``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``className``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "class" source
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "title" value
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "title" value
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "title" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "title" read
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "title" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``title``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``title``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "title" source
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "role" value
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "role" value
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "role" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "role" read
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "role" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``role``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``role``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "role" source
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "lang" value
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "lang" value
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "lang" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "lang" read
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "lang" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``lang``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``lang``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "lang" source
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "dir" value
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "dir" value
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "dir" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "dir" read
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "dir" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``dir``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``dir``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "dir" source
 
     member _.``hidden``<'native when 'native :> Dom.HTMLElement>(value: bool) : Part<'native, 'inst> =
@@ -690,112 +690,112 @@ type AttributeBuilder<'inst> with
     member _.``inert``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "inert" (TemplateParts.mapSource TemplateParts.presence source)
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-label" value
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-label" value
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-label" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-label" read
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-label" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``ariaLabel``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``ariaLabel``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-label" source
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-labelledby" value
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-labelledby" value
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-labelledby" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-labelledby" read
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-labelledby" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``ariaLabelledBy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``ariaLabelledBy``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-labelledby" source
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(value: string) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(value: string) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-describedby" value
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(value: string option) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(value: string option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-describedby" value
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(read: 'inst -> string) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-describedby" (fun instance -> TemplateParts.present (read instance))
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> string option) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(read: 'inst -> string option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-describedby" read
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string>) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(source: Source<'inst, string>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-describedby" (TemplateParts.mapSource TemplateParts.present source)
 
-    member _.``ariaDescribedBy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, string option>) : Part<'native, 'inst> =
+    member _.``ariaDescribedBy``<'native when 'native :> Dom.Element>(source: Source<'inst, string option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-describedby" source
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(value: bool) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(value: bool) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-expanded" (TemplateParts.ariaText value)
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(value: bool option) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(value: bool option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-expanded" (TemplateParts.ariaOption value)
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(read: 'inst -> bool) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-expanded" (fun instance -> Some (TemplateParts.ariaText (read instance)))
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool option) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(read: 'inst -> bool option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-expanded" (fun instance -> TemplateParts.ariaOption (read instance))
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool>) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(source: Source<'inst, bool>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-expanded" (TemplateParts.mapSource (fun value -> Some (TemplateParts.ariaText value)) source)
 
-    member _.``ariaExpanded``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
+    member _.``ariaExpanded``<'native when 'native :> Dom.Element>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-expanded" (TemplateParts.mapSource TemplateParts.ariaOption source)
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(value: bool) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(value: bool) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-busy" (TemplateParts.ariaText value)
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(value: bool option) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(value: bool option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-busy" (TemplateParts.ariaOption value)
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(read: 'inst -> bool) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-busy" (fun instance -> Some (TemplateParts.ariaText (read instance)))
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool option) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(read: 'inst -> bool option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-busy" (fun instance -> TemplateParts.ariaOption (read instance))
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool>) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(source: Source<'inst, bool>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-busy" (TemplateParts.mapSource (fun value -> Some (TemplateParts.ariaText value)) source)
 
-    member _.``ariaBusy``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
+    member _.``ariaBusy``<'native when 'native :> Dom.Element>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-busy" (TemplateParts.mapSource TemplateParts.ariaOption source)
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(value: bool) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(value: bool) : Part<'native, 'inst> =
         TemplateParts.attribute "aria-disabled" (TemplateParts.ariaText value)
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(value: bool option) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(value: bool option) : Part<'native, 'inst> =
         TemplateParts.optionalAttribute "aria-disabled" (TemplateParts.ariaOption value)
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(read: 'inst -> bool) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-disabled" (fun instance -> Some (TemplateParts.ariaText (read instance)))
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(read: 'inst -> bool option) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(read: 'inst -> bool option) : Part<'native, 'inst> =
         TemplateParts.readAttribute "aria-disabled" (fun instance -> TemplateParts.ariaOption (read instance))
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool>) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(source: Source<'inst, bool>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-disabled" (TemplateParts.mapSource (fun value -> Some (TemplateParts.ariaText value)) source)
 
-    member _.``ariaDisabled``<'native when 'native :> Dom.HTMLElement>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
+    member _.``ariaDisabled``<'native when 'native :> Dom.Element>(source: Source<'inst, bool option>) : Part<'native, 'inst> =
         TemplateParts.sourceAttribute "aria-disabled" (TemplateParts.mapSource TemplateParts.ariaOption source)
 
     member _.Button: Groups.ButtonAttributes<'inst> = Groups.ButtonAttributes ()
@@ -8217,439 +8217,437 @@ type Groups.VideoProperties<'inst> with
 
 type EventBuilder<'inst> with
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAbort<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.UIEvent -> unit) : Part<'native, 'inst> =
+    member _.onAbort<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.UIEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "abort" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAnimationcancel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
+    member _.onAnimationcancel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "animationcancel" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAnimationend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
+    member _.onAnimationend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "animationend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAnimationiteration<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
+    member _.onAnimationiteration<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "animationiteration" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAnimationstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
+    member _.onAnimationstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.AnimationEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "animationstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onAuxclick<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onAuxclick<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "auxclick" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onBeforeinput<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.InputEvent -> unit) : Part<'native, 'inst> =
+    member _.onBeforeinput<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.InputEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "beforeinput" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onBeforematch<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onBeforematch<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "beforematch" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onBeforetoggle<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ToggleEvent -> unit) : Part<'native, 'inst> =
+    member _.onBeforetoggle<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ToggleEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "beforetoggle" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onBlur<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
+    member _.onBlur<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "blur" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCancel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onCancel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "cancel" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCanplay<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onCanplay<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "canplay" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCanplaythrough<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onCanplaythrough<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "canplaythrough" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onChange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onChange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "change" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onClick<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onClick<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "click" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onClose<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onClose<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "close" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCommand<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onCommand<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "command" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCompositionend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
+    member _.onCompositionend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "compositionend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCompositionstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
+    member _.onCompositionstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "compositionstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCompositionupdate<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
+    member _.onCompositionupdate<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.CompositionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "compositionupdate" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onContextlost<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onContextlost<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "contextlost" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onContextmenu<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onContextmenu<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "contextmenu" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onContextrestored<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onContextrestored<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "contextrestored" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCopy<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onCopy<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "copy" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCuechange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onCuechange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "cuechange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onCut<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onCut<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "cut" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDblclick<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onDblclick<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dblclick" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDrag<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDrag<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "drag" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDragend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDragend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dragend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDragenter<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDragenter<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dragenter" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDragleave<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDragleave<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dragleave" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDragover<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDragover<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dragover" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDragstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDragstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "dragstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDrop<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
+    member _.onDrop<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.DragEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "drop" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onDurationchange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onDurationchange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "durationchange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onEmptied<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onEmptied<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "emptied" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onEnded<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onEnded<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "ended" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onError<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ErrorEvent -> unit) : Part<'native, 'inst> =
+    member _.onError<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ErrorEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "error" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFocus<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
+    member _.onFocus<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "focus" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFocusin<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
+    member _.onFocusin<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "focusin" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFocusout<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
+    member _.onFocusout<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.FocusEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "focusout" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFormdata<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.FormDataEvent -> unit) : Part<'native, 'inst> =
+    member _.onFormdata<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.FormDataEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "formdata" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFullscreenchange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onFullscreenchange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "fullscreenchange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onFullscreenerror<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onFullscreenerror<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "fullscreenerror" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onGotpointercapture<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onGotpointercapture<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "gotpointercapture" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onInput<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.InputEvent -> unit) : Part<'native, 'inst> =
+    member _.onInput<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.InputEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "input" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onInvalid<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onInvalid<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "invalid" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onKeydown<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onKeydown<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "keydown" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onKeypress<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onKeypress<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "keypress" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onKeyup<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onKeyup<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.KeyboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "keyup" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onLoad<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onLoad<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "load" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onLoadeddata<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onLoadeddata<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "loadeddata" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onLoadedmetadata<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onLoadedmetadata<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "loadedmetadata" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onLoadstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onLoadstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "loadstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onLostpointercapture<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onLostpointercapture<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "lostpointercapture" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMousedown<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMousedown<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mousedown" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMouseenter<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMouseenter<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mouseenter" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMouseleave<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMouseleave<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mouseleave" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMousemove<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMousemove<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mousemove" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMouseout<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMouseout<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mouseout" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMouseover<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMouseover<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mouseover" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onMouseup<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
+    member _.onMouseup<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.MouseEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "mouseup" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPaste<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
+    member _.onPaste<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ClipboardEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "paste" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPause<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onPause<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pause" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPlay<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onPlay<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "play" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPlaying<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onPlaying<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "playing" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointercancel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointercancel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointercancel" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerdown<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerdown<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerdown" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerenter<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerenter<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerenter" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerleave<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerleave<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerleave" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointermove<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointermove<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointermove" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerout<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerout<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerout" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerover<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerover<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerover" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerrawupdate<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onPointerrawupdate<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerrawupdate" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onPointerup<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
+    member _.onPointerup<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "pointerup" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onProgress<'native when 'native :> Dom.HTMLElement>
-        (handler: 'inst -> Dom.ProgressEvent<Dom.EventTarget> -> unit)
-        : Part<'native, 'inst> =
+    member _.onProgress<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ProgressEvent<Dom.EventTarget> -> unit) : Part<'native, 'inst> =
         TemplateParts.event "progress" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onRatechange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onRatechange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "ratechange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onReset<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onReset<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "reset" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onResize<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.UIEvent -> unit) : Part<'native, 'inst> =
+    member _.onResize<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.UIEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "resize" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onScroll<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onScroll<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "scroll" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onScrollend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onScrollend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "scrollend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSecuritypolicyviolation<'native when 'native :> Dom.HTMLElement>
+    member _.onSecuritypolicyviolation<'native when 'native :> Dom.Element>
         (handler: 'inst -> Dom.SecurityPolicyViolationEvent -> unit)
         : Part<'native, 'inst> =
         TemplateParts.event "securitypolicyviolation" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSeeked<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSeeked<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "seeked" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSeeking<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSeeking<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "seeking" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSelect<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSelect<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "select" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSelectionchange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSelectionchange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "selectionchange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSelectstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSelectstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "selectstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSlotchange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSlotchange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "slotchange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onStalled<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onStalled<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "stalled" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSubmit<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.SubmitEvent -> unit) : Part<'native, 'inst> =
+    member _.onSubmit<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.SubmitEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "submit" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onSuspend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onSuspend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "suspend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTimeupdate<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onTimeupdate<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "timeupdate" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onToggle<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.ToggleEvent -> unit) : Part<'native, 'inst> =
+    member _.onToggle<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.ToggleEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "toggle" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTouchcancel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
+    member _.onTouchcancel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "touchcancel" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTouchend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
+    member _.onTouchend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "touchend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTouchmove<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
+    member _.onTouchmove<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "touchmove" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTouchstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
+    member _.onTouchstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TouchEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "touchstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTransitioncancel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
+    member _.onTransitioncancel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "transitioncancel" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTransitionend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
+    member _.onTransitionend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "transitionend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTransitionrun<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
+    member _.onTransitionrun<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "transitionrun" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onTransitionstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
+    member _.onTransitionstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.TransitionEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "transitionstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onVolumechange<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onVolumechange<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "volumechange" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWaiting<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onWaiting<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "waiting" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWebkitanimationend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onWebkitanimationend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "webkitanimationend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWebkitanimationiteration<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onWebkitanimationiteration<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "webkitanimationiteration" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWebkitanimationstart<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onWebkitanimationstart<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "webkitanimationstart" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWebkittransitionend<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
+    member _.onWebkittransitionend<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.Event -> unit) : Part<'native, 'inst> =
         TemplateParts.event "webkittransitionend" handler
 
     /// <summary>Handles the event unbatched; a handler that groups several writes wraps them in <c>Api.batch</c>, and effects then run once, after the outermost batch.</summary>
-    member _.onWheel<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.WheelEvent -> unit) : Part<'native, 'inst> =
+    member _.onWheel<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.WheelEvent -> unit) : Part<'native, 'inst> =
         TemplateParts.event "wheel" handler
 
     member _.Audio: Groups.AudioEvents<'inst> = Groups.AudioEvents ()

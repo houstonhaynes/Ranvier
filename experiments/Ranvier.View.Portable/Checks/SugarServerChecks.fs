@@ -130,7 +130,9 @@ let private mountedStillRejected () =
     let mixed =
         Component.template
             (fun _ () -> ())
-            (div (Hooks.motion (fun _ _ _ -> ignore), Hooks.mounted (fun _ (_: Fable.Core.TS.Dom.HTMLDivElement) -> ignore)) { "x" })
+            (div (Hooks.motion (System.Func<_, _, _, _>(fun _ _ _ -> ignore)), Hooks.mounted (fun _ (_: Fable.Core.TS.Dom.HTMLDivElement) -> ignore)) {
+                "x"
+            })
 
     let message =
         try

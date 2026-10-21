@@ -201,9 +201,49 @@ let private namesAtDefinition () =
             failure (define (fun t -> t.div [| t.Attrs.attribute ("", "x") |] [||]))
             failure (define (fun t -> t.element (HtmlTag "DIV") [||] [||]))
             failure (define (fun t -> t.element (HtmlTag "") [||] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute ("oNclick", "x") |] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute ("ONCLICK", "x") |] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute ("srcDoc", "x") |] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute ("className", "x") |] [||]))
+            failure (define (fun t -> t.element (HtmlTag "sCript") [||] [||]))
+            failure (define (fun t -> t.element (HtmlTag "iFrame") [||] [||]))
+            failure (define (fun t -> t.element (HtmlTag "tAble") [||] [||]))
+            failure (define (fun t -> t.element (HtmlTag "sTyle") [||] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute ("refX refY", "x") |] [||]))
+            failure (define (fun t -> t.element (HtmlTag "feBlend feColorMatrix") [||] [||]))
+            failure (define (fun t -> t.div [| t.Attrs.attribute (null, "x") |] [||]))
         ]
 
-    equal [ true; true; true; true; true; true ] [ for error in rejected -> error.Message.Contains "names must" ]
+    equal (List.replicate 17 true) [ for error in rejected -> error.Message.Contains "names must" ]
+
+#if !FABLE_COMPILER
+    let caseTwins =
+        failure (define (fun t -> t.element (HtmlTag "svg") [| t.Attrs.attribute ("viewBox", "1"); t.Attrs.attribute ("viewbox", "2") |] [||]))
+
+    equal true (caseTwins.Message.Contains "differ only by case")
+#endif
+
+    // An SVG tag makes the SVG names available under Fable.
+    Ranvier.View.Foundation.Sugar.SvgElements.svg<unit>()
+    |> ignore
+
+    let svg =
+        Component.define (fun _ () -> ()) (fun t ->
+            t.element
+                (HtmlTag "svg")
+                [|
+                    t.Attrs.attribute ("viewBox", "0 0 1 1")
+                    t.Attrs.attribute ("preserveAspectRatio", "none")
+                |]
+                [|
+                    t.element (HtmlTag "linearGradient") [| t.Attrs.attribute ("gradientUnits", "userSpaceOnUse") |] [||]
+                    t.element (HtmlTag "feGaussianBlur") [| t.Attrs.attribute ("stdDeviation", "2") |] [||]
+                    t.element (HtmlTag "foreignObject") [| t.Attrs.attribute ("refX", "1") |] [||]
+                |])
+
+    equal
+        """<svg viewBox="0 0 1 1" preserveAspectRatio="none"><linearGradient gradientUnits="userSpaceOnUse"></linearGradient><feGaussianBlur stdDeviation="2"></feGaussianBlur><foreignObject refX="1"></foreignObject></svg>"""
+        (renderOmit svg ())
 
 let private sharedPlan () =
     equal true (obj.ReferenceEquals (serverPlan greeting, serverPlan greeting))

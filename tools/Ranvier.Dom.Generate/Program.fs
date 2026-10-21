@@ -1135,7 +1135,20 @@ let generate compilerRoot policyRoot packageRoot output (templateOutput: string 
     t.AddRange (Seq.map snd templateTags)
     tEmit ""
 
+    // The template members of the attributes SVG elements also take accept any element.
+    let namespaceNeutral (native: string) (attribute: string) =
+        if
+            native = "Dom.HTMLElement"
+            && (List.contains attribute [ "id"; "class"; "title"; "role"; "lang"; "dir" ]
+                || attribute.StartsWith "aria-")
+        then
+            "Dom.Element"
+        else
+            native
+
     let attributeMembers indent (name: string) (native: string) (attribute: string) kind =
+        let native = namespaceNeutral native attribute
+
         let signature argument =
             $"{indent}member _.``{name}``<'native when 'native :> {native}>({argument}) : Part<'native, 'inst> ="
 
@@ -1200,7 +1213,7 @@ let generate compilerRoot policyRoot packageRoot output (templateOutput: string 
 
     for prefix in [ "data"; "aria" ] do
         let signature argument =
-            $"    member _.{prefix}<'native when 'native :> Dom.HTMLElement>(suffix: string, {argument}) : Part<'native, 'inst> ="
+            $"    member _.{prefix}<'native when 'native :> Dom.Element>(suffix: string, {argument}) : Part<'native, 'inst> ="
 
         let name = $"(Typed.prefixedAttributeName \"{prefix}-\" suffix)"
         tEmit (signature "value: string")
@@ -1385,7 +1398,7 @@ let generate compilerRoot policyRoot packageRoot output (templateOutput: string 
     tEmit "type EventBuilder<'inst> with"
 
     for event in sharedEvents do
-        eventMember event.Key "Dom.HTMLElement" (typeName declarations event.Value)
+        eventMember event.Key "Dom.Element" (typeName declarations event.Value)
 
     emitAccessors "Events" eventGroups
 

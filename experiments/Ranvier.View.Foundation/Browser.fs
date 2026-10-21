@@ -26,6 +26,7 @@ let metrics () =
 let globalThis: TS.Es.GlobalThis = jsNative
 
 let private element (tag: string) : HTMLElement =
+    refuseScript tag
     globalThis.document.createElement tag
 
 let private text (value: string) : Node =

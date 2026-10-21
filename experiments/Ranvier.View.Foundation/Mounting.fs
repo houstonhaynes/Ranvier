@@ -2386,7 +2386,16 @@ and internal MountState
 
     let openElement (backend: Backend) tag modifiers =
         ensureSetup ()
-        let node = document.createElement (name tag)
+        let create = Departures.seam.CreateElement
+        let tagName = name tag
+        refuseScript tagName
+
+        let node =
+            if isNullish create then
+                document.createElement tagName
+            else
+                create.Invoke ((if isNull (box target) then host else target), tagName)
+
         append node
 
         if tag <> Select then
@@ -3093,7 +3102,8 @@ and internal MountState
             parentPath: InstancePath,
             region: int,
             row: int,
-            cursor: TemplateDom.HydrationCursor
+            cursor: TemplateDom.HydrationCursor,
+            regionStart: Node
         ) : Row =
         let adopting = not (isNull cursor)
 
@@ -3137,6 +3147,10 @@ and internal MountState
 
         nested.HeadDocument <- this.HeadDocument
         nested.Enclosing <- this
+        let nest = Departures.seam.Nest
+
+        if not (isNullish nest) then
+            nest.Invoke (rowHost, regionStart)
 
         let build (context: BuildContext) =
             render current context.Backend
@@ -3270,7 +3284,7 @@ and internal MountState
 
             row <-
                 if isNull rows then
-                    this.MountRow (current, render, boundary, passPlacement.Container, parentPath, region, site.NextRow (), null)
+                    this.MountRow (current, render, boundary, passPlacement.Container, parentPath, region, site.NextRow (), null, regionStart)
                 else
                     site.Builder.Build (rows, current, passPlacement, site.NextRow ())
 
@@ -3709,7 +3723,17 @@ and internal MountState
 
                             let built =
                                 if isNull rows then
-                                    this.MountRow (current, render, boundary, armPlacement.Container, parentPath, region, site.NextRow (), null)
+                                    this.MountRow (
+                                        current,
+                                        render,
+                                        boundary,
+                                        armPlacement.Container,
+                                        parentPath,
+                                        region,
+                                        site.NextRow (),
+                                        null,
+                                        regionStart
+                                    )
                                 else
                                     site.Builder.Build (rows, current, armPlacement, site.NextRow ())
 
@@ -3842,7 +3866,7 @@ and internal MountState
         let holeContainer = Placement parentContainer
 
         let row =
-            this.MountRow ((fun () -> view), render, boundary, holeContainer, parentPath, region, site.NextRow (), null)
+            this.MountRow ((fun () -> view), render, boundary, holeContainer, parentPath, region, site.NextRow (), null, regionStart)
 
         Row.MoveBefore (row, site.Parent (), regionEnd)
         row.Mount.Relocate ()
@@ -3882,7 +3906,7 @@ and internal MountState
                 parentPath,
                 region,
                 (fun current render scope target parentPath region row cursor ->
-                    this.MountRow (current, render, scope, target, parentPath, region, row, cursor)),
+                    this.MountRow (current, render, scope, target, parentPath, region, row, cursor, regionStart)),
                 regionCursor,
                 (fun () -> this.HydrationCursor),
                 (fun error -> this.HydrationFailed error),

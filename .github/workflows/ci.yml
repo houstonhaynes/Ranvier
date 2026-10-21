@@ -275,11 +275,49 @@ jobs:
         run: git diff --exit-code -- docs/research/motion/bindings-bundle.json
         working-directory: .
 
+  # The Ranvier.View.Anime template parts compiled with Fable: the jsdom checks of every Motion part on a mocked clock,
+  # the README sample check, and the bundle budget (fable/Ranvier.View.Anime.Tests/motion-size.mjs); then, on .NET, the
+  # server renders of the README samples against their twins without Motion parts.
+  motion-view:
+    name: Motion view parts
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fable/Ranvier.View.Anime.Tests
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      # The suite requires Node 26 or newer (package.json engines).
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: fable/Ranvier.View.Anime.Tests/package-lock.json
+      - name: Install npm packages
+        run: npm ci
+      - name: Restore tools
+        run: dotnet tool restore
+        working-directory: .
+      # npm test compiles the suite, runs the jsdom and README checks, then the bundle-size check.
+      - name: Run the Motion part tests
+        run: npm test
+      # motion-size.mjs rewrites the committed bundle numbers; a difference means they are stale.
+      - name: Check the committed bundle numbers
+        run: git diff --exit-code -- docs/research/motion/bundle.json
+        working-directory: .
+      - name: Check the server renders against their twins
+        run: dotnet run --project fable/Ranvier.View.Anime.Tests/Ranvier.View.Anime.Tests.fsproj -c Release
+        working-directory: .
+
   # The one CI check that branch rules require: it fails when any job failed or was cancelled, and passes when the
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view]
     if: always()
     runs-on: ubuntu-latest
     steps:

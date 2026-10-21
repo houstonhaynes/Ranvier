@@ -345,7 +345,7 @@ let run (folder: string) =
     check (ttext.Contains "type Groups.InputProperties<'inst> with") "InputProperties group"
 
     check
-        (ttext.Contains "member _.onClick<'native when 'native :> Dom.HTMLElement>(handler: 'inst -> Dom.PointerEvent -> unit)")
+        (ttext.Contains "member _.onClick<'native when 'native :> Dom.Element>(handler: 'inst -> Dom.PointerEvent -> unit)")
         "template onClick member"
 
     check

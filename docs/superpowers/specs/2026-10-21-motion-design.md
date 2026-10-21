@@ -190,32 +190,34 @@ type Reflow = { Before: unit -> unit; After: unit -> unit }
 /// cursor, not the root flag), whether its row or arm was created by a pass after its region's first, and a reader of
 /// whether an exit of the element has not started; read in the cleanup, true means the element stays for its exit.
 /// The returned cleanup runs when the instance is disposed.
-member Hooks.motion: ('inst -> 'native -> MotionContext -> (unit -> unit)) -> Part<'native, 'inst>
+member Hooks.motion: Func<'inst, 'native, MotionContext, unit -> unit> -> Part<'native, 'inst>
 /// On a row or arm root element: when the row is retired, its node stays in place and `exit` runs with `finish`;
 /// the node leaves when `finish` is called, with its content kept until then. The returned function cancels the exit
 /// when removal is forced. An exit applies once the element is placed.
-member Hooks.exit: ('inst -> 'native -> (unit -> unit) -> (unit -> unit)) -> Part<'native, 'inst>
+member Hooks.exit: Func<'inst, 'native, unit -> unit, unit -> unit> -> Part<'native, 'inst>
 /// On a region's parent element: `Before` runs before the first region pass under the element in a flush, `After`
 /// once the pass's nodes and commits are in place.
-member Hooks.reflow: ('inst -> 'native -> Reflow) -> Part<'native, 'inst>
+member Hooks.reflow: Func<'inst, 'native, Reflow> -> Part<'native, 'inst>
+/// Two hook parts on one element as one part, at most one of them other than a motion hook; the part takes that one's kind.
+member Hooks.both: Part<'native, 'inst> * Part<'native, 'inst> -> Part<'native, 'inst>
 ```
 
-### `experiments/Ranvier.View.Anime` (namespace `Ranvier.View.Anime`, `[<AutoOpen>] module Motion`)
+### `experiments/Ranvier.View.Anime` (namespace `Ranvier.View.Anime`, `[<RequireQualifiedAccess>] module Motion`)
 
-Every function returns `Part<'native, 'inst>` and is non-overloaded, so it infers like a non-overloaded `Events.*` entry. Animations are created inside the hook, never at definition time.
+Every function returns `Part<'native, 'inst>` and is non-overloaded, so it infers like a non-overloaded `Events.*` entry. Play functions receive the element as `Element`, which `Targets` converts from. Animations are created inside the hook, never at definition time. The hook members take delegates: F# converts a lambda to a delegate returning a function only when written `Func<_, _, _, _>(fun ...)`, and `Motion` does so, so its emitted module holds no curry helper.
 
 ```fsharp
 module Motion =
     /// Plays on every placement, hydration included; the animation is reverted on disposal.
-    val on: play: ('inst -> 'native -> #IRevertible) -> Part<'native, 'inst>
+    val on: play: ('inst -> Element -> #IRevertible) -> Part<'native, 'inst>
     /// As `on`, skipped when the mount hydrated server nodes.
-    val appear: play: ('inst -> 'native -> #IRevertible) -> Part<'native, 'inst>
+    val appear: play: ('inst -> Element -> #IRevertible) -> Part<'native, 'inst>
     /// Plays when the element's row or arm is inserted after its region's first pass.
-    val enter: play: ('inst -> 'native -> #ITickable) -> Part<'native, 'inst>
+    val enter: play: ('inst -> Element -> #ITickable) -> Part<'native, 'inst>
     /// Plays when the element's row or arm is retired; the node leaves when the animation completes.
-    val exit: play: ('inst -> 'native -> #ITickable) -> Part<'native, 'inst>
+    val exit: play: ('inst -> Element -> #ITickable) -> Part<'native, 'inst>
     /// `enter` and `exit` together, with an exit that pins the node out of flow (absolute at its current box).
-    val presence: enter: ('inst -> 'native -> #ITickable) -> exit: ('inst -> 'native -> #ITickable) -> Part<'native, 'inst>
+    val presence: enter: ('inst -> Element -> #ITickable) -> exit: ('inst -> Element -> #ITickable) -> Part<'native, 'inst>
     val fade: Part<'native, 'inst>          // presence presets: fade, rise, scale, collapse (height to 0)
     /// FLIP for the rows of every region under the element: anime createLayout, children = direct element
     /// children that are not leaving.
@@ -223,12 +225,12 @@ module Motion =
     /// Pushes `read` into the element's animatable `property` whenever it changes.
     val follow: property: string -> parameters: AnimatableParams -> read: ('inst -> float) -> Part<'native, 'inst>
     /// Replays `play` with the new value whenever `read` changes (composition replace); the first value is set.
-    val animateOn: read: ('inst -> 'v) -> play: ('inst -> 'native -> 'v -> #ITickable) -> Part<'native, 'inst>
+    val animateOn: read: ('inst -> 'v) -> play: ('inst -> Element -> 'v -> #ITickable) -> Part<'native, 'inst>
     /// SVG: draws the stroke to the fraction returned by `read`; morphs the path to the `d` returned by `read`.
     val draw: parameters: AnimatableParams -> read: ('inst -> float) -> Part<'native, 'inst>
     val morph: parameters: Anim -> read: ('inst -> string) -> Part<'native, 'inst>
     /// Links `play` to scroll; writes scroll progress and in-view into the instance's signals when given.
-    val scroll: parameters: ScrollParams -> bind: ('inst -> ScrollBinding) -> play: ('inst -> 'native -> #ITickable) -> Part<'native, 'inst>
+    val scroll: parameters: ScrollParams -> bind: ('inst -> ScrollBinding) -> play: ('inst -> Element -> #ITickable) -> Part<'native, 'inst>
     /// Two-way: drag writes `Position`, a write to `Position` from elsewhere moves the element (muted, no echo).
     val drag: parameters: DraggableParams -> bind: ('inst -> DragBinding) -> Part<'native, 'inst>
     /// Splits the element's static text (Lent hook; Debug raises when the element holds a text slot or region).
@@ -238,7 +240,7 @@ type ScrollBinding = { Progress: Signal<float> voption; InView: Signal<bool> vop
 type DragBinding = { Position: Signal<struct (float * float)>; Dragging: Signal<bool> voption }
 ```
 
-**Revert and exit interplay.** Cleanups run before a retired row's nodes leave. `Motion.on`/`appear`/`enter` cleanups check `Departures`-held state through a package-level `WeakSet` of elements with a Motion exit: such an element's animations are paused, not reverted, so the exit starts from the current values; when the exit finishes, the package calls `Utils.remove node` before `finish`.
+**Revert and exit interplay.** Cleanups run before a retired row's nodes leave. `Motion.on`/`appear`/`enter` cleanups check `Departures`-held state through a package-level `WeakSet` of elements with a Motion exit: such an element's animations are paused, not reverted, so the exit starts from the current values; a paused tickable leaves anime's engine on its next tick, so `finish` follows the exit's completion with no `Utils.remove` (ruled in step 8: it costs 427 B gzip).
 
 **Sample (sugar v2).**
 
