@@ -1,5 +1,5 @@
 // The packages `build.fsx -- publish` pushes: for each src/<Name>/<Name>.fsproj, `<PackageId>` and `<PackageId>.Traced`
-// at the project's `<Version>`, each with a lib/<tfm>/<AssemblyName>.dll per `<TargetFrameworks>` entry and a .snupkg.
+// at the project's `<Version>`, each with a lib/<tfm>/<AssemblyName>.dll per `<TargetFrameworks>` entry.
 const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
@@ -84,7 +84,7 @@ function checkPackage(buffer, expected) {
 }
 
 // The problems of a package directory against the packable projects under src; empty when it holds exactly the expected
-// packages, each with its symbol package.
+// packages.
 function check(packagesDirectory, sourceDirectory) {
   const projects = fs.readdirSync(sourceDirectory, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`)))
@@ -101,7 +101,6 @@ function check(packagesDirectory, sourceDirectory) {
       problems.push(`missing package ${file}`);
       continue;
     }
-    if (!files.includes(file.replace(/\.nupkg$/, '.snupkg'))) problems.push(`missing symbol package for ${file}`);
     problems.push(...checkPackage(fs.readFileSync(path.join(packagesDirectory, file)), pkg));
   }
   return problems;

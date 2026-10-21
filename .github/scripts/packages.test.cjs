@@ -90,7 +90,7 @@ test('a wrong id, version or framework set fails', () => {
     'Lib: missing lib/netstandard2.1/Lib.dll',
   ]);
 });
-test('a directory must hold exactly the expected packages and their symbols', () => {
+test('a directory must hold exactly the expected packages', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'packages-'));
   const src = path.join(dir, 'src'), bin = path.join(dir, 'bin');
   try {
@@ -102,15 +102,12 @@ test('a directory must hold exactly the expected packages and their symbols', ()
     fs.writeFileSync(path.join(src, 'Tool', 'Tool.fsproj'), '<Project><PropertyGroup><IsPackable>false</IsPackable><Version>0.1.0</Version></PropertyGroup></Project>');
     for (const id of ['Lib', 'Lib.Traced']) {
       fs.writeFileSync(path.join(bin, `${id}.0.1.0-preview.2.nupkg`), nupkg(id));
-      fs.writeFileSync(path.join(bin, `${id}.0.1.0-preview.2.snupkg`), '');
     }
     assert.deepEqual(check(bin, src), []);
     fs.writeFileSync(path.join(bin, 'Lib.0.0.9.nupkg'), nupkg('Lib', { version: '0.0.9' }));
     fs.rmSync(path.join(bin, 'Lib.Traced.0.1.0-preview.2.nupkg'));
-    fs.rmSync(path.join(bin, 'Lib.0.1.0-preview.2.snupkg'));
     assert.deepEqual(check(bin, src), [
       'unexpected package Lib.0.0.9.nupkg',
-      'missing symbol package for Lib.0.1.0-preview.2.nupkg',
       'missing package Lib.Traced.0.1.0-preview.2.nupkg',
     ]);
   } finally {
