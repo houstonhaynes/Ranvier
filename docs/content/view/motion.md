@@ -202,7 +202,8 @@ let travel (dot: TS.Dom.Element) (edge: TS.Dom.Element) =
 | `Engine.settings`, `Engine.update ()` | the engine's main loop, speed, frame rate and time unit, and a manual tick |
 
 `AnimatableParams (x = 400)` is the duration of the `x` property alone; `AnimatableProp (unit = "px",
-duration = 400, ease = Ease.outQuad)` gives a property its own unit and ease.
+duration = 400, ease = Ease.outQuad)` gives a property its own unit and ease. anime appends a unit only
+from a property's own entry; `Motion.follow` also gives the followed property the shared `unit`.
 
 ## On .NET
 

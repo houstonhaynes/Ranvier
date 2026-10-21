@@ -27,7 +27,7 @@ type Playground =
         /// <summary>The scrubbed timeline once placed.</summary>
         Timeline: Timeline ref
         /// <summary>The spring returning the puck home; a new spring, a grab or the instance's disposal cancels it.</summary>
-        Spring: Page.Slot
+        Spring: MotionSlot
     }
 
 /// <summary>The followers' durations: each trails the puck further behind the one before it.</summary>
@@ -41,7 +41,7 @@ let private create () =
         Tips = Api.createSignal false
         Policy = Reactive.policy ()
         Timeline = ref null
-        Spring = Page.ownedSlot ()
+        Spring = Motion.slot ()
     }
 
 let private reduced (playground: Playground) =
@@ -61,7 +61,7 @@ let springHome (playground: Playground) =
         let graph = Graph.Current
         let point = Page.point x y
 
-        playground.Spring.Start (
+        playground.Spring.Play (fun () ->
             Anime.animate (
                 Targets.object point,
                 Anim (
@@ -70,8 +70,7 @@ let springHome (playground: Playground) =
                     ease = Ease.spring (stiffness = 170., damping = 11.),
                     onUpdate = fun _ -> graph.Batch (fun () -> playground.Puck.Value <- struct (point.x, point.y))
                 )
-            )
-        )
+            ))
 
 let private xOf (playground: Playground) =
     let struct (x, _) = playground.Puck.Value
@@ -119,11 +118,6 @@ let view: Component<Playground -> unit> =
     Component.template
         (fun _ (publish: Playground -> unit) ->
             let playground = create ()
-
-            Api.createEffectOn (fun () -> playground.Dragging.Value) (fun dragging ->
-                if dragging then
-                    playground.Spring.Stop ())
-
             publish playground
             playground)
         (section (Attrs.className "physics") {
@@ -145,6 +139,7 @@ let view: Component<Playground -> unit> =
                             {
                                 Position = p.Puck
                                 Dragging = ValueSome p.Dragging
+                                Slot = ValueSome p.Spring
                             })
                 ) {
                     "drag"

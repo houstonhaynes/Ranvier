@@ -5,15 +5,16 @@ import { cardBox, expectNoErrors, finishAnimations, opacityOf, openPage, scaleOf
 
 const card = id => `.card-slot[data-id="${id}"]`;
 
-// Records each WAAPI animation the page starts, with its target's card id, before the page's scripts run: the layout's
-// animations run on the real clock and can finish before a test reads getAnimations().
+// Records each WAAPI animation the page starts, with its target's card id and the inline translation it starts from,
+// before the page's scripts run: the layout's animations run on the real clock and can finish before a test reads
+// getAnimations().
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.__animated = [];
     const animate = Element.prototype.animate;
     Element.prototype.animate = function (...args) {
       const animation = animate.apply(this, args);
-      window.__animated.push({ id: this.dataset?.id ?? null, animation });
+      window.__animated.push({ id: this.dataset?.id ?? null, animation, from: this.style.translate });
       return animation;
     };
   });
@@ -21,6 +22,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 const animatedIds = page => page.evaluate(() => window.__animated.map(entry => entry.id));
+
+// The page x at which the FLIP of card `id` starts: the board's content box plus the translation its latest WAAPI
+// animation started from.
+const flipStart = (page, id) =>
+  page.evaluate(id => {
+    const board = document.querySelector(".board");
+    const entry = window.__animated.filter(entry => entry.id === id && entry.from).at(-1);
+    return board.getBoundingClientRect().left + board.clientLeft + parseFloat(entry.from);
+  }, id);
 
 test.afterEach(async ({ page }) => expectNoErrors(page));
 
@@ -107,9 +117,13 @@ test("drag: a card dragged one lane to the right drops into that lane", async ({
     await page.clock.runFor(16);
   }
   await expect(page.locator(card(2))).toHaveClass(/dragging/);
+  const drop = await cardBox(page, card(2));
   await page.mouse.up();
   await page.clock.runFor(32);
   await expect(page.locator(card(2))).toHaveAttribute("data-lane", "1");
+  // The FLIP starts where the card was dropped, not at its old slot in the first lane.
+  expect(drop.x - box.x).toBeGreaterThan(lane.width / 2);
+  expect(Math.abs((await flipStart(page, "2")) - drop.x)).toBeLessThan(4);
   await finishAnimations(page, ".board");
   await page.clock.runFor(1000);
   const dropped = await cardBox(page, card(2));

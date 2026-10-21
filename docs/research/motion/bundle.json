@@ -15,14 +15,14 @@
     },
     "flip": {
       "motion": {
-        "raw": 272699,
-        "gzip": 81533
+        "raw": 272834,
+        "gzip": 81610
       },
       "handWritten": {
         "raw": 270528,
         "gzip": 81030
       },
-      "deltaGzip": 503,
+      "deltaGzip": 580,
       "budgetGzip": 600,
       "withinBudget": true
     }

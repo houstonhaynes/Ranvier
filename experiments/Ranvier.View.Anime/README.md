@@ -119,6 +119,7 @@ let toasts =
 - **Motion parts keep the visual properties.** In a pass where an element under the container carries a Motion part, the layout animates position and size only, and the opacity, colours, borders, filters, clip paths and font size stay with the parts (an opacity `enter` or `presence` under `flip` ends at its last frame). In a pass with no such element, anime's default fades apply. A property named in `properties`, `enterFrom`, `leaveTo` or `swapAt` is always the layout's.
 - **The container is positioned.** anime animates moved rows with `position: absolute` and a translation through the Web Animations API during the animation.
 - **The layout is created on the first recording,** and reverted with the instance.
+- **A dropped row starts from where it was dropped.** `Motion.flipFrom element` starts the element's next FLIP from its current visual box, drag transform included, in place of the transform-free box the recording measures. Call it before the change that moves the row and before the drag position is reset. The box stays on the element until the next pass that measures the element as a row, which starts its FLIP there, with the recorded size, and drops the box; under `Reduced`, where flip stays still, the call returns at once. The element comes from the handler's event or from `Hooks.mounted`.
 
 ## Reactive parts
 
@@ -129,7 +130,7 @@ let toasts =
 | `Motion.draw parameters read` | the stroke of an SVG geometry element, drawn from its start to the fraction `read` returns |
 | `Motion.morph parameters read` | the `d` (path) or `points` (polygon, polyline) of an SVG shape towards the shape `read` returns; each completed morph leaves exactly that shape |
 | `Motion.scroll parameters bind play` | `play`'s tickable linked to an `onScroll` observer of the element (or of `parameters`' target); the observer's progress and in-view state written into the signals of a `ScrollBinding` |
-| `Motion.drag parameters bind` | a draggable element, two-way through a `DragBinding`: dragging, and the end of a release's motion, write `Position`, and a write to `Position` from elsewhere moves the element with its update callback muted, so the write is not echoed |
+| `Motion.drag parameters bind` | a draggable element, two-way through a `DragBinding`: dragging, and the end of a release's motion, write `Position`, and a write to `Position` from elsewhere moves the element with its update callback muted, so the write is not echoed; a grab cancels the running animation of the binding's `Slot` |
 | `Motion.split parameters play` | anime's `splitText` over the element's static text, and `play` over its lines, words or characters |
 
 ```fsharp
@@ -157,7 +158,7 @@ let gauge =
         })
 ```
 
-`follow`'s `parameters` without an entry for `property` give the property the shared duration and ease.
+`follow`'s `parameters` without an entry for `property` give the property the shared duration and ease, and the shared `unit` applies to `property` unless its entry sets its own `unit`: `Motion.follow "x" (AnimatableParams (unit = "%", duration = 420))` moves the element by percentages of its width.
 
 ```fsharp
 type Story =
@@ -202,6 +203,7 @@ let story =
                     {
                         Position = s.Puck
                         Dragging = ValueNone
+                        Slot = ValueNone
                     })
             ) {
                 "drag"
@@ -235,6 +237,65 @@ let chart =
 
 A list row or arm rooted at an SVG tag is an SVG element too, under both commit modes, and SVG names such as `viewBox` are written as given.
 
+## Animations from handlers
+
+An animation started by a handler or an effect, such as a spring home on a click or after a release, belongs to a `MotionSlot`. `Motion.slot ()`, called in the instance's setup, returns one owned by the instance:
+
+- **`slot.Play (fun () -> animation)`** cancels the running animation, then plays the one the function creates; a cancelled animation stops at its current values, its callbacks muted. The slot holds the animation the function returns, and cancels one the function plays through the same slot.
+- **`slot.Stop ()`** cancels the running animation; `slot.Running` is the latest animation played (null after a stop), and `slot.Playing` is true while it is live, played and not yet completed or cancelled (a WAAPI animation reports completion only).
+- **The instance's disposal cancels the running animation** and closes the slot: a later `Play` only cancels.
+- **A grab cancels it.** Given as a `DragBinding`'s `Slot`, a grab cancels the slot's running animation, such as a spring returning the element home.
+
+```fsharp
+/// <summary>A point anime tweens in place.</summary>
+type Point = { mutable x: float; mutable y: float }
+
+type Tile =
+    {
+        Offset: Signal<struct (float * float)>
+        Spring: MotionSlot
+    }
+
+let springHome (tile: Tile) =
+    let graph = Graph.Current
+    let struct (x, y) = Api.untrack (fun () -> tile.Offset.Value)
+    let point = { x = x; y = y }
+
+    tile.Spring.Play (fun () ->
+        Anime.animate (
+            Targets.object point,
+            Anim (
+                x = 0,
+                y = 0,
+                ease = Ease.spring (stiffness = 170., damping = 11.),
+                onUpdate = fun _ -> graph.Batch (fun () -> tile.Offset.Value <- struct (point.x, point.y))
+            )
+        ))
+
+let tile =
+    Component.template
+        (fun _ () ->
+            {
+                Offset = Api.createSignal (struct (0., 0.))
+                Spring = Motion.slot ()
+            })
+        (div () {
+            div (
+                Attrs.className "tile",
+                Motion.drag (DraggableParams ()) (fun t ->
+                    {
+                        Position = t.Offset
+                        Dragging = ValueNone
+                        Slot = ValueSome t.Spring
+                    })
+            ) {
+                "drag"
+            }
+
+            button (Events.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
+        })
+```
+
 ## Reduced motion
 
 `Reactive.policy ()` is the graph's motion policy, seeded from `prefers-reduced-motion` and writable. Under `Reduced`, `enter` and the presets' enters do not play, an exit finishes at once (its element leaves in the pass that retires its row), and `flip` neither records nor animates. `on`, `appear` and the reactive parts play unchanged; a play function that should honour the policy reads `Reactive.policy ()` itself.
@@ -249,9 +310,9 @@ The three hook kinds behind the parts (motion, exit and reflow) add no markup, a
 
 | Entry | Against | Δ gzip | Budget |
 |---|---|--:|--:|
-| rows with `Motion.presence` | the same rows with `Hooks.motion` and `Hooks.exit` calling `animate` by hand | +679 B | 900 B |
-| a list with `Motion.flip` | the same list with `Hooks.reflow` calling `createLayout` by hand | +416 B | 600 B |
+| rows with `Motion.presence` | the same rows with `Hooks.motion` and `Hooks.exit` calling `animate` by hand | +732 B | 900 B |
+| a list with `Motion.flip` | the same list with `Hooks.reflow` calling `createLayout` by hand | +580 B | 600 B |
 
 An entry using one Motion part declares no anime feature class (`AutoLayout`, `Draggable`, `ScrollObserver`, `TextSplitter`, `WAAPIAnimation`, `Timeline`) beyond those of the anime functions that part calls. The emitted module holds no `curry`, `uncurry`, `partialApply` or `createObj`.
 
-**Per instance:** each part adds one placed hook and the anime objects it creates; `follow`, `animateOn`, `draw`, `morph` and `drag` add one core effect.
+**Per instance:** each part adds one placed hook and the anime objects it creates; `follow`, `animateOn`, `draw`, `morph` and `drag` add one core effect; a slot adds one cleanup.

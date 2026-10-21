@@ -40,3 +40,50 @@ let taskList =
 
             div (Attrs.className "progress", Motion.follow "scaleX" (AnimatableParams (duration = 400)) (fun l -> l.Done.Value)) { () }
         })
+
+type Point = { mutable x: float; mutable y: float }
+
+type Handle =
+    {
+        Offset: Signal<struct (float * float)>
+        Spring: MotionSlot
+    }
+
+let springBack (handle: Handle) =
+    let graph = Graph.Current
+    let struct (x, y) = Api.untrack (fun () -> handle.Offset.Value)
+    let point = { x = x; y = y }
+
+    handle.Spring.Play (fun () ->
+        Anime.animate (
+            Targets.object point,
+            Anim (
+                x = 0,
+                y = 0,
+                ease = Ease.spring (stiffness = 200., damping = 14.),
+                onUpdate = fun _ -> graph.Batch (fun () -> handle.Offset.Value <- struct (point.x, point.y))
+            )
+        ))
+
+let handle =
+    Component.template
+        (fun _ () ->
+            {
+                Offset = Api.createSignal (struct (0., 0.))
+                Spring = Motion.slot ()
+            })
+        (div () {
+            div (
+                Attrs.className "handle",
+                Motion.drag (DraggableParams ()) (fun h ->
+                    {
+                        Position = h.Offset
+                        Dragging = ValueNone
+                        Slot = ValueSome h.Spring
+                    })
+            ) {
+                "drag"
+            }
+
+            button (Events.onClick (fun (h: Handle) _ -> springBack h)) { "Back" }
+        })

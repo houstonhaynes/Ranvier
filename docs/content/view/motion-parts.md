@@ -126,16 +126,86 @@ animates them from that layout to the new one once the pass's nodes and commits 
 - **The container is positioned.** anime animates moved rows with `position: absolute` and a
   translation through the Web Animations API.
 - A pass with no recorded layout before it, such as the first, does not animate.
+- **A dropped row starts from where it was dropped.** `Motion.flipFrom element` starts the element's
+  next FLIP from its current visual box, drag transform included, in place of the transform-free box
+  the recording measures. Call it before the change that moves the row and before the drag position
+  is reset, as the kanban example does for a card dropped into another column. The box stays on the
+  element until the next pass that measures the element as a row, which starts its FLIP there with
+  the recorded size and drops the box.
 - The parts mark their elements for `flip` until their cleanup, their exit's end or the pass's layout
   removes the mark. Each flip pass checks every marked element on the page, so its cost grows with
   the number of marked elements. A mount host emptied by other code without disposing the mount keeps
   its marked elements reachable: dispose the mount.
 
+## Animations from handlers
+
+An animation started by an event handler or an effect, such as a spring home after a release,
+belongs to a `MotionSlot`. `Motion.slot ()`, called in the instance's setup, returns one owned by the
+instance.
+
+- `slot.Play (fun () -> animation)` cancels the running animation, then plays the one the function
+  creates. A cancelled animation stops at its current values, its callbacks muted.
+- `slot.Stop ()` cancels the running animation. `slot.Running` is the latest animation played (null
+  after a stop), and `slot.Playing` is true while it is live: played, and not yet completed or
+  cancelled.
+- The instance's disposal cancels the running animation and closes the slot; a later `Play` only
+  cancels.
+- Given as a `DragBinding`'s `Slot`, a grab cancels the slot's running animation.
+
+```fsharp
+type Point = { mutable x: float; mutable y: float }
+
+type Handle =
+    {
+        Offset: Signal<struct (float * float)>
+        Spring: MotionSlot
+    }
+
+let springBack (handle: Handle) =
+    let graph = Graph.Current
+    let struct (x, y) = Api.untrack (fun () -> handle.Offset.Value)
+    let point = { x = x; y = y }
+
+    handle.Spring.Play (fun () ->
+        Anime.animate (
+            Targets.object point,
+            Anim (
+                x = 0,
+                y = 0,
+                ease = Ease.spring (stiffness = 200., damping = 14.),
+                onUpdate = fun _ -> graph.Batch (fun () -> handle.Offset.Value <- struct (point.x, point.y))
+            )
+        ))
+
+let handle =
+    Component.template
+        (fun _ () ->
+            {
+                Offset = Api.createSignal (struct (0., 0.))
+                Spring = Motion.slot ()
+            })
+        (div () {
+            div (
+                Attrs.className "handle",
+                Motion.drag (DraggableParams ()) (fun h ->
+                    {
+                        Position = h.Offset
+                        Dragging = ValueNone
+                        Slot = ValueSome h.Spring
+                    })
+            ) {
+                "drag"
+            }
+
+            button (Events.onClick (fun (h: Handle) _ -> springBack h)) { "Back" }
+        })
+```
+
 ## Reduced motion
 
 Under `Reactive.policy ()` = `Reduced`, enters and the presets' enters do not play, an exit finishes
-at once (its element leaves in the pass that retires its row), and `flip` neither records nor
-animates. `on`, `appear` and the reactive parts play unchanged; a play function that honours the
+at once (its element leaves in the pass that retires its row), `flip` neither records nor
+animates, and `Motion.flipFrom` keeps no box. `on`, `appear` and the reactive parts play unchanged; a play function that honours the
 policy reads `Reactive.policy ()` itself. See [policy](motion-reactive.md#policy).
 
 ## Server rendering and hydration
@@ -148,7 +218,10 @@ template with Motion parts renders the HTML of its twin without them. `taskList`
 ```
 
 Hydration adopts the served elements. `appear` and `enter` leave them as served, and `on` plays.
-`follow` sets its first value at once.
+`follow` sets its first value at once. `follow`'s `parameters` give the followed property their
+shared duration, ease and `unit` unless its own entry sets them:
+`Motion.follow "x" (AnimatableParams (unit = "%", duration = 420))` moves the element by percentages of
+its width.
 
 A page whose template holds event handlers renders under `Omit`; `Reject` refuses listeners, and
 hydration attaches them. The story example renders its whole page that way with
@@ -196,9 +269,8 @@ CI test under jsdom and Playwright:
 | [physics](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Physics.fs) | a thrown `drag` puck and a spring home, chained `follow`, a timeline scrubbed by `Reactive.scrub`, a policy toggle |
 | [routes](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Routes.fs) | hash routing with `presence` page arms and `flip` on the shell |
 
-An animation started by an event handler, such as the kanban and physics springs, has no part to own
-it. The examples hold it in a small slot type of their own
-([`Page.fs`](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Page.fs)):
-starting an animation cancels the running one, and the instance's disposal cancels the last.
+The kanban and physics springs run in a `Motion.slot` given to their draggables as the
+`DragBinding`'s `Slot` (see [animations from handlers](#animations-from-handlers)), and a card
+dropped into another column starts its FLIP at the drop with `Motion.flipFrom`.
 
 Run them from `examples/Ranvier.Motion` with `npm install`, then `npm run dev`.

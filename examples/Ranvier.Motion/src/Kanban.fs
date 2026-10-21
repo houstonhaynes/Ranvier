@@ -188,7 +188,9 @@ type CardRow =
         Position: Signal<struct (float * float)>
         Dragging: Signal<bool>
         /// <summary>The spring returning the card to its slot; a grab or the row's disposal cancels it.</summary>
-        Spring: Page.Slot
+        Spring: MotionSlot
+        /// <summary>The card's element once placed, whose drop box starts its FLIP into another lane.</summary>
+        Element: obj ref
     }
 
 /// <summary>The lane a card dragged by <c>dx</c> pixels lands in, from lane <c>column</c> on lanes <c>width</c> wide.</summary>
@@ -208,7 +210,7 @@ let private leaveCard (_: CardRow) (element: Fable.Core.TS.Dom.Element) =
 let private springHome (graph: Graph) (row: CardRow) (struct (x, y)) =
     let point = Page.point x y
 
-    row.Spring.Start (
+    row.Spring.Play (fun () ->
         Anime.animate (
             Targets.object point,
             Anim (
@@ -217,8 +219,7 @@ let private springHome (graph: Graph) (row: CardRow) (struct (x, y)) =
                 ease = Ease.spring (stiffness = 260., damping = 20.),
                 onUpdate = fun _ -> graph.Batch (fun () -> row.Position.Value <- struct (point.x, point.y))
             )
-        )
-    )
+        ))
 
 let private cardRow (board: Board) =
     Component.template
@@ -230,15 +231,14 @@ let private cardRow (board: Board) =
                     Current = current
                     Position = Api.createSignal (struct (0., 0.))
                     Dragging = Api.createSignal false
-                    Spring = Page.ownedSlot ()
+                    Spring = Motion.slot ()
+                    Element = ref null
                 }
 
             Api.createEffectOn (fun () -> row.Dragging.Value) (fun dragging ->
                 let struct (dx, dy) = Api.untrack (fun () -> row.Position.Value)
 
-                if dragging then
-                    row.Spring.Stop ()
-                elif dx <> 0. || dy <> 0. then
+                if not dragging && (dx <> 0. || dy <> 0.) then
                     let slot = Api.untrack current
 
                     let width =
@@ -250,6 +250,7 @@ let private cardRow (board: Board) =
                     if lane = slot.Card.Column then
                         springHome graph row (struct (dx, dy))
                     else
+                        Motion.flipFrom (unbox row.Element.Value)
                         row.Position.Value <- struct (0., 0.)
                         board.Loop.Dispatch (Move (slot.Card.Id, lane)))
 
@@ -267,7 +268,11 @@ let private cardRow (board: Board) =
                 {
                     Position = row.Position
                     Dragging = ValueSome row.Dragging
-                })
+                    Slot = ValueSome row.Spring
+                }),
+            Hooks.mounted (fun (row: CardRow) element ->
+                row.Element.Value <- box element
+                fun () -> row.Element.Value <- null)
         ) {
             div (Attrs.className "card") {
                 div (Attrs.className "card-top") {

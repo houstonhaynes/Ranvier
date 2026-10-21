@@ -543,6 +543,7 @@ let private dragged =
                 {
                     Position = p.Position
                     Dragging = ValueSome p.Dragging
+                    Slot = ValueNone
                 })
         ) {
             "puck"
@@ -681,6 +682,7 @@ let private livelyRows =
                         {
                             Position = Api.createSignal (struct (0., 0.))
                             Dragging = ValueNone
+                            Slot = ValueNone
                         })
                 ) {
                     span (
@@ -1154,6 +1156,224 @@ let private failingExitUnmarks queued (clock: Clock) =
     mounted.Dispose ()
     equal (0, [ "1" ]) after
 
+type Thrown =
+    {
+        At: Signal<struct (float * float)>
+        Spring: MotionSlot
+    }
+
+[<Emit("({ x: 0 })")>]
+let private tweened () : obj = jsNative
+
+[<Emit("$0.x")>]
+let private xOf (target: obj) : float = jsNative
+
+[<Emit("$0.onGrab($0)")>]
+let private fireGrab (draggable: Draggable) : unit = jsNative
+
+let private thrown =
+    Component.template
+        (fun _ (publish: Thrown -> unit) ->
+            let created =
+                {
+                    At = Api.createSignal (struct (0., 0.))
+                    Spring = Motion.slot ()
+                }
+
+            publish created
+            created)
+        (div (
+            Motion.drag (DraggableParams ()) (fun (t: Thrown) ->
+                {
+                    Position = t.At
+                    Dragging = ValueNone
+                    Slot = ValueSome t.Spring
+                })
+        ) {
+            "puck"
+        })
+
+let private slotOwnsAnimations (clock: Clock) =
+    use graph = new Graph ()
+    let instance: Thrown ref = ref Unchecked.defaultof<Thrown>
+
+    let mounted =
+        mountIn false graph (host ()) (Component.render thrown (fun t -> instance.Value <- t))
+
+    let spring = instance.Value.Spring
+    let draggable = lastDraggable ()
+    let starts = ref 0
+
+    let play (target: obj) =
+        spring.Play (fun () ->
+            starts.Value <- starts.Value + 1
+            Anime.animate (Targets.object target, Anim (x = 100, duration = 1000, ease = Ease.linear)))
+
+    let first = tweened ()
+    play first
+    advance clock 0.
+    advance clock 300.
+    let second = tweened ()
+    play second
+    let replaced = xOf first
+    advance clock 300.
+    let firstHeld = xOf first = replaced && xOf second > 0.
+    fireGrab draggable
+    let grabbed = xOf second, spring.Playing
+    advance clock 300.
+    let secondHeld = xOf second = fst grabbed
+    let third = tweened ()
+    play third
+    let playing = spring.Playing
+    advance clock 100.
+    mounted.Dispose ()
+    let disposed = xOf third
+    advance clock 300.
+    play (tweened ())
+
+    equal
+        ((true, false, true), (true, true, false), 3)
+        ((replaced > 0. && firstHeld, snd grabbed, secondHeld), (playing, xOf third = disposed, spring.Playing), starts.Value)
+
+[<Emit("$0.motionRect = { left: $1, top: $2, width: 300, height: 90 }")>]
+let private placeAt (element: obj) (left: float) (top: float) : unit = jsNative
+
+[<Emit("delete $0.motionRect")>]
+let private unplace (element: obj) : unit = jsNative
+
+[<Emit("$0.style.translate")>]
+let private translateOf (element: obj) : string = jsNative
+
+[<Emit("$0.style.width")>]
+let private widthOf (element: obj) : string = jsNative
+
+[<Emit("$0.motionFrom === undefined")>]
+let private unhinted (element: obj) : bool = jsNative
+
+// Under a `data-rects` parent, motion.test.mjs places the n-th child at x = 200 n.
+let private laned =
+    Component.template
+        (fun _ (state: Rows) -> state)
+        (ul (Attrs.data ("rects", ""), Motion.flip (LayoutParams (duration = 300, ease = Ease.linear))) {
+            forEach id (fun (s: Rows) -> s.Items.Value) (li () { fun (row: unit -> int) -> string (row ()) })
+        })
+
+let private flipStartsFromDrop queued (clock: Clock) =
+    use graph = new Graph ()
+    let state = graph.Run (fun () -> rows [| 1; 2; 3 |])
+    let target = host ()
+    let mounted = mountIn queued graph target (Component.render laned state)
+
+    let rowNamed (name: int) =
+        find
+            target
+            (sprintf
+                "li:nth-of-type(%d)"
+                (Array.findIndex ((=) name) (graph.Run (fun () -> Api.untrack (fun () -> state.Items.Value)))
+                 + 1))
+
+    let drop (name: int) (left: float) (top: float) (order: int array) =
+        let row = rowNamed name
+        placeAt row left top
+        Motion.flipFrom row
+        unplace row
+        write graph mounted (fun () -> state.Items.Value <- order)
+        row
+
+    let dropped = drop 2 380. 12. [| 1; 3; 2 |]
+
+    let first =
+        translateOf dropped, translateOf (rowNamed 3), unhinted dropped, widthOf dropped
+
+    for _ in 1..30 do
+        advance clock 16.
+
+    let again = drop 1 150. 30. [| 3; 1; 2 |]
+    let second = translateOf again, translateOf (rowNamed 3), unhinted again
+    mounted.Dispose ()
+    equal (("380px 12px", "400px 0px", true, "100px"), ("150px 30px", "200px 0px", true)) (first, second)
+
+let private flipHintUnderReduced queued (clock: Clock) =
+    use graph = new Graph ()
+    let state = graph.Run (fun () -> rows [| 1; 2; 3 |])
+    let target = host ()
+    let mounted = mountIn queued graph target (Component.render laned state)
+    let row = rowOf target 2
+    graph.Run (fun () -> (Reactive.policy ()).Value <- Reactive.Reduced)
+    placeAt row 380. 12.
+    graph.Run (fun () -> Motion.flipFrom row)
+    unplace row
+    write graph mounted (fun () -> state.Items.Value <- [| 1; 3; 2 |])
+    graph.Run (fun () -> (Reactive.policy ()).Value <- Reactive.Full)
+    write graph mounted (fun () -> state.Items.Value <- [| 2; 1; 3 |])
+    let start = translateOf row, unhinted row
+    mounted.Dispose ()
+    equal ("400px 0px", true) start
+
+type Offset = { Offset: Signal<float> }
+
+let private followUnit (clock: Clock) =
+    use graph = new Graph ()
+    let target = host ()
+
+    let state =
+        {
+            Offset = graph.Run (fun () -> Api.createSignal 50.)
+        }
+
+    let view =
+        Component.template
+            (fun _ (s: Offset) -> s)
+            (div () {
+                span (Motion.follow "x" (AnimatableParams (unit = "%", duration = 100, ease = Ease.linear)) (fun (s: Offset) -> s.Offset.Value)) {
+                    "shared"
+                }
+
+                b (Motion.follow "x" (AnimatableParams (x = AnimatableProp (unit = "px"), unit = "%")) (fun (s: Offset) -> s.Offset.Value)) { "own" }
+
+                i (Motion.follow "x" (AnimatableParams (x = 400, unit = "%", ease = Ease.linear)) (fun (s: Offset) -> s.Offset.Value)) { "timed" }
+            })
+
+    let mounted = mountIn false graph target (Component.render view state)
+    let shared = find target "span"
+    let own = find target "b"
+    let first = styleOf shared "transform", styleOf own "transform"
+    write graph mounted (fun () -> state.Offset.Value <- 100.)
+    advance clock 0.
+    advance clock 200.
+    let reached = styleOf shared "transform"
+    let timedEarly = styleOf (find target "i") "transform"
+    advance clock 300.
+    let timedReached = styleOf (find target "i") "transform"
+    mounted.Dispose ()
+
+    equal
+        (("translateX(50%)", "translateX(50px)"), "translateX(100%)", (true, "translateX(100%)"))
+        (first, reached, (timedEarly <> timedReached, timedReached))
+
+let private tileSpringsHome (clock: Clock) =
+    use graph = new Graph ()
+    let target = host ()
+    let mounted = mountIn false graph target (Component.render Fixtures.tile ())
+    let draggable = lastDraggable ()
+    draggable.x <- 100.
+    advance clock 16.
+    (find target "button").click()
+    mounted.Flush ()
+    advance clock 0.
+
+    for _ in 1..5 do
+        advance clock 16.
+
+    let moving = draggable.x
+
+    for _ in 1..300 do
+        advance clock 16.
+
+    let settled = draggable.x
+    mounted.Dispose ()
+    equal (true, true) (moving < 100. && moving > 0., abs settled < 0.5)
+
 let private modes (name: string) (check: bool -> Clock -> unit) =
     [|
         for queued in [ false; true ] do
@@ -1200,6 +1420,13 @@ let cases: (string * (Clock -> unit)) array =
             modes "the client mounts RCDATA elements with element children and case-twin attributes without running script" clientMountsServerChecks
             modes "a title row under svg follows the commit mode's documented namespace" titleRows
             modes "flip records before and animates after each pass, without leaving rows, and fades rows with no running Motion part" flipOrder
+            modes "a row given flipFrom starts its FLIP at the dropped box, on the creating pass and on later passes" flipStartsFromDrop
+            modes "flipFrom under Reduced keeps no box for a later pass" flipHintUnderReduced
+            [| "the README tile springs home through its slot", tileSpringsHome |]
+            [|
+                "a slot replaces its animation, a grab cancels it, and disposal cancels it and refuses later plays", slotOwnsAnimations
+                "follow applies the shared unit unless the property names its own", followUnit
+            |]
             [|
                 "follow sets its first value and animates to each write", followReaches
                 "animateOn replaces a running animation and settles on the last value", animateOnReplaces

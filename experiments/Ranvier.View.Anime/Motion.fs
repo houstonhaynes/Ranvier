@@ -18,6 +18,62 @@ type ScrollBinding =
         InView: Signal<bool> voption
     }
 
+/// <summary>
+/// The one animation an instance runs outside its parts, such as a spring a handler starts: playing another cancels the
+/// running one, and the instance's disposal cancels it. A cancelled animation stops at its current values, its
+/// callbacks muted.
+/// </summary>
+/// <remarks>Created by <c>Motion.slot</c>.</remarks>
+[<AllowNullLiteral>]
+type MotionSlot internal () =
+    let mutable running: ITickable = null
+    let mutable closed = false
+
+    /// <summary>The latest animation played, or null before the first play and after a stop.</summary>
+    member _.Running = running
+
+    /// <summary>
+    /// Whether the latest animation is live: played, and not yet completed or cancelled. A delayed or paused animation
+    /// is live.
+    /// </summary>
+    /// <remarks>A WAAPI animation reports completion only, so it stays live after an outside cancel.</remarks>
+    member _.Playing =
+        not (isNull running)
+        && not running.completed
+        && not running.cancelled
+
+    /// <summary>
+    /// Cancels the running animation, then plays the one <c>start</c> creates while the instance is live; after its
+    /// disposal the slot is closed and <c>Play</c> only cancels.
+    /// </summary>
+    /// <remarks>
+    /// The slot holds the animation <c>start</c> returns; one that <c>start</c> plays through the same slot is
+    /// cancelled.
+    /// </remarks>
+    member this.Play(start: unit -> #ITickable) =
+        this.Stop ()
+
+        if not closed then
+            let next = start () :> ITickable
+
+            if
+                not (isNull running)
+                && not (obj.ReferenceEquals (running, next))
+            then
+                running.cancel ()
+
+            running <- next
+
+    /// <summary>Cancels the running animation at its current values.</summary>
+    member _.Stop() =
+        if not (isNull running) then
+            running.cancel ()
+            running <- null
+
+    member internal this.Close() =
+        closed <- true
+        this.Stop ()
+
 /// <summary>The instance signals a draggable element shares with the rest of the instance.</summary>
 [<NoEquality; NoComparison>]
 type DragBinding =
@@ -26,12 +82,15 @@ type DragBinding =
         Position: Signal<struct (float * float)>
         /// <summary>True from grab to release.</summary>
         Dragging: Signal<bool> voption
+        /// <summary>The slot whose running animation a grab cancels, such as the spring a release starts.</summary>
+        Slot: MotionSlot voption
     }
 
 /// <summary>
 /// Template parts that animate elements with anime.js: lifecycle parts (<c>on</c>, <c>appear</c>, <c>enter</c>,
 /// <c>exit</c>, <c>presence</c> and its presets, <c>flip</c>) and reactive parts (<c>follow</c>, <c>animateOn</c>,
-/// <c>draw</c>, <c>morph</c>, <c>scroll</c>, <c>drag</c>, <c>split</c>).
+/// <c>draw</c>, <c>morph</c>, <c>scroll</c>, <c>drag</c>, <c>split</c>), with <c>slot</c> for the animations a handler
+/// starts and <c>flipFrom</c> for a row's FLIP start.
 /// </summary>
 /// <remarks>
 /// Every part creates its anime objects once the element is placed and reverts them when the instance is disposed. On an
@@ -102,6 +161,18 @@ module Motion =
 
     [<Emit("$0.children = $1")>]
     let private measureChildren (layout: AutoLayout) (children: TS.Dom.Element array) : unit = jsNative
+
+    [<Emit("$0.motionFrom = $0.getBoundingClientRect()")>]
+    let private keepBox (element: TS.Dom.Element) : unit = jsNative
+
+    // Moves the recorded box of each child carrying a `flipFrom` box to that box, and removes the box.
+    [<Emit("((l, c) => { for (const e of c) { const r = e.motionFrom; if (r) { delete e.motionFrom; const p = l.oldState.getNode(e).properties; p.x += r.left - p.left; p.y += r.top - p.top; p.left = r.left; p.top = r.top; } } })($0, $1)")>]
+    let private startFrom (layout: AutoLayout) (children: TS.Dom.Element array) : unit = jsNative
+
+    // The parameters without the shared unit, which anime would read as a property, and with the property's own entry,
+    // which takes the shared unit when it sets none.
+    [<Emit("(({unit, ...p}, k) => { const e = p[k]; p[k] = Object.assign({unit}, typeof e === 'number' ? {duration: e} : e); return p; })($0, $1)")>]
+    let private withUnit (parameters: AnimatableParams) (property: string) : AnimatableParams = jsNative
 
     [<Emit("$0.animations[$1].complete()")>]
     let private completeProperty (animatable: Animatable) (property: string) : unit = jsNative
@@ -330,12 +401,16 @@ module Motion =
                         recorded.Value <- not (reduced ())
 
                         if recorded.Value then
+                            let children = liveChildren root departing arriving
+
                             if isNull layout.Value then
-                                layout.Value <- Anime.layout (elementOf node, withKey parameters "children" (liveChildren root departing arriving))
+                                layout.Value <- Anime.layout (elementOf node, withKey parameters "children" children)
                             else
-                                measureChildren layout.Value (liveChildren root departing arriving)
+                                measureChildren layout.Value children
                                 leaveVisuals layout.Value parameters root animated departing arriving
                                 layout.Value.record () |> ignore
+
+                            startFrom layout.Value children
                 After =
                     fun () ->
                         if recorded.Value then
@@ -347,15 +422,42 @@ module Motion =
             })
 
     /// <summary>
+    /// Starts the element's next FLIP from its current visual box, drag transform included, instead of its recorded
+    /// layout box: the next <c>flip</c> pass that measures the element as a row moves it from there to its new place.
+    /// </summary>
+    /// <remarks>
+    /// Call before the change that moves the row, and before the drag position is reset, as for a card dropped into
+    /// another lane. The FLIP keeps the recorded size; only the position moves. The box stays on the element until the
+    /// next pass that measures it as a row; under the ambient graph's <c>Reactive.policy</c> <c>Reduced</c>, where flip
+    /// stays still, the call returns at once.
+    /// </remarks>
+    let flipFrom (element: TS.Dom.Element) : unit =
+        match Graph.TryCurrent with
+        | ValueSome _ when reduced () -> ()
+        | _ -> keepBox element
+
+    /// <summary>
+    /// A slot for the animations the current instance starts outside its parts, from a handler or an effect; call it in
+    /// the instance's setup. The instance's disposal cancels the running animation and closes the slot.
+    /// </summary>
+    /// <remarks>Raises <c>InvalidOperationException</c> inside a pure body, as <c>Api.onCleanup</c> does.</remarks>
+    let slot () : MotionSlot =
+        let created = MotionSlot ()
+        Api.onCleanup created.Close
+        created
+
+    /// <summary>
     /// Animates the element's <c>property</c> to <c>read</c>'s value whenever it changes, from wherever the property is;
     /// the first value is set at once.
     /// </summary>
-    /// <remarks><c>parameters</c> without an entry for <c>property</c> give it the shared defaults.</remarks>
+    /// <remarks>
+    /// <c>parameters</c> without an entry for <c>property</c> give it the shared defaults; the shared <c>unit</c> applies
+    /// to <c>property</c> unless its entry sets its own <c>unit</c>.
+    /// </remarks>
     let follow (property: string) (parameters: AnimatableParams) (read: 'inst -> float) : Part<'native, 'inst> =
         Hooks.motion (
             Func<_, _, _, _>(fun inst node context ->
-                let animatable =
-                    Anime.animatable (targetsOf node, withDefault parameters property (AnimatableProp ()))
+                let animatable = Anime.animatable (targetsOf node, withUnit parameters property)
 
                 let first = ref true
 
@@ -499,7 +601,8 @@ module Motion =
 
     /// <summary>
     /// Makes the element draggable, two-way: dragging, and the end of a release's motion, write <c>Position</c>, and a write to
-    /// <c>Position</c> from elsewhere moves the element without an update callback, so the write is not echoed back.
+    /// <c>Position</c> from elsewhere moves the element without an update callback, so the write is not echoed back. A grab
+    /// cancels the running animation of <c>Slot</c>.
     /// </summary>
     /// <remarks>The draggable requires <c>DOMPoint</c>, <c>DOMMatrix</c> and <c>ResizeObserver</c>.</remarks>
     let drag (parameters: DraggableParams) (bind: 'inst -> DragBinding) : Part<'native, 'inst> =
@@ -514,6 +617,10 @@ module Motion =
 
                 chain draggable "onUpdate" publish
                 whenPositioned draggable publish
+
+                match binding.Slot with
+                | ValueSome owned -> chain draggable "onGrab" (fun _ -> owned.Stop ())
+                | ValueNone -> ()
 
                 match binding.Dragging with
                 | ValueSome dragging ->

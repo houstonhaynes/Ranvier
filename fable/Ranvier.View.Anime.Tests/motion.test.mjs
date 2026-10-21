@@ -36,6 +36,13 @@ for (const type of [dom.window.HTMLElement, dom.window.SVGElement]) {
     return { x: length, y: numbers[1] ?? 0 };
   };
 }
+// An element's box is its `motionRect` when set; the n-th child of a `data-rects` parent sits at x = 200 n.
+const boxOf = dom.window.Element.prototype.getBoundingClientRect;
+dom.window.Element.prototype.getBoundingClientRect = function () {
+  const placed = this.motionRect ?? (this.parentElement?.dataset.rects === undefined ? null
+    : { left: 200 * Array.prototype.indexOf.call(this.parentElement.children, this), top: 0, width: 100, height: 40 });
+  return placed ? { ...placed, x: placed.left, y: placed.top, right: placed.left + placed.width, bottom: placed.top + placed.height } : boxOf.call(this);
+};
 mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1000 });
 
 // The checks read the layout calls, the latest draggable and its position writes, and the latest scroll observer.

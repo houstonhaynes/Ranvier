@@ -134,6 +134,7 @@ let story =
                     {
                         Position = s.Puck
                         Dragging = ValueNone
+                        Slot = ValueNone
                     })
             ) {
                 "drag"
@@ -156,4 +157,52 @@ let chart =
         (svg () {
             path (Motion.draw (AnimatableParams (duration = 300)) (fun c -> c.Fraction.Value)) { () }
             path (Motion.morph (Anim (duration = 300)) (fun c -> c.Line.Value)) { () }
+        })
+
+/// <summary>A point anime tweens in place.</summary>
+type Point = { mutable x: float; mutable y: float }
+
+type Tile =
+    {
+        Offset: Signal<struct (float * float)>
+        Spring: MotionSlot
+    }
+
+let springHome (tile: Tile) =
+    let graph = Graph.Current
+    let struct (x, y) = Api.untrack (fun () -> tile.Offset.Value)
+    let point = { x = x; y = y }
+
+    tile.Spring.Play (fun () ->
+        Anime.animate (
+            Targets.object point,
+            Anim (
+                x = 0,
+                y = 0,
+                ease = Ease.spring (stiffness = 170., damping = 11.),
+                onUpdate = fun _ -> graph.Batch (fun () -> tile.Offset.Value <- struct (point.x, point.y))
+            )
+        ))
+
+let tile =
+    Component.template
+        (fun _ () ->
+            {
+                Offset = Api.createSignal (struct (0., 0.))
+                Spring = Motion.slot ()
+            })
+        (div () {
+            div (
+                Attrs.className "tile",
+                Motion.drag (DraggableParams ()) (fun t ->
+                    {
+                        Position = t.Offset
+                        Dragging = ValueNone
+                        Slot = ValueSome t.Spring
+                    })
+            ) {
+                "drag"
+            }
+
+            button (Events.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
         })

@@ -1,12 +1,10 @@
 /// <summary>
-/// The browser interop the pages share: hosts, element queries, the test handle, the commit mode, and the slot that
-/// owns an animation started by a handler.
+/// The browser interop the pages share: hosts, element queries, the test handle, the commit mode, tweened points and
+/// seeded numbers.
 /// </summary>
 module Page
 
 open Fable.Core
-open global.Ranvier
-open Ranvier.Anime
 open Ranvier.View.Foundation
 open Ranvier.View.Foundation.Scheduling
 
@@ -63,31 +61,3 @@ let nextSeed (seed: int) =
 /// <summary>A number in 0..1 drawn from <c>seed</c>.</summary>
 let unitOf (seed: int) =
     float (seed % 10000) / 10000.
-
-/// <summary>
-/// The one animation a slot runs: starting another cancels the running one, and <c>Stop</c> cancels it. A cancelled
-/// animation calls none of its callbacks again.
-/// </summary>
-[<AllowNullLiteral>]
-type Slot() =
-    let mutable running: ITickable = null
-
-    /// <summary>The running animation, or null.</summary>
-    member _.Running = running
-
-    member _.Start(animation: ITickable) =
-        if not (isNull running) then
-            running.cancel ()
-
-        running <- animation
-
-    member _.Stop() =
-        if not (isNull running) then
-            running.cancel ()
-            running <- null
-
-/// <summary>A slot whose animation is cancelled when the current owner is disposed.</summary>
-let ownedSlot () =
-    let slot = Slot ()
-    Api.onCleanup slot.Stop
-    slot

@@ -169,6 +169,7 @@ let drag (target: HTMLElement) =
                 {
                     Position = b.Position
                     Dragging = ValueNone
+                    Slot = ValueNone
                 })))
 
 let split (target: HTMLElement) =
