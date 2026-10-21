@@ -19,8 +19,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
-        <ProjectReference Include="../../experiments/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
         <ProjectReference Include="../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.1.401" />
     </ItemGroup>

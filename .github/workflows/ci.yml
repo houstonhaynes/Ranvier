@@ -165,10 +165,11 @@ jobs:
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1 -CheckFable
 
-  # The Fable playground and the view layer under experiments/: the jsdom suites (with the view counters defined),
-  # the Chromium suite through Playwright, and the view layer's .NET representation checks. Documentation-only
-  # changes skip it with the other build jobs; everything under examples/Fable.Ranvier.Playground, experiments/,
-  # src/ and tools/Ranvier.Dom.Generate is non-documentation and runs it.
+  # The Fable playground and the view layer (src/Ranvier.View and src/Ranvier.View.Dom, with the checks and the twin
+  # under experiments/): the jsdom suites (with the view counters defined), the Chromium suite through Playwright, and
+  # the view layer's .NET representation checks. Documentation-only changes skip it with the other build jobs;
+  # everything under examples/Fable.Ranvier.Playground, experiments/, src/ and tools/Ranvier.Dom.Generate is
+  # non-documentation and runs it.
   playground:
     name: Playground
     needs: changes
@@ -194,7 +195,7 @@ jobs:
         run: dotnet tool restore
         working-directory: .
       - name: Run the view layer representation checks
-        run: dotnet run --project experiments/Ranvier.View.Foundation/RepresentationChecks.fsproj -c Release
+        run: dotnet run --project experiments/Ranvier.View.Checks/RepresentationChecks.fsproj -c Release
         working-directory: .
       # Compiles every F# sample of the Views and Server docs sections and checks the HTML the pages quote.
       - name: Run the docs view samples

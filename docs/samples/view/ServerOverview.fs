@@ -2,10 +2,9 @@
 module ServerOverview
 
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Sugar
 open Counter
 
 let overview (graph: Graph) (report: exn list -> unit) host (props: CounterProps) =

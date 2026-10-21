@@ -3,11 +3,11 @@ module FrameworkSemantics
 open global.Ranvier
 open Fable.Core.JsInterop
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Authoring
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Authoring
 
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 
 /// <summary>Mounts an input whose value is bound to a signal written by its own input handler, and returns its disposal.</summary>
 let caret (host: HTMLElement) =

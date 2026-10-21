@@ -5,7 +5,7 @@ open Expecto
 open Fable.Core.TS.Dom
 open Ranvier
 open Ranvier.View.Twin
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 open Ranvier.View.Twin.Tests.Fixtures
 
 let private items (session: Session) =
@@ -35,7 +35,7 @@ let tests =
                 use session =
                     Twin.mountView TwinMount.defaults (fun context ->
                         source.Value <- Api.createSignal [| 1; 2; 3; 4; 5 |]
-                        Program.run (Ranvier.View.Foundation.Template.Component.render rows source.Value) context.Backend)
+                        Program.run (Ranvier.View.Template.Component.render rows source.Value) context.Backend)
 
                 let before = items session
                 session.Act (fun () -> source.Value.Value <- [| 1; 2; 5 |])
@@ -119,7 +119,7 @@ let tests =
                 use session =
                     Twin.mountWith
                         { TwinMount.defaults with
-                            Commits = Commits.Queued Ranvier.View.Foundation.Scheduling.CollectAndContinue
+                            Commits = Commits.Queued Ranvier.View.Dom.Scheduling.CollectAndContinue
                         }
                         counter
                         1

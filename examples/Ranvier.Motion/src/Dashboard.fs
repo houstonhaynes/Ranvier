@@ -8,11 +8,10 @@ open System
 open Fable.Core
 open global.Ranvier
 open Ranvier.Anime
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Scheduling
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Scheduling
+open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 /// <summary>One reading of the service; loads are in 0..1.</summary>

@@ -1,5 +1,5 @@
-experiments/Ranvier.View.Foundation/Generated/
-experiments/Ranvier.View.Portable/Generated/
+src/Ranvier.View.Dom/Generated/
+src/Ranvier.View/Generated/
 src/Ranvier.Wire/Vendor/
 # The docs samples keep the layout of the pages they are copied from.
 docs/samples/

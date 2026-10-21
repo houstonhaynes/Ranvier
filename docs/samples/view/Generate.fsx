@@ -35,10 +35,12 @@ let indent (spaces: int) (lines: string list) =
 
 let opens =
     [ "open global.Ranvier"
-      "open Ranvier.View.Foundation"
-      "open Ranvier.View.Foundation.Representation"
-      "open Ranvier.View.Foundation.Template"
-      "open Ranvier.View.Foundation.Sugar" ]
+      "open Ranvier.View"
+      "open Ranvier.View.Sugar" ]
+
+/// The sample opens with the DOM renderer beside the view layer.
+let domOpens =
+    opens |> List.collect (fun line -> if line = "open Ranvier.View" then [ line; "open Ranvier.View.Dom" ] else [ line ])
 
 let header (page: string) (name: string) =
     [ $"/// The F# samples of docs/content/{page}, in page order; a sample that is an excerpt is wrapped in a function."
@@ -107,7 +109,7 @@ let generated: (string * string list) list =
 
       "Lifetimes.fs",
       header "view/lifetimes.md" "Lifetimes"
-      @ ("open Fable.Core.TS" :: opens)
+      @ ("open Fable.Core.TS" :: domOpens)
       @ [ "open Counter"
           ""
           "let mountSynchronous (graph: Graph) (host: Dom.HTMLElement) (report: exn list -> unit) =" ]
@@ -148,7 +150,8 @@ let generated: (string * string list) list =
 
       "StateTransfer.fs",
       header "server/state-transfer.md" "StateTransfer"
-      @ [ "open Ranvier.View.Foundation"
+      @ [ "open Ranvier.View"
+          "open Ranvier.View.Dom"
           "open Counter"
           "open Shared"
           ""
@@ -181,7 +184,7 @@ let generated: (string * string list) list =
 
       "ServerOverview.fs",
       header "server/index.md" "ServerOverview"
-      @ opens
+      @ domOpens
       @ [ "open Counter"
           ""
           "let overview (graph: Graph) (report: exn list -> unit) host (props: CounterProps) =" ]

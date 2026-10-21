@@ -6,7 +6,8 @@ open Shared
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
-open Ranvier.View.Foundation
+open Ranvier.View
+open Ranvier.View.Dom
 
 [<Global "document">]
 let private document: Document = jsNative

@@ -11,7 +11,7 @@ const out = fileURLToPath(new URL("../../../docs/research/authoring-performance/
 const port = 5185;
 if (process.argv.includes("--build")) {
   for (const [args, counters] of [
-    [["dotnet", "build", "../../experiments/Ranvier.View.Foundation/AuthoringPerf/AuthoringPerf.fsproj", "-c", "Release", "-p:RanvierCounters=false", "--nologo"], "false"],
+    [["dotnet", "build", "../../experiments/Ranvier.View.Checks/AuthoringPerf/AuthoringPerf.fsproj", "-c", "Release", "-p:RanvierCounters=false", "--nologo"], "false"],
     [["dotnet", "fickl", "tests/DomTests.fsproj", "--outDir", "generated-authoring-counters", "--configuration", "Release", "--noCache"], "true"],
     [["dotnet", "fickl", "tests/DomTests.fsproj", "--outDir", "generated-tests", "--configuration", "Release", "--noCache"], "false"]
   ]) execFileSync("rtk", args, { cwd, env: { ...process.env, RanvierCounters: counters }, stdio: "inherit", windowsHide: true });
@@ -109,7 +109,7 @@ try {
   }
   const result = { measuredAt: new Date().toISOString(), baseCommit: execFileSync("rtk", ["git", "rev-parse", "HEAD"], { cwd, encoding: "utf8" }).trim(), dirtyExperiment: true, node: process.version, chromium: version, cpu: os.cpus()[0].model, platform: `${os.platform()} ${os.release()}`, warmups: 3, rounds: 11, independentProcesses: 3, configuration: "Release", fable: "5.18.0", unit: "milliseconds per operation", allocationNote: "CDP measures GC-stabilized retained JS heap, not allocation rate; .NET construction uses exact per-thread allocated bytes.", resources, samples, heaps };
   result.dotnet = [0, 1, 2].map(replicate => {
-    const dll = fileURLToPath(new URL("../../../experiments/Ranvier.View.Foundation/AuthoringPerf/bin/Release/net10.0/AuthoringPerf.dll", import.meta.url));
+    const dll = fileURLToPath(new URL("../../../experiments/Ranvier.View.Checks/AuthoringPerf/bin/Release/net10.0/AuthoringPerf.dll", import.meta.url));
     const raw = execFileSync("rtk", ["proxy", "dotnet", dll], { cwd, encoding: "utf8", windowsHide: true, env: { ...process.env, DOTNET_TieredCompilation: "0" } });
     const data = JSON.parse(raw.trim().split("\n").find(line => line.startsWith("{")));
     return { replicate, tieredCompilation: false, ...data };
@@ -127,7 +127,7 @@ try {
     return { width, phase, explicitUs: median(explicit.map(row => row.ms)) * 1000, overloadedUs: median(overloaded.map(row => row.ms)) * 1000, pairedMedianRatio: median(explicit.map(row => overloaded.find(other => other.replicate === row.replicate && other.round === row.round).ms / row.ms)), replicateRatios: [0, 1, 2].map(replicate => median(overloaded.filter(row => row.replicate === replicate).map(row => row.ms)) / median(explicit.filter(row => row.replicate === replicate).map(row => row.ms))) };
   }));
   await mkdir(out, { recursive: true });
-  result.sourceHashes = Object.fromEntries(["benchmarks/authoring-perf.mjs", "tests/AuthoringPerf.fs", "../../experiments/Ranvier.View.Foundation/AuthoringPerfFixtures.fs", "../../experiments/Ranvier.View.Foundation/AuthoringPerf/Program.fs"].map(path => [path, createHash("sha256").update(readFileSync(new URL(path, new URL("../", import.meta.url)))).digest("hex")]));
+  result.sourceHashes = Object.fromEntries(["benchmarks/authoring-perf.mjs", "tests/AuthoringPerf.fs", "../../experiments/Ranvier.View.Checks/AuthoringPerfFixtures.fs", "../../experiments/Ranvier.View.Checks/AuthoringPerf/Program.fs"].map(path => [path, createHash("sha256").update(readFileSync(new URL(path, new URL("../", import.meta.url)))).digest("hex")]));
   await writeFile(`${out}browser-results.json`, JSON.stringify(result, null, 2) + "\n");
 } finally {
   if (browser) await browser.close();

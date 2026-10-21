@@ -3,9 +3,8 @@ module StoryClient
 
 open Fable.Core
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+open Ranvier.View.Dom
 
 [<Emit("($0.firstChild !== null && $0.firstChild.nodeType === 8)")>]
 let private served (host: obj) : bool = jsNative

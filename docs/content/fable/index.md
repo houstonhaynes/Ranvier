@@ -44,7 +44,8 @@ availability of a particular version on NuGet is a separate release step.
 
 **Packages ship the Fable sources.** `Ranvier` and `Ranvier.CSharp` from `0.1.0-preview.6`,
 `Ranvier.Elmish` from `0.1.0-preview.5` and `Ranvier.Query` from `0.1.0-preview.2` contain the
-standalone Fable project files. See [Installation](../guide/installation.md#from-nuget) for the package
+standalone Fable project files, as do the view packages (`Ranvier.View`, `Ranvier.View.Dom`,
+`Ranvier.View.Anime` and `Fable.Ranvier.Anime`) from their first version, `0.1.0-alpha.1`. See [Installation](../guide/installation.md#from-nuget) for the package
 links. Earlier previews do not contain them; use a current version, a local package feed, or a repository
 project reference. The CI consumer script packs temporary packages and demonstrates the local-feed path.
 

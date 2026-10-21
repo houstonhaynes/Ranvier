@@ -38,8 +38,8 @@ cause, its fix and an example.
 ## Where the rules run
 
 - **Ranvier** rules run in a project that references `Ranvier`.
-- **view** rules run in a project that references `Ranvier.View.Portable` or `Ranvier.View.Foundation`, or compiles
-  their sources. The view packages are unpublished, so these rules run in this repository today.
+- **view** rules run in a project that references `Ranvier.View` or `Ranvier.View.Dom`, or compiles
+  their sources, such as the view projects of this repository.
 - **Fable** rules run in a project that Fable compiles. Every Ranvier project references Fable.Core, so the rules
   read the project's own signals instead:
   - a tool manifest (`.config/dotnet-tools.json`, searched upward to the first root manifest) that declares `fable` or

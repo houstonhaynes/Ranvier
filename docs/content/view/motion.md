@@ -3,19 +3,19 @@ title: Animation
 description: "Typed anime.js 4.5.0 bindings for Fable: parameters, values, eases, staggers and timelines."
 ---
 
-:::warning Experimental
-The animation projects are experimental. Reference them as project references from a checkout of
-the repository; their APIs may change.
+:::info Alpha
+The animation packages are alpha releases, version 0.1.0-alpha.1; their APIs may change. See
+[Installation](../guide/installation.md#views).
 :::
 
 Ranvier animates with [anime.js](https://animejs.com) 4.5.0. anime is the engine; Ranvier supplies
 typed F# over it, ownership and signals, and the template parts that tie animations to the lifecycle
 of lists and arms.
 
-| Project | Namespace | Holds | References |
+| Package | Namespace | Holds | Depends on |
 | --- | --- | --- | --- |
-| `src/Fable.Ranvier.Anime` | `Ranvier.Anime` | the bindings, `Reactive` (owners and signals) and `Testing` (a manual clock) | `Ranvier` |
-| `experiments/Ranvier.View.Anime` | `Ranvier.View.Anime` | the `Motion.*` template parts | the view and `Fable.Ranvier.Anime` |
+| `Fable.Ranvier.Anime` | `Ranvier.Anime` | the bindings, `Reactive` (owners and signals) and `Testing` (a manual clock) | `Ranvier` |
+| `Ranvier.View.Anime` | `Ranvier.View.Anime` | the `Motion.*` template parts | `Ranvier.View` and `Fable.Ranvier.Anime` |
 
 Code outside the view, such as a Partas.Solid component, references the bindings alone. Install the
 JavaScript package beside them:

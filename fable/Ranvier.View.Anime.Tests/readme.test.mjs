@@ -1,11 +1,11 @@
-// The F# samples of experiments/Ranvier.View.Anime/README.md are the declarations of Fixtures.fs: the opening block's
+// The F# samples of src/Ranvier.View.Anime/README.md are the declarations of Fixtures.fs: the opening block's
 // lines open Fixtures.fs, and every other block appears in Fixtures.fs verbatim.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8").replace(/\r\n/g, "\n");
-const readme = read("../../experiments/Ranvier.View.Anime/README.md");
+const readme = read("../../src/Ranvier.View.Anime/README.md");
 const fixtures = read("Fixtures.fs");
 const [opening, ...samples] = [...readme.matchAll(/```fsharp\n([\s\S]*?)\n```/g)].map(match => match[1]);
 

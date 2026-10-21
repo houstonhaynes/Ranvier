@@ -4,18 +4,16 @@ open System
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
 
-module FoundationMounting = Ranvier.View.Foundation.Mounting
-module FoundationProgram = Ranvier.View.Foundation.Representation.Program
-module View = Ranvier.View.Foundation.Authoring
-module GeneratedHtml = Ranvier.View.Foundation.Generated.Html
+module FoundationMounting = Ranvier.View.Dom.Mounting
+module FoundationProgram = Ranvier.View.Representation.Program
+module View = Ranvier.View.Dom.Authoring
+module GeneratedHtml = Ranvier.View.Dom.Generated.Html
 module Elements = GeneratedHtml.Program
 module GeneratedAttrs = GeneratedHtml.Attrs
-module FoundationMicrotask = Ranvier.View.Foundation.Microtask
-module FoundationScheduling = Ranvier.View.Foundation.Scheduling
+module FoundationMicrotask = Ranvier.View.Dom.Microtask
+module FoundationScheduling = Ranvier.View.Dom.Scheduling
 
 [<Global "document">]
 let private document: Document = jsNative

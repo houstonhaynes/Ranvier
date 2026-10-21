@@ -94,9 +94,9 @@ try {
       return { width, phase, mode, medianUs: median(rows.map(row => row.ms)) * 1000, byProcessUs };
     })));
     const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
-    const files = ["benchmarks/frameworks/run.mjs", "benchmarks/frameworks/page.mjs", "benchmarks/frameworks/contract.mjs", "benchmarks/frameworks/solid.jsx", "benchmarks/frameworks/react.mjs", "benchmarks/frameworks/vite.config.mjs", "benchmarks/ripple/RipplePerf.fs", "benchmarks/ripple/RipplePerf.fsproj", "tests/FrameworkPerf.fs", "../../experiments/Ranvier.View.Foundation/AuthoringPerfFixtures.fs", "package-lock.json"];
-    files.push(...["Mounting.fs", "Components.fs", "Authoring.fs", "Binding.fs", "Scheduling.fs", "Generated/Html.fs"].map(path => `../../experiments/Ranvier.View.Foundation/${path}`), ...["Representation.fs", "Typed.fs", "Lifetime.fs"].map(path => `../../experiments/Ranvier.View.Portable/${path}`));
-    files.push("../../experiments/Ranvier.View.Foundation/Prepared.fs", "../../experiments/Ranvier.View.Portable/Template.fs", "../../experiments/Ranvier.View.Foundation/TemplateDom.fs");
+    const files = ["benchmarks/frameworks/run.mjs", "benchmarks/frameworks/page.mjs", "benchmarks/frameworks/contract.mjs", "benchmarks/frameworks/solid.jsx", "benchmarks/frameworks/react.mjs", "benchmarks/frameworks/vite.config.mjs", "benchmarks/ripple/RipplePerf.fs", "benchmarks/ripple/RipplePerf.fsproj", "tests/FrameworkPerf.fs", "../../experiments/Ranvier.View.Checks/AuthoringPerfFixtures.fs", "package-lock.json"];
+    files.push(...["Mounting.fs", "Components.fs", "Authoring.fs", "Binding.fs", "Scheduling.fs", "Generated/Html.fs"].map(path => `../../src/Ranvier.View.Dom/${path}`), ...["Representation.fs", "Typed.fs", "Lifetime.fs"].map(path => `../../src/Ranvier.View/${path}`));
+    files.push("../../src/Ranvier.View.Dom/Prepared.fs", "../../src/Ranvier.View/Template.fs", "../../src/Ranvier.View.Dom/TemplateDom.fs");
     if (directDiagnostic) files.push("tests/FrameworkDiagnostics.fs");
     if (nativeDiagnostic) files.push("benchmarks/frameworks/native.mjs");
     const sourceHashes = Object.fromEntries(await Promise.all(files.map(async path => [path, createHash("sha256").update(await readFile(new URL(path, new URL("../../", import.meta.url)))).digest("hex")])));

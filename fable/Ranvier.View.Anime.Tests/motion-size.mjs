@@ -62,7 +62,7 @@ for (const [part, imports] of Object.entries(parts)) {
 const helpers = /\b(curry\d*|uncurry\d*|partialApply|createObj)\b/g;
 const generated = new URL("generated/", here);
 const modules = [
-  ...readdirSync(new URL("experiments/Ranvier.View.Anime/", generated)).map(file => `experiments/Ranvier.View.Anime/${file}`),
+  ...readdirSync(new URL("src/Ranvier.View.Anime/", generated)).map(file => `src/Ranvier.View.Anime/${file}`),
   ...readdirSync(new URL("src/Fable.Ranvier.Anime/", generated)).map(file => `src/Fable.Ranvier.Anime/${file}`)
 ];
 for (const module of modules) {

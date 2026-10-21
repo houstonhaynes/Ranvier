@@ -13,10 +13,8 @@ end of the page builds the same trees. Every sample on this page compiles with t
 ```fsharp
 open Fable.Core.TS
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 ```
 
 ## Elements

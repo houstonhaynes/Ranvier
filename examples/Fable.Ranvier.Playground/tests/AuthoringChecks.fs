@@ -3,15 +3,15 @@ module AuthoringChecks
 open Ranvier
 open Fable.Core.TS.Dom
 open Fable.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Components
-open Ranvier.View.Foundation.Authoring
-open Ranvier.View.Foundation.Generated.Html.Authoring
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Components
+open Ranvier.View.Dom.Authoring
+open Ranvier.View.Dom.Generated.Html.Authoring
 
-module Html = Ranvier.View.Foundation.Generated.Html.Program
-module Attr = Ranvier.View.Foundation.Generated.Html.Attrs
-module Events = Ranvier.View.Foundation.Generated.Html.Events
+module Html = Ranvier.View.Dom.Generated.Html.Program
+module Attr = Ranvier.View.Dom.Generated.Html.Attrs
+module Events = Ranvier.View.Dom.Generated.Html.Events
 
 let private equal expected actual =
     if expected <> actual then

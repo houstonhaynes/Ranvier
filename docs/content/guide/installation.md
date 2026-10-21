@@ -106,14 +106,70 @@ The MVU bridge, `Mvu`, ships as its own package, `Ranvier.Elmish`, which depends
 For typed reactive queries and mutation reconciliation, install `Ranvier.Query` with
 `dotnet add package Ranvier.Query --prerelease`; see [Queries](queries.md).
 
+## Views
+
+The view layer ships as four packages that share one version, `0.1.0-alpha.1`. Each depends on the
+others it needs at exactly that version.
+
+| Package | Holds | Depends on |
+| --- | --- | --- |
+| `Ranvier.View` | Template components, view sugar and server HTML rendering, on .NET and under Fable | `Ranvier`, `Xantham.Fable.Core.TS` |
+| `Ranvier.View.Dom` | Mounting, hydration and the document head in the browser, under Fable | `Ranvier.View` |
+| `Ranvier.View.Anime` | Motion parts for templates over anime.js | `Ranvier.View`, `Fable.Ranvier.Anime` |
+| `Fable.Ranvier.Anime` | Typed anime.js 4.5 bindings | `Ranvier`, `Xantham.Fable.Core.TS` |
+
+A browser app references `Ranvier.View.Dom`; a server, or code shared between server and client,
+references `Ranvier.View`. See [Views](../view/index.md).
+
+```xml
+<PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
+```
+
+:::warning Not on nuget.org yet
+The view packages depend on `Xantham.Fable.Core.TS` 0.2.1, which the Xantham Cloudsmith feed carries and
+nuget.org does not. They ship to nuget.org once `Xantham.Fable.Core.TS` 0.2.1 or later is there; until then
+the release step holds them back. Pack them from a checkout into a local feed:
+
+```bash
+for p in Fable.Ranvier.Anime Ranvier.View Ranvier.View.Dom Ranvier.View.Anime; do
+  dotnet pack src/$p -c Release -o ../ranvier-feed
+done
+```
+
+The application's `nuget.config` then adds the local feed and the Xantham feed beside nuget.org:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="ranvier-local" value="../ranvier-feed" />
+    <add key="xantham-cloudsmith" value="https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json" />
+  </packageSources>
+  <packageSourceMapping>
+    <packageSource key="ranvier-local">
+      <package pattern="Ranvier.View*" />
+      <package pattern="Fable.Ranvier.Anime*" />
+    </packageSource>
+    <packageSource key="xantham-cloudsmith">
+      <package pattern="Xantham.*" />
+    </packageSource>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
+</configuration>
+```
+:::
+
 ## Fable
 
 Package builds include Fable sources and a standalone source project for `Ranvier`,
-`Ranvier.Elmish`, `Ranvier.CSharp` and `Ranvier.Query`, including their `.Traced` variants.
+`Ranvier.Elmish`, `Ranvier.CSharp`, `Ranvier.Query` and the four [view packages](#views), including
+their `.Traced` variants.
 F# projects compiled with Fable use normal NuGet package references. CI compiles and runs
 consumers restored from locally packed packages, so this path does not depend on repository
 build imports. See [Fable](../fable/index.md) for package details, available APIs and JavaScript
-timing and equality differences. No browser renderer is included.
+timing and equality differences. The browser renderer is `Ranvier.View.Dom`.
 
 The published versions listed above do not contain those standalone Fable project files. Until a
 release includes the packaging fix, build packages from the current checkout and restore them from a
@@ -125,7 +181,7 @@ The `Ranvier`, `Ranvier.CSharp`, `Ranvier.Elmish` and `Ranvier.Query` packages, 
 `.Traced` variants, support trimming and Native AOT. CI publishes traced and untraced smoke
 applications on .NET 10 for `linux-x64` and treats trim/AOT warnings as errors.
 That validates this configuration; test your own deployment target and dependencies. Publish with
-`<PublishAot>true</PublishAot>`.
+`<PublishAot>true</PublishAot>`. The view packages carry no trimming or Native AOT annotations.
 
 Trace types print their fields with explicit formatters. On .NET, payload previews use the
 application value's `ToString` implementation, which must also support Native AOT. Arrays and

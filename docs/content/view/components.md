@@ -11,10 +11,8 @@ The samples share this props record and these opens:
 
 ```fsharp
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type CounterProps = { Start: int; Caption: string }
 ```
@@ -29,7 +27,7 @@ type CounterProps = { Start: int; Caption: string }
 | 4 | `Component.define setup (fun t -> ...)` | Templates that need `t.` members, or top-down typing. | None inside `t.` members. |
 
 The README's
-[Declaring components](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Portable/README.md#declaring-components)
+[Declaring components](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#declaring-components)
 section is the reference for each style, with the same counter written four ways.
 
 ### Record with `Create` and `View`

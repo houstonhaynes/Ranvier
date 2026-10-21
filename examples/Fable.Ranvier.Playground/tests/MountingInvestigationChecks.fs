@@ -4,11 +4,11 @@ open System
 open global.Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Authoring
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Authoring
 
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 
 [<Global>]
 let private globalThis: TS.Es.GlobalThis = jsNative

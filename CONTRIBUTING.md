@@ -49,6 +49,16 @@ counts only there, and `Perf-Accepted` on any line of the message:
 When a pull request is squash-merged, a trailer reaches `master` only if it is in the footer of the
 squash commit message.
 
+## Publishing
+
+`dotnet fsi build.fsx -- publish` pushes a package only when each of its dependencies resolves on nuget.org or
+among the packages of the same push ([`feed.cjs`](.github/scripts/feed.cjs)). It holds back the rest, then fails
+naming them. `--dry-publish` lists what a push would accept and refuse.
+
+The view packages (`Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and `Fable.Ranvier.Anime`, with their
+`.Traced` twins) ship once `Xantham.Fable.Core.TS` 0.2.1 or later is on nuget.org. Until then a publish pushes the
+other packages and fails on these eight.
+
 ## Checks on a pull request
 
 | Workflow | Job | Fails when |

@@ -2,8 +2,7 @@
 module Program
 
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 
 let private omit = { Server.Options.defaults with Policy = Omit }
 

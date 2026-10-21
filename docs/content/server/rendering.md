@@ -2,7 +2,7 @@
 title: Rendering
 ---
 
-`Ranvier.View.Foundation.Server` renders a template component to HTML. It compiles for .NET and Fable
+`Ranvier.View.Server` renders a template component to HTML. It compiles for .NET and Fable
 and depends on the DOM types only, which compile on .NET. The samples use the opens from
 [Templates and bindings](../view/templates.md).
 

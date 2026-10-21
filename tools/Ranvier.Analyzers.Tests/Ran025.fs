@@ -5,7 +5,7 @@ open Ranvier.Analyzers
 open Ranvier.Analyzers.Tests.Options
 
 let private header =
-    "module Fixture\nopen Ranvier\nopen Ranvier.View.Foundation\nopen Ranvier.View.Foundation.Scheduling\nopen Ranvier.View.Foundation.Hydration\nlet hydrated graph host definition (failure: CommitFailure) (post: (unit -> unit) -> unit) =\n"
+    "module Fixture\nopen Ranvier\nopen Ranvier.View\nopen Ranvier.View.Dom\nopen Ranvier.View.Dom.Scheduling\nopen Ranvier.View.Dom.Hydration\nlet hydrated graph host definition (failure: CommitFailure) (post: (unit -> unit) -> unit) =\n"
 
 let private findings (body: string) =
     run Analyzers.ran025Cli (context (ranvier.Force ()) (header + body))
@@ -51,7 +51,7 @@ let tests =
 
             test "a project that compiles the view from source is analyzed" {
                 let view =
-                    "namespace Ranvier.View.Foundation\nmodule Scheduling =
+                    "namespace Ranvier.View.Dom\nmodule Scheduling =
     type CommitMode =
         | SynchronousCommits
         | QueuedCommits of int
@@ -61,7 +61,7 @@ module Hydration =
 
                 let caller =
                     "module Fixture
-open Ranvier.View.Foundation
+open Ranvier.View.Dom
 let h () = Hydration.hydrateWith (Scheduling.QueuedCommits 1) ()
 "
 
@@ -69,7 +69,7 @@ let h () = Hydration.hydrateWith (Scheduling.QueuedCommits 1) ()
                     (run Analyzers.ran025Cli (contextOf (plain.Force ()) [ "View.fs", view; "Fixture.fs", caller ])
                      |> List.map _.Code)
                     [ "RAN025" ]
-                    "no Foundation assembly reference"
+                    "no Ranvier.View.Dom assembly reference"
             }
 
             test "a module-level queued mode" {

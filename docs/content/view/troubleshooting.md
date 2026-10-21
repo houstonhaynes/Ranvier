@@ -4,7 +4,7 @@ title: Troubleshooting views
 
 Each entry gives a message or symptom, its cause and the fix. Compile errors of the sugar are listed in
 [Sugar](sugar.md) and the
-[view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Portable/README.md).
+[view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md).
 
 ## Compile errors
 
@@ -24,11 +24,11 @@ used outside an element body, for example as a template root or as `show` conten
 
 **FS0003 on a tag.** A local value has the tag's name, often `p`, `a` or `b`. Rename the value.
 
-**FS0892 on `open Ranvier.View.Foundation.Generated.Html`.** The module requires qualified access.
-Alias it: `module H = Ranvier.View.Foundation.Generated.Html`.
+**FS0892 on `open Ranvier.View.Dom.Generated.Html`.** The module requires qualified access.
+Alias it: `module H = Ranvier.View.Dom.Generated.Html`.
 
 **FS0039: `TemplateBuilder` or `AttributeBuilder` does not define `div` or `className`.** The generated
-members come from `open Ranvier.View.Foundation`. Add it to the file's opens.
+members come from `open Ranvier.View`. Add it to the file's opens.
 
 ## Runtime errors
 

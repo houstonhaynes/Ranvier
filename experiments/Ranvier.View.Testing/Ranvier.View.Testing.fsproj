@@ -14,6 +14,6 @@
         <Compile Include="Expect.fs" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="../Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     </ItemGroup>
 </Project>

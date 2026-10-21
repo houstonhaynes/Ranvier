@@ -2,11 +2,11 @@
 // Requires `npm run compile:tests`: the names are read from the emitted sugar modules.
 import { readFileSync } from "node:fs";
 
-const portable = new URL("../../generated-tests/experiments/Ranvier.View.Portable/", import.meta.url);
-const generatedSource = new URL("../../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.fs", import.meta.url);
+const portable = new URL("../../generated-tests/src/Ranvier.View/", import.meta.url);
+const generatedSource = new URL("../../../../src/Ranvier.View/Generated/HtmlTemplateSugar.fs", import.meta.url);
 
 /** Bundle module paths (as in `//#region` comments and frame `module` fields) of the sugar layer. */
-export const sugarModules = ["experiments/Ranvier.View.Portable/TemplateSugar.js", "experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.js"];
+export const sugarModules = ["src/Ranvier.View/TemplateSugar.js", "src/Ranvier.View/Generated/HtmlTemplateSugar.js"];
 export const isSugarModule = path => sugarModules.some(module => path.endsWith(module));
 
 /** A JavaScript source with comments removed and string and template literals emptied; line breaks are kept. */

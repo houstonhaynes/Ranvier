@@ -182,7 +182,7 @@ try {
     return { operation: name, numerator: top, denominator: bottom, medianRatio: median(sorted), q1: sorted[Math.floor(sorted.length / 4)], q3: sorted[Math.floor(3 * sorted.length / 4)], byProcess: [...Array(processes).keys()].map(r => median(pairs.filter(pair => pair.replicate === r).map(pair => pair.ratio))) };
   }));
   const files = ["benchmarks/frameworks/keyed-rows.mjs", "benchmarks/frameworks/keyed-page.mjs", "benchmarks/frameworks/keyed-solid.jsx", "benchmarks/frameworks/vite.config.mjs", "tests/KeyedRowsPerf.fs", "package-lock.json",
-    ...["Lifetime.fs", "Representation.fs", "Template.fs"].map(path => `../../experiments/Ranvier.View.Portable/${path}`), ...["TemplateDom.fs", "Mounting.fs"].map(path => `../../experiments/Ranvier.View.Foundation/${path}`), "../../src/Ranvier/Core.fs", "../../src/Ranvier/Projections.fs", "../../src/Ranvier/Api.fs", "../../src/Ranvier/Combinators.fs"];
+    ...["Lifetime.fs", "Representation.fs", "Template.fs"].map(path => `../../src/Ranvier.View/${path}`), ...["TemplateDom.fs", "Mounting.fs"].map(path => `../../src/Ranvier.View.Dom/${path}`), "../../src/Ranvier/Core.fs", "../../src/Ranvier/Projections.fs", "../../src/Ranvier/Api.fs", "../../src/Ranvier/Combinators.fs"];
   const result = {
     measuredAt: new Date().toISOString(),
     commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf8" }).trim(),

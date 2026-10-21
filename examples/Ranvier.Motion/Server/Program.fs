@@ -5,8 +5,7 @@
 module Program
 
 open System.IO
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 
 /// <summary>Browser-only parts, the listeners among them, are left to hydration.</summary>
 let options =

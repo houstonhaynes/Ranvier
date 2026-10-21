@@ -1,7 +1,7 @@
 module Ranvier.View.Twin.Tests.SeamTests
 
 open Expecto
-open Ranvier.View.Foundation
+open Ranvier.View
 
 [<Tests>]
 let tests =

@@ -27,9 +27,9 @@ test("import lines are ignored", () => {
 
 test("a changed body is disallowed and a new Native.js is allowed", () => {
   const base = tree({ "Mounting.js": "export const x = 1;\n" });
-  const branch = tree({ "Mounting.js": "export const x = 2;\n", "experiments/Ranvier.View.Portable/Native.js": "export {};\n" });
+  const branch = tree({ "Mounting.js": "export const x = 2;\n", "src/Ranvier.View/Native.js": "export {};\n" });
   const result = diffDirectories(base, branch, defaultAllow);
-  assert.deepEqual(result.differing.sort(), ["Mounting.js", "experiments/Ranvier.View.Portable/Native.js"]);
+  assert.deepEqual(result.differing.sort(), ["Mounting.js", "src/Ranvier.View/Native.js"]);
   assert.deepEqual(result.disallowed, ["Mounting.js"]);
 });
 
@@ -39,7 +39,7 @@ test("fable_modules is skipped", () => {
   assert.deepEqual(diffDirectories(base, branch, defaultAllow).differing, []);
 });
 
-test("a Native.js outside Portable is disallowed", () => {
+test("a Native.js outside Ranvier.View is disallowed", () => {
   const result = diffDirectories(tree({}), tree({ "tests/Native.js": "x\n" }), defaultAllow);
   assert.deepEqual(result.disallowed, ["tests/Native.js"]);
 });

@@ -5,9 +5,8 @@ open System.Threading.Tasks
 open global.Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+open Ranvier.View.Dom
 
 [<Global>]
 let private globalThis: TS.Es.GlobalThis = jsNative

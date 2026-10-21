@@ -3,10 +3,8 @@ module FrameworkMembersPerf
 
 open global.Ranvier
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 open FrameworkPerf
 
 /// <summary>The props of the record-declared row: the fields of <c>FrameworkPerf.PerfProps</c>.</summary>

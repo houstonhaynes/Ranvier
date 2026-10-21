@@ -15,8 +15,8 @@ after(() => {
 for (const [name, check] of cases) test(name, () => check());
 for (const [name, check] of authoringCases) test(name, () => check());
 test("authoring helpers inline into the existing operations", () => {
-  const authoring = readFileSync(new URL("../generated-tests/experiments/Ranvier.View.Foundation/Authoring.js", import.meta.url), "utf8");
-  const html = readFileSync(new URL("../generated-tests/experiments/Ranvier.View.Foundation/Generated/Html.js", import.meta.url), "utf8");
+  const authoring = readFileSync(new URL("../generated-tests/src/Ranvier.View.Dom/Authoring.js", import.meta.url), "utf8");
+  const html = readFileSync(new URL("../generated-tests/src/Ranvier.View.Dom/Generated/Html.js", import.meta.url), "utf8");
   assert.doesNotMatch(authoring, /export function /);
   assert.doesNotMatch(html, /export function Program_/);
   const checks = readFileSync(new URL("../generated-tests/AuthoringChecks.js", import.meta.url), "utf8");

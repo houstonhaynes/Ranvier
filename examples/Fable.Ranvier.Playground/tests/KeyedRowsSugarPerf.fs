@@ -4,10 +4,9 @@ module KeyedRowsSugarPerf
 open global.Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Sugar
 open KeyedRowsPerf
 
 [<Emit("(() => { const next = $1.slice(); next.splice($0, 1); return next; })()")>]

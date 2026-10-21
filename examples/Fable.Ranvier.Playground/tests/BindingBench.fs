@@ -3,9 +3,9 @@ module BindingBench
 open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Scheduling
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Scheduling
 
 type private BenchMount =
     {

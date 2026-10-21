@@ -3,10 +3,10 @@ title: Server rendering
 order: 1
 ---
 
-:::warning Experimental
-Server rendering and hydration are experimental. `Server` lives in `experiments/Ranvier.View.Portable`
-and `Hydration` in `experiments/Ranvier.View.Foundation`; both are consumed from a checkout of the repository, and their
-APIs may change. `Ranvier.Wire`, used for state transfer, is a package.
+:::info Alpha
+`Server` is in the `Ranvier.View` package and `Hydration` in `Ranvier.View.Dom`, both alpha releases
+whose APIs may change. `Ranvier.Wire` holds the codecs for state transfer. See
+[Installation](../guide/installation.md#views).
 :::
 
 A [template component](../view/components.md) renders to HTML on the server and becomes interactive

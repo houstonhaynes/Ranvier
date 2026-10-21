@@ -4,10 +4,10 @@ open global.Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View.Testing
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
+open Ranvier.View.Dom
 
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 
 #if FABLE_COMPILER
 [<Global>]
@@ -337,7 +337,7 @@ let private topLevelList () =
 let private stopClicks (node: HTMLElement) : unit = jsNative
 #else
 let private stopClicks (node: HTMLElement) : unit =
-    Ranvier.View.Foundation.Native.listen node "click" (fun event -> (unbox<Event> event).stopPropagation())
+    Ranvier.View.Native.listen node "click" (fun event -> (unbox<Event> event).stopPropagation())
     |> ignore
 #endif
 

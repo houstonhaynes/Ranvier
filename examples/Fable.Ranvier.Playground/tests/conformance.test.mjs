@@ -1,6 +1,6 @@
 // The shared conformance cases under jsdom. Writes each case's artefacts to generated-conformance/jsdom/<module>/<case>/.
 // Each case starts from an empty document and the harness clock of conformance-host.mjs, as each twin case starts from a
-// fresh twin. One jsdom serves the run, as one document serves a page: Foundation keeps a definition's compiled
+// fresh twin. One jsdom serves the run, as one document serves a page: Ranvier.View.Dom keeps a definition's compiled
 // template on the definition, so a template compiled in one window's document would reach the next case's nodes
 // with the earlier window's prototypes.
 import test, { after, mock } from "node:test";

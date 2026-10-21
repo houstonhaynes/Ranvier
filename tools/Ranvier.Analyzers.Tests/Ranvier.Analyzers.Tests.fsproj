@@ -37,6 +37,6 @@
         <ProjectReference Include="../Ranvier.Analyzers/Ranvier.Analyzers.fsproj" />
         <!-- Copies Ranvier, the view assemblies, Fable.Core and Xantham into the output directory, where the fixtures
              reference them. -->
-        <ProjectReference Include="../../experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     </ItemGroup>
 </Project>

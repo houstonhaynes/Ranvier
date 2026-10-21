@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), zlib = require('node:zlib');
-const { traceMarker, projectPackage, expectedPackages, zipEntries, checkPackage, checkAnalyzerPackage, check } = require('./packages.cjs');
+const { traceMarker, projectPackage, expectedPackages, zipEntries, dependencies, siblingVersionProblems, checkPackage, checkAnalyzerPackage, check } = require('./packages.cjs');
 
 // A zip archive of the entries, the even-indexed ones deflated and the rest stored.
 function zip(entries) {
@@ -47,9 +47,10 @@ const project = `<Project><PropertyGroup>
   <Version>0.1.0-preview.2</Version>
 </PropertyGroup></Project>`;
 
-function nupkg(id, { version = '0.1.0-preview.2', traced = id.endsWith('.Traced'), frameworks = ['net10.0', 'netstandard2.1'] } = {}) {
+function nupkg(id, { version = '0.1.0-preview.2', traced = id.endsWith('.Traced'), frameworks = ['net10.0', 'netstandard2.1'], dependencies = {} } = {}) {
   const dll = Buffer.concat([Buffer.from('MZ'), traced ? traceMarker : Buffer.from('RanvierTrace'), Buffer.from('end')]);
-  const entries = { [`${id}.nuspec`]: `<package><metadata><id>${id}</id><version>${version}</version></metadata></package>` };
+  const group = Object.entries(dependencies).map(([dependency, range]) => `<dependency id="${dependency}" version="${range}" exclude="Build,Analyzers" />`).join('');
+  const entries = { [`${id}.nuspec`]: `<package><metadata><id>${id}</id><version>${version}</version><dependencies><group targetFramework="net10.0">${group}</group></dependencies></metadata></package>` };
   for (const framework of frameworks) entries[`lib/${framework}/Lib.dll`] = dll;
   entries['fable/Lib.fsproj'] = '<Project />';
   return zip(entries);
@@ -61,7 +62,7 @@ const untraced = expected.get('Lib.0.1.0-preview.2.nupkg');
 const traced = expected.get('Lib.Traced.0.1.0-preview.2.nupkg');
 
 test('a project yields its untraced and traced packages at its version', () => {
-  assert.deepEqual(lib, { id: 'Lib', version: '0.1.0-preview.2', assembly: 'Lib', frameworks: ['net10.0', 'netstandard2.1'] });
+  assert.deepEqual(lib, { id: 'Lib', version: '0.1.0-preview.2', assembly: 'Lib', frameworks: ['net10.0', 'netstandard2.1'], exactSiblings: false });
   assert.deepEqual([...expected.keys()], ['Lib.0.1.0-preview.2.nupkg', 'Lib.Traced.0.1.0-preview.2.nupkg']);
   assert.equal(untraced.traced, false);
   assert.equal(traced.traced, true);
@@ -88,6 +89,50 @@ test('a wrong id, version or framework set fails', () => {
   assert.deepEqual(checkPackage(nupkg('Lib', { frameworks: ['net10.0'] }), untraced), [
     'Lib: lib frameworks are [net10.0], expected [net10.0,netstandard2.1]',
     'Lib: missing lib/netstandard2.1/Lib.dll',
+  ]);
+});
+test('a nuspec lists each dependency once with its range', () => {
+  const entries = zipEntries(nupkg('Lib', { dependencies: { Core: '[1.0.0]', 'FSharp.Core': '8.0.100' } }));
+  const manifest = entries.get('Lib.nuspec')().toString();
+  assert.deepEqual([...dependencies(manifest)], [['Core', '[1.0.0]'], ['FSharp.Core', '8.0.100']]);
+});
+test('a package depends on the src packages of its own trace build', () => {
+  const core = projectPackage(project.replace(/Lib/g, 'Core').replace('0.1.0-preview.2', '0.1.0-preview.6'), 'Core');
+  assert.deepEqual(checkPackage(nupkg('Lib.Traced', { dependencies: { 'Core.Traced': '0.1.0-preview.6' } }), traced, [lib, core]), []);
+  assert.deepEqual(checkPackage(nupkg('Lib.Traced', { dependencies: { Core: '0.1.0-preview.6' } }), traced, [lib, core]), [
+    'Lib.Traced: depends on Core, expected Core.Traced',
+  ]);
+  assert.deepEqual(checkPackage(nupkg('Lib', { dependencies: { 'Core.Traced': '0.1.0-preview.6' } }), untraced, [lib, core]), [
+    'Lib: depends on Core.Traced, expected Core',
+  ]);
+});
+const exactProject = (name, version) => projectPackage(project.replace(/Lib/g, name).replace('0.1.0-preview.2', version)
+  .replace('</PropertyGroup>', '<RanvierExactSiblingVersions>true</RanvierExactSiblingVersions></PropertyGroup>'), name);
+test('an exact sibling depends on each other exact sibling at exactly its version', () => {
+  const exact = exactProject('Lib', '0.1.0-preview.2');
+  const sibling = exactProject('Sibling', '0.1.0-preview.2');
+  const core = projectPackage(project.replace(/Lib/g, 'Core').replace('0.1.0-preview.2', '0.1.0-preview.2'), 'Core');
+  const pkg = expectedPackages([exact]).get('Lib.0.1.0-preview.2.nupkg');
+  const projects = [exact, sibling, core];
+  assert.deepEqual(checkPackage(nupkg('Lib', { dependencies: { Sibling: '[0.1.0-preview.2]', Core: '0.1.0-preview.2' } }), pkg, projects), []);
+  assert.deepEqual(checkPackage(nupkg('Lib', { dependencies: { Sibling: '0.1.0-preview.2' } }), pkg, projects), [
+    'Lib: depends on Sibling 0.1.0-preview.2, expected [0.1.0-preview.2]',
+  ]);
+  assert.deepEqual(checkPackage(nupkg('Lib', { dependencies: { Sibling: '0.1.0-preview.2' } }), untraced, projects), []);
+});
+test('a drifted exact sibling is still pinned at its own version', () => {
+  const exact = exactProject('Lib', '0.1.0-preview.2');
+  const sibling = exactProject('Sibling', '0.1.0-preview.3');
+  const pkg = expectedPackages([exact]).get('Lib.0.1.0-preview.2.nupkg');
+  assert.deepEqual(checkPackage(nupkg('Lib', { dependencies: { Sibling: '0.1.0-preview.3' } }), pkg, [exact, sibling]), [
+    'Lib: depends on Sibling 0.1.0-preview.3, expected [0.1.0-preview.3]',
+  ]);
+});
+test('exact-sibling projects must share one version', () => {
+  const core = projectPackage(project.replace(/Lib/g, 'Core').replace('0.1.0-preview.2', '0.1.0-preview.6'), 'Core');
+  assert.deepEqual(siblingVersionProblems([exactProject('Lib', '0.1.0-alpha.1'), exactProject('Sibling', '0.1.0-alpha.1'), core]), []);
+  assert.deepEqual(siblingVersionProblems([exactProject('Lib', '0.1.0-alpha.1'), exactProject('Sibling', '0.1.0-alpha.2'), core]), [
+    'exact-sibling projects have different versions: Lib 0.1.0-alpha.1, Sibling 0.1.0-alpha.2',
   ]);
 });
 test('a directory must hold exactly the expected packages', () => {

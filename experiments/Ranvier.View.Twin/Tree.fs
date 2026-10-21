@@ -15,7 +15,7 @@ type NodeKind =
 exception TwinDomException of name: string * detail: string with
     override this.Message = this.name + ": " + this.detail
 
-/// <summary>A node of a twin document. Each node has one bridged object, the value Foundation sees.</summary>
+/// <summary>A node of a twin document. Each node has one bridged object, the value Ranvier.View.Dom sees.</summary>
 [<AbstractClass; AllowNullLiteral>]
 type TwinNode internal (kind: NodeKind, owner: TwinDocument) =
     let mutable parent: TwinNode = null

@@ -11,8 +11,7 @@ The samples check the counter from [Getting started](getting-started.md).
 ## HTML checks on .NET
 
 ```fsharp
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 open Counter
 
 let private omit = { Server.Options.defaults with Policy = Omit }
@@ -42,9 +41,8 @@ A DOM check is an F# function compiled with Fable. It mounts into a jsdom docume
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+open Ranvier.View.Dom
 open Counter
 
 [<Global "document">]

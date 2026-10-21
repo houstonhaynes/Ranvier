@@ -1,6 +1,6 @@
 // Compiles every ```fsharp block of the view sugar docs page against DomTests.fsproj, one file per `## ` section.
 // Usage: dotnet fsi tools/Ranvier.Dom.Generate/CheckDocs.fsx [readme path]
-// Without an argument, checks experiments/Ranvier.View.Portable/README.md.
+// Without an argument, checks src/Ranvier.View/README.md.
 open System
 open System.Diagnostics
 open System.IO
@@ -12,18 +12,16 @@ let readme =
     if fsi.CommandLineArgs.Length > 1 then
         Path.GetFullPath fsi.CommandLineArgs[1]
     else
-        Path.Combine (root, "experiments/Ranvier.View.Portable/README.md")
+        Path.Combine (root, "src/Ranvier.View/README.md")
 
 let project =
     Path.Combine(root, "examples/Fable.Ranvier.Playground/tests/DomTests.fsproj").Replace('\\', '/')
 
-// The five open lines the docs page assumes for every sample.
+// The open lines the docs page assumes for every sample.
 let opens =
     """open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 """
 
 let fail (message: string) =

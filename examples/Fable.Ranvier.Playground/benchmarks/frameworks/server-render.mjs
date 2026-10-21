@@ -32,7 +32,7 @@ const countRows = (fixture, html) => (html.match(fixture === "component" ? /clas
 
 async function runWorker(replicate) {
   if (typeof globalThis.gc !== "function") throw Error("The worker needs --expose-gc.");
-  const ranvier = await import("../../generated-tests/experiments/Ranvier.View.Portable/Checks/ServerFixtures.js");
+  const ranvier = await import("../../generated-tests/experiments/Ranvier.View.Checks/ServerFixtures.js");
   const solid = await import(pathToFileURL(solidOut).href);
   const renderers = {
     ranvier: { component: ranvier.renderComponentPage, keyed: ranvier.renderKeyedPage },

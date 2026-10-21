@@ -5,7 +5,7 @@ open Ranvier.Analyzers
 open Ranvier.Analyzers.Tests.Options
 
 let private header =
-    "module Fixture\nopen Ranvier\nopen Ranvier.View.Foundation\nopen Ranvier.View.Foundation.Representation\nopen Ranvier.View.Foundation.Template\nopen Ranvier.View.Foundation.Sugar\ntype Page =\n    | Home\n    | About\nlet page = createSignal Home\n"
+    "module Fixture\nopen Ranvier\nopen Ranvier.View\nopen Ranvier.View.Sugar\ntype Page =\n    | Home\n    | About\nlet page = createSignal Home\n"
 
 let private findings (body: string) =
     run Analyzers.ran022Cli (context (ranvier.Force ()) (header + body))

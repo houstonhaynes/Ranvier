@@ -1,7 +1,8 @@
 /// The F# samples of docs/content/server/state-transfer.md, in page order; a sample that is an excerpt is wrapped in a function.
 module StateTransfer
 
-open Ranvier.View.Foundation
+open Ranvier.View
+open Ranvier.View.Dom
 open Counter
 open Shared
 

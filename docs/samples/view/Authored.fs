@@ -2,12 +2,12 @@
 module Authored
 
 open global.Ranvier
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Authoring
+open Ranvier.View
+open Ranvier.View.Dom.Authoring
 
-module H = Ranvier.View.Foundation.Generated.Html
-module Html = Ranvier.View.Foundation.Generated.Html.Program
-module Attr = Ranvier.View.Foundation.Generated.Html.Attrs
+module H = Ranvier.View.Dom.Generated.Html
+module Html = Ranvier.View.Dom.Generated.Html.Program
+module Attr = Ranvier.View.Dom.Generated.Html.Attrs
 
 let rowsView (rows: Signal<(int * string) array>) : Program.View =
     Html.section
@@ -25,11 +25,10 @@ let rowsView (rows: Signal<(int * string) array>) : Program.View =
         |]
 
 let snapshot (rows: Signal<(int * string) array>) : string =
-    Ranvier.View.Foundation.Representation.Html.render Omit (Program.run (rowsView rows))
+    Ranvier.View.Representation.Html.render Omit (Program.run (rowsView rows))
 
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type Card = { Caption: string; Body: Program.View }
 

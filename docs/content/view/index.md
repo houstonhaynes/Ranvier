@@ -3,10 +3,9 @@ title: Views
 order: 1
 ---
 
-:::warning Experimental
-The view layer is experimental. Its projects live under `experiments/` and `src/Fable.Ranvier`, are
-not published as packages, and their APIs may change. Reference them as project references from a
-checkout of the repository.
+:::info Alpha
+The view packages are alpha releases, version 0.1.0-alpha.1; their APIs may change. See
+[Installation](../guide/installation.md#views) for the packages and their package source.
 :::
 
 Ranvier's view layer renders [signals](../guide/signals.fsx), [memos](../guide/memos.md) and
@@ -25,10 +24,8 @@ The same component definition renders in three places:
 
 ```fsharp
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type CounterProps = { Start: int; Label: string }
 
@@ -56,16 +53,16 @@ render effect writes the button's text.
 
 ## Layers and status
 
-| Piece | Project | Status |
+| Piece | Package or project | Status |
 | --- | --- | --- |
-| Template components, server HTML writer | `experiments/Ranvier.View.Portable` | Experimental. Compiles for .NET and Fable. |
-| Builder sugar (free tags, control flow, declarations) | `experiments/Ranvier.View.Portable` (`Ranvier.View.Foundation.Sugar`) | Experimental, opt-in. See [Sugar](sugar.md). |
-| DOM mounting, hydration, document head | `experiments/Ranvier.View.Foundation` | Experimental. Fable only. |
-| Authored views (`Program.View`, `Generated.Html.Program`) | `experiments/Ranvier.View.Foundation` | Experimental. See [Other authoring layers](authored.md). |
-| DOM helper library | `src/Fable.Ranvier` | Proof of concept. See [Other authoring layers](authored.md). |
-| anime.js bindings, owners and signals for animations | `src/Fable.Ranvier.Anime` | Experimental. Compiles for .NET and Fable. See [Animation](motion.md). |
-| Motion template parts | `experiments/Ranvier.View.Anime` | Experimental. See [Motion parts](motion-parts.md). |
-| Wire codecs for state transfer | `src/Ranvier.Wire` | Packaged (`Ranvier.Wire`). See [State transfer](../server/state-transfer.md). |
+| Template components, server HTML writer | `Ranvier.View` | Alpha. Compiles for .NET and Fable. |
+| Builder sugar (free tags, control flow, declarations) | `Ranvier.View` (`Ranvier.View.Sugar`) | Alpha; the primary authoring style. See [Sugar](sugar.md). |
+| DOM mounting, hydration, document head | `Ranvier.View.Dom` | Alpha. Runs under Fable. |
+| Authored views (`Program.View`, `Generated.Html.Program`) | `Ranvier.View.Dom` | Alpha. See [Other authoring layers](authored.md). |
+| DOM helper library | `src/Fable.Ranvier` | Proof of concept, not packaged. See [Other authoring layers](authored.md). |
+| anime.js bindings, owners and signals for animations | `Fable.Ranvier.Anime` | Alpha. Compiles for .NET and Fable. See [Animation](motion.md). |
+| Motion template parts | `Ranvier.View.Anime` | Alpha. See [Motion parts](motion-parts.md). |
+| Wire codecs for state transfer | `Ranvier.Wire` | Preview. See [State transfer](../server/state-transfer.md). |
 | Runnable reference | `examples/Fable.Ranvier.Playground` | Vite app and test suite. |
 
 ## Pages

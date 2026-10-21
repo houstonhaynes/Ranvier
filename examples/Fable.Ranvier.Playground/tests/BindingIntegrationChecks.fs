@@ -4,10 +4,9 @@ open System
 open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Scheduling
-open Ranvier.View.Foundation.Mounting
+open Ranvier.View
+open Ranvier.View.Dom.Scheduling
+open Ranvier.View.Dom.Mounting
 
 let private equal expected actual =
     if expected <> actual then

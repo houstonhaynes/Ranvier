@@ -3,9 +3,8 @@ module PlacementPerf
 
 open global.Ranvier
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+open Ranvier.View.Dom
 
 let private hookedRow =
     Component.define (fun _ (index: unit -> int) -> index) (fun t ->

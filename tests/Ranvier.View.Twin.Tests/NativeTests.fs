@@ -1,7 +1,7 @@
 module Ranvier.View.Twin.Tests.NativeTests
 
 open Expecto
-open Ranvier.View.Foundation
+open Ranvier.View
 
 type private Row = { Id: int }
 

@@ -4,8 +4,8 @@ open System
 open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
+open Ranvier.View.Dom
 
 /// <summary>The renderer scope tree of the baseline, kept with the baseline it measures.</summary>
 type internal Scope private (report: exn list -> unit, release: unit -> unit, parent: Scope option) =

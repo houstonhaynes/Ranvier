@@ -5,9 +5,9 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Core.TS.Dom
 open Ranvier.View.Testing
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Checks
 
 #if FABLE_COMPILER
 [<Global>]
@@ -35,7 +35,7 @@ let private roundTrips (markup: string) : bool =
         string n.nodeType
         + n.nodeName
         + "("
-        + (Ranvier.View.Foundation.Native.childNodesOf n
+        + (Ranvier.View.Native.childNodesOf n
            |> Array.map shape
            |> String.concat ",")
         + ")"
@@ -75,7 +75,7 @@ let private compiledSkeleton () =
     equal 4 compiled.RenderSlots.Length
     equal 2. compiled.Skeleton.childNodes.length
 
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 
 type RowProps =
     {
@@ -1091,11 +1091,11 @@ let private withoutComments (node: HTMLElement) : string =
 let private regionMarkers (node: Node) : int = jsNative
 #else
 let private regionMarkers (node: Node) : int =
-    Ranvier.View.Foundation.Native.childNodesOf node
+    Ranvier.View.Native.childNodesOf node
     |> Array.filter (fun n ->
         n.nodeType = 8.0
-        && (Ranvier.View.Foundation.Native.dataOf n = "["
-            || Ranvier.View.Foundation.Native.dataOf n = "]"))
+        && (Ranvier.View.Native.dataOf n = "["
+            || Ranvier.View.Native.dataOf n = "]"))
     |> Array.length
 #endif
 
@@ -1951,10 +1951,10 @@ let private countInserts (node: Node) : unit -> int =
 let private rowMarkers (node: Node) : obj array = jsNative
 #else
 let private rowMarkers (node: Node) : obj array =
-    Ranvier.View.Foundation.Native.childNodesOf node
+    Ranvier.View.Native.childNodesOf node
     |> Array.filter (fun n ->
         n.nodeType = 8.0
-        && Ranvier.View.Foundation.Native.dataOf n = "ranvier:row")
+        && Ranvier.View.Native.dataOf n = "ranvier:row")
     |> Array.map box
 #endif
 
@@ -3238,7 +3238,7 @@ let private countRemoves () : unit -> int =
 let private childrenOf (node: Node) : obj array = jsNative
 #else
 let private childrenOf (node: Node) : obj array =
-    Ranvier.View.Foundation.Native.childNodesOf node
+    Ranvier.View.Native.childNodesOf node
     |> Array.map box
 #endif
 

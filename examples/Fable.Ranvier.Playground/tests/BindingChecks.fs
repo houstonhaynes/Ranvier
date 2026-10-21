@@ -2,8 +2,9 @@ module BindingChecks
 
 open System
 open Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Scheduling
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Scheduling
 
 let private equal expected actual =
     if expected <> actual then

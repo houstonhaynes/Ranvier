@@ -24,27 +24,17 @@
     <Project Path="examples/Ranvier.Motion/tests/MotionTests.fsproj" />
     <Project Path="examples/Ranvier.Motion/Server/ServerChecks.fsproj" />
   </Folder>
-  <Folder Name="/experiments/">
-    <File Path="experiments/Ranvier.View.Foundation/Generated/Html.fs" />
-  </Folder>
-  <Folder Name="/experiments/Ranvier.View.Foundation/">
-    <Project Path="experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
-    <Project Path="experiments/Ranvier.View.Foundation/RepresentationChecks.fsproj" />
-    <Project Path="experiments/Ranvier.View.Foundation/SnapshotBench/SnapshotBench.fsproj" />
-    <Project Path="experiments/Ranvier.View.Foundation/AuthoringPerf/AuthoringPerf.fsproj" />
+  <Folder Name="/experiments/Ranvier.View.Checks/">
+    <Project Path="experiments/Ranvier.View.Checks/RepresentationChecks.fsproj" />
+    <Project Path="experiments/Ranvier.View.Checks/SnapshotBench/SnapshotBench.fsproj" />
+    <Project Path="experiments/Ranvier.View.Checks/AuthoringPerf/AuthoringPerf.fsproj" />
+    <Project Path="experiments/Ranvier.View.Checks/ServerBench/ServerBench.fsproj" />
   </Folder>
   <Folder Name="/experiments/Ranvier.View.Testing/">
     <Project Path="experiments/Ranvier.View.Testing/Ranvier.View.Testing.fsproj" />
   </Folder>
   <Folder Name="/experiments/Ranvier.View.Twin/">
     <Project Path="experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
-  </Folder>
-  <Folder Name="/experiments/Ranvier.View.Portable/">
-    <Project Path="experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
-    <Project Path="experiments/Ranvier.View.Portable/ServerBench/ServerBench.fsproj" />
-  </Folder>
-  <Folder Name="/experiments/Ranvier.View.Anime/">
-    <Project Path="experiments/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Ranvier.Dom.Generate/Ranvier.Dom.Generate.fsproj" />
@@ -59,6 +49,9 @@
     <Project Path="src/Ranvier.Query/Ranvier.Query.fsproj" />
     <Project Path="src/Ranvier.Wire/Ranvier.Wire.fsproj" />
     <Project Path="src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
+    <Project Path="src/Ranvier.View/Ranvier.View.fsproj" />
+    <Project Path="src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+    <Project Path="src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />

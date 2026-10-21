@@ -1,8 +1,7 @@
 /// The page sample of docs/content/server/deployment.md.
 module ServerPage
 
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 open Counter
 open Shared
 

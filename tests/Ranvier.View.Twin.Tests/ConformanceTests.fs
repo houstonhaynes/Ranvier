@@ -24,7 +24,7 @@ let leftovers (document: TwinDocument) : string list =
             for eventType in Events.listenerTypesOn node do
                 $"{label} '{eventType}' listener"
 
-            for name in Ranvier.View.Foundation.Native.expandoNames (box node.Native) do
+            for name in Ranvier.View.Native.expandoNames (box node.Native) do
                 if name.StartsWith "$$ranvier" then
                     $"{label} expando {name}"
     ]

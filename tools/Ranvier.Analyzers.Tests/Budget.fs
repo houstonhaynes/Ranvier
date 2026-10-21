@@ -71,7 +71,7 @@ let tests =
 
             test "every rule over Template.fs" {
                 budgetOver
-                    "experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj"
+                    "src/Ranvier.View/Ranvier.View.fsproj"
                     "Template.fs"
                     [
                         "Ranvier.dll"

@@ -3,10 +3,8 @@ module ElmishNested
 
 open global.Ranvier
 open Ranvier.Elmish
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type ParentMsg =
     | Bump

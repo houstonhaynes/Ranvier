@@ -27,7 +27,7 @@ let rules: Rule list =
 let enabled (rule: Rule) (options: AnalyzerProjectOptions) (index: Index.FileIndex) : bool =
     Symbols.references rule.Gate options
     || ((rule.Gate = Symbols.Assemblies.View
-         || rule.Gate = Symbols.Assemblies.Foundation)
+         || rule.Gate = Symbols.Assemblies.Dom)
         && index.Calls
            |> Array.exists (fun call -> Symbols.View.isViewMember call.Callee))
 

@@ -24,25 +24,22 @@ let project =
 let prefix =
     """module GeneratedTypeCheck
 open Fable.Core.TS
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-module H = Ranvier.View.Foundation.Generated.Html
-open Ranvier.View.Foundation.Generated.Html.Authoring
-open Ranvier.View.Foundation.Template
+open Ranvier.View
+module H = Ranvier.View.Dom.Generated.Html
+open Ranvier.View.Dom.Generated.Html.Authoring
+open Ranvier.View.Template
 """
 
 // The free sugar is opened without Generated.Html.Authoring (spec §4 scope rule).
 let sugarPrefix =
     """module GeneratedTypeCheck
 open Fable.Core.TS
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 """
 
 let generatedSugar =
-    Regex.Replace (File.ReadAllText (Path.Combine (root, "experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.fs")), @"\s+", " ")
+    Regex.Replace (File.ReadAllText (Path.Combine (root, "src/Ranvier.View/Generated/HtmlTemplateSugar.fs")), @"\s+", " ")
 
 let pairs pattern =
     [
@@ -403,18 +400,18 @@ let tagRoot = Component.template (fun _ () -> ()) (childOf { Start = 4 }).View
 let view = Component.template (fun _ () -> ()) (div () { show (fun _ -> true) (img ()) })
 """
             (Some "FS0193")
-        case "open of Generated.Html" "open Ranvier.View.Foundation.Generated.Html\nlet view = ()" (Some "FS0892")
+        case "open of Generated.Html" "open Ranvier.View.Dom.Generated.Html\nlet view = ()" (Some "FS0892")
         free
             "the sugar, then Generated.Html.Authoring, collides"
             """
-open Ranvier.View.Foundation.Generated.Html.Authoring
+open Ranvier.View.Dom.Generated.Html.Authoring
 let view = Component.template (fun _ () -> ()) (div (Attrs.className "x") { "y" })
 """
             (Some "FS0041")
         free
             "qualified Generated.Html beside the sugar"
             """
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 let tree = H.div Tree.ops [||] [| Tree.ops.Text "x" |]
 let view = Component.template (fun _ () -> ()) (div (Attrs.className "x") { "y" })
 """

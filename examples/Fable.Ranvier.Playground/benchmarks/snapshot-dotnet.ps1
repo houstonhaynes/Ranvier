@@ -6,7 +6,7 @@ $rows = [System.Collections.Generic.List[object]]::new()
 try {
     $env:DOTNET_TieredCompilation = '0'
     for ($replicate = 0; $replicate -lt 3; $replicate++) {
-        $raw = & rtk proxy dotnet run --project (Join-Path $snapshotRoot 'experiments/Ranvier.View.Foundation/SnapshotBench/SnapshotBench.fsproj') --configuration Release
+        $raw = & rtk proxy dotnet run --project (Join-Path $snapshotRoot 'experiments/Ranvier.View.Checks/SnapshotBench/SnapshotBench.fsproj') --configuration Release
         if ($LASTEXITCODE -ne 0) { throw 'Snapshot benchmark failed' }
         $payload = ($raw | Where-Object { $_.StartsWith('{"configuration"') }) | ConvertFrom-Json
         if ($null -eq $payload) { throw 'Snapshot benchmark returned no JSON' }

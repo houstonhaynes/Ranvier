@@ -10,17 +10,17 @@ build DOM in the browser: **authored views**, which construct each instance's DO
 
 An authored view is a `Program.View`: a function over the mount's backend. `Generated.Html.Program`
 holds a constructor for each of the 112 HTML elements, `Generated.Html.Attrs` and the per-element
-modules hold modifiers, and `Ranvier.View.Foundation.Authoring` holds text, components, keyed arrays,
+modules hold modifiers, and `Ranvier.View.Dom.Authoring` holds text, components, keyed arrays,
 branches and boundaries.
 
 ```fsharp
 open global.Ranvier
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Authoring
+open Ranvier.View
+open Ranvier.View.Dom.Authoring
 
-module H = Ranvier.View.Foundation.Generated.Html
-module Html = Ranvier.View.Foundation.Generated.Html.Program
-module Attr = Ranvier.View.Foundation.Generated.Html.Attrs
+module H = Ranvier.View.Dom.Generated.Html
+module Html = Ranvier.View.Dom.Generated.Html.Program
+module Attr = Ranvier.View.Dom.Generated.Html.Attrs
 
 let rowsView (rows: Signal<(int * string) array>) : Program.View =
     Html.section
@@ -47,7 +47,7 @@ let rowsView (rows: Signal<(int * string) array>) : Program.View =
 | `branch key read render` | One instance, kept while its key is equal under `=`. |
 | `boundary pending failed content` | A boundary over authored views. |
 
-`Ranvier.View.Foundation.Generated.Html` requires qualified access; alias it as above.
+`Ranvier.View.Dom.Generated.Html` requires qualified access; alias it as above.
 `Generated.Html.Authoring` adds overloaded `Attrs` and `Props` modules for the authored layer, whose
 members accept a value, a `unit -> 'T` reader, a `Signal<'T>` or a `Memo<'T>`. Keep that open out of
 files that open the [sugar](sugar.md).
@@ -57,7 +57,7 @@ Run an authored view in a mount with `Program.run view context.Backend`, the sam
 
 ```fsharp
 let snapshot (rows: Signal<(int * string) array>) : string =
-    Ranvier.View.Foundation.Representation.Html.render Omit (Program.run (rowsView rows))
+    Ranvier.View.Representation.Html.render Omit (Program.run (rowsView rows))
 ```
 
 ```html
@@ -69,9 +69,8 @@ let snapshot (rows: Signal<(int * string) array>) : string =
 A template embeds a `Program.View` through a view hole, `t.view`:
 
 ```fsharp
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type Card = { Caption: string; Body: Program.View }
 

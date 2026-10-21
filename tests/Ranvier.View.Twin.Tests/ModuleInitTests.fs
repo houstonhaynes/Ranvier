@@ -3,7 +3,8 @@ module Ranvier.View.Twin.Tests.ModuleInitTests
 open System
 open System.Runtime.CompilerServices
 open Expecto
-open Ranvier.View.Foundation
+open Ranvier.View
+open Ranvier.View.Dom
 
 let private startupTypes (assembly: Reflection.Assembly) =
     assembly.GetTypes ()
@@ -30,7 +31,7 @@ let tests =
     testList
         "Module initialisation"
         [
-            testCase "Portable and Foundation initialise on .NET with no host"
+            testCase "Ranvier.View and Ranvier.View.Dom initialise on .NET with no host"
             <| fun () ->
                 for assembly in [ typeof<Scheduling.Queue>.Assembly; typeof<ScopePhase>.Assembly ] do
                     for t in startupTypes assembly do

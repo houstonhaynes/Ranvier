@@ -5,7 +5,7 @@ open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
 open Fable.Ranvier
-open Ranvier.View.Foundation
+open Ranvier.View
 
 let private equal expected actual =
     if expected <> actual then

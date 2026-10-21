@@ -1182,9 +1182,4 @@ let inner (node: TwinNode) : string =
 
 /// <summary>The node's children in Server's escaping, with Server's doubled leading line feed in <c>pre</c>, <c>textarea</c> and <c>listing</c>.</summary>
 let server (node: TwinNode) : string =
-    serialise
-        (Ranvier.View.Foundation.Representation.escapeHtml false)
-        (Ranvier.View.Foundation.Representation.escapeHtml true)
-        true
-        (childrenOf node)
-        (nameOf node)
+    serialise (Ranvier.View.Representation.escapeHtml false) (Ranvier.View.Representation.escapeHtml true) true (childrenOf node) (nameOf node)

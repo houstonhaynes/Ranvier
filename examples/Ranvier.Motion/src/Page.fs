@@ -5,8 +5,9 @@
 module Page
 
 open Fable.Core
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Scheduling
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Scheduling
 
 [<Global>]
 let document: TS.Dom.Document = jsNative

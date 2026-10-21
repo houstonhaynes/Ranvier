@@ -2,10 +2,8 @@
 module CounterExplicit
 
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 open Counter
 
 type Counter = { Count: Signal<int>; Label: string }

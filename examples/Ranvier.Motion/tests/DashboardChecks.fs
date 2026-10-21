@@ -2,8 +2,8 @@
 module DashboardChecks
 
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Scheduling
+open Ranvier.View
+open Ranvier.View.Dom.Scheduling
 open Dashboard
 open Harness
 

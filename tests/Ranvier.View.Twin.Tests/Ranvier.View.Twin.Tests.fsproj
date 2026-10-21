@@ -18,11 +18,11 @@
         <Compile Include="Fixtures.fs" />
         <Compile Include="ClockTests.fs" />
         <Compile Include="SessionTests.fs" />
-        <Compile Include="../../experiments/Ranvier.View.Portable/Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
         <Compile Include="OracleTests.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/RangeChecks.fs" Link="Checks/RangeChecks.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DelegationChecks.fs" Link="Checks/DelegationChecks.fs" />
-        <Compile Include="../../experiments/Ranvier.View.Foundation/Browser.fs" Link="Checks/Browser.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/Browser.fs" Link="Checks/Browser.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TemplateChecks.fs" Link="Checks/TemplateChecks.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TestingApiChecks.fs" Link="Checks/TestingApiChecks.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/BoundaryChecks.fs" Link="Checks/BoundaryChecks.fs" />
@@ -45,8 +45,8 @@
     <ItemGroup>
         <ProjectReference Include="../../src/Ranvier/Ranvier.fsproj" />
         <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
-        <ProjectReference Include="../../experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
-        <ProjectReference Include="../../experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View/Ranvier.View.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
         <ProjectReference Include="../../experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
     </ItemGroup>
 </Project>

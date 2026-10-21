@@ -1,7 +1,7 @@
 namespace Ranvier.View.Twin
 
 open System
-open Ranvier.View.Foundation
+open Ranvier.View
 open Ranvier.View.Testing
 
 /// <summary>A twin document with its clock, installed as the thread's DOM host until the document is disposed.</summary>

@@ -6,7 +6,7 @@ open Ranvier.Analyzers
 open Ranvier.Analyzers.Tests.Options
 
 let private header =
-    "module Fixture\nopen System\nopen Ranvier\nopen Ranvier.View.Foundation\nopen Ranvier.View.Foundation.Representation\nopen Ranvier.View.Foundation.Template\nopen Ranvier.View.Foundation.Sugar\ntype Todo = { Id: int; Label: string }\ntype Plain(id: int) =\n    member _.Id = id\nlet todos = createSignal [| { Id = 1; Label = \"a\" } |]\nlet row = li () { fun (row: unit -> Todo) -> (row ()).Label }\n"
+    "module Fixture\nopen System\nopen Ranvier\nopen Ranvier.View\nopen Ranvier.View.Sugar\ntype Todo = { Id: int; Label: string }\ntype Plain(id: int) =\n    member _.Id = id\nlet todos = createSignal [| { Id = 1; Label = \"a\" } |]\nlet row = li () { fun (row: unit -> Todo) -> (row ()).Label }\n"
 
 let private findings (key: string) =
     let body =
@@ -34,7 +34,7 @@ let tests =
 
             test "the finding's range is the key function" {
                 let range = (findings "fun (_: Todo) -> Guid.NewGuid ()").Head.Range
-                Expect.equal (range.StartLine, range.StartColumn, range.EndColumn) (13, 68, 100) "the key lambda"
+                Expect.equal (range.StartLine, range.StartColumn, range.EndColumn) (11, 68, 100) "the key lambda"
             }
 
             test "Array.findIndex is positional" {

@@ -4,7 +4,7 @@ module PhysicsChecks
 open Fable.Core
 open global.Ranvier
 open Ranvier.Anime
-open Ranvier.View.Foundation
+open Ranvier.View
 open Physics
 open Harness
 

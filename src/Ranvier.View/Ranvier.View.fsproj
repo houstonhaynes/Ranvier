@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+        <OutputType>Library</OutputType>
+        <RootNamespace>Ranvier.View</RootNamespace>
+        <AssemblyName>Ranvier.View</AssemblyName>
+        <PackageId>Ranvier.View</PackageId>
+        <!-- As for Ranvier: the traced build packs as Ranvier.View.Traced and depends on Ranvier.Traced. -->
+        <PackageId Condition="'$(RanvierTrace)' == 'true'">Ranvier.View.Traced</PackageId>
+        <Title>Ranvier.View</Title>
+        <Description>Template components for Ranvier: typed templates, view sugar, keyed lists, arms and boundaries, with server HTML rendering on .NET and under Fable.</Description>
+        <Description Condition="'$(RanvierTrace)' == 'true'">The traced build of Ranvier.View: template components and server rendering for Ranvier. Depends on Ranvier.Traced.</Description>
+        <PackageTags>reactive;signals;view;templates;html;server-rendering;fine-grained;fsharp</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
+        <!-- Ranvier.View, Ranvier.View.Dom, Ranvier.View.Anime and Fable.Ranvier.Anime share this version and depend on
+             each other at exactly it (RanvierExactSiblingVersions, src/Directory.Build.targets). -->
+        <Version>0.1.0-alpha.1</Version>
+        <AssemblyVersion>0.0.0.0</AssemblyVersion>
+        <RanvierExactSiblingVersions>true</RanvierExactSiblingVersions>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Native.fs" />
+        <Compile Include="Lifetime.fs" />
+        <Compile Include="Scope.fs" />
+        <Compile Include="Identity.fs" />
+        <Compile Include="Representation.fs" />
+        <Compile Include="Typed.fs" />
+        <Compile Include="Departures.fs" />
+        <Compile Include="ContentModel.fs" />
+        <Compile Include="Template.fs" />
+        <Compile Include="Generated/HtmlTemplate.fs" />
+        <Compile Include="TemplateSugar.fs" />
+        <Compile Include="Generated/HtmlTemplateSugar.fs" />
+        <Compile Include="SvgSugar.fs" />
+        <Compile Include="Server.fs" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../Ranvier/Ranvier.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Temporary: Xantham.Fable.Core.TS 0.2.x restores from the xantham Cloudsmith feed (nuget.config) until it is
+             published to nuget.org. -->
+        <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Ranvier.View.Dom" />
+        <InternalsVisibleTo Include="RepresentationChecks" />
+        <InternalsVisibleTo Include="ServerBench" />
+        <InternalsVisibleTo Include="Ranvier.View.Twin" />
+        <InternalsVisibleTo Include="Ranvier.View.Twin.Tests" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+        <AssemblyMetadata Include="RanvierTrace" Value="true" />
+    </ItemGroup>
+
+</Project>

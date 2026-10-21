@@ -7,11 +7,10 @@ module Kanban
 open global.Ranvier
 open Ranvier.Anime
 open Ranvier.Elmish
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Scheduling
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Scheduling
+open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 type Card = { Id: int; Title: string; Column: int }

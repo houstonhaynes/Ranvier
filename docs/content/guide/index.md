@@ -105,7 +105,7 @@ Dispatchers move work from other threads onto the graph thread.
 - [Migrating from Elmish](elmish.md): an MVU model read through selector memos, one view at a time.
 - [Queries and mutations](queries.md): shared remote queries, page leases and atomic reconciliation of partial data.
 - [C#](csharp.md): C# factories, XAML bindings and reactive commands.
-- [Views](../view/index.md) and [Server rendering](../server/index.md): experimental template components for the browser DOM, server HTML and hydration.
+- [Views](../view/index.md) and [Server rendering](../server/index.md): template components for the browser DOM, server HTML and hydration, in the alpha `Ranvier.View` packages.
 
 ## Status
 

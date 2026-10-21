@@ -31,6 +31,35 @@ module Spec =
         projects
         |> List.filter _.RelativePath.StartsWith("src")
 
+    /// The source projects in build order. Each tier references source projects of earlier tiers only; the first holds
+    /// the projects that reference none.
+    let sourceTiers =
+        let fullPath (path: string) =
+            System.IO.Path.GetFullPath (System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, path))
+
+        let sources =
+            sourceProjects
+            |> List.map (fun project -> fullPath project.Path)
+            |> Set.ofList
+
+        let references (project: string) =
+            let directory = System.IO.Path.GetDirectoryName project
+
+            System.Text.RegularExpressions.Regex.Matches (System.IO.File.ReadAllText project, "<ProjectReference Include=\"([^\"]+)\"")
+            |> Seq.map (fun found -> fullPath (System.IO.Path.Combine (directory, found.Groups[1].Value.Replace('\\', '/'))))
+            |> Seq.filter sources.Contains
+            |> List.ofSeq
+
+        let rec depth (project: string) : int =
+            match references project with
+            | [] -> 0
+            | referenced -> 1 + (referenced |> List.map depth |> List.max)
+
+        sourceProjects
+        |> List.groupBy (fun project -> depth (fullPath project.Path))
+        |> List.sortBy fst
+        |> List.map snd
+
     /// The source projects that pack: every one except those with `<IsPackable>false</IsPackable>`.
     let packableProjects =
         sourceProjects
@@ -61,9 +90,9 @@ module Spec =
             ]
             "view",
             [
-                "experiments/Ranvier.View.Portable/Ranvier.View.Portable.fsproj"
-                "experiments/Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj"
-                "experiments/Ranvier.View.Anime/Ranvier.View.Anime.fsproj"
+                "src/Ranvier.View/Ranvier.View.fsproj"
+                "src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj"
+                "src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj"
                 "examples/Fable.Ranvier.Playground/Playground.fsproj"
                 "examples/Fable.Ranvier.Playground/tests/DomTests.fsproj"
                 "docs/samples/view/Ranvier.Docs.ViewSamples.fsproj"
@@ -232,10 +261,11 @@ module Stage =
         input {
             let! config = Options.config
 
-            // The core builds once, first; the packages then build in parallel against its outputs.
+            // The core builds once, first; each later tier then builds in parallel against the outputs of the tiers before it.
             let core, packages =
-                Spec.sourceProjects
-                |> List.partition (fun project -> project.Name = "Ranvier")
+                match Spec.sourceTiers with
+                | core :: packages -> core, packages
+                | [] -> [], []
 
             return
                 stage "build" {
@@ -244,12 +274,13 @@ module Stage =
                     for { Name = name; Path = project } in core do
                         stage $"build {name}" { run (cmd $"dotnet build {project} -c {config} -v q") }
 
-                    stage "build packages" {
-                        parallel'
+                    for tier, projects in List.indexed packages do
+                        stage $"build packages, tier {tier + 1}" {
+                            parallel'
 
-                        for { Name = name; Path = project } in packages do
-                            stage $"build {name}" { run (cmd $"dotnet build {project} -c {config} -v q --no-dependencies") }
-                    }
+                            for { Name = name; Path = project } in projects do
+                                stage $"build {name}" { run (cmd $"dotnet build {project} -c {config} -v q --no-dependencies") }
+                        }
                 }
         }
 
@@ -348,9 +379,10 @@ module Stage =
                 }
         }
 
-    /// Pushes every package in the output directory to NuGet, with the key masked in every printed form of the step.
-    /// `--dry-publish` lists them instead, fails when there are none, and pushes nothing, whatever key is set. Without
-    /// a key or `--dry-publish`, the stage is inactive and fails the pipeline.
+    /// Pushes the packages of the output directory whose dependencies all resolve on nuget.org or in the same push, with
+    /// the key masked in every printed form of the step, then fails naming each package it held back.
+    /// `--dry-publish` lists the packages and what a push would accept or refuse, fails when there are none, and pushes
+    /// nothing, whatever key is set. Without a key or `--dry-publish`, the stage is inactive and fails the pipeline.
     let publish =
         input {
             let! apiKey = Options.apiKey
@@ -358,6 +390,8 @@ module Stage =
 
             let directory = Repo.VirtualFileSystem.bin.ToString ()
             let packages = System.IO.Path.Combine (directory, "*.nupkg")
+            // The packages .github/scripts/feed.cjs refuses: a dependency resolves neither on nuget.org nor in this push.
+            let refused = System.IO.Path.Combine (directory, "refused")
 
             return
                 stage "publish" {
@@ -376,15 +410,34 @@ module Stage =
                                     failwith $"No package matches {packages}."
 
                                 for file in files do
-                                    printfn $"Would push {System.IO.Path.GetFileName file}")
+                                    printfn $"Packed {System.IO.Path.GetFileName file}")
+
+                            run "node" $".github/scripts/feed.cjs {directory} --dry"
                         }
                     else
                         whenSome apiKey (fun key ->
                             stage "push" {
+                                run (fun _ ->
+                                    if System.IO.Directory.Exists refused then
+                                        System.IO.Directory.Delete (refused, true))
+
+                                run "node" $".github/scripts/feed.cjs {directory} --refuse {refused}"
+
                                 run (
                                     cmd $"dotnet nuget push {packages} -s https://api.nuget.org/v3/index.json --skip-duplicate"
                                     |> Cmd.secretOption "-k" key
                                 )
+
+                                run (fun _ ->
+                                    let held =
+                                        if System.IO.Directory.Exists refused then
+                                            System.IO.Directory.GetFiles (refused, "*.nupkg")
+                                            |> Array.map System.IO.Path.GetFileName
+                                        else
+                                            [||]
+
+                                    if not (Array.isEmpty held) then
+                                        failwith $"""Not pushed, a dependency is missing from nuget.org: {String.concat ", " held}""")
                             })
                 }
         }

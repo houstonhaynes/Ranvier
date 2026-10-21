@@ -1,6 +1,6 @@
 // Gate 3 of the DOM twin spec (§7.1): the Fable output files that differ between a base and a branch directory,
 // with carriage returns and lines starting `import ` ignored and `fable_modules/` (package output) skipped. Exits 1
-// when a differing file does not match the allowed pattern, by default the Native module of Portable.
+// when a differing file does not match the allowed pattern, by default the Native module of Ranvier.View.
 // Usage: node benchmarks/frameworks/generated-diff.mjs <base dir> <branch dir> [--allow <regex>]
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -22,7 +22,7 @@ const filesUnder = root => {
 const body = path => readFileSync(path, "utf8").replace(/\r/g, "").split("\n").filter(line => !line.startsWith("import ")).join("\n");
 
 /** The allow pattern of the command line when `--allow` is absent. */
-export const defaultAllow = /^experiments\/Ranvier\.View\.Portable\/Native\.js$/;
+export const defaultAllow = /^src\/Ranvier\.View\/Native\.js$/;
 
 export function diffDirectories(base, branch, allow) {
   const names = new Set([...filesUnder(base), ...filesUnder(branch)]);

@@ -19,7 +19,7 @@ const sha = file => createHash("sha256").update(readFileSync(file)).digest("hex"
 const option = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1] ?? ""; };
 
 if (process.argv.includes("--absence")) {
-  const region = /\/\/#region [^\n]*experiments\/Ranvier\.View\.Foundation\/(Inspect|Debug)\.js/;
+  const region = /\/\/#region [^\n]*src\/Ranvier\.View\.Dom\/(Inspect|Debug)\.js/;
   const probe = /\b(ListProbe|ArmProbe|BoundaryProbe|HoleProbe|InstanceProbe|MountProbe)\b/;
   const failures = [];
   for (const entry of ["explicit", "combined"]) {

@@ -13,34 +13,34 @@
     <Compile Include="../../../tests/Ranvier.Tests/ComparerCases.fs" Link="ComparerCases.fs" />
     <Compile Include="DomChecks.fs" />
     <Compile Include="ScheduledChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Native.fs" Link="Native.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Lifetime.fs" Link="Lifetime.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Scope.fs" Link="Scope.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Identity.fs" Link="Identity.fs" />
+    <Compile Include="../../../src/Ranvier.View/Native.fs" Link="Native.fs" />
+    <Compile Include="../../../src/Ranvier.View/Lifetime.fs" Link="Lifetime.fs" />
+    <Compile Include="../../../src/Ranvier.View/Scope.fs" Link="Scope.fs" />
+    <Compile Include="../../../src/Ranvier.View/Identity.fs" Link="Identity.fs" />
     <Compile Include="LifetimeChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Scheduling.fs" Link="Scheduling.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Binding.fs" Link="Binding.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Microtask.fs" Link="Microtask.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Representation.fs" Link="Representation.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Typed.fs" Link="Typed.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Departures.fs" Link="Departures.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/DomEvents.fs" Link="DomEvents.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/ContentModel.fs" Link="ContentModel.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Template.fs" Link="Template.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplate.fs" Link="Generated/HtmlTemplate.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/TemplateSugar.fs" Link="TemplateSugar.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Generated/HtmlTemplateSugar.fs" Link="Generated/HtmlTemplateSugar.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/SvgSugar.fs" Link="SvgSugar.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Server.fs" Link="Server.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Generated/Html.fs" Link="Generated/Html.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Browser.fs" Link="Browser.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Scheduling.fs" Link="Scheduling.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Binding.fs" Link="Binding.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Microtask.fs" Link="Microtask.fs" />
+    <Compile Include="../../../src/Ranvier.View/Representation.fs" Link="Representation.fs" />
+    <Compile Include="../../../src/Ranvier.View/Typed.fs" Link="Typed.fs" />
+    <Compile Include="../../../src/Ranvier.View/Departures.fs" Link="Departures.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/DomEvents.fs" Link="DomEvents.fs" />
+    <Compile Include="../../../src/Ranvier.View/ContentModel.fs" Link="ContentModel.fs" />
+    <Compile Include="../../../src/Ranvier.View/Template.fs" Link="Template.fs" />
+    <Compile Include="../../../src/Ranvier.View/Generated/HtmlTemplate.fs" Link="Generated/HtmlTemplate.fs" />
+    <Compile Include="../../../src/Ranvier.View/TemplateSugar.fs" Link="TemplateSugar.fs" />
+    <Compile Include="../../../src/Ranvier.View/Generated/HtmlTemplateSugar.fs" Link="Generated/HtmlTemplateSugar.fs" />
+    <Compile Include="../../../src/Ranvier.View/SvgSugar.fs" Link="SvgSugar.fs" />
+    <Compile Include="../../../src/Ranvier.View/Server.fs" Link="Server.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Generated/Html.fs" Link="Generated/Html.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/Browser.fs" Link="Browser.fs" />
     <Compile Include="RepresentationChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Prepared.fs" Link="Prepared.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Placement.fs" Link="Placement.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/TemplateDom.fs" Link="TemplateDom.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/DocumentHead.fs" Link="DocumentHead.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Mounting.fs" Link="Mounting.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Hydration.fs" Link="Hydration.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Prepared.fs" Link="Prepared.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Placement.fs" Link="Placement.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/TemplateDom.fs" Link="TemplateDom.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/DocumentHead.fs" Link="DocumentHead.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Mounting.fs" Link="Mounting.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Hydration.fs" Link="Hydration.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/EventSpec.fs" Link="Testing/EventSpec.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Selector.fs" Link="Testing/Selector.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Conformance.fs" Link="Testing/Conformance.fs" />
@@ -55,12 +55,12 @@
     <Compile Include="AttributeChecks.fs" />
     <Compile Include="../benchmarks/BindingBaselineMounting.fs" Link="BindingBaselineMounting.fs" />
     <Compile Include="BindingBench.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Components.fs" Link="Components.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Authoring.fs" Link="Authoring.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/ComponentPortableChecks.fs" Link="ComponentPortableChecks.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Components.fs" Link="Components.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Authoring.fs" Link="Authoring.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/ComponentPortableChecks.fs" Link="ComponentPortableChecks.fs" />
     <Compile Include="ComponentChecks.fs" />
     <Compile Include="AuthoringChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/AuthoringPerfFixtures.fs" Link="AuthoringPerfFixtures.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/AuthoringPerfFixtures.fs" Link="AuthoringPerfFixtures.fs" />
     <Compile Include="AuthoringPerf.fs" />
     <Compile Include="FrameworkPerf.fs" />
     <Compile Include="FrameworkTwinsPerf.fs" />
@@ -88,10 +88,10 @@
     <Compile Include="UnsafeHtmlChecks.fs" />
     <Compile Include="DocumentChecks.fs" />
     <Compile Include="OwnedAsyncChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/ServerChecks.fs" Link="Checks/ServerChecks.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/SugarFixtures.fs" Link="Checks/SugarFixtures.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Portable/Checks/SugarServerChecks.fs" Link="Checks/SugarServerChecks.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/ServerChecks.fs" Link="Checks/ServerChecks.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/SugarFixtures.fs" Link="Checks/SugarFixtures.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/SugarServerChecks.fs" Link="Checks/SugarServerChecks.fs" />
     <Compile Include="HydrationChecks.fs" />
     <Compile Include="PendingRegionChecks.fs" />
     <Compile Include="DepartureChecks.fs" />
@@ -101,10 +101,10 @@
     <Compile Include="ElmishNested.fs" />
     <Compile Include="ElmishNestedChecks.fs" />
     <Compile Include="HydrationPerf.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/ComponentBench.fs" Link="ComponentBench.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/Fixtures.fs" Link="Fixtures.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/ComponentBench.fs" Link="ComponentBench.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/Fixtures.fs" Link="Fixtures.fs" />
     <Compile Include="RepresentationBench.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Foundation/SnapshotBench.fs" Link="SnapshotBench.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Checks/SnapshotBench.fs" Link="SnapshotBench.fs" />
     <Compile Include="ConformanceCases.fs" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />

@@ -2,11 +2,11 @@ module FrameworkPerf
 
 open global.Ranvier
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Generated.Html.Authoring
+open Ranvier.View
+open Ranvier.View.Dom
+open Ranvier.View.Dom.Generated.Html.Authoring
 
-module H = Ranvier.View.Foundation.Generated.Html
+module H = Ranvier.View.Dom.Generated.Html
 
 type internal PerfProps =
     {

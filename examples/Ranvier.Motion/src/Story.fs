@@ -9,10 +9,8 @@ module Story
 open Fable.Core
 open global.Ranvier
 open Ranvier.Anime
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 /// <summary>A section's scroll progress, in 0..1, and whether it is between its thresholds.</summary>

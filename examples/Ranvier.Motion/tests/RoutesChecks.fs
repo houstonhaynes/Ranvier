@@ -2,7 +2,7 @@
 module RoutesChecks
 
 open global.Ranvier
-open Ranvier.View.Foundation
+open Ranvier.View
 open Routes
 open Harness
 

@@ -4,7 +4,7 @@ title: Mounts and lifetimes
 
 A **mount** is a view placed in a DOM element: its nodes, its instances' owners, effects and
 listeners, and a handle that disposes all of them. Mounting runs in the browser under Fable; the
-functions are in `Ranvier.View.Foundation.Mounting`.
+functions are in `Ranvier.View.Dom.Mounting`.
 
 ## Mounting a component
 

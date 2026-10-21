@@ -858,6 +858,6 @@ let ran025: Rule =
     {
         Code = "RAN025"
         Title = "hydrateWith with queued commits"
-        Gate = Symbols.Assemblies.Foundation
+        Gate = Symbols.Assemblies.Dom
         Run = queuedHydration
     }

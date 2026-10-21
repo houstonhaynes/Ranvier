@@ -6,7 +6,7 @@ module Ranvier.View.Twin.Tests.OracleTests
 
 open System.Text.RegularExpressions
 open Expecto
-open Ranvier.View.Foundation
+open Ranvier.View
 open Ranvier.View.Twin
 
 let private serverFixtures: string list =

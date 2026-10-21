@@ -93,10 +93,10 @@ module Assemblies =
     let Ranvier = "Ranvier.dll"
 
     [<Literal>]
-    let View = "Ranvier.View.Portable.dll"
+    let View = "Ranvier.View.dll"
 
     [<Literal>]
-    let Foundation = "Ranvier.View.Foundation.dll"
+    let Dom = "Ranvier.View.Dom.dll"
 
     [<Literal>]
     let Fable = "Fable.Core.dll"
@@ -622,16 +622,24 @@ module Core =
 
 /// The view layer's builders, sugar and definitions.
 module View =
-    /// The namespace of the view layer.
+    /// The namespace of the view layer's templates, sugar and server rendering.
     [<Literal>]
-    let Root = "Ranvier.View.Foundation"
+    let Root = "Ranvier.View"
+
+    /// The namespace of the DOM renderer: mounting, hydration and scheduling.
+    [<Literal>]
+    let Dom = Root + ".Dom"
+
+    /// The namespaces under `Root` outside the view layer's rule surface.
+    let private outside =
+        [ Root + ".Anime."; Root + ".Twin."; Root + ".Testing."; Root + ".Checks." ]
 
     open FSharp.Compiler.Symbols.FSharpExprPatterns
 
     /// Raises `InvalidOperationException` when the HTML parser restructures `tag` under `ancestors` (nearest first, lower
     /// case).
     let checkNesting (ancestors: string list) (tag: string) : unit =
-        Ranvier.View.Foundation.ContentModel.check ancestors tag
+        Ranvier.View.ContentModel.check ancestors tag
 
     [<Literal>]
     let Builder = Root + ".Template.TemplateBuilder`1"
@@ -670,20 +678,26 @@ module View =
     let Source = Root + ".Template.Source`2"
 
     [<Literal>]
-    let Hydration = Root + ".Hydration"
+    let Hydration = Dom + ".Hydration"
 
     [<Literal>]
-    let Microtask = Root + ".Microtask"
+    let Microtask = Dom + ".Microtask"
 
     [<Literal>]
-    let CommitMode = Root + ".Scheduling.CommitMode"
+    let CommitMode = Dom + ".Scheduling.CommitMode"
 
     [<Literal>]
     let ComponentTag = Root + ".Sugar.Builders.ComponentTag`2"
 
     /// Whether `m` belongs to the view layer, by its enclosing entity's namespace.
     let isViewMember (m: FSharpMemberOrFunctionOrValue) : bool =
-        enclosing(m).StartsWith(Root + ".", StringComparison.Ordinal)
+        let entity = enclosing m
+
+        entity.StartsWith (Root + ".", StringComparison.Ordinal)
+        && not (
+            outside
+            |> List.exists (fun prefix -> entity.StartsWith (prefix, StringComparison.Ordinal))
+        )
 
     /// Whether argument `index` of a call of `m` is read per region read: the arms of `matchWith` and `branch`, the
     /// key and items of `each`, `forEach` and `forEachFixed`.

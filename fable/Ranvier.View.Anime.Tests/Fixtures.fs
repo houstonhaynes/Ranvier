@@ -1,12 +1,10 @@
-/// <summary>The samples of experiments/Ranvier.View.Anime/README.md, in page order.</summary>
+/// <summary>The samples of src/Ranvier.View.Anime/README.md, in page order.</summary>
 module Fixtures
 
 open global.Ranvier
 open Ranvier.Anime
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 type Card = { Id: int; Title: string }

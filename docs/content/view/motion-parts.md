@@ -6,16 +6,14 @@ description: Template parts that animate elements on placement, on entering and 
 `Ranvier.View.Anime` animates the elements of a sugar template. Each `Motion.*` function returns a
 part, given to a tag beside its attributes and events. A part creates its anime objects once the
 element is placed, and the instance's disposal reverts them. The
-[Motion parts reference](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Anime/README.md)
+[Motion parts reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Anime/README.md)
 documents every part with a sample; this page covers the rules they share.
 
 ```fsharp
 open global.Ranvier
 open Ranvier.Anime
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 type Task = { Id: int; Title: string }

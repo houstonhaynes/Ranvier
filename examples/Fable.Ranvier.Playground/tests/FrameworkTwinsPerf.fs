@@ -3,8 +3,7 @@ module FrameworkTwinsPerf
 
 open global.Ranvier
 open Fable.Core.TS.Dom
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
+open Ranvier.View
 open FrameworkPerf
 
 type PerfRowMembersTwinProps =

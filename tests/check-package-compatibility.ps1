@@ -18,14 +18,22 @@ New-Item -ItemType Directory -Path $feed, $consumer | Out-Null
     <clear />
     <add key="local" value="$feed" />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <!-- Temporary: Ranvier.View and Fable.Ranvier.Anime depend on Xantham.Fable.Core.TS 0.2.x, which restores from the
+         Xantham Cloudsmith feed until it is published to nuget.org. -->
+    <add key="xantham-cloudsmith" value="https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json" />
   </packageSources>
 </configuration>
 "@ | Set-Content -LiteralPath (Join-Path $consumer 'NuGet.Config')
+# The view packages, in dependency order: each pins its view dependencies at their exact version, so those pack first.
+$viewPackages = @('Fable.Ranvier.Anime', 'Ranvier.View', 'Ranvier.View.Dom', 'Ranvier.View.Anime')
+$viewConsumer = Join-Path $temp 'view-consumer'
+New-Item -ItemType Directory -Path $viewConsumer | Out-Null
 try {
     $fableEntries = @()
     foreach ($traced in @($false, $true)) {
         $references = @()
-        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query', 'Ranvier.Wire')) {
+        $viewReferences = @()
+        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query', 'Ranvier.Wire') + $viewPackages) {
             $project = Join-Path $repo "src/$name/$name.fsproj"
             Invoke-DotNet pack $project -c Release "-p:RanvierTrace=$($traced.ToString().ToLowerInvariant())" -o $feed
             $id = if ($traced) { "$name.Traced" } else { $name }
@@ -56,7 +64,11 @@ try {
                     if ($dependency.version -ne '8.0.100') { throw "$id requires FSharp.Core $($dependency.version), expected 8.0.100" }
                 }
             } finally { $archive.Dispose() }
-            $references += "<PackageReference Include=`"$id`" Version=`"$version`" />"
+            if ($viewPackages -contains $name) {
+                $viewReferences += "<PackageReference Include=`"$id`" Version=`"$version`" />"
+            } else {
+                $references += "<PackageReference Include=`"$id`" Version=`"$version`" />"
+            }
         }
         @"
 <Project Sdk="Microsoft.NET.Sdk">
@@ -93,6 +105,76 @@ System.Console.WriteLine("Package consumer runs with FSharp.Core 8.0.100");
 '@ | Set-Content -LiteralPath (Join-Path $consumer 'Program.cs')
         Invoke-DotNet restore (Join-Path $consumer 'Consumer.csproj') --configfile (Join-Path $consumer 'NuGet.Config')
         Invoke-DotNet run --project (Join-Path $consumer 'Consumer.csproj') -c Release --no-restore
+        # An F# consumer of Ranvier.View.Dom: on .NET it renders a sugar component to HTML; with -CheckFable, Fickl
+        # compiles the same project from the packages' Fable sources and Node renders it again.
+        $viewProject = Join-Path $viewConsumer 'ViewConsumer.fsproj'
+        @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <WarningsAsErrors>NU1605</WarningsAsErrors>
+    <RestorePackagesPath>$temp/packages</RestorePackagesPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="8.0.100" />
+    $($viewReferences | Where-Object { $_ -like '*"Ranvier.View.Dom*' })
+  </ItemGroup>
+</Project>
+"@ | Set-Content -LiteralPath $viewProject
+        @'
+module ViewConsumer
+
+open global.Ranvier
+open Ranvier.View
+open Ranvier.View.Sugar
+open Ranvier.View.Dom
+
+type CounterProps = { Start: int; Label: string }
+
+type Counter =
+    { Count: Signal<int>; Label: string }
+
+    static member Create(_: Setup, props: CounterProps) =
+        { Count = createSignal props.Start; Label = props.Label }
+
+    static member View =
+        div (Attrs.className "counter") {
+            span (Attrs.className "label") { fun c -> c.Label }
+
+            button (Attrs.attribute ("type", "button"), Events.onClick (fun c _ -> c.Count.Value <- c.Count.Value + 1)) {
+                fun c -> string c.Count.Value
+            }
+        }
+
+let counter = Component.ofMembers<Counter, _> ()
+
+let html =
+    Server.render { Server.Options.defaults with Policy = Omit } counter { Start = 3; Label = "Cups" }
+
+let expected =
+    """<!--[r--><div class="counter"><span class="label">Cups</span><button type="button">3</button></div><!--]-->"""
+
+if html <> expected then
+    failwithf "Expected %s; got %s" expected html
+
+let mode: Scheduling.CommitMode = Scheduling.SynchronousCommits
+System.Console.WriteLine $"View package consumer renders with FSharp.Core 8.0.100 and {mode}"
+'@ | Set-Content -LiteralPath (Join-Path $viewConsumer 'Program.fs')
+        Invoke-DotNet restore $viewProject --configfile (Join-Path $consumer 'NuGet.Config')
+        Invoke-DotNet run --project $viewProject -c Release --no-restore
+        if ($CheckFable) {
+            $viewOutput = Join-Path $viewConsumer $(if ($traced) { 'fable-traced' } else { 'fable' })
+            $viewArgs = @('fickl', $viewProject, '-e', '.fs.js', '-o', $viewOutput, '-c', 'Release')
+            if ($traced) { $viewArgs += @('--define', 'RANVIER_TRACE') }
+            Invoke-DotNet @viewArgs
+            '{"type":"module"}' | Set-Content -LiteralPath (Join-Path $viewOutput 'package.json')
+            & node (Join-Path $viewOutput 'Program.fs.js')
+            if ($LASTEXITCODE -ne 0) { throw 'The Fable view package consumer failed' }
+        }
         if ($CheckFable) {
             $fableDirectory = Join-Path $repo 'fable/Ranvier.Tests.Fable'
             $fableConsumer = Join-Path $consumer 'FableConsumer.fsproj'

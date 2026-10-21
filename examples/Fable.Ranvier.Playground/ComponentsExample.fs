@@ -1,14 +1,14 @@
 module ComponentsExample
 
 open global.Ranvier
-open Ranvier.View.Foundation.Authoring
-open Ranvier.View.Foundation.Components
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Generated.Html.Authoring
+open Ranvier.View.Dom.Authoring
+open Ranvier.View.Dom.Components
+open Ranvier.View
+open Ranvier.View.Dom.Generated.Html.Authoring
 open Fable.Core.TS.Dom
 
-module Html = Ranvier.View.Foundation.Generated.Html.Program
-module Events = Ranvier.View.Foundation.Generated.Html.Events
+module Html = Ranvier.View.Dom.Generated.Html.Program
+module Events = Ranvier.View.Dom.Generated.Html.Events
 
 /// <summary>Inputs to a counter instance, including its reactive label and projected child views.</summary>
 type CounterProps =

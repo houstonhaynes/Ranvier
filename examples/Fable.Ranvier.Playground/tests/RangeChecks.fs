@@ -6,9 +6,8 @@ open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View.Testing
 open Fable.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Mounting
+open Ranvier.View
+open Ranvier.View.Dom.Mounting
 
 /// <summary>The elements the range checks build, created in the running case's document.</summary>
 module private Dom =
@@ -37,7 +36,7 @@ let private rejected action =
 let private remove (node: Node) : unit = jsNative
 #else
 let private remove (node: Node) : unit =
-    Ranvier.View.Foundation.Native.removeNode node
+    Ranvier.View.Native.removeNode node
 #endif
 
 #if FABLE_COMPILER
@@ -45,7 +44,7 @@ let private remove (node: Node) : unit =
 let private at (node: Node) (index: int) : Node = jsNative
 #else
 let private at (node: Node) (index: int) : Node =
-    Ranvier.View.Foundation.Native.arrayAt (Ranvier.View.Foundation.Native.childNodesOf node) index
+    Ranvier.View.Native.arrayAt (Ranvier.View.Native.childNodesOf node) index
 #endif
 
 #if FABLE_COMPILER
@@ -68,7 +67,7 @@ let private failAttachment (node: Node) (error: exn) : unit -> unit =
 let private listen (node: HTMLElement) (handler: unit -> unit) : unit -> unit = jsNative
 #else
 let private listen (node: HTMLElement) (handler: unit -> unit) : unit -> unit =
-    Ranvier.View.Foundation.Native.listen node "click" (fun _ -> handler ())
+    Ranvier.View.Native.listen node "click" (fun _ -> handler ())
 #endif
 
 // remove () on the node raises.
@@ -659,12 +658,12 @@ let private movedBeforeStaging () =
 let private describe (node: Node) : string array = jsNative
 #else
 let private describe (node: Node) : string array =
-    Ranvier.View.Foundation.Native.childNodesOf node
+    Ranvier.View.Native.childNodesOf node
     |> Array.map (fun n ->
         match n.nodeType with
         | 1.0 -> (unbox<Element> n).tagName
-        | 3.0 -> "text:" + Ranvier.View.Foundation.Native.dataOf n
-        | _ -> Ranvier.View.Foundation.Native.dataOf n)
+        | 3.0 -> "text:" + Ranvier.View.Native.dataOf n
+        | _ -> Ranvier.View.Native.dataOf n)
 #endif
 
 let private stagedAfterDetachedRoot () =

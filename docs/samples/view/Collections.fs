@@ -3,10 +3,8 @@ module Collections
 
 open Fable.Core.TS
 open global.Ranvier
-open Ranvier.View.Foundation
-open Ranvier.View.Foundation.Representation
-open Ranvier.View.Foundation.Template
-open Ranvier.View.Foundation.Sugar
+open Ranvier.View
+open Ranvier.View.Sugar
 
 type Todo = { Id: int; Label: Signal<string>; Done: Signal<bool> }
 

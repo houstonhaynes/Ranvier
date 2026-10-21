@@ -15,7 +15,7 @@ export default defineConfig({
   plugins: [{
     name: "benchmark-solid-jsx", enforce: "pre",
     async transform(code, id) {
-      if (process.env.RANVIER_SHARED_BACKEND === "true" && id.endsWith("/Ranvier.View.Foundation/Mounting.js")) {
+      if (process.env.RANVIER_SHARED_BACKEND === "true" && id.endsWith("/Ranvier.View.Dom/Mounting.js")) {
         return await transformAsync(code, {
           filename: id, babelrc: false, configFile: false, plugins: [sharedBackendProbe]
         });
