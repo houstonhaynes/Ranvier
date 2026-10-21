@@ -1,6 +1,6 @@
 # Motion parts
 
-`Ranvier.View.Anime` animates the elements of a sugar template with [anime.js](https://animejs.com) 4.5.0 through the typed bindings of `src/Fable.Ranvier.Anime`. Each `Motion.*` function returns a `Part<'native, 'inst>`, given to a tag beside its attributes and events. Every part creates its anime objects once the element is placed, and the instance's disposal reverts them. Enter and exit follow the region passes of lists and arms, FLIP follows the reflow of a list's container, and signals drive the reactive parts. The server omits every part, so a portable template with motion renders the same HTML as its twin without it. The design is in the [motion spec](../../docs/superpowers/specs/2026-10-21-motion-design.md); the runtime seam the parts use is in the [seam note](../../docs/research/2026-10-21-motion-seam.md).
+`Ranvier.View.Anime` animates the elements of a sugar template with [anime.js](https://animejs.com) 4.5.0 through the typed bindings of `src/Fable.Ranvier.Anime`. Each `Motion.*` function returns a `Part<'native, 'inst>`, given to a tag beside its attributes and events. Every part creates its anime objects once the element is placed, and the instance's disposal reverts them. Enter and exit follow the region passes of lists and arms, FLIP follows the reflow of a list's container, and signals drive the reactive parts. The server omits every part, so a portable template with motion renders the same HTML as its twin without it. The design is in the [motion spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-21-motion-design.md); the runtime seam the parts use is in the [seam note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md).
 
 ## Opening the parts
 
@@ -14,7 +14,7 @@ open Ranvier.View.Foundation.Sugar
 open Ranvier.View.Anime
 ```
 
-Every sample on this page assumes these lines; the [view sugar reference](../Ranvier.View.Portable/README.md) covers the first six. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
+Every sample on this page assumes these lines; the [view sugar reference](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Portable/README.md) covers the first six. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
 
 **A play function receives the element as `Element`.** `Targets` converts from `Element` and `Element array` only, so a play function written `fun _ el -> Anime.animate (el, Anim (...))` type-checks on every tag.
 
@@ -213,7 +213,7 @@ let story =
 
 **`split` takes static text.** A text slot or region inside the split element stops updating once its text is split. `splitText`, `onScroll` and `createDraggable` require `ResizeObserver`, and the draggable `DOMPoint` and `DOMMatrix`.
 
-**`draw` and `morph` need SVG elements.** The SVG tags of the sugar (`svg`, `g`, `path`, `circle` and the others listed in the [sugar reference](../Ranvier.View.Portable/README.md#tags)) create SVG elements under both commit modes:
+**`draw` and `morph` need SVG elements.** The SVG tags of the sugar (`svg`, `g`, `path`, `circle` and the others listed in the [sugar reference](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Portable/README.md#tags)) create SVG elements under both commit modes:
 
 ```fsharp
 type Chart =

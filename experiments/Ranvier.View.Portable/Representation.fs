@@ -41,7 +41,7 @@ type Setup =
 /// <c>setup</c> with a <c>CreateId</c> that issues positional ids in the window open in <c>identity</c>, and raises
 /// once another window is open or none is.
 /// </summary>
-let internal ownSetup (identity: IdentityScope) (setup: Setup) : Setup =
+let ownSetup (identity: IdentityScope) (setup: Setup) : Setup =
     let owner = identity.Window
 
     { setup with
@@ -51,15 +51,15 @@ let internal ownSetup (identity: IdentityScope) (setup: Setup) : Setup =
 /// <summary>The items of a keyed region, with the key of each item; list items keep the caller's references.</summary>
 [<NoEquality; NoComparison>]
 type KeyedItems =
-    internal
-        {
-            Read: unit -> obj array
-            Key: System.Func<obj, obj>
-        }
+    {
+        Read: unit -> obj array
+        Key: System.Func<obj, obj>
+    }
 
-module internal KeyedItems =
+/// <summary>Constructors and accessors of <c>KeyedItems</c>.</summary>
+module KeyedItems =
     /// <summary>The items as an <c>obj</c> array; an item of a reference type keeps its reference, and Fable returns the array itself.</summary>
-    let inline boxAll (items: 'item array) : obj array =
+    let inline internal boxAll (items: 'item array) : obj array =
 #if FABLE_COMPILER
         unbox items
 #else
@@ -67,7 +67,8 @@ module internal KeyedItems =
 #endif
 
     /// <summary>The key of a boxed <c>(key, value)</c> pair.</summary>
-    let pairKey = System.Func<obj, obj>(fun pair -> fst (unbox<obj * obj> pair))
+    let internal pairKey =
+        System.Func<obj, obj>(fun pair -> fst (unbox<obj * obj> pair))
 
     /// <summary>Items that are boxed <c>(key, value)</c> pairs, keyed by the pair's key.</summary>
     let ofPairs (read: unit -> (obj * obj) array) =
@@ -286,7 +287,7 @@ let internal scriptRefused =
     "Script elements are not created by templates or typed views; load scripts through the server document shell"
 
 /// <summary>Raises for a script element name, matched case-insensitively.</summary>
-let internal refuseScript (tagName: string) =
+let refuseScript (tagName: string) =
     if tagName.ToLowerInvariant () = "script" then
         raise (System.InvalidOperationException scriptRefused)
 

@@ -13,7 +13,7 @@ Html.button [| Props.Button.disabled busyMemo |] [| text "Save" |]
 
 `Props.Input.value` updates the live input value. `Attrs.Input.value` updates its default value attribute. Boolean attributes use presence/removal; ARIA booleans serialize `false`. Overloads select a binding at compile time and inline into the existing operations. Signal/memo overloads check for null and supply a deferred reader; they create no new owner or subscription mechanism. Annotate ambiguous literals such as `None` with their intended option type. These helpers are methods, not overloaded property setters.
 
-The playground's [reusable component example](../../examples/Fable.Ranvier.Playground/ComponentsExample.fs) mounts two counters with independent state, a shared reactive label, callbacks, and static or reactive child content.
+The playground's [reusable component example](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Fable.Ranvier.Playground/ComponentsExample.fs) mounts two counters with independent state, a shared reactive label, callbacks, and static or reactive child content.
 
 The foundation is an experimental view layer. `Authoring` binds the existing operations to `Program.View`; the generated `Html.Program` module provides all 112 typed HTML constructors without an `ops` argument.
 

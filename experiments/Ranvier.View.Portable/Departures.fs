@@ -2,7 +2,7 @@
 /// The exit and reflow hooks of placed elements, and the retired row roots held in place while their exits run. The mount
 /// paths reach the registry only through <c>seam</c>, which the first registration fills.
 /// </summary>
-module internal Ranvier.View.Foundation.Departures
+module Ranvier.View.Foundation.Departures
 
 open Fable.Core
 open Fable.Core.TS.Dom
@@ -12,9 +12,17 @@ open Ranvier.View.Foundation.Representation
 /// The registry operations the mount paths call. The operations are null until <c>Enabled</c> (exits) or
 /// <c>ReflowEnabled</c> (reflows) is set.
 /// </summary>
+/// <remarks>
+/// Written by the exit and reflow registrations. <c>Enabled</c> guarantees that <c>Retire</c>, <c>NextLive</c>,
+/// <c>Holds</c>, <c>Within</c> and <c>End</c> are set; <c>ReflowEnabled</c> guarantees <c>Before</c>. Setting a flag
+/// directly or replacing a slot after registration causes null invocations or lost exits.
+/// </remarks>
 [<AllowNullLiteral>]
 type Seam =
+    /// <summary>True once the exit slots <c>Retire</c>, <c>NextLive</c>, <c>Holds</c>, <c>Within</c> and <c>End</c> are set.</summary>
     abstract Enabled: bool with get, set
+
+    /// <summary>True once the reflow slot <c>Before</c> is set.</summary>
     abstract ReflowEnabled: bool with get, set
 
     /// <summary>
@@ -63,7 +71,7 @@ type Seam =
     /// </summary>
     abstract Parse: System.Action<HTMLTemplateElement, string> with get, set
 
-/// <summary>The seam, an empty object until the first registration; null on .NET.</summary>
+/// <summary>The seam, an empty object until the first registration; null on .NET, where any access raises.</summary>
 #if FABLE_COMPILER
 let seam: Seam = Fable.Core.JsInterop.emitJsExpr () "{}"
 #else
@@ -110,7 +118,7 @@ let private startTimer (action: unit -> unit) (milliseconds: int) : obj = jsNati
 let private stopTimer (timer: obj) : unit = jsNative
 
 /// <summary>The milliseconds after which a held exit is finished.</summary>
-let safetyTimeout = 10000
+let internal safetyTimeout = 10000
 
 // Each registered exit, by element: given `finish`, starts the exit and returns its cancel.
 let private exits = weakMap ()
@@ -277,7 +285,7 @@ let private before (regionStart: Node) (post: (unit -> unit) -> unit) : unit -> 
 /// marks the node's exit as following: from then until the row retires the node, <c>Within</c> holds for the node and
 /// its descendants, so nested mounts leave their nodes in place.
 /// </summary>
-let register (node: Node) (exit: System.Func<unit -> unit, unit -> unit>) : unit -> unit =
+let internal register (node: Node) (exit: System.Func<unit -> unit, unit -> unit>) : unit -> unit =
     if not seam.Enabled then
         seam.Retire <- System.Func<_, _, _> retire
         seam.NextLive <- System.Func<_, _> nextLive
@@ -294,11 +302,11 @@ let register (node: Node) (exit: System.Func<unit -> unit, unit -> unit>) : unit
             mark pending node
 
 /// <summary>Whether <c>node</c> has a registered exit that has not started.</summary>
-let hasExit (node: Node) : bool =
+let internal hasExit (node: Node) : bool =
     holds exits node
 
 /// <summary>Whether <c>node</c> or an ancestor has a registered exit that has not started.</summary>
-let exitFollows (node: Node) : bool =
+let internal exitFollows (node: Node) : bool =
     let mutable cursor = node
     let mutable found = false
 
@@ -309,14 +317,14 @@ let exitFollows (node: Node) : bool =
     found
 
 /// <summary>Whether a reflow is registered for <c>node</c>.</summary>
-let hasReflow (node: Node) : bool =
+let internal hasReflow (node: Node) : bool =
     holds reflows node
 
 /// <summary>
 /// Registers <c>reflow</c> for <c>node</c>, replacing an earlier registration, enables reflows, and returns the function
 /// that withdraws this registration.
 /// </summary>
-let registerReflow (node: Node) (reflow: Reflow) : unit -> unit =
+let internal registerReflow (node: Node) (reflow: Reflow) : unit -> unit =
     if not seam.ReflowEnabled then
         seam.Before <- System.Func<_, _, _> before
         seam.ReflowEnabled <- true
@@ -358,7 +366,7 @@ let private nestUnder (nested: obj) (fragment: Node) (regionStart: Node) : unit 
 /// Makes the elements with SVG names, and every element under an SVG element other than a foreignObject, SVG elements on
 /// the expanded path, and parses a template whose root elements have SVG names inside an svg element.
 /// </summary>
-let enableSvg () =
+let internal enableSvg () =
 #if FABLE_COMPILER
     if isNullish seam.CreateElement then
         let names = svgNames ()

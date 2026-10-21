@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
         <OutputType>Library</OutputType>
         <IsPackable>false</IsPackable>
-        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <FSharpCoreImplicitPackageVersion>8.0.100</FSharpCoreImplicitPackageVersion>
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="DomEvents.fs" />
@@ -19,8 +19,6 @@
         <Compile Include="Hydration.fs" />
         <Compile Include="Components.fs" />
         <Compile Include="Authoring.fs" />
-        <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
         <ProjectReference Include="../Ranvier.View.Portable/Ranvier.View.Portable.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="10.1.401" />
     </ItemGroup>
 </Project>

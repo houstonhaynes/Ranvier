@@ -1,6 +1,6 @@
 # View sugar
 
-`Ranvier.View.Foundation.Sugar` is the short spelling of the template path: free lowercase tags, control flow over views, and component declarations that keep setup and view together. Every form lowers to one `Component.define` call and the `TemplateBuilder` operations, so the explicit form is the documented equivalent of each, and `Mounting.mount`, `Hydration.hydrate` and `Server.render` accept the result unchanged on .NET and under Fable. The design and its measurements are in the [view sugar v2 spec](../../docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md).
+`Ranvier.View.Foundation.Sugar` is the short spelling of the template path: free lowercase tags, control flow over views, and component declarations that keep setup and view together. Every form lowers to one `Component.define` call and the `TemplateBuilder` operations, so the explicit form is the documented equivalent of each, and `Mounting.mount`, `Hydration.hydrate` and `Server.render` accept the result unchanged on .NET and under Fable. The design and its measurements are in the [view sugar v2 spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md).
 
 ## Opening the sugar
 
@@ -423,4 +423,4 @@ let mvuParent = Component.ofMembers<MvuParent, _> ()
 | `Component.ofClass` row | +892 B |
 | all three rows, against an explicit entry holding their three twins | +869 B |
 
-Unused sugar costs 0 B. The emitted sugar modules contain 0 `curry`, `uncurry` or `partialApply`. The tables and raw files are in the [measurements note](../../docs/research/2026-10-20-view-sugar-v2.md).
+Unused sugar costs 0 B. The emitted sugar modules contain 0 `curry`, `uncurry` or `partialApply`. The tables and raw files are in the [measurements note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-20-view-sugar-v2.md).
