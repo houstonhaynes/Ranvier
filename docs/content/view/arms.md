@@ -88,6 +88,109 @@ let pager =
 definition stays the same. Use it when a new key must start with fresh setup state, such as a page
 whose form state must not carry over to the next page.
 
+## `Arms.Match`: a plain match (opt-in)
+
+`Arms.Match` takes an ordinary F# `match` over a union, with pattern variables, nested patterns, guards and
+or-patterns, and builds the same arms as `armOf` and `matchWith`: the same server HTML, hashes and hydration, on .NET
+and under Fable. It lives in its own project; an app opts in with two lines:
+
+```xml
+<ProjectReference Include="../../experiments/Ranvier.View.Arms/Ranvier.View.Arms.fsproj" />
+<Import Project="../../experiments/Ranvier.View.Arms/Ranvier.View.Arms.targets" />
+```
+
+The `.targets` adds the Fable plugin that lowers each call. The plugin assembly must be built before `dotnet fickl`
+runs: `dotnet build experiments/Ranvier.View.Arms.FablePlugin -c Release`.
+
+```fsharp
+open Ranvier.View.Arms
+
+let loaderMatch =
+    Component.template (fun _ (state: Signal<Load>) -> state) (
+        div (Attrs.className "loader") {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Idle -> span () { "Not started" }
+                | Loading percent -> progress (Attrs.attribute ("max", "100"), Attrs.attribute ("value", fun _ -> Some (string percent))) { }
+                | Loaded "" -> span () { "Empty" }
+                | Loaded text -> pre () { fun _ -> text }
+            )
+        }
+    )
+```
+
+**A pattern variable is read inside a reader**: a lambda over the instance, such as `fun _ -> text`. Inside it, the
+variable holds the payload of the arm currently mounted, so `Loaded "a"` followed by `Loaded "b"` keeps the `<pre>`
+and updates its text. Event handlers (`fun s e -> ...`) and hooks over the instance are readers too, and read the
+payload at event time.
+
+A pattern variable used anywhere else is rejected, because a case body is built once and shared by every instance.
+`| Loaded text -> span () { text }` fails the Fable compile at `text`, and on .NET raises `BuildTimeReadException`
+when the site is built:
+
+```
+Arms.Match: 'text' is read outside a reader of the instance. Read it inside a lambda over the instance, such as (fun _ -> text).
+```
+
+**Rows.** A `forEach` row reads its own item, not the instance, so a pattern variable inside a row reader is rejected
+(AM002). Pass it through the items reader, which runs over the instance:
+
+```fsharp
+type Folder =
+    | NoFiles
+    | Files of owner: string * names: string array
+
+let private folderView =
+    Component.template (fun _ (folder: Signal<Folder>) -> folder) (
+        ul () {
+            Arms.Match (
+                (fun (folder: Signal<Folder>) -> folder.Value),
+                function
+                | NoFiles -> li () { "No files" }
+                | Files (owner, names) ->
+                    forEach snd (fun _ -> names |> Array.map (fun name -> owner, name)) (li () { fun (row: unit -> string * string) -> fst (row ()) + "/" + snd (row ()) })
+            )
+        }
+    )
+```
+
+**What remounts.** Each row of the match (each *target*) is one arm. The same target keeps its arm and replaces its
+payload; another target remounts, including a guard, a literal pattern or an `if` at the top of a case body that
+selects another branch. `Loaded "x"` to `Loaded ""` above remounts from the `<pre>` to the "Empty" `<span>`.
+
+**Costs.** Under Fable the first site of a bundle adds the runtime, at most 400 B gzip, and each further site at most
+60 B. On .NET each evaluation of the `Arms.Match` call lowers the quotation, about 1 ms per site once the process is
+warm: bind sites with `let`, as arm definitions are bound above. A per-call reader runs interpreted for its first 64
+calls and compiled after that. The first site of a process pays the JIT of the quotation machinery, about 130 ms; call
+`Arms.Prepare ()` at start-up (on the calling thread or the thread pool) and the first site costs about 10 ms, and
+publish servers with `-p:PublishReadyToRun=true` to bring it to about 7 ms. Trimmed and NativeAOT apps use
+`matchWith` with `armOf`; `Arms.Match` carries `RequiresUnreferencedCode` and `RequiresDynamicCode`, so a trimmed
+publish warns at each call.
+
+### AM005
+
+```
+This construct is deprecated. Arms.Match needs the Ranvier.View.Arms Fable plugin; import Ranvier.View.Arms.targets in the project compiled by Fable.
+```
+
+A compile error (FS0101) at each `Arms.Match` call of a project that `dotnet fickl` compiles without importing
+`Ranvier.View.Arms.targets`. Import the `.targets`. A project that imports it but whose plugin does not run fails when
+the site is built, with a JavaScript `TypeError`.
+
+### AM006
+
+```
+Arms.Match: no arm of this site is mounted for the instance this reader received. A lambda over the instance type inside a case body runs with the arm's instance.
+```
+
+A Release Fable build raises the short form `Ranvier AM006: shayanhabibi.github.io/Ranvier/view/arms/#am006`;
+Debug builds and .NET raise the text above (`ArmsMatchException` on .NET). A lambda over the instance type inside a
+case body received another value of that type, as a row whose item type equals the instance type does. Give the row
+a type of its own.
+
+The other diagnostics, AM001 to AM004 and AM007, are listed in [Troubleshooting](troubleshooting.md).
+
 ## Server HTML
 
 An arm region's start marker carries the selected arm's structural hash:

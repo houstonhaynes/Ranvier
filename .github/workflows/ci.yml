@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docs: ${{ steps.classify.outputs.docs }}
+      arms: ${{ steps.classify.outputs.arms }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -367,6 +368,72 @@ jobs:
             examples/Ranvier.Motion/test-results/
           if-no-files-found: ignore
 
+  # Arms.Match (experiments/Ranvier.View.Arms): the Fable plugin's tests, the discovery app, the jsdom suites (test:arms),
+  # the bundle budget, Arms.Prepare on both runtime targets, and the trim annotation. The .NET lowering, fixture, golden
+  # and runtime checks run inside the representation checks of the playground job.
+  # It runs only when the change touches the view, the core, the Playground or the toolchain (changes.cjs armsAffected).
+  arms:
+    name: Arms.Match
+    needs: changes
+    if: needs.changes.outputs.arms == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      # global.json pins the SDK; DotnetCost also runs on net8.0, the library's other target, which needs the .NET 8 runtime.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      # The Playground requires Node 26 or newer (package.json engines).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: examples/Fable.Ranvier.Playground/package-lock.json
+      - name: Restore tools
+        run: dotnet tool restore
+      # sourcemap.mjs in the plugin tests reads the Playground's node_modules.
+      - name: Install npm packages
+        run: npm ci
+        working-directory: examples/Fable.Ranvier.Playground
+      - name: Build the Fable plugin
+        run: dotnet build experiments/Ranvier.View.Arms.FablePlugin/Ranvier.View.Arms.FablePlugin.fsproj -c Release
+      - name: Run the plugin tests
+        run: dotnet fsi experiments/Ranvier.View.Arms.FablePlugin/Tests/PluginTests.fsx
+      # The documented opt-in (a project reference and the .targets): the same server HTML on .NET and under Fable, and
+      # no plugin assembly in the .NET output.
+      - name: Run the discovery app on both targets
+        run: |
+          dotnet run --project experiments/Ranvier.View.Arms/Checks/Discovery/Discovery.fsproj -c Release > discovery-net.txt
+          dotnet fickl experiments/Ranvier.View.Arms/Checks/Discovery/Discovery.fsproj --outDir experiments/Ranvier.View.Arms/Checks/Discovery/out -c Release --noCache
+          node experiments/Ranvier.View.Arms/Checks/Discovery/out/Main.js > discovery-fable.txt
+          diff --strip-trailing-cr discovery-net.txt discovery-fable.txt
+          grep -q armsValues_L experiments/Ranvier.View.Arms/Checks/Discovery/out/Main.js
+          test ! -e experiments/Ranvier.View.Arms/Checks/Discovery/bin/Release/net10.0/Ranvier.View.Arms.FablePlugin.dll
+          test ! -e experiments/Ranvier.View.Arms/Checks/Discovery/bin/Release/net10.0/Fable.AST.dll
+      - name: Run the arms suites
+        run: npm run test:arms
+        working-directory: examples/Fable.Ranvier.Playground
+      # size.mjs compiles its own Release build with no defines, so the counters build of test:arms does not reach it.
+      - name: Check the bundle budget
+        run: node experiments/Ranvier.View.Arms/Checks/size.mjs
+      # size.mjs rewrites the committed bundle numbers, absolute sizes of the whole view included, so a view or core change
+      # needs a local size.mjs run; a difference means they are stale.
+      - name: Check the committed bundle numbers
+        run: git diff --exit-code -- docs/research/arms-match/bundle.json
+      # The committed Chromium and heap results hold their gates (the benchmark itself needs a quiet machine, not CI).
+      - name: Check the committed Chromium and heap results
+        run: node experiments/Ranvier.View.Arms/Checks/chromium-gate.mjs
+      # The timings print without a budget (shared runners are not the budget's machine); a raise or a wrong render from
+      # Arms.Prepare, called twice and on four threads at once, fails the step.
+      - name: Run Arms.Prepare and the lowering costs on net10.0 and net8.0
+        run: |
+          dotnet run --project experiments/Ranvier.View.Arms/Checks/DotnetCost/DotnetCost.fsproj -c Release -f net10.0 -- --prepare
+          dotnet run --project experiments/Ranvier.View.Arms/Checks/DotnetCost/DotnetCost.fsproj -c Release -f net8.0 -- --prepare
+      - name: Check the trim annotation
+        run: bash experiments/Ranvier.View.Arms/Checks/TrimCallSite/check.sh linux-x64
+
   # Runs the Ranvier analyzers' unit tests, then the analyzers over the repository's projects with every RAN code
   # promoted to an error: any finding fails the job.
   # The analyzer suite in three shards whose filters partition it: the Fable rules with the shared tests, the core
@@ -459,7 +526,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, analyzer-tests, analyzers, analyzer-truth]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

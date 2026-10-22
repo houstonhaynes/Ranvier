@@ -44,6 +44,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+    <ProjectReference Include="../../../experiments/Ranvier.View.Arms/Ranvier.View.Arms.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Wire/Ranvier.Wire.fsproj" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />

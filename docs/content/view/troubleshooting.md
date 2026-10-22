@@ -30,6 +30,43 @@ Alias it: `module H = Ranvier.View.Dom.Generated.Html`.
 **FS0039: `TemplateBuilder` or `AttributeBuilder` does not define `div` or `className`.** The generated
 members come from `open Ranvier.View`. Add it to the file's opens.
 
+**FS0101 "This construct is deprecated. Arms.Match needs the Ranvier.View.Arms Fable plugin" (AM005) at an
+`Arms.Match` call.** The project `dotnet fickl` compiles references `Ranvier.View.Arms` without importing
+`Ranvier.View.Arms.targets`. Import it. See [AM005](arms.md#am005).
+
+**"Ranvier.View.Arms.FablePlugin.dll is missing from ..."** when `dotnet fickl` starts: the plugin is not built in
+Release. Run `dotnet build experiments/Ranvier.View.Arms.FablePlugin -c Release`, or set `RanvierArmsPluginDir` to the
+folder of another build.
+
+**FS0039 "The type 'FablePlugin' is not defined" in `Arms.fs`.** The project defines `RANVIER_ARMS_PLUGIN` without
+importing the `.targets`, so the plugin assembly is missing from the compilation. Import the `.targets` instead of
+defining the symbol.
+
+**AM001 "Arms.Match: 'x' is read outside a reader of the instance"** (Fable compile; `BuildTimeReadException` on .NET).
+A pattern variable is used as a build-time value, for example as static text or as the argument of a helper that takes
+a value. Read it inside a lambda over the instance: `fun _ -> x`, or pass a reader to the helper.
+
+**"Arms.Match: the field 'x' of 'Case' is read outside a reader of the instance"** (Fable, when the compiler inlines the field). The same rule, where the
+compiler replaced the pattern variable by a read of the case field. Read it inside `fun _ -> x`.
+
+**AM002 "Arms.Match: 'x' is read inside a lambda over 'T', which is not the instance type".** A pattern variable is
+read inside a row reader or another lambda over a type other than the instance. Pass the value through the row's
+items, `forEach key (fun _ -> items |> Array.map (fun item -> x, item)) row`, or through props.
+
+**AM003 "Arms.Match takes a function literal as its second argument".** The arms are a function value. Write the
+`function | Case x -> ...` at the call.
+
+**AM004 "Arms.Match: the instance type 'T' is not an object type".** The instance is a value type, `string`, `unit` or
+an option, which the site cannot key payloads by. Wrap it in a record or pass a signal.
+
+**AM007 "Arms.Match: this pattern form is not supported."** An `if`, `match` or `let` over a pattern variable sits under
+a sequence, a type cast or a `try` at the top of a case body. Move the condition into the match, as a case or a guard.
+
+**FS0452 "Quotations cannot contain inline assembly code or pattern matching on arrays", or FS0449 for an object
+expression, at an `Arms.Match` case.** The .NET overload quotes the arms. A Fable-only build accepts the form while the
+IDE and .NET reject it; use a list pattern or a guard (`| xs when xs.Length = 1 ->`), and move an object expression out
+of the case body.
+
 ## Runtime errors
 
 **"Browser capability requires explicit Omit policy: &lt;button&gt; listener click"**: a server render
@@ -87,6 +124,16 @@ Move it to the root. See [Leaving](motion-parts.md#leaving).
 **"An element takes at most one content part"** or **"An element with a content part has no template
 children"**: an element has two of `Unsafe.html` and `Hooks.widget`, or one of them with children.
 Give the content its own element.
+
+Shared code that catches an `Arms.Match` rejection catches `InvalidOperationException`: `BuildTimeReadException` and
+`ArmsMatchException` exist on .NET only, and Fable raises `InvalidOperationException` with the same texts.
+
+**A `TypeError` when an `Arms.Match` site is built** under Fable: the plugin assembly is referenced but did not run,
+for example under a Fable version below its `FableMinimumVersion`. Use Fable 5. See [AM005](arms.md#am005).
+
+**AM006 "Arms.Match: no arm of this site is mounted for the instance this reader received"**, or `Ranvier AM006: ...`
+in a Release Fable build: a lambda over the instance type inside a case body received another value of that type, as
+a row whose item type equals the instance type does. Give the row a type of its own. See [AM006](arms.md#am006).
 
 The analyzers report this at build time: [RAN023](../analyzers/ran023.md).
 

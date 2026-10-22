@@ -63,6 +63,16 @@ let main _ =
             (root """<div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div>""")
             (Server.render omit Arms.loader (createSignal Arms.Idle))
 
+        expect
+            "arms Arms.Match loader"
+            (Server.render omit Arms.loader (createSignal (Arms.Loaded "done")))
+            (Server.render omit Arms.loaderMatch (createSignal (Arms.Loaded "done")))
+
+        expect
+            "arms Arms.Match idle"
+            (root """<div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div>""")
+            (Server.render omit Arms.loaderMatch (createSignal Arms.Idle))
+
         let name = createAsyncSource<string> ()
         let profile = Boundaries.profileView { Name = name }
 

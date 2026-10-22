@@ -49,6 +49,39 @@ let pager =
         main () { branch (fun (page: Signal<int>) -> page.Value) (fun page -> arm pageArm page) }
     )
 
+open Ranvier.View.Arms
+
+let loaderMatch =
+    Component.template (fun _ (state: Signal<Load>) -> state) (
+        div (Attrs.className "loader") {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Idle -> span () { "Not started" }
+                | Loading percent -> progress (Attrs.attribute ("max", "100"), Attrs.attribute ("value", fun _ -> Some (string percent))) { }
+                | Loaded "" -> span () { "Empty" }
+                | Loaded text -> pre () { fun _ -> text }
+            )
+        }
+    )
+
+type Folder =
+    | NoFiles
+    | Files of owner: string * names: string array
+
+let private folderView =
+    Component.template (fun _ (folder: Signal<Folder>) -> folder) (
+        ul () {
+            Arms.Match (
+                (fun (folder: Signal<Folder>) -> folder.Value),
+                function
+                | NoFiles -> li () { "No files" }
+                | Files (owner, names) ->
+                    forEach snd (fun _ -> names |> Array.map (fun name -> owner, name)) (li () { fun (row: unit -> string * string) -> fst (row ()) + "/" + snd (row ()) })
+            )
+        }
+    )
+
 let idleExplicit =
     Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.span [||] [| t.text "Not started" |])
 

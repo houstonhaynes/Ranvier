@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <IsPackable>false</IsPackable>
+    <FSharpCoreImplicitPackageVersion>8.0.100</FSharpCoreImplicitPackageVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Diagnostics.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Cells.fs" />
+    <Compile Include="Site.fs" />
+    <Compile Include="Quoted.fs" />
+    <Compile Include="Arms.fs" />
+    <ProjectReference Include="../../src/Ranvier.View/Ranvier.View.fsproj" />
+    <InternalsVisibleTo Include="RepresentationChecks" />
+  </ItemGroup>
+</Project>

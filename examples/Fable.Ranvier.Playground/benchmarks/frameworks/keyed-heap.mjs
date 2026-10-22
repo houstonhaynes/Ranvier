@@ -17,7 +17,11 @@ const counts = argument("counts", "1000,10000").split(",").map(Number);
 const processes = Number(argument("processes", 2));
 const label = argument("label", "heap");
 const port = 5188;
-const bundles = { production: ["ranvier", "ranvier-sugar", "solid"] };
+// `--modes=a,b` picks the modes; `--fixture=arms` mounts the arm fixture instead of the keyed rows.
+const bundles = { production: argument("modes", "ranvier,ranvier-sugar,solid").split(",") };
+const fixture = argument("fixture", "rows");
+// `--after=switch` (arm fixture) switches every row once after create, so the snapshot also holds each row's withdrawn arm.
+const afterStep = argument("after", "create");
 const envFor = () => ({ ...process.env, RANVIER_PERF_OUTPUT: "generated-keyed-heap", RANVIER_PERF_PROFILE: "true" });
 
 if (!process.argv.includes("--no-bundle"))
@@ -182,10 +186,10 @@ try {
       for (const rows of counts) for (let offset = 0; offset < modes.length; offset++) {
         const mode = modes[(offset + replicate) % modes.length];
         // Two mounts and releases warm the mode's code and shared caches out of the diff.
-        await page.evaluate(({ mode }) => { for (let i = 0; i < 2; i++) { const list = window.keyedPerf.mounted(mode); list.create(1000); list.release(); } }, { mode });
-        await page.evaluate(({ mode }) => { window.heapList = window.keyedPerf.mounted(mode); }, { mode });
+        await page.evaluate(({ mode, fixture }) => { for (let i = 0; i < 2; i++) { const list = window.keyedPerf.mounted(mode, fixture); list.create(1000); list.release(); } }, { mode, fixture });
+        await page.evaluate(({ mode, fixture }) => { window.heapList = window.keyedPerf.mounted(mode, fixture); }, { mode, fixture });
         const before = await snapshot(cdp);
-        await page.evaluate(({ rows }) => window.heapList.create(rows), { rows });
+        await page.evaluate(({ rows, afterStep }) => { window.heapList.create(rows); if (afterStep === "switch") window.heapList.switch(); }, { rows, afterStep });
         const after = await snapshot(cdp);
         await page.evaluate(() => { window.heapList.release(); delete window.heapList; });
         const { added, removed, fresh } = diff(before, after);
@@ -193,7 +197,7 @@ try {
         const sum = list => +(list.reduce((total, row) => total + row.bytes, 0) / rows).toFixed(1);
         const js = all.filter(row => !row.kind.startsWith("native ") && row.kind !== "synthetic" && !isCode(row.kind));
         results.push({
-          bundle: build, mode, rows, replicate,
+          bundle: build, mode, rows, replicate, after: afterStep,
           jsBytesPerRow: sum(js),
           codeBytesPerRow: sum(all.filter(row => isCode(row.kind))),
           nativeBytesPerRow: sum(all.filter(row => row.kind.startsWith("native "))),

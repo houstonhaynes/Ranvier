@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { docsOnly, range } = require('./changes.cjs');
+const { docsOnly, armsAffected, range } = require('./changes.cjs');
 const a = 'a'.repeat(40), b = 'b'.repeat(40), z = '0'.repeat(40);
 
 test('documentation paths alone are docs only', () => {
@@ -16,6 +16,14 @@ test('the Motion examples app runs everything, its README aside', () => {
     assert.equal(docsOnly(p), false, JSON.stringify(p));
   }
   assert.equal(docsOnly(['examples/Ranvier.Motion/README.md']), true);
+});
+test('the Arms.Match job runs for the view, core, Playground and toolchain, and for an unknown diff', () => {
+  for (const p of [['experiments/Ranvier.View.Arms/Cells.fs'], ['src/Ranvier/Core.fs'], ['src/Ranvier.View.Dom/Mounting.fs'], ['examples/Fable.Ranvier.Playground/tests/ArmsChecks.fs'], ['.config/dotnet-tools.json'], ['.github/workflows/ci.yml'], [], undefined]) {
+    assert.equal(armsAffected(p), true, JSON.stringify(p));
+  }
+  for (const p of [['src/Ranvier.Wire/Codec.fs'], ['examples/Ranvier.Motion/src/Kanban.fs'], ['tools/Ranvier.Analyzers/Rules.fs'], ['build.fsx']]) {
+    assert.equal(armsAffected(p), false, JSON.stringify(p));
+  }
 });
 test('ranges need two commits; new branches and manual runs have none', () => {
   assert.deepEqual(range({ eventName: 'pull_request', base: a, head: b }), { from: a, to: b });
@@ -42,8 +50,8 @@ test('a master push is classified by its diff against the parent', () => {
     const root = commit('src/Core.fs');
     const docs = commit('docs/guide.md');
     const code = commit('src/Core.fs');
-    assert.equal(classify(root, docs), 'docs=true');
-    assert.equal(classify(docs, code), 'docs=false');
+    assert.equal(classify(root, docs), 'docs=true\narms=false');
+    assert.equal(classify(docs, code), 'docs=false\narms=false');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

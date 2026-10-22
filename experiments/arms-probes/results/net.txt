@@ -1,0 +1,56 @@
+lowering|first=9.06ms mean=8.549ms
+bad|BuildTimeRead text
+server|explicit|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|explicit|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="0"></progress><!--]--></div><!--]-->
+server|explicit|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|explicit|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|explicit|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>none<!--!--> x<!--!-->0</pre><!--]--></div><!--]-->
+server|explicit|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>big<!--!--> x<!--!-->120</pre><!--]--></div><!--]-->
+server|explicitRich|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|explicitRich|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|explicitRich|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|explicitRich|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|explicitRich|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:c054a3d7--><span>Empty</span><!--]--></div><!--]-->
+server|explicitRich|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:7f75a908--><b>big</b><!--]--></div><!--]-->
+server|lens|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|lens|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="0"></progress><!--]--></div><!--]-->
+server|lens|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|lens|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|lens|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>none<!--!--> x<!--!-->0</pre><!--]--></div><!--]-->
+server|lens|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>big<!--!--> x<!--!-->120</pre><!--]--></div><!--]-->
+server|match|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|match|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="0"></progress><!--]--></div><!--]-->
+server|match|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|match|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|match|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>none<!--!--> x<!--!-->0</pre><!--]--></div><!--]-->
+server|match|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>big<!--!--> x<!--!-->120</pre><!--]--></div><!--]-->
+server|matchRich|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|matchRich|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|matchRich|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|matchRich|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|matchRich|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:c054a3d7--><span>Empty</span><!--]--></div><!--]-->
+server|matchRich|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:7f75a908--><b>big</b><!--]--></div><!--]-->
+server|explicitRows|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|explicitRows|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|explicitRows|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|explicitRows|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><li>0</li><li>1</li><li>2</li><!--]--></ul><!--]--></div><!--]-->
+server|explicitRows|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><!--]--></ul><!--]--></div><!--]-->
+server|explicitRows|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li><li>13</li><li>14</li><li>15</li><li>16</li><li>17</li><li>18</li><li>19</li><li>20</li><li>21</li><li>22</li><li>23</li><li>24</li><li>25</li><li>26</li><li>27</li><li>28</li><li>29</li><li>30</li><li>31</li><li>32</li><li>33</li><li>34</li><li>35</li><li>36</li><li>37</li><li>38</li><li>39</li><li>40</li><li>41</li><li>42</li><li>43</li><li>44</li><li>45</li><li>46</li><li>47</li><li>48</li><li>49</li><li>50</li><li>51</li><li>52</li><li>53</li><li>54</li><li>55</li><li>56</li><li>57</li><li>58</li><li>59</li><li>60</li><li>61</li><li>62</li><li>63</li><li>64</li><li>65</li><li>66</li><li>67</li><li>68</li><li>69</li><li>70</li><li>71</li><li>72</li><li>73</li><li>74</li><li>75</li><li>76</li><li>77</li><li>78</li><li>79</li><li>80</li><li>81</li><li>82</li><li>83</li><li>84</li><li>85</li><li>86</li><li>87</li><li>88</li><li>89</li><li>90</li><li>91</li><li>92</li><li>93</li><li>94</li><li>95</li><li>96</li><li>97</li><li>98</li><li>99</li><li>100</li><li>101</li><li>102</li><li>103</li><li>104</li><li>105</li><li>106</li><li>107</li><li>108</li><li>109</li><li>110</li><li>111</li><li>112</li><li>113</li><li>114</li><li>115</li><li>116</li><li>117</li><li>118</li><li>119</li><!--]--></ul><!--]--></div><!--]-->
+server|matchRows|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|matchRows|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|matchRows|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|matchRows|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><li>0</li><li>1</li><li>2</li><!--]--></ul><!--]--></div><!--]-->
+server|matchRows|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><!--]--></ul><!--]--></div><!--]-->
+server|matchRows|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:789182d0--><ul><!--[--><li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li><li>13</li><li>14</li><li>15</li><li>16</li><li>17</li><li>18</li><li>19</li><li>20</li><li>21</li><li>22</li><li>23</li><li>24</li><li>25</li><li>26</li><li>27</li><li>28</li><li>29</li><li>30</li><li>31</li><li>32</li><li>33</li><li>34</li><li>35</li><li>36</li><li>37</li><li>38</li><li>39</li><li>40</li><li>41</li><li>42</li><li>43</li><li>44</li><li>45</li><li>46</li><li>47</li><li>48</li><li>49</li><li>50</li><li>51</li><li>52</li><li>53</li><li>54</li><li>55</li><li>56</li><li>57</li><li>58</li><li>59</li><li>60</li><li>61</li><li>62</li><li>63</li><li>64</li><li>65</li><li>66</li><li>67</li><li>68</li><li>69</li><li>70</li><li>71</li><li>72</li><li>73</li><li>74</li><li>75</li><li>76</li><li>77</li><li>78</li><li>79</li><li>80</li><li>81</li><li>82</li><li>83</li><li>84</li><li>85</li><li>86</li><li>87</li><li>88</li><li>89</li><li>90</li><li>91</li><li>92</li><li>93</li><li>94</li><li>95</li><li>96</li><li>97</li><li>98</li><li>99</li><li>100</li><li>101</li><li>102</li><li>103</li><li>104</li><li>105</li><li>106</li><li>107</li><li>108</li><li>109</li><li>110</li><li>111</li><li>112</li><li>113</li><li>114</li><li>115</li><li>116</li><li>117</li><li>118</li><li>119</li><!--]--></ul><!--]--></div><!--]-->
+server|matchPair|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|matchPair|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|matchPair|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+server|matchPair|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:867a2172--><pre>done</pre><!--]--></div><!--]-->
+server|matchPair|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:867a2172--><pre>none</pre><!--]--></div><!--]-->
+server|matchPair|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:867a2172--><pre>big</pre><!--]--></div><!--]-->
+server|matchUnmarked|Idle|3dc663a9|<!--[r--><div class="loader"><!--[a:220727aa--><span>Not started</span><!--]--></div><!--]-->
+server|matchUnmarked|Loading 0|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="0"></progress><!--]--></div><!--]-->
+server|matchUnmarked|Loading 40|3dc663a9|<!--[r--><div class="loader"><!--[a:a8ebc344--><progress max="100" value="40"></progress><!--]--></div><!--]-->
+server|matchUnmarked|Loaded ("done", 3)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>done<!--!--> x<!--!-->3</pre><!--]--></div><!--]-->
+server|matchUnmarked|Loaded ("none", 0)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>none<!--!--> x<!--!-->0</pre><!--]--></div><!--]-->
+server|matchUnmarked|Loaded ("big", 120)|3dc663a9|<!--[r--><div class="loader"><!--[a:646a1db6--><pre>big<!--!--> x<!--!-->120</pre><!--]--></div><!--]-->

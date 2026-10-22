@@ -1,0 +1,27 @@
+{
+  "explicit": {
+    "raw": 206568,
+    "gzip": 59733,
+    "brotli": 52502
+  },
+  "lens": {
+    "raw": 207346,
+    "gzip": 59985,
+    "brotli": 52680
+  },
+  "plugin": {
+    "raw": 206860,
+    "gzip": 59872,
+    "brotli": 52553
+  },
+  "lens-delta": {
+    "raw": 778,
+    "gzip": 252,
+    "brotli": 178
+  },
+  "plugin-delta": {
+    "raw": 292,
+    "gzip": 139,
+    "brotli": 51
+  }
+}

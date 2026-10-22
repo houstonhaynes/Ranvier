@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- An app that references Ranvier.View.Arms without importing Ranvier.View.Arms.targets: PluginTests.fsx expects the compile to fail. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Site.fs" />
+    <ProjectReference Include="../../../Ranvier.View.Arms/Ranvier.View.Arms.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+  </ItemGroup>
+</Project>

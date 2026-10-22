@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Entry selects which fixtures the bundle-size entry keeps: all, explicit, lens or plugin. -->
+    <DefineConstants Condition="'$(ProbeEntry)' != ''">$(DefineConstants);ENTRY_$(ProbeEntry.ToUpperInvariant())</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CaseArms.fs" />
+    <Compile Include="QuotedArms.fs" />
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="Main.fs" />
+    <ProjectReference Include="../../Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+    <Reference Include="../Plugin/bin/Release/net10.0/Arms.Plugin.dll" />
+    <PackageReference Include="Fable.AST" Version="5.0.0" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+  </ItemGroup>
+</Project>

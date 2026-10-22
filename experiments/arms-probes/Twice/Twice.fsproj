@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- One Arms.Match site, one instance, two mounts: the cell lowering of ../Probe after the second mount is disposed. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DefineConstants>$(DefineConstants);ENTRY_PLUGIN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Probe/CaseArms.fs" />
+    <Compile Include="../Probe/QuotedArms.fs" />
+    <Compile Include="../Probe/Fixtures.fs" />
+    <Compile Include="Main.fs" />
+    <ProjectReference Include="../../Ranvier.View.Foundation/Ranvier.View.Foundation.fsproj" />
+    <Reference Include="../Plugin/bin/Release/net10.0/Arms.Plugin.dll" />
+    <PackageReference Include="Fable.AST" Version="5.0.0" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+  </ItemGroup>
+</Project>

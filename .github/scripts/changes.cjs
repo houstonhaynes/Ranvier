@@ -15,6 +15,24 @@ function docsOnly(paths) {
   return files.length > 0 && files.every(file => docsPatterns.some(pattern => pattern.test(file)));
 }
 
+// Paths the Arms.Match job builds or measures: the view and core sources it compiles, the Playground's tests and
+// benchmark scripts, the toolchain pins and the workflow.
+const armsPatterns = [
+  /^experiments\/Ranvier\.View/,
+  /^src\/Ranvier(\.View[^/]*)?\//,
+  /^examples\/Fable\.Ranvier\.Playground\//,
+  /^\.config\/dotnet-tools\.json$/,
+  /^global\.json$/,
+  /^Directory\.(Build|Packages)\.(props|targets)$/,
+  /^\.github\/(workflows\/ci\.yml|scripts\/changes\.cjs)$/,
+];
+
+// True when a path touches what the Arms.Match job covers; an empty or missing list is true, as unknown diffs run everything.
+function armsAffected(paths) {
+  const files = (paths ?? []).map(p => p.trim()).filter(Boolean);
+  return files.length === 0 || files.some(file => armsPatterns.some(pattern => pattern.test(file)));
+}
+
 const zero = /^0{40}$/;
 const sha = /^[0-9a-f]{40}$/;
 
@@ -26,19 +44,22 @@ function range({ eventName, before, after, base, head }) {
   return null;
 }
 
-module.exports = { docsOnly, range };
+module.exports = { docsOnly, armsAffected, range };
 
 if (require.main === module) {
-  // node changes.cjs <event> <from> <to>: prints docs=true|false for $GITHUB_OUTPUT.
+  // node changes.cjs <event> <from> <to>: prints docs=true|false and arms=true|false for $GITHUB_OUTPUT.
   const { execFileSync } = require('node:child_process');
   const [eventName, from, to] = process.argv.slice(2);
   const r = range(eventName === 'pull_request' ? { eventName, base: from, head: to } : { eventName, before: from, after: to });
-  let docs = false;
+  let docs = false, arms = true;
   if (r) {
     const base = eventName === 'pull_request'
       ? execFileSync('git', ['merge-base', r.from, r.to], { encoding: 'utf8' }).trim()
       : r.from;
-    docs = docsOnly(execFileSync('git', ['diff', '--name-only', '--no-renames', base, r.to], { encoding: 'utf8' }).split('\n'));
+    const paths = execFileSync('git', ['diff', '--name-only', '--no-renames', base, r.to], { encoding: 'utf8' }).split('\n');
+    docs = docsOnly(paths);
+    arms = !docs && armsAffected(paths);
   }
   console.log(`docs=${docs}`);
+  console.log(`arms=${arms}`);
 }

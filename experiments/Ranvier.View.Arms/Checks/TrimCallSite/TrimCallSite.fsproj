@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- One Arms.Match call published trimmed: ILLink reports IL2026 naming Arms.Match at the call. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- F# projects have no EffectiveAnalysisLevel, so ILLink would run at warning level 0 and report no IL2026. -->
+    <ILLinkWarningLevel>5</ILLinkWarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Main.fs" />
+    <ProjectReference Include="../../Ranvier.View.Arms.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+  </ItemGroup>
+</Project>

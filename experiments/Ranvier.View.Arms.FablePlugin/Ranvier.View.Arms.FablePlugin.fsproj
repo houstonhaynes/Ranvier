@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Fable plugin that lowers Arms.Match calls; it runs inside the dotnet fickl process. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Copies Fable.AST.dll beside the plugin, where Ranvier.View.Arms.targets references it. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Ranvier.View.Arms/Diagnostics.fs" Link="Diagnostics.fs" />
+    <Compile Include="Shape.fs" />
+    <Compile Include="Lower.fs" />
+    <Compile Include="Plugin.fs" />
+    <PackageReference Include="Fable.AST" Version="5.0.0" />
+    <PackageReference Update="FSharp.Core" Version="10.1.203" />
+  </ItemGroup>
+</Project>

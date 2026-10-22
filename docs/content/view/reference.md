@@ -26,6 +26,13 @@ comments are in the source; this index lists each module, by package, and the pa
 | [`TemplateDom`](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Dom/TemplateDom.fs) | The DOM compiler of templates; `HydrationMismatchException` | [Hydration](../server/hydration.md#mismatches) |
 | [`Authoring`](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Dom/Authoring.fs), [`Components`](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Dom/Components.fs), `Generated.Html` | The authored layer | [Other authoring layers](authored.md) |
 
+## `experiments/Ranvier.View.Arms`
+
+| Module | Contents | Page |
+| --- | --- | --- |
+| [`Ranvier.View.Arms`](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Arms/Arms.fs) | `Arms.Match`, `Arms.Prepare`; on .NET `BuildTimeReadException` and `ArmsMatchException` (both inherit `InvalidOperationException`, which shared code catches on both targets) | [Conditional arms](arms.md) |
+| [`Ranvier.View.Arms.FablePlugin`](https://github.com/shayanhabibi/Ranvier/tree/master/experiments/Ranvier.View.Arms.FablePlugin) | `CaseArmsAttribute`: the Fable plugin that lowers `Arms.Match` calls, referenced through `Ranvier.View.Arms.targets` | [Conditional arms](arms.md) |
+
 ## Other projects
 
 | Project | Page |

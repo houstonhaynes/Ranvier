@@ -3,6 +3,7 @@ generated-tests/
 generated-authoring-counters/
 generated-tests-counters/
 generated-tests-debug/
+generated-size-tests/
 generated-ripple/
 generated-framework-dist/
 generated-framework-shared/

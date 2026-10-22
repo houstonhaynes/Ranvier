@@ -1,0 +1,53 @@
+{
+  "defines": [],
+  "sizes": {
+    "explicitOne": {
+      "raw": 206783,
+      "gzip": 60140,
+      "brotli": 52825
+    },
+    "matchOne": {
+      "raw": 207525,
+      "gzip": 60514,
+      "brotli": 53135
+    },
+    "explicitTwo": {
+      "raw": 207626,
+      "gzip": 60331,
+      "brotli": 52974
+    },
+    "matchTwo": {
+      "raw": 208370,
+      "gzip": 60715,
+      "brotli": 53240
+    },
+    "plain": {
+      "raw": 204819,
+      "gzip": 59587,
+      "brotli": 52340
+    }
+  },
+  "one": {
+    "deltaGzip": 374,
+    "budgetGzip": 400,
+    "withinBudget": true
+  },
+  "perSite": {
+    "deltaGzip": 10,
+    "budgetGzip": 60,
+    "withinBudget": true
+  },
+  "plain": {
+    "matchEntryHoldsArmsModule": true,
+    "plainHoldsArmsModule": false,
+    "withinBudget": true
+  },
+  "quotation": {
+    "present": false,
+    "withinBudget": true
+  },
+  "helpers": {
+    "count": 0,
+    "withinBudget": true
+  }
+}

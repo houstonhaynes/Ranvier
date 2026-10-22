@@ -3,4 +3,7 @@ src/Ranvier.View/Generated/
 src/Ranvier.Wire/Vendor/
 # The docs samples keep the layout of the pages they are copied from.
 docs/samples/
+# The plugin fixtures keep the lines and columns PluginTests.fsx asserts.
+experiments/Ranvier.View.Arms.FablePlugin/Tests/Fixtures/
+experiments/Ranvier.View.Arms.FablePlugin/Tests/NoTargets/
 experiments/Ranvier.View.Twin/Generated/

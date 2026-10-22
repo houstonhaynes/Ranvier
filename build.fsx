@@ -93,6 +93,7 @@ module Spec =
                 "src/Ranvier.View/Ranvier.View.fsproj"
                 "src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj"
                 "src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj"
+                "experiments/Ranvier.View.Arms/Ranvier.View.Arms.fsproj"
                 "examples/Fable.Ranvier.Playground/Playground.fsproj"
                 "examples/Fable.Ranvier.Playground/tests/DomTests.fsproj"
                 "docs/samples/view/Ranvier.Docs.ViewSamples.fsproj"
