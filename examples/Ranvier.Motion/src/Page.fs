@@ -9,8 +9,12 @@ open Ranvier.View
 open Ranvier.View.Dom
 open Ranvier.View.Dom.Scheduling
 
+#if FABLE_COMPILER
 [<Global>]
 let document: TS.Dom.Document = jsNative
+#else
+let document: TS.Dom.Document = Unchecked.defaultof<_>
+#endif
 
 /// <summary>Publishes <c>handle</c> as <c>window.__motion</c>, the object the browser tests read.</summary>
 [<Emit("globalThis.__motion = $0")>]
@@ -62,3 +66,19 @@ let nextSeed (seed: int) =
 /// <summary>A number in 0..1 drawn from <c>seed</c>.</summary>
 let unitOf (seed: int) =
     float (seed % 10000) / 10000.
+
+[<Emit("queueMicrotask($0)")>]
+let private queue (callback: unit -> unit) : unit = jsNative
+
+/// <summary>Owns browser setup scheduled after the current render finishes.</summary>
+let afterRender (activate: unit -> (unit -> unit)) : unit -> unit =
+    let mutable disposed = false
+    let mutable cleanup = ignore
+
+    queue (fun () ->
+        if not disposed then
+            cleanup <- activate ())
+
+    fun () ->
+        disposed <- true
+        cleanup ()

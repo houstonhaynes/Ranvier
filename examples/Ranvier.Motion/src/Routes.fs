@@ -61,10 +61,12 @@ type ShellModel =
 
 type ShellMsg =
     | Navigated of Route
+    | InitialRoute of Route
     | ThemeChosen of Theme
 
 let updateShell (msg: ShellMsg) (model: ShellModel) =
     match msg with
+    | InitialRoute route -> { model with Route = route }
     | Navigated route when route <> model.Route ->
         { model with
             Route = route
@@ -325,8 +327,12 @@ let private listen (window: obj) (handler: obj -> unit) : unit = jsNative
 [<Emit("$0.removeEventListener('hashchange', $1)")>]
 let private unlisten (window: obj) (handler: obj -> unit) : unit = jsNative
 
+#if FABLE_COMPILER
 [<Global("window")>]
 let private window: obj = jsNative
+#else
+let private window: obj = null
+#endif
 
 /// <summary>A mounted shell and the handle its tests read.</summary>
 [<NoEquality; NoComparison>]
@@ -346,17 +352,9 @@ let mount (mode: CommitMode) (graph: Graph) (report: exn list -> unit) (host: TS
 
     { Shell = shell; Mount = mounted }
 
-/// <summary>
-/// The browser entry: mounts the shell at the current hash into <c>#app</c>, follows <c>hashchange</c>, and publishes
-/// <c>window.__motion</c>.
-/// </summary>
-let start () : unit -> unit =
-    let graph = new Graph ()
-
-    let mounted =
-        mount Page.browserMode graph Page.report (Page.host ()) (parse (hashIn window))
-
-    let shell = mounted.Shell
+/// <summary>Applies the initial hash, follows navigation, and publishes the shell's browser controls.</summary>
+let activate (graph: Graph) (shell: Shell) : unit -> unit =
+    graph.Run (fun () -> shell.Loop.Dispatch (InitialRoute (parse (hashIn window))))
 
     let follow (_: obj) =
         graph.Run (fun () -> shell.Loop.Dispatch (Navigated (parse (hashIn window))))
@@ -372,7 +370,4 @@ let start () : unit -> unit =
             theme = fun () -> graph.Run (fun () -> Api.untrack (fun () -> if shell.Theme.Value = Dusk then "dusk" else "daylight"))
         |}
 
-    fun () ->
-        unlisten window follow
-        mounted.Mount.Dispose ()
-        graph.Dispose ()
+    fun () -> unlisten window follow

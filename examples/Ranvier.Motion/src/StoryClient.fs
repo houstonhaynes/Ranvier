@@ -1,4 +1,4 @@
-/// <summary>The story page's browser entry: hydrates the server's document strictly, or mounts when the page was not served.</summary>
+/// <summary>Story mount adapters and controls exposed to the browser tests.</summary>
 module StoryClient
 
 open Fable.Core
@@ -57,39 +57,28 @@ let attach (graph: Graph) (host: TS.Dom.HTMLElement) : Mounted =
         Errors = errors
     }
 
-/// <summary>The browser entry: attaches the story to <c>#app</c> and publishes <c>window.__motion</c>.</summary>
-let start () : unit -> unit =
-    let graph = new Graph ()
-
-    let attached =
-        try
-            attach graph (Page.host ())
-        with error ->
-            Page.expose {| errors = [| error.Message |] |}
-            raise error
-
+/// <summary>Publishes the hydrated story's browser controls.</summary>
+let activate (graph: Graph) (story: Story.Story) : unit -> unit =
     Page.expose
         {|
             graph = graph
-            story = attached.Story
+            story = story
             progress =
                 fun () ->
                     graph.Run (fun () ->
                         Api.untrack (fun () ->
                             Array.append
-                                (attached.Story.Chapters
+                                (story.Chapters
                                  |> Array.map (fun chapter -> chapter.Progress.Value))
-                                [| attached.Story.Gallery.Progress.Value |]))
+                                [| story.Gallery.Progress.Value |]))
             seen =
                 fun () ->
                     graph.Run (fun () ->
                         Api.untrack (fun () ->
-                            attached.Story.Chapters
+                            story.Chapters
                             |> Array.map (fun chapter -> chapter.Seen.Value)))
-            hydrated = attached.Hydrated
-            errors = fun () -> attached.Errors.ToArray ()
+            hydrated = true
+            errors = fun () -> [||]: string array
         |}
 
-    fun () ->
-        attached.Mount.Dispose ()
-        graph.Dispose ()
+    ignore

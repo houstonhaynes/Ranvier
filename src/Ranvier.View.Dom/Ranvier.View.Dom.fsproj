@@ -33,6 +33,7 @@
         <Compile Include="DocumentHead.fs" />
         <Compile Include="Mounting.fs" />
         <Compile Include="Hydration.fs" />
+        <Compile Include="PageClient.fs" />
         <Compile Include="Debug.fs" />
         <Compile Include="Components.fs" />
         <Compile Include="Authoring.fs" />

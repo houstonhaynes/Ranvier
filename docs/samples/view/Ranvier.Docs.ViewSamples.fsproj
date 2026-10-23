@@ -36,6 +36,7 @@
     <Compile Include="DeploymentEndpoint.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Rendering.fs" />
+    <Compile Include="PageDeclarations.fs" />
     <Compile Include="ServerOverview.fs" />
     <Compile Include="MotionBindings.fs" />
     <Compile Include="MotionReactive.fs" />

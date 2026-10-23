@@ -388,11 +388,9 @@ let mount (mode: CommitMode) (graph: Graph) (report: exn list -> unit) (host: Fa
 
     { Board = board; Mount = mounted }
 
-/// <summary>The browser entry: mounts the board into <c>#app</c> and publishes <c>window.__motion</c>.</summary>
-let start () : unit -> unit =
-    let graph = new Graph ()
-    let mounted = mount Page.browserMode graph Page.report (Page.host ()) init
-    let loop = mounted.Board.Loop
+/// <summary>Publishes the board's browser controls.</summary>
+let activate (graph: Graph) (board: Board) : unit -> unit =
+    let loop = board.Loop
 
     let dispatch msg =
         graph.Run (fun () -> loop.Dispatch msg)
@@ -400,7 +398,7 @@ let start () : unit -> unit =
     Page.expose
         {|
             graph = graph
-            board = mounted.Board
+            board = board
             cards = fun () -> graph.Run (fun () -> Api.untrack (fun () -> loop.Model.Cards))
             add = fun (column: int) -> dispatch (Add column)
             remove = fun (id: int) -> dispatch (Delete id)
@@ -410,6 +408,4 @@ let start () : unit -> unit =
             undo = fun () -> dispatch Undo
         |}
 
-    fun () ->
-        mounted.Mount.Dispose ()
-        graph.Dispose ()
+    ignore

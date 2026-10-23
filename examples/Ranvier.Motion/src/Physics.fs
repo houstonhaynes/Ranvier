@@ -218,11 +218,8 @@ let mount (mode: CommitMode) (graph: Graph) (report: exn list -> unit) (host: TS
         Mount = mounted
     }
 
-/// <summary>The browser entry: mounts the playground into <c>#app</c> and publishes <c>window.__motion</c>.</summary>
-let start () : unit -> unit =
-    let graph = new Graph ()
-    let mounted = mount Page.browserMode graph Page.report (Page.host ())
-    let playground = mounted.Playground
+/// <summary>Publishes the playground's browser controls.</summary>
+let activate (graph: Graph) (playground: Playground) : unit -> unit =
 
     Page.expose
         {|
@@ -241,6 +238,4 @@ let start () : unit -> unit =
             reduced = fun () -> graph.Run (fun () -> Api.untrack (fun () -> playground.Policy.Value = Reactive.Reduced))
         |}
 
-    fun () ->
-        mounted.Mount.Dispose ()
-        graph.Dispose ()
+    ignore

@@ -420,14 +420,8 @@ let private stopAfter (handle: int) : unit = jsNative
 [<Emit("clearInterval($0)")>]
 let private stopEvery (handle: int) : unit = jsNative
 
-/// <summary>
-/// The browser entry: mounts the dashboard into <c>#app</c> under queued commits, pushes the first sample after
-/// 600 ms and one each second while running, and publishes <c>window.__motion</c>.
-/// </summary>
-let start () : unit -> unit =
-    let graph = new Graph ()
-    let mounted = mount Page.browserMode graph Page.report (Page.host ())
-    let store = mounted.Store
+/// <summary>Starts the sample feed and publishes its browser controls; disposal stops both timers.</summary>
+let activate (graph: Graph) (store: Store) : unit -> unit =
     let mutable tick = 0
 
     let push (sample: int -> Sample) =
@@ -460,5 +454,3 @@ let start () : unit -> unit =
     fun () ->
         stopAfter first
         stopEvery timer
-        mounted.Mount.Dispose ()
-        graph.Dispose ()

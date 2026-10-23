@@ -19,9 +19,10 @@ for (const [label, width] of [["at desktop width", 1180], ["at phone width", 600
   test(`the hash selects the first page, and the indicator sits on its tab ${label}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 820 });
     await openPage(page, "/routes/#/settings");
+    await page.clock.runFor(600);
     await expect(pages(page)).toHaveCount(1);
     await expect(pages(page).first()).toHaveAttribute("data-route", "settings");
-    await page.clock.runFor(600);
+    expect(await page.evaluate(() => window.__motion.visits())).toBe(0);
     const settings = await boxes(page, "settings");
     expect(settings.indicator[0]).toBeCloseTo(settings.tab[0], 0);
     expect(settings.indicator[1]).toBeCloseTo(settings.tab[1], 0);

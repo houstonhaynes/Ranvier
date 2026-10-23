@@ -178,6 +178,7 @@ let generated: (string * string list) list =
       @ (blocks "server/hydration.md")[0]
 
       "Rendering.fs", pageOfBlocks "server/rendering.md" "Rendering" (opens @ [ "open Counter"; "" ])
+      "PageDeclarations.fs", pageOfBlocks "server/pages.md" "PageDeclarations" []
 
       "MotionBindings.fs", pageOfBlocks "view/motion.md" "MotionBindings" []
       "MotionReactive.fs", pageOfBlocks "view/motion-reactive.md" "MotionReactive" []

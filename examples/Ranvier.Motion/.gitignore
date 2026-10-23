@@ -1,6 +1,13 @@
 generated/
 generated-tests/
 generated-server/
+generated-pages/
+/index.html
+/kanban/index.html
+/dashboard/index.html
+/story/index.html
+/physics/index.html
+/routes/index.html
 dist/
 node_modules/
 test-results/

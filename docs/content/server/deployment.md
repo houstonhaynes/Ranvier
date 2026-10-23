@@ -7,6 +7,9 @@ for the browser. This page assembles the counter from [Getting started](../view/
 into three projects, an ASP.NET Core server that renders the page and serves the client bundle, and a
 Fable client that hydrates it.
 
+For generated HTML and browser startup from a shared F# declaration, see [Page declarations](pages.md).
+The example below shows the lower-level rendering and hydration calls.
+
 ## Projects
 
 ```text

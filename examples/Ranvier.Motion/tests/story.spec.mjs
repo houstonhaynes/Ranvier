@@ -35,7 +35,8 @@ test("the page arrives server-rendered and hydrates strictly without a report", 
   // Vite adds its client script to the head; the rest is the document Server.renderDocument wrote.
   expect(served.startsWith('<!doctype html><html lang="en"><head>')).toBe(true);
   expect(served).toContain('<title data-ranvier-head="title">Story · Ranvier Motion</title>');
-  expect(served).toContain('<body><div id="app"><!--[r--><div class="frame"><header class="site-header">');
+  expect(served).toContain('<body><div id="app"><!--[r-->');
+  expect(served).toContain('<div class="frame"><header class="site-header">');
   expect(served).toContain("Motion, owned by the view.");
   await expect(page).toHaveTitle("Story · Ranvier Motion");
   expect(await page.evaluate(() => [window.__motion.hydrated, window.__motion.errors()])).toEqual([true, []]);

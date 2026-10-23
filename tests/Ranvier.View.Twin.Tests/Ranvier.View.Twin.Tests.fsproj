@@ -23,6 +23,7 @@
         <Compile Include="Fixtures.fs" />
         <Compile Include="ClockTests.fs" />
         <Compile Include="SessionTests.fs" />
+        <Compile Include="PageTests.fs" />
         <Compile Include="AsyncTests.fs" />
         <Compile Include="DepartureTests.fs" />
         <Compile Include="HeadTests.fs" />

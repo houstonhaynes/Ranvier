@@ -16,12 +16,19 @@
         <Compile Include="src/StoryClient.fs" />
         <Compile Include="src/Physics.fs" />
         <Compile Include="src/Routes.fs" />
+        <Compile Include="src/PageLayout.fs" />
+        <Compile Include="src/KanbanPage.fs" />
+        <Compile Include="src/DashboardPage.fs" />
+        <Compile Include="src/StoryPage.fs" />
+        <Compile Include="src/PhysicsPage.fs" />
+        <Compile Include="src/RoutesPage.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
         <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
         <ProjectReference Include="../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.Wire/Ranvier.Wire.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.1.401" />
     </ItemGroup>
 

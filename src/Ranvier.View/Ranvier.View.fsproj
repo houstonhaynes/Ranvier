@@ -36,6 +36,7 @@
         <Compile Include="Generated/HtmlTemplateSugar.fs" />
         <Compile Include="SvgSugar.fs" />
         <Compile Include="Server.fs" />
+        <Compile Include="Page.fs" />
         <None Include="README.md" Pack="true" PackagePath="\" />
         <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
     </ItemGroup>
