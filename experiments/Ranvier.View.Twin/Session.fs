@@ -101,9 +101,20 @@ type Session internal (host: TwinHost, element: TwinElement, graph: Graph, polic
     member _.Text() =
         element.TextContent
 
+    /// <summary>The text dump of the mounted view under <c>options</c>, by default <c>Debug.DumpOptions.defaults</c>.</summary>
+    member _.Dump(?options: Debug.DumpOptions) =
+        let options = defaultArg options Debug.DumpOptions.defaults
+        Debug.textWith options (Debug.capture options mounted)
+
     /// <summary>Runs <c>action</c> inside the graph and settles the clock.</summary>
     member this.Act(action: unit -> unit) =
         graph.Run action
+        host.Clock.Settle graph
+        this.RaisePending ()
+
+    /// <summary>Advances the clock by <c>milliseconds</c>, running the timers and frames that fall due, and settles it.</summary>
+    member this.AdvanceBy(milliseconds: float) =
+        host.Clock.AdvanceBy milliseconds
         host.Clock.Settle graph
         this.RaisePending ()
 
@@ -166,3 +177,51 @@ module Twin =
 
     let mount (definition: Component<'props>) (props: 'props) : Session =
         mountWith TwinMount.defaults definition props
+
+    /// <summary>
+    /// Parses the server HTML <c>body</c> into the host, calls <c>parsed</c> with the host element, and hydrates it with
+    /// <c>Hydration.hydrateWith</c>. Queued commits raise <c>NotSupportedException</c>: hydration commits synchronously.
+    /// </summary>
+    let hydrateHtmlWith
+        (options: TwinMount)
+        (hydration: Hydration.HydrationOptions)
+        (body: string)
+        (parsed: Fable.Core.TS.Dom.HTMLElement -> unit)
+        (definition: Component<'props>)
+        (props: 'props)
+        : Session =
+        match options.Commits with
+        | Commits.Queued _ -> raise (NotSupportedException "Hydration supports synchronous commits only")
+        | Commits.Synchronous -> ()
+
+        let _, element, graph, session = start options
+
+        try
+            Html.parseInto element body
+            parsed (unbox element.Native)
+            session.Attach (Hydration.hydrateWith SynchronousCommits graph None session.Report hydration element.Native definition props)
+            session.RaisePending ()
+            session
+        with _ ->
+            (session :> IDisposable).Dispose()
+            reraise ()
+
+    /// <summary>Parses the server HTML <c>body</c> into the host and hydrates it with <c>Hydration.hydrateWith</c>.</summary>
+    let hydrateHtml options hydration body (definition: Component<'props>) (props: 'props) : Session =
+        hydrateHtmlWith options hydration body ignore definition props
+
+    /// <summary>
+    /// Renders with <c>Server.renderPage</c>, writes the body into the host and the head into the document, and hydrates
+    /// with <c>Hydration.hydrateWith SynchronousCommits</c>.
+    /// </summary>
+    let hydrate (server: Server.Options) (hydration: Hydration.HydrationOptions) (definition: Component<'props>) (props: 'props) : Session =
+        let page = Server.renderPage server definition props
+
+        hydrateHtml
+            { TwinMount.defaults with
+                Head = page.Head
+            }
+            hydration
+            page.Body
+            definition
+            props

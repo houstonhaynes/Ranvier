@@ -2277,8 +2277,42 @@ let private documentFailures () =
          (cleanupMessage.StartsWith ("Server render cleanup failed: cleanup failed", StringComparison.Ordinal), cleanupSame, cleanupWritten),
          (failedMessage.StartsWith ("Server render failed: setup failed; cleanup failed", StringComparison.Ordinal), failedSame, failedWritten))
 
+let private someNullOmitted () =
+    let rendered =
+        Html.render
+            Omit
+            (Program.run (
+                Program.element
+                    Div
+                    [|
+                        OptionalAttribute ("title", Some null)
+                        ReactiveAttribute ("id", (fun () -> Some null))
+                        OptionalAttribute ("lang", Some "en")
+                    |]
+                    [||]
+            ))
+
+    equal "<div lang=\"en\"></div>" rendered
+
+/// <summary>A div whose string option properties are given in the static and the reader form.</summary>
+let private ariaDiv (value: string option) =
+    Component.define (fun _ () -> ()) (fun t -> t.div [| t.Props.ariaAtomic value; t.Props.ariaLabel (fun () -> value) |] [||])
+
+let private someNullPropertyOmitted () =
+    let options =
+        { Server.Options.defaults with
+            Policy = Omit
+        }
+
+    let rendered (value: string option) =
+        Html.render Omit (Program.run (Component.render (ariaDiv value) ())), Server.render options (ariaDiv value) ()
+
+    equal (rendered None) (rendered (Some null))
+
 let cases: (string * (unit -> unit)) array =
     [|
+        "an optional or reactive attribute of Some null is omitted, as None is", someNullOmitted
+        "a string option property of Some null is omitted, as None is", someNullPropertyOmitted
         "CreateId numbers inlined children in pre-order and puts an inlined child's rows under its path", nestedIdentity
         "each view row counts its authored steps from 0 and the enclosing row resumes its count after it", holesIdentity
         "a Setup kept from one setup raises when called during another instance's setup", createIdInLaterSetup

@@ -146,6 +146,8 @@ let generated: (string * string list) list =
 
       "CounterHtml.fs", header "view/testing.md" "CounterHtml" @ testing[0]
       "CounterChecks.fs", header "view/testing.md" "CounterChecks" @ testing[1]
+      "TwinChecks.fs", header "view/testing.md" "TwinChecks" @ testing[2]
+      "ViewDumps.fs", header "view/testing.md" "ViewDumps" @ testing[3]
       "Shared.fs", header "server/state-transfer.md" "Shared" @ [ "open Counter"; "" ] @ stateTransfer[0]
 
       "StateTransfer.fs",

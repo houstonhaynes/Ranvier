@@ -28,6 +28,8 @@
     <Compile Include="FableRanvier.fs" />
     <Compile Include="CounterHtml.fs" />
     <Compile Include="CounterChecks.fs" />
+    <Compile Include="TwinChecks.fs" />
+    <Compile Include="ViewDumps.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="StateTransfer.fs" />
     <Compile Include="ServerPage.fs" />
@@ -43,11 +45,12 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+    <ProjectReference Include="../../../experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <ProjectReference Include="../../../experiments/Ranvier.View.Arms/Ranvier.View.Arms.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Wire/Ranvier.Wire.fsproj" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
-    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    <PackageReference Update="FSharp.Core" Version="10.1.402" />
   </ItemGroup>
 </Project>

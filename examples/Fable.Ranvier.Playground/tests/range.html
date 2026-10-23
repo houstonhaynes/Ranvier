@@ -17,7 +17,7 @@ import { cases as sugar } from "../generated-tests/SugarChecks.js";
 import { browserCases as templateBrowser } from "../generated-tests/TemplateChecks.js";
 // Each conformance case runs over the page's document with the harness clock.
 const bound = cases => cases.map(([name, run]) => [name, () => runOnPage(window, create, run)]);
-window.rangeCases = [...bound(cases), ...bindings, ...integration, ...generated, ...attributes, ...bound(boundaries), ...bound(placement), ...integrationChecks, ...unsafeHtml, ...documentChecks, ...sugar];
+window.rangeCases = [...bound(cases), ...bindings, ...integration, ...generated, ...attributes, ...bound(boundaries), ...bound(placement), ...integrationChecks, ...bound(unsafeHtml), ...bound(documentChecks), ...bound(sugar)];
 window.bindingMicrotaskFixture = microtaskFixture;
 window.templateBrowserCases = bound(templateBrowser);
 window.placementBrowserCases = bound(placementBrowser);

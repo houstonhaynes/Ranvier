@@ -633,7 +633,9 @@ let setAttributeOrRemove (node: obj) (value: obj) (name: string) : unit =
         element.setAttribute (name, jsString value)
 
 let defaultValueOf (node: obj) : string =
-    (unbox<HTMLInputElement> node).defaultValue
+    match node with
+    | :? HTMLTextAreaElement as area -> area.defaultValue
+    | _ -> (unbox<HTMLInputElement> node).defaultValue
 
 let createElementIn (owner: Document) (tag: string) : Element =
     owner.createElement (tagName = tag) :> Element
@@ -647,7 +649,7 @@ let headOf (owner: Document) : Node =
     owner.head :> Node
 
 let replaceWith (node: Element) (next: Element) : unit =
-    (unbox<ChildNode> node).replaceWith [| Fable.Core.U2.Case1 (unbox next) |]
+    (unbox<ChildNode> node).replaceWith [| Fable.Core.U2.Case2 (next :> Node) |]
 
 /// <summary>The elements of the document's head that carry <c>data-ranvier-head</c>, in document order.</summary>
 let markedIn (owner: Document) : Element array =

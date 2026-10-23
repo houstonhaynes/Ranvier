@@ -117,7 +117,7 @@ type internal Binding<'Target, 'T>
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface IComputation with
         member _.AddSource _ = ()

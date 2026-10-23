@@ -5,24 +5,57 @@ open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View
 open Ranvier.View.Dom
+open Ranvier.View.Testing
 
 module G = Ranvier.View.Dom.Generated.Html
 
+#if FABLE_COMPILER
 [<Global>]
 let private globalThis: TS.Es.GlobalThis = jsNative
+#endif
 
 let private equal expected actual =
     if expected <> actual then
         failwithf "Expected %A; got %A" expected actual
 
+#if FABLE_COMPILER
 [<Emit("$0[$1]")>]
 let private read (node: obj) (name: string) : 'value = jsNative
+#else
+// The DOM property `name` of `node`, read through the interface that declares it.
+let private read (node: obj) (name: string) : 'value =
+    let property =
+        node.GetType().GetInterfaces()
+        |> Array.tryPick (fun i -> Option.ofObj (i.GetProperty name))
 
+    match property with
+    | Some property -> unbox<'value>(property.GetValue node)
+    | None -> raise (System.NotSupportedException $"No DOM interface of the node declares {name}")
+#endif
+
+#if FABLE_COMPILER
 [<Emit("(() => { const event = new ($0.ownerDocument.defaultView.Event)($1, { bubbles: true }); $0.dispatchEvent(event); return event; })()")>]
 let private fire (target: HTMLElement) (name: string) : obj = jsNative
+#else
+let private fire (target: HTMLElement) (name: string) : obj =
+    let event =
+        EventSpec.create
+            (Conformance.document ())
+            {
+                Type = name
+                // A typed handler casts the event: an input event is an InputEvent, as the twin types its events.
+                Kind = (if name = "input" then EventKind.Input else EventKind.Plain)
+                Bubbles = true
+                Cancelable = false
+                Init = []
+            }
+
+    target.dispatchEvent event |> ignore
+    box event
+#endif
 
 let private host () =
-    globalThis.document.createElement "main"
+    (Conformance.document ()).createElement "main"
 
 let private mount graph (host: HTMLElement) view =
     Mounting.mount graph None (fun errors -> failwithf "%A" errors) host None (fun context -> Program.run view context.Backend)
@@ -71,10 +104,14 @@ let private labelInference () =
                     Value = value
                 })
 
-    let div = host.querySelector "div" |> unbox<HTMLElement>
+    let div =
+        host.querySelector "div"
+        |> Option.get
+        |> unbox<HTMLElement>
 
     let button =
         host.querySelector "button"
+        |> Option.get
         |> unbox<HTMLButtonElement>
 
     equal (Some "card") (div.getAttribute "class")
@@ -83,6 +120,7 @@ let private labelInference () =
     equal
         "v"
         (host.querySelector "input"
+         |> Option.get
          |> unbox<HTMLInputElement>)
             .value
 
@@ -320,7 +358,10 @@ let private sourceAttributes () =
                     Data = data
                 })
 
-    let button = host.querySelector "button" |> unbox<HTMLElement>
+    let button =
+        host.querySelector "button"
+        |> Option.get
+        |> unbox<HTMLElement>
 
     let snapshot () =
         [
@@ -506,12 +547,25 @@ let private events () =
     let mounted =
         mount graph host (Component.render eventTemplate { Label = "L"; Log = log })
 
-    let inputEvent = fire (host.querySelector "input" |> unbox<HTMLElement>) "input"
+    let inputEvent =
+        fire
+            (host.querySelector "input"
+             |> Option.get
+             |> unbox<HTMLElement>)
+            "input"
 
     let videoEvent =
-        fire (host.querySelector "video" |> unbox<HTMLElement>) "waitingforkey"
+        fire
+            (host.querySelector "video"
+             |> Option.get
+             |> unbox<HTMLElement>)
+            "waitingforkey"
 
-    fire (host.querySelector "video" |> unbox<HTMLElement>) "input"
+    fire
+        (host.querySelector "video"
+         |> Option.get
+         |> unbox<HTMLElement>)
+        "input"
     |> ignore
 
     equal [ "input L"; "video L" ] [ for name, _ in log -> name ]
@@ -564,7 +618,11 @@ let private isolation () =
                     Reads = reads
                 })
 
-    let div = host.querySelector "div" |> unbox<HTMLElement>
+    let div =
+        host.querySelector "div"
+        |> Option.get
+        |> unbox<HTMLElement>
+
     graph.Run (fun () -> first.Value <- "b")
     equal (1, Some "b", Some "x") (reads.Value, div.getAttribute "id", div.getAttribute "title")
     graph.Run (fun () -> second.Value <- "y")
@@ -593,19 +651,20 @@ let private invalidAttributeRejectedAtDefinition () =
 
     equal true rejected
 
-let cases =
-    [|
-        "a template lambda types against the instance when another record shares the field name", labelInference
-        "reader attributes render the same markup as Html.Program, including null and absent values", readerParity
-        "static attributes render the same markup as Html.Program", staticParity
-        "an option reader on a string attribute removes the attribute on None", optionReaderRemoval
-        "static bool option ARIA and aria static and reader forms render the same markup as Html.Attrs", ariaParity
-        "string, bool, ARIA and data source attributes write and remove through signals, null removing a string attribute", sourceAttributes
-        "a raw-text element without children mounts with its attributes", rawTextElement
-        "a raw-text element with children fails to compile, and server markup rejects every raw-text element", rawTextChildrenRejected
-        "string, bool, float and option properties write in static, reader and source forms", propertyTypes
-        "flat and grouped events receive the instance and fire only for their event name", events
-        "an isolated generated attribute re-runs only on its own source", isolation
-        "isolating a static generated attribute fails at definition", staticIsolationRejected
-        "an invalid attribute name raises ArgumentException when the template is defined", invalidAttributeRejectedAtDefinition
-    |]
+let cases: Conformance.Case array =
+    Conformance.ofChecks
+        [|
+            "a template lambda types against the instance when another record shares the field name", labelInference
+            "reader attributes render the same markup as Html.Program, including null and absent values", readerParity
+            "static attributes render the same markup as Html.Program", staticParity
+            "an option reader on a string attribute removes the attribute on None", optionReaderRemoval
+            "static bool option ARIA and aria static and reader forms render the same markup as Html.Attrs", ariaParity
+            "string, bool, ARIA and data source attributes write and remove through signals, null removing a string attribute", sourceAttributes
+            "a raw-text element without children mounts with its attributes", rawTextElement
+            "a raw-text element with children fails to compile, and server markup rejects every raw-text element", rawTextChildrenRejected
+            "string, bool, float and option properties write in static, reader and source forms", propertyTypes
+            "flat and grouped events receive the instance and fire only for their event name", events
+            "an isolated generated attribute re-runs only on its own source", isolation
+            "isolating a static generated attribute fails at definition", staticIsolationRejected
+            "an invalid attribute name raises ArgumentException when the template is defined", invalidAttributeRejectedAtDefinition
+        |]

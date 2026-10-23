@@ -7,9 +7,12 @@ open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View
 open Ranvier.View.Dom
+open Ranvier.View.Testing
 
+#if FABLE_COMPILER
 [<Global>]
 let private globalThis: TS.Es.GlobalThis = jsNative
+#endif
 
 let private equal expected actual =
     if expected <> actual then
@@ -25,11 +28,22 @@ type private Flight =
         Reject: exn -> unit
     }
 
+#if FABLE_COMPILER
 [<Emit("(() => { let resolve, reject; const task = new Promise((ok, fail) => { resolve = ok; reject = fail; }); return [task, resolve, reject]; })()")>]
 let private deferred () : Task<string> * (string -> unit) * (exn -> unit) = jsNative
+#else
+let private deferred () : Task<string> * (string -> unit) * (exn -> unit) =
+    let source = TaskCompletionSource<string>()
+    source.Task, source.SetResult, source.SetException
+#endif
 
+#if FABLE_COMPILER
 [<Emit("new Promise(resolve => setTimeout(resolve, 0))")>]
 let private nextTask () : JS.Promise<unit> = jsNative
+#else
+let private nextTask () : JS.Promise<unit> =
+    raise (System.NotSupportedException "jsdom only: awaits JavaScript promise delivery")
+#endif
 
 /// <summary>Completes after every pending promise continuation has run.</summary>
 let private drain () =
@@ -57,7 +71,7 @@ let private loading (label: unit -> string) =
         task)
 
 let private host () =
-    globalThis.document.createElement "main"
+    (Conformance.document ()).createElement "main"
 
 let private mount graph (host: HTMLElement) (reported: ResizeArray<exn>) view =
     Mounting.mount graph None reported.AddRange host None (fun context -> Program.run view context.Backend)
@@ -248,12 +262,32 @@ let private supersededFlight () =
     }
     |> Async.StartAsPromise
 
-let cases: (string * (unit -> JS.Promise<unit>)) array =
-    [|
-        "a removed each row cancels its flight and its later result writes nothing", removedRow
-        "a removed each row's later failure reports nothing", removedRowFailure
-        "a removed row whose flight rejects on cancellation reports nothing", cooperativeRemoval
-        "disposing a mount cancels every row's flight and later completions report nothing", disposedMount
-        "a branch key change cancels the replaced arm's flight and its later result writes nothing", replacedArm
-        "a superseded flight's later result is dropped and the current flight's result shows", supersededFlight
-    |]
+/// <summary>Runs under jsdom only: each case awaits JavaScript promise delivery.</summary>
+let cases: Conformance.Case array =
+    Conformance.ofPromiseChecks
+        [|
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("a removed each row cancels its flight and its later result writes nothing", (fun () -> box (removedRow ())))
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("a removed each row's later failure reports nothing", (fun () -> box (removedRowFailure ())))
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("a removed row whose flight rejects on cancellation reports nothing", (fun () -> box (cooperativeRemoval ())))
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("disposing a mount cancels every row's flight and later completions report nothing", (fun () -> box (disposedMount ())))
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("a branch key change cancels the replaced arm's flight and its later result writes nothing", (fun () -> box (replacedArm ())))
+            Conformance.platformOnly
+                "jsdom"
+                "awaits JavaScript promise delivery"
+                ("a superseded flight's later result is dropped and the current flight's result shows", (fun () -> box (supersededFlight ())))
+        |]

@@ -1,0 +1,31 @@
+--- a/src/Ranvier.View.Dom/Mounting.js
++++ b/src/Ranvier.View.Dom/Mounting.js
+@@ -2707,7 +2707,8 @@
+ /**
+  * Binds a document head entry for the current owner. Its readers are bindings of this mount; it is shown once
+  * <c>target</c> is placed and withdrawn when the owner is disposed. A meta or link element shows the entry's
+- * attribute values from the bind on, and each attribute is written only when it differs.
++ * attribute values from the bind on, and each attribute is written only when it differs. A failure to show the
++ * entry fails the mount as a placed hook's failure does.
+  */
+ export function MountState__HeadIn_92EBE52(this$, target, entry) {
+     const owner = Api_getOwner();
+@@ -2738,6 +2739,17 @@
+         }
+     }
+     Placement__Add_Z12158FD7(target, owner, () => {
+-        activate(record);
++        try {
++            activate(record);
++        }
++        catch (error) {
++            const root = Placement__get_Root(target);
++            if (!scope.Tracks && Placement__get_Placing(root)) {
++                Placement__Hold_229D3F39(root, error);
++            }
++            else {
++                scope.FailAll(singleton(error));
++            }
++        }
+     });
+ }

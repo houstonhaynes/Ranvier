@@ -843,7 +843,7 @@ let private write (slot: Slot) (node: obj) (value: obj) =
     | AttributeTarget name -> setAttribute node value name
     | PropertyTarget property -> property.Write.Invoke (node, value)
     | TextTarget -> setData node value
-    | ContentTarget -> (unbox<HTMLElement> node).innerHTML <- markupOf value
+    | ContentTarget -> (unbox<Element> node).innerHTML <- markupOf value
 
 #if FABLE_COMPILER
 [<Emit("$0.data !== ($1 == null ? '' : String($1))")>]
@@ -1214,6 +1214,16 @@ let private bind (services: MountServices) (compiled: Compiled) (state: obj arra
         with error when services.SettingUp () ->
             services.SetupFailed error
             reraise ()
+
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    for slots in [| compiled.RenderSlots; compiled.IsolatedSlots |] do
+        for k in 0 .. slots.Length - 1 do
+            let nodeIndex, slot = at slots k
+
+            match slot.Target with
+            | TextTarget -> Inspect.markBound (unbox<Node>(at state (StateNodes + nodeIndex)))
+            | _ -> ()
+#endif
 
     if compiled.RenderSlots.Length > 0 then
         startRender services state
@@ -1658,6 +1668,112 @@ let internal compiledIn (definition: TemplateDefinition) : obj =
     | false, _ -> null
 #endif
 
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+let private childRootPaths = Native.newWeakMap ()
+
+let private instanceRootPaths (root: TemplateNode) =
+    let paths = ResizeArray<int array>()
+    let ends = ResizeArray<int array>()
+
+    let rec siblings (nodes: TemplateNode array) (parent: int list) =
+        let mutable index = 0
+        let mutable previousText = false
+
+        let rec write (owners: int list) node =
+            match node with
+            | FragmentNode children ->
+                for child in children do
+                    write owners child
+            | ChildNode (definition, _) ->
+                let child = paths.Count
+                paths.Add null
+                ends.Add null
+                write (child :: owners) definition.Root
+            | HeadNode _
+            | TextNode "" -> ()
+            | other ->
+                let text =
+                    match other with
+                    | TextNode _
+                    | TextSlotNode _ -> true
+                    | _ -> false
+
+                if text && previousText then
+                    index <- index + 1
+
+                let path = index :: parent
+
+                for owner in owners do
+                    if isNull paths[owner] then
+                        paths[owner] <- List.rev path |> List.toArray
+
+                    let last =
+                        match other with
+                        | RegionNode _ -> (index + 1) :: parent
+                        | _ -> path
+
+                    ends[owner] <- List.rev last |> List.toArray
+
+                match other with
+                | ElementNode (_, _, _, _, _, _, children) -> siblings children path
+                | _ -> ()
+
+                index <-
+                    index
+                    + (match other with
+                       | RegionNode _ -> 2
+                       | _ -> 1)
+
+                previousText <- text
+
+        for node in nodes do
+            write [] node
+
+    siblings [| root |] []
+    Array.zip (paths.ToArray ()) (ends.ToArray ())
+
+let private instanceRoots (template: TemplateComponent) (clone: Node) (roots: Node array) =
+    let paths =
+        match Native.get<TemplateComponent, (int array * int array) array> childRootPaths template with
+        | null ->
+            let paths = instanceRootPaths template.Root
+            Native.set childRootPaths template paths
+            paths
+        | paths -> paths
+
+    let siblingAt (first: Node) index =
+        let mutable node = first
+
+        for _ in 1..index do
+            node <-
+                if isStartMarker node then
+                    matchingEnd node
+                else
+                    Native.nextOrNull node
+
+        node
+
+    let resolve (path: int array) =
+        if isNull path then
+            noNode
+        else
+            let mutable node =
+                if not (isNull roots) then
+                    at roots path[0]
+                elif clone.nodeType = 11.0 then
+                    siblingAt (Native.firstChildOf clone) path[0]
+                else
+                    clone
+
+            for index in 1 .. path.Length - 1 do
+                node <- siblingAt (Native.firstChildOf node) path[index]
+
+            node
+
+    paths
+    |> Array.map (fun (first, last) -> resolve first, resolve last)
+#endif
+
 /// <summary>
 /// Materialises one instance at the position one step of <c>kind</c> below <c>parent</c>: runs setup, clones the
 /// skeleton or, during hydration, adopts the server nodes at the cursor, binds its slots, events, head entries and
@@ -1676,7 +1792,11 @@ let rec internal materialise
     let compiled = compiledOf definition
     let children = compiled.Children
     let identity = services.Identity
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    // The instance's path, including templates without regions or children.
+#else
     // The instance's path, taken only when a region or an inlined child sits under it.
+#endif
     let mutable path: InstancePath = null
     identity.Enter (parent, kind, a, b)
 
@@ -1686,6 +1806,10 @@ let rec internal materialise
 
             if compiled.Regions.Length > 0 || children.Length > 0 then
                 path <- identity.Path ()
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+            else
+                path <- identity.Path ()
+#endif
 
             instance
         finally
@@ -1703,7 +1827,36 @@ let rec internal materialise
         roots <- adoptRoots cursor compiled
         collectAdopted roots compiled state cursor
 
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    let childRoots = instanceRoots template clone roots
+#endif
+
     bind services compiled state roots
+
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    let first: Node =
+        if not (isNull roots) then
+            (if roots.Length > 0 then at roots 0 else noNode)
+        elif clone.nodeType = 11.0 then
+            Native.firstChildOf clone
+        else
+            clone
+
+    if not (isNull (box first)) then
+        Api.onCleanup (Inspect.register first (Inspect.InstanceProbe (template, instance, Api.getOwner (), path)))
+
+        let last =
+            if not (isNull roots) then
+                at roots (roots.Length - 1)
+            elif clone.nodeType = 11.0 then
+                clone.lastChild
+                |> Option.map (fun node -> node :> Node)
+                |> Option.defaultValue noNode
+            else
+                clone
+
+        Api.onCleanup (Inspect.registerInstanceRange first last)
+#endif
 
     let childBase =
         StateNodes
@@ -1718,7 +1871,23 @@ let rec internal materialise
 
         let childInstance =
             try
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+                let childInstance =
+                    setUpChild services child (partInstance state childBase child.Owner)
+
+                let first, last = at childRoots k
+
+                if not (isNull (box first)) then
+                    Api.onCleanup (
+                        Inspect.register first (Inspect.InstanceProbe (child.Definition, childInstance, Api.getOwner (), identity.Path ()))
+                    )
+
+                    Api.onCleanup (Inspect.registerInstanceRange first last)
+
+                childInstance
+#else
                 setUpChild services child (partInstance state childBase child.Owner)
+#endif
             finally
                 identity.Leave ()
 

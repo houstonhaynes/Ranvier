@@ -29,7 +29,12 @@ type Harness =
     /// <c>target</c> is null, through <c>wrap</c> until the returned function runs. <c>wrap</c> receives the original
     /// method and the call's arguments, and its result is the call's result.
     /// </summary>
-    abstract Intercept: target: obj * memberName: string * wrap: System.Func<System.Func<obj array, obj>, obj array, obj> -> (unit -> unit)
+    abstract Intercept: target: obj * memberName: string * wrap: System.Func<System.Func<obj array, obj>, obj, obj array, obj> -> (unit -> unit)
+    /// <summary>
+    /// Records the child list, attribute and character data changes under <c>root</c>, as a MutationObserver over its
+    /// subtree does, until the returned function runs; that function returns each change's kind and target in order.
+    /// </summary>
+    abstract ObserveMutations: root: Node -> (unit -> (string * Node) array)
 
 type Case = string * (Harness -> unit)
 
@@ -73,6 +78,9 @@ type private Running(inner: Harness) =
 
         member _.Intercept(target, memberName, wrap) =
             inner.Intercept (target, memberName, wrap)
+
+        member _.ObserveMutations root =
+            inner.ObserveMutations root
 
 #if FABLE_COMPILER
 let mutable private current: Harness = Unchecked.defaultof<_>
@@ -129,7 +137,11 @@ let local (key: string) (create: unit -> 'T) : 'T =
 
 /// <summary>The running case's <c>Harness.Intercept</c>, with <c>wrap</c> taking the original method and the arguments.</summary>
 let intercept (target: obj) (name: string) (wrap: (obj array -> obj) -> obj array -> obj) : unit -> unit =
-    (harness ()).Intercept(target, name, System.Func<_, _, _>(fun original args -> wrap original.Invoke args))
+    (harness ()).Intercept(target, name, System.Func<_, _, _, _>(fun original _ args -> wrap original.Invoke args))
+
+/// <summary>The running case's <c>Harness.Intercept</c>, with <c>wrap</c> taking the original method, the call's target and the arguments.</summary>
+let interceptOn (target: obj) (name: string) (wrap: (obj array -> obj) -> obj -> obj array -> obj) : unit -> unit =
+    (harness ()).Intercept(target, name, System.Func<_, _, _, _>(fun original self args -> wrap original.Invoke self args))
 
 /// <summary>Records a named artefact with the running case's harness; outside a case it does nothing.</summary>
 let recordIfRunning (name: string) (text: string) : unit =
@@ -168,7 +180,31 @@ let ofChecks (checks: (string * (unit -> unit)) array) : Case array =
     checks
     |> Array.map (fun (name, check) -> name, (fun value -> run value check))
 
-let platformOnly (platform: string) (reason: string) (name: string, check: unit -> unit) =
+/// <summary>
+/// The cases of checks that return a JavaScript promise, which the jsdom runner awaits. A check reads the document before
+/// its first await; the harness is current until the check returns its promise. On .NET the check runs and its result
+/// is dropped.
+/// </summary>
+let ofPromiseChecks (checks: (string * (unit -> obj)) array) : Case array =
+    checks
+    |> Array.map (fun (name, check) ->
+#if FABLE_COMPILER
+        name,
+        unbox<Harness -> unit>(
+            box (fun (value: Harness) ->
+                let previous = read ()
+                write (Running value)
+
+                try
+                    check ()
+                finally
+                    write previous)
+        ))
+#else
+        name, (fun value -> run value (fun () -> check () |> ignore)))
+#endif
+
+let platformOnly (platform: string) (reason: string) (name: string, check: 'check) =
     $"[{platform}] {name} ({reason})", check
 
 let skippedOn (platform: string) (name: string) =

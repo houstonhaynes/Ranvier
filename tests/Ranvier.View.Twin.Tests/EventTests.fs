@@ -28,6 +28,65 @@ let tests =
     testList
         "Events"
         [
+            testCase "a focused element removed and appended again is not active"
+            <| fun () ->
+                Events.ensure ()
+                use document = new TwinDocument ()
+                let input = document.CreateElement "input"
+                document.Body.AppendChild input |> ignore
+                Events.focus input
+                input.Remove ()
+                document.Body.AppendChild input |> ignore
+                Expect.isNull document.ActiveElement "focus fixup ran at the removal"
+
+            testCase "a control in a disabled fieldset neither clicks nor submits"
+            <| fun () ->
+                Events.ensure ()
+                use document = new TwinDocument ()
+                let form = document.CreateElement "form"
+                Html.parseInto form "<fieldset disabled><button>go</button></fieldset>"
+                document.Body.AppendChild form |> ignore
+                let button = form.FirstChild.FirstChild :?> TwinElement
+                let clicks, submits = ref 0, ref 0
+
+                Events.listen button "click" false (fun _ -> clicks.Value <- clicks.Value + 1)
+                |> ignore
+
+                Events.listen form "submit" false (fun _ -> submits.Value <- submits.Value + 1)
+                |> ignore
+
+                Events.click button
+                Expect.equal (clicks.Value, submits.Value) (0, 0) "disabled by the fieldset"
+
+            testCase "listener failures are recorded in the order they happen, across nested dispatches"
+            <| fun () ->
+                let document, outer, inner = setup ()
+                use _ = document
+
+                Events.listen outer "outer" false (fun _ -> failwith "first")
+                |> ignore
+
+                Events.listen outer "outer" false (fun _ ->
+                    Events.dispatch inner (plain "inner" true)
+                    |> ignore)
+                |> ignore
+
+                Events.listen inner "inner" false (fun _ -> failwith "second")
+                |> ignore
+
+                Events.dispatch outer (plain "outer" true)
+                |> ignore
+
+                Expect.equal
+                    [
+                        for e in document.ListenerErrors ->
+                            match e with
+                            | TwinListenerException (_, inner) -> inner.Message
+                            | other -> other.Message
+                    ]
+                    [ "first"; "second" ]
+                    "chronological"
+
             testCase "capture runs root to target, then target, then bubble"
             <| fun () ->
                 let document, outer, inner = setup ()

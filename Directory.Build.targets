@@ -19,6 +19,19 @@
     </PropertyGroup>
 
     <!--
+    `RanvierViewInspect=true` compiles the view's inspection registry and `Debug` into Fable builds
+    (`RANVIER_VIEW_INSPECT`). Debug defaults to on; any other configuration defaults to off. .NET builds of
+    Ranvier.View.Dom always hold the registry.
+    -->
+    <PropertyGroup>
+        <RanvierViewInspect Condition="'$(RanvierViewInspect)' == '' and '$(Configuration)' == 'Debug'">true</RanvierViewInspect>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RanvierViewInspect)' == 'true'">
+        <DefineConstants>$(DefineConstants);RANVIER_VIEW_INSPECT</DefineConstants>
+    </PropertyGroup>
+
+    <!--
     `RanvierAotClean=true` (set by the library projects) compiles without reflection-based formatting
     and marks the net10.0 build trimmable and AOT-compatible, including when tracing is enabled.
     -->

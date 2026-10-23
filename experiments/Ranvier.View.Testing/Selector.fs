@@ -28,6 +28,7 @@ type private Simple =
     | LastChild
     | NthChild of int
     | Not of Simple
+    | Scope
 
 type private Combinator =
     | Descendant
@@ -153,6 +154,7 @@ let parse (selector: string) : Parsed =
             | "disabled" -> Disabled
             | "first-child" -> FirstChild
             | "last-child" -> LastChild
+            | "scope" -> Scope
             | "nth-child" ->
                 if peek () <> '(' then
                     fail i.Value
@@ -330,7 +332,7 @@ let private isDisabled (element: Element) =
             disabled)
     | _ -> false
 
-let rec private test (element: Element) (simple: Simple) : bool =
+let rec private test (scope: Node) (element: Element) (simple: Simple) : bool =
     match simple with
     | Tag tag -> element.localName = (if isHtml element then tag.ToLowerInvariant () else tag)
     | Universal -> true
@@ -364,30 +366,46 @@ let rec private test (element: Element) (simple: Simple) : bool =
         siblings element
         |> List.tryItem (n - 1)
         |> Option.exists (fun e -> obj.ReferenceEquals (e, element))
-    | Not inner -> not (test element inner)
+    | Not inner -> not (test scope element inner)
+    | Scope -> obj.ReferenceEquals (element, scope)
 
-let rec private matchFrom (element: Element) (compounds: (Simple list * Combinator) list) : bool =
+let rec private matchFrom (scope: Node) (element: Element) (compounds: (Simple list * Combinator) list) : bool =
     match compounds with
     | [] -> true
-    | (simples, _) :: rest when List.forall (test element) simples ->
+    | (simples, _) :: rest when List.forall (test scope element) simples ->
         match rest with
         | [] -> true
         | (_, combinator) :: _ ->
             match combinator with
-            | Child -> let parent = parentElement element in not (isNull (box parent)) && matchFrom parent rest
+            | Child ->
+                let parent = parentElement element in
+
+                not (isNull (box parent))
+                && matchFrom scope parent rest
             | Descendant ->
                 let mutable ancestor = parentElement element
                 let mutable found = false
 
                 while not found && not (isNull (box ancestor)) do
-                    found <- matchFrom ancestor rest
+                    found <- matchFrom scope ancestor rest
                     ancestor <- parentElement ancestor
 
                 found
     | _ -> false
 
-let matches (Parsed list) (element: Element) : bool =
-    list |> List.exists (matchFrom element)
+/// <summary>Whether the element matches, with <c>:scope</c> matching <c>scope</c>, or its root element when <c>scope</c> is a document.</summary>
+let matchesIn (scope: Node) (Parsed list) (element: Element) : bool =
+    let scope =
+        if scope.nodeType = 9.0 then
+            (unbox<Document> scope).documentElement :> Node
+        else
+            scope
+
+    list |> List.exists (matchFrom scope element)
+
+/// <summary>Whether the element matches, with <c>:scope</c> matching the element.</summary>
+let matches (parsed: Parsed) (element: Element) : bool =
+    matchesIn element parsed element
 
 let queryAll (root: Node) (selector: string) : Element array =
     let parsed = parse selector
@@ -407,7 +425,7 @@ let queryAll (root: Node) (selector: string) : Element array =
                 if current.nodeType = 1.0 then
                     let element = unbox<Element> current
 
-                    if matches parsed element then
+                    if matchesIn root parsed element then
                         result.Add element
 
                     walk current

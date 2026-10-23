@@ -1,0 +1,11 @@
+--- a/src/Ranvier/Timed.js
++++ b/src/Ranvier/Timed.js
+@@ -83,7 +83,7 @@
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddObserver(observer, slot) {
+         const _ = this;

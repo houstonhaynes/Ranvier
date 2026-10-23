@@ -3818,7 +3818,7 @@ let private referenceKeyed =
                 t.each (fun (item: Listed) -> item) (fun items -> items.Value) referenceRow
             |])
 
-// Keys compare by F# equality on both hosts: two equal records are one key, so the second is a duplicate.
+// Keys compare by F# equality on both hosts: two equal records are one key, a duplicate.
 let private structurallyEqualKeys () =
     use graph = new Graph ()
 
@@ -4533,9 +4533,35 @@ let private inlinedRootRegion (wrapped: bool) =
         (List.sort (List.ofSeq (listedLog ())))
 
 /// <summary>Checks template compilation and DOM materialisation.</summary>
+/// <summary>A string option property of Some null leaves its attribute absent, in the static and the reader form.</summary>
+let private someNullPropertyRemoved () =
+    use graph = new Graph ()
+    let target = host ()
+    let label = graph.Run (fun () -> Api.createSignal (Some "x"))
+
+    let view =
+        Component.define (fun _ () -> label) (fun t ->
+            t.div
+                [|
+                    t.Props.ariaAtomic (Some null)
+                    t.Props.ariaLabel (fun (current: Signal<string option>) -> current.Value)
+                |]
+                [||])
+
+    let mounted = mount graph target (Component.render view ())
+    let first = target.innerHTML
+    graph.Run (fun () -> label.Value <- Some null)
+    let cleared = target.innerHTML
+    mounted.Dispose ()
+    Conformance.recordIfRunning "first" first
+    Conformance.recordIfRunning "cleared" cleared
+
+    equal (false, true, false) (first.Contains "aria-atomic", first.Contains "aria-label=\"x\"", cleared.Contains "aria-label")
+
 let cases: Conformance.Case array =
     Conformance.ofChecks
         [|
+            "a string option property of Some null leaves its attribute absent", someNullPropertyRemoved
             "walk programs reach dynamic nodes in document order", walkPrograms
             "a compiled skeleton round-trips and records every dynamic node", compiledSkeleton
             "a template renders the same DOM as its createComponent twin", twinEquality

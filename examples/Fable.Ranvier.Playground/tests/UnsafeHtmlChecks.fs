@@ -5,6 +5,7 @@ open Ranvier
 open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View
+open Ranvier.View.Testing
 open CheckSupport
 
 let private raisesArgument (action: unit -> unit) =
@@ -15,8 +16,41 @@ let private raisesArgument (action: unit -> unit) =
         true
 
 /// <summary>Observes the node's subtree; the returned function stops observing and returns the number of child-list records.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const records = []; const observer = new ($0.ownerDocument.defaultView.MutationObserver)(items => records.push(...items)); observer.observe($0, { childList: true, subtree: true }); return () => { records.push(...observer.takeRecords()); observer.disconnect(); return records.length; }; })()")>]
 let private observeChildList (node: Node) : unit -> int = jsNative
+#else
+// The child-list writes to the node and its subtree until the result is called, one per insertion or removal call.
+let private observeChildList (node: Node) : unit -> int =
+    let count = ref 0
+
+    let restores =
+        [
+            for name in
+                [
+                    "appendChild"
+                    "insertBefore"
+                    "removeChild"
+                    "replaceChild"
+                    "remove"
+                    "replaceWith"
+                    "replaceChildren"
+                    "set_innerHTML"
+                ] ->
+                Conformance.interceptOn null name (fun original target args ->
+                    match target with
+                    | :? Node as touched when node.contains touched -> count.Value <- count.Value + 1
+                    | _ -> ()
+
+                    original args)
+        ]
+
+    fun () ->
+        for restore in restores do
+            restore ()
+
+        count.Value
+#endif
 
 let private article =
     Component.define (fun _ (body: unit -> UnsafeHtml) -> body) (fun t ->
@@ -37,6 +71,7 @@ let private reparse queued () =
 
     let div =
         target.querySelector "div"
+        |> Option.get
         |> unbox<HTMLDivElement>
 
     let first = div.innerHTML
@@ -65,6 +100,28 @@ let private inContext queued () =
 
     equal (2., "ab") ((target.querySelectorAll "tbody > tr").length, target.textContent)
     mounted.Dispose ()
+
+let private svgGroup =
+    Component.define (fun _ () -> ()) (fun t ->
+        t.element
+            (HtmlTag "svg")
+            [||]
+            [|
+                t.element (HtmlTag "g") [| t.Unsafe.html (UnsafeHtml.Trust "<circle></circle>") |] [||]
+            |])
+
+/// <summary>Raw HTML inside an SVG element is written as the element's markup.</summary>
+let private inSvg queued () =
+    use graph = new Graph ()
+    let target = host ()
+
+    let mounted =
+        mountTemplate queued graph strict target (Component.render svgGroup ())
+
+    let shown = target.innerHTML
+    mounted.Dispose ()
+    Conformance.recordIfRunning "shown" shown
+    equal true (shown.Contains "<g><circle></circle></g>")
 
 let private definitionChecks () =
     let defines (build: TemplateBuilder<unit> -> TemplateView<unit>) =
@@ -114,10 +171,16 @@ let private definitionChecks () =
                     [||])
         ]
 
-let mutable private rawSource: Signal<AsyncSource<string>> = Unchecked.defaultof<_>
+let private rawSource () =
+    Conformance.local "UnsafeHtmlChecks.rawSource" (fun () -> ref (Unchecked.defaultof<_>: Signal<AsyncSource<string>>))
 
 let private rawContent =
-    Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t -> t.div [| t.Unsafe.html (fun () -> UnsafeHtml.Trust rawSource.Value.Value) |] [||])
+    Component.define (fun _ (_: BoundaryStatus) -> ()) (fun t ->
+        t.div
+            [|
+                t.Unsafe.html (fun () -> UnsafeHtml.Trust (rawSource ()).Value.Value.Value)
+            |]
+            [||])
 
 let private rawPending =
     Component.define (fun _ () -> ()) (fun t -> t.span [||] [| t.text "loading" |])
@@ -131,7 +194,7 @@ let private rawGuarded =
 
 let private pendingReader queued () =
     use graph = new Graph ()
-    rawSource <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
+    (rawSource ()).Value <- graph.Run (fun () -> Api.createSignal (Api.createAsyncSource<string>()))
     let reports = ResizeArray<exn list>()
     let target = host ()
 
@@ -139,11 +202,17 @@ let private pendingReader queued () =
         mountTemplate queued graph reports.Add target (Component.render rawGuarded ())
 
     let pending = target.textContent
-    graph.Run (fun () -> rawSource.Value.Settle "<b>ready</b>")
+    graph.Run (fun () -> (rawSource ()).Value.Value.Settle "<b>ready</b>")
     mounted.Flush ()
-    let revealed = (target.querySelector "b" |> unbox<HTMLElement>).textContent
-    graph.Run (fun () -> rawSource.Value <- Api.createAsyncSource<string>())
-    graph.Run (fun () -> rawSource.Value.Fail (Exception "markup"))
+
+    let revealed =
+        (target.querySelector "b"
+         |> Option.get
+         |> unbox<HTMLElement>)
+            .textContent
+
+    graph.Run (fun () -> (rawSource ()).Value.Value <- Api.createAsyncSource<string>())
+    graph.Run (fun () -> (rawSource ()).Value.Value.Fail(Exception "markup"))
     mounted.Flush ()
     equal ("loading", "ready", "failed: markup", [ [ "markup" ] ]) (pending, revealed, target.textContent, messages reports)
     mounted.Dispose ()
@@ -200,8 +269,30 @@ let private nullReader queued () =
     equal ([ true ], true) ([ for error in raised @ List.concat reports -> namesNull error ], server)
 
 /// <summary>The data of every comment the HTML parser produces for <c>markup</c> as a div's content, in document order.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const div = document.createElement('div'); div.innerHTML = $0; const walker = document.createTreeWalker(div, 128); const data = []; while (walker.nextNode()) data.push(walker.currentNode.data); return data; })()")>]
 let private parsedComments (markup: string) : string array = jsNative
+#else
+let private parsedComments (markup: string) : string array =
+    let div = (Conformance.document ()).createElement "div"
+    div.innerHTML <- markup
+    let data = ResizeArray<string>()
+
+    let rec walk (node: Node) =
+        let mutable child = node.firstChild
+
+        while child.IsSome do
+            let current = unbox<Node> child.Value
+
+            if current.nodeType = 8.0 then
+                data.Add (unbox<CharacterData> current).data
+
+            walk current
+            child <- current.nextSibling
+
+    walk div
+    data.ToArray ()
+#endif
 
 /// <summary>Raw markup the parser turns into hydration-marker comments is rejected on the server; markup whose comments are plain is written.</summary>
 let private markerParity () =
@@ -265,19 +356,25 @@ let unsafeMarkup (markup: string) : HTMLElement * (unit -> unit) =
         target.remove ()
         graph.Dispose ()
 
-let cases: (string * (unit -> unit)) array =
+let private checks: (string * (unit -> unit)) array =
     strictCases (
         Array.concat
             [
                 templated "raw HTML replaces the element's content and is re-parsed only when the markup changes" reparse
                 templated "raw HTML inside a tbody element parses table rows in context" inContext
+                templated "raw HTML inside an SVG element is written as its markup" inSvg
                 [|
                     "an element with raw HTML and template children fails at definition time; void, raw-text, template, textarea and title elements reject raw HTML",
                     definitionChecks
                     "server HTML writes raw content verbatim under Reject and Omit, and text slots beside it stay escaped", serverHtml
-                    "server HTML rejects exactly the raw markup that jsdom parses into marker comments, for these inputs", markerParity
+                    Conformance.platformOnly
+                        "jsdom"
+                        "parses bogus comments and CDATA, outside the twin parser's subset"
+                        ("server HTML rejects exactly the raw markup that jsdom parses into marker comments, for these inputs", markerParity)
                 |]
                 templated "a pending raw-HTML reader keeps its boundary pending; a failing one shows the error view" pendingReader
                 templated "a raw-HTML reader returning null fails naming the null value, on the client and the server" nullReader
             ]
     )
+
+let cases: Conformance.Case array = Conformance.ofChecks checks

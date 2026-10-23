@@ -6,6 +6,11 @@
         <GenerateProgramFile>false</GenerateProgramFile>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
+    <!-- `-p:RanvierCounters=true` compiles the tests that read the core's operation counts. -->
+    <PropertyGroup Condition="'$(RanvierCounters)' == 'true'">
+        <DefineConstants>$(DefineConstants);RANVIER_COUNTERS</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
         <Compile Include="NativeTests.fs" />
         <Compile Include="ModuleInitTests.fs" />
@@ -18,7 +23,14 @@
         <Compile Include="Fixtures.fs" />
         <Compile Include="ClockTests.fs" />
         <Compile Include="SessionTests.fs" />
+        <Compile Include="AsyncTests.fs" />
+        <Compile Include="DepartureTests.fs" />
+        <Compile Include="HeadTests.fs" />
+        <Compile Include="InspectTests.fs" />
+        <Compile Include="RowMetadataTests.fs" />
+        <Compile Include="DumpTests.fs" />
         <Compile Include="../../experiments/Ranvier.View.Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/ServerChecks.fs" Link="Checks/ServerChecks.fs" />
         <Compile Include="OracleTests.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/RangeChecks.fs" Link="Checks/RangeChecks.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DelegationChecks.fs" Link="Checks/DelegationChecks.fs" />
@@ -28,9 +40,25 @@
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/BoundaryChecks.fs" Link="Checks/BoundaryChecks.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/CheckSupport.fs" Link="Checks/CheckSupport.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PlacementChecks.fs" Link="Checks/PlacementChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TemplateCatalogueChecks.fs" Link="Checks/TemplateCatalogueChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/UnsafeHtmlChecks.fs" Link="Checks/UnsafeHtmlChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DocumentChecks.fs" Link="Checks/DocumentChecks.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/SugarFixtures.fs" Link="Checks/SugarFixtures.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/HydrationChecks.fs" Link="Checks/HydrationChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PlaygroundSugar.fs" Link="Checks/PlaygroundSugar.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/KeyedRowsPerf.fs" Link="Checks/KeyedRowsPerf.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/KeyedRowsSugarPerf.fs" Link="Checks/KeyedRowsSugarPerf.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/SugarChecks.fs" Link="Checks/SugarChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PendingRegionChecks.fs" Link="Checks/PendingRegionChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/OwnedAsyncChecks.fs" Link="Checks/OwnedAsyncChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DepartureChecks.fs" Link="Checks/DepartureChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DumpChecks.fs" Link="Checks/DumpChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/LoopBench.fs" Link="Checks/LoopBench.fs" />
         <Compile Include="../../examples/Fable.Ranvier.Playground/tests/ConformanceCases.fs" Link="Checks/ConformanceCases.fs" />
+        <Compile Include="ServerParityTests.fs" />
         <Compile Include="TwinHarness.fs" />
         <Compile Include="ConformanceTests.fs" />
+        <Compile Include="GoldenTests.fs" />
         <Compile Include="MembersTests.fs" />
         <Compile Include="TestingApiTests.fs" />
         <Compile Include="Main.fs" />

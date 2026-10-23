@@ -254,7 +254,7 @@ type TwinClock() as this =
 
     /// <summary>
     /// Pumps the graph's inbox, drains microtasks and runs due timers until all three are empty. A round drains at most
-    /// 1,000 microtasks. After <c>maxRounds</c> busy rounds (default 1,000), or when a drain after a timer reaches
+    /// 1,000 microtasks and runs the due timers only when no microtask remains. After <c>maxRounds</c> busy rounds (default 1,000), or when a drain after a timer reaches
     /// <c>MicrotaskLimit</c>, it raises <c>TwinRunawayException</c> naming the busiest queue and its last callback.
     /// </summary>
     member this.Settle(graph: Ranvier.Graph, ?maxRounds: int) =
@@ -276,11 +276,15 @@ type TwinClock() as this =
             let pumped = graph.Pump ()
             let ran = this.Drain 1_000
 
+            // A due timer runs only once the microtask queue is empty, as a browser task does.
             let due =
-                timers
-                |> Seq.filter (fun t -> t.Due <= now)
-                |> Seq.sortBy (fun t -> t.Due, t.Sequence)
-                |> List.ofSeq
+                if microtasks.Count > 0 then
+                    []
+                else
+                    timers
+                    |> Seq.filter (fun t -> t.Due <= now)
+                    |> Seq.sortBy (fun t -> t.Due, t.Sequence)
+                    |> List.ofSeq
 
             for timer in due do
                 if timers.Contains timer then

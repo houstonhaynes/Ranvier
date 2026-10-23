@@ -1,0 +1,13 @@
+{
+  "baseCommit": "9651ffad38aed3ca3507bff5bbc09f18227645b8",
+  "sourceCommit": "223eec64f717297839bae517d86a9f9b8d016cc9",
+  "patches": [
+    "i1-mounting.diff",
+    "production-api.diff",
+    "production-bindings.diff",
+    "production-core.diff",
+    "production-projections.diff",
+    "production-streams.diff",
+    "production-timed.diff"
+  ]
+}

@@ -25,14 +25,19 @@ const unified = (left, right) => {
 };
 
 /** The first file that differs between the two artefact trees, with its diff, or null when they are equal. */
+// A platform-only case ("[jsdom] ..." or "[twin] ...") writes under a slug that starts with its platform and is
+// compared on that platform only.
+const platformOnly = name => /^[^/]+\/(jsdom|twin)-/.test(name);
+
 export function compareTrees(left, right) {
-  const names = [...new Set([...files(left), ...files(right)])].sort();
+  const names = [...new Set([...files(left), ...files(right)])].filter(name => !platformOnly(name)).sort();
+  if (names.length === 0) return { file: "", diff: "no artefacts on either host" };
   for (const name of names) {
-    const l = existsSync(join(left, name)) ? readFileSync(join(left, name), "utf8") : null;
-    const r = existsSync(join(right, name)) ? readFileSync(join(right, name), "utf8") : null;
+    const l = existsSync(join(left, name)) ? readFileSync(join(left, name)) : null;
+    const r = existsSync(join(right, name)) ? readFileSync(join(right, name)) : null;
     if (l === null) return { file: name, diff: "missing under jsdom" };
     if (r === null) return { file: name, diff: "missing on the twin" };
-    if (l !== r) return { file: name, diff: unified(l, r) };
+    if (!l.equals(r)) return { file: name, diff: unified(l.toString("utf8"), r.toString("utf8")) };
   }
   return null;
 }

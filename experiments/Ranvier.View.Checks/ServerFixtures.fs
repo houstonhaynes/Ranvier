@@ -311,8 +311,33 @@ let renderKeyedPage (rows: int) : string =
         keyedPage
         rows
 
+#if !FABLE_COMPILER
+/// <summary>A string log per thread, for checks that run on parallel threads.</summary>
+[<Sealed>]
+type ThreadLog() =
+    let logs =
+        new System.Threading.ThreadLocal<ResizeArray<string>> (fun () -> ResizeArray<string>())
+
+    member _.Add(item: string) =
+        logs.Value.Add item
+
+    member _.Clear() =
+        logs.Value.Clear ()
+
+    interface System.Collections.Generic.IEnumerable<string> with
+        member _.GetEnumerator() : System.Collections.Generic.IEnumerator<string> =
+            (logs.Value :> seq<string>).GetEnumerator()
+
+        member _.GetEnumerator() : System.Collections.IEnumerator =
+            (logs.Value :> System.Collections.IEnumerable).GetEnumerator()
+#endif
+
 /// <summary>The ids issued while the identity fixtures set up, in setup order.</summary>
+#if FABLE_COMPILER
 let identityLog = ResizeArray<string>()
+#else
+let identityLog = ThreadLog ()
+#endif
 
 /// <summary>An identity fixture's instance: the first id its setup issued, shown as the element's id, and its props.</summary>
 [<Sealed>]

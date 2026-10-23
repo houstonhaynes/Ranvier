@@ -1,0 +1,110 @@
+{
+  "baseCommit": "9651ffad38aed3ca3507bff5bbc09f18227645b8",
+  "sourceCommit": "223eec64f717297839bae517d86a9f9b8d016cc9",
+  "vite": "8.3.4",
+  "rolldown": "1.2.14",
+  "entries": {
+    "explicit": {
+      "master": {
+        "raw": 214047,
+        "gzip": 62144,
+        "brotli": 54521
+      },
+      "production": {
+        "raw": 214204,
+        "gzip": 62180,
+        "brotli": 54583
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 36,
+        "brotli": 62
+      }
+    },
+    "explicit-combined": {
+      "master": {
+        "raw": 215430,
+        "gzip": 62324,
+        "brotli": 54691
+      },
+      "production": {
+        "raw": 215587,
+        "gzip": 62352,
+        "brotli": 54734
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 28,
+        "brotli": 43
+      }
+    },
+    "sugared": {
+      "master": {
+        "raw": 218083,
+        "gzip": 62966,
+        "brotli": 55185
+      },
+      "production": {
+        "raw": 218240,
+        "gzip": 63003,
+        "brotli": 55185
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 37,
+        "brotli": 0
+      }
+    },
+    "members": {
+      "master": {
+        "raw": 218233,
+        "gzip": 62987,
+        "brotli": 55175
+      },
+      "production": {
+        "raw": 218390,
+        "gzip": 63026,
+        "brotli": 55252
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 39,
+        "brotli": 77
+      }
+    },
+    "class": {
+      "master": {
+        "raw": 218323,
+        "gzip": 63055,
+        "brotli": 55265
+      },
+      "production": {
+        "raw": 218480,
+        "gzip": 63093,
+        "brotli": 55244
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 38,
+        "brotli": -21
+      }
+    },
+    "combined": {
+      "master": {
+        "raw": 219718,
+        "gzip": 63194,
+        "brotli": 55322
+      },
+      "production": {
+        "raw": 219875,
+        "gzip": 63232,
+        "brotli": 55404
+      },
+      "delta": {
+        "raw": 157,
+        "gzip": 38,
+        "brotli": 82
+      }
+    }
+  }
+}

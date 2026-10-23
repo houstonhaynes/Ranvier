@@ -157,11 +157,247 @@ let private selectorsAgree () =
         if engine <> expected || native <> expected then
             failwithf "%s: expected %A, engine %A, querySelectorAll %A" selector expected engine native
 
+let private values () =
+    let host = (Conformance.document ()).createElement "main"
+
+    (Conformance.document ()).body.appendChild host
+    |> ignore
+
+    host.innerHTML <- "<textarea></textarea><select><option value=\"a\">A</option><option value=\"b\">B</option></select>"
+    let root = host :> Node
+    let inputs = ResizeArray<string>()
+    let area = Query.get root "textarea"
+
+    let listener: EventListenerOrEventListenerObject =
+        Fable.Core.U2.Case1 (fun (_: Event) -> inputs.Add (unbox<HTMLTextAreaElement> area).value)
+
+    (area :> EventTarget).addEventListener("input", listener)
+    Interact.input root "textarea" "typed"
+    Expect.value root "textarea" "typed"
+
+    if List.ofSeq inputs <> [ "typed" ] then
+        failwithf "the textarea's input listener saw %A" (List.ofSeq inputs)
+
+    Interact.select root "select" "b"
+    Expect.value root "select" "b"
+    host.remove ()
+
+let private fixtureHost (html: string) =
+    let host = (Conformance.document ()).createElement "main"
+
+    (Conformance.document ()).body.appendChild host
+    |> ignore
+
+    host.innerHTML <- html
+    host
+
+let private failureOf (attempt: unit -> unit) : string =
+    try
+        attempt ()
+        "no failure"
+    with
+    | Expect.ExpectationException message -> message
+    | Query.QueryException (selector, count, excerpt) -> $"query '{selector}' matched {count}{excerpt}"
+
+// Each failure message is an artefact compared across hosts.
+let private failureMessages () =
+    let host =
+        fixtureHost "<p class=\"x\">a</p><p class=\"x\">a</p><input value=\"v\"><span title=\"t\">s</span>"
+
+    let root = host :> Node
+
+    let messages =
+        [
+            "text", (fun () -> Expect.text root "span" "nope")
+            "count", (fun () -> Expect.count root "p" 3)
+            "absent attribute", (fun () -> Expect.attribute root "span" "lang" (Some "en"))
+            "present attribute", (fun () -> Expect.attribute root "span" "title" None)
+            "value", (fun () -> Expect.value root "input" "w")
+            "no value", (fun () -> Expect.value root "span" "w")
+            "html", (fun () -> Expect.html root "<b></b>")
+            "no match", (fun () -> Query.get root "li" |> ignore)
+            "two matches", (fun () -> Query.get root "p" |> ignore)
+            "ambiguous text", (fun () -> Query.byText root "a" |> ignore)
+        ]
+        |> List.map (fun (name, attempt) ->
+            let message = failureOf attempt
+            Conformance.recordIfRunning ("failure: " + name) message
+            name, message)
+
+    let has name (part: string) =
+        let message = snd (List.find (fun (n, _) -> n = name) messages)
+
+        if not (message.Contains part) then
+            failwithf "%s: %s does not hold %s" name message part
+
+    has "text" "expected \"nope\", actual \"s\""
+    has "count" "expected 3, actual 2"
+    has "absent attribute" "expected en, actual (absent)"
+    has "present attribute" "expected (absent), actual t"
+    has "value" "expected \"w\", actual \"v\""
+    has "no value" "'span' matched a <span>, which has no value"
+    has "html" "html: expected <b></b>"
+    has "no match" "query 'li' matched 0"
+    has "two matches" "query 'p' matched 2"
+    has "ambiguous text" "matched 2"
+    host.remove ()
+
+let private unreachableStates () =
+    let host =
+        fixtureHost "<select><option value=\"a\">A</option></select><input type=\"radio\" name=\"r\" checked>"
+
+    let root = host :> Node
+    let events = ResizeArray<string>()
+    let select = Query.get root "select"
+
+    for name in [ "input"; "change" ] do
+        select.addEventListener (name, listener = Fable.Core.U2.Case1 (fun (_: Event) -> events.Add name))
+
+    let unknown = failureOf (fun () -> Interact.select root "select" "zzz")
+    let radio = failureOf (fun () -> Interact.check root "input" false)
+
+    if not (unknown.Contains "no option with the value \"zzz\"") then
+        failwithf "select: %s" unknown
+
+    if not (radio.Contains "cannot be unchecked") then
+        failwithf "check: %s" radio
+
+    if events.Count <> 0 then
+        failwithf "select fired %A" (List.ofSeq events)
+
+    if (unbox<HTMLSelectElement> select).value <> "a" then
+        failwithf "select changed the value to %s" (unbox<HTMLSelectElement> select).value
+
+    host.remove ()
+
+let private textAndEvents () =
+    let host =
+        fixtureHost "<p>  two\n   words </p><input class=\"k\"><button>b</button>"
+
+    let root = host :> Node
+
+    if (Query.byText root "two words").localName <> "p" then
+        failwith "byText normalises whitespace"
+
+    let keys = ResizeArray<string>()
+    let input = Query.get root "input.k"
+
+    for name in [ "keydown"; "keyup" ] do
+        input.addEventListener (name, listener = Fable.Core.U2.Case1 (fun (e: Event) -> keys.Add (e.``type`` + ":" + (unbox<KeyboardEvent> e).key)))
+
+    Interact.key root "input.k" "a"
+
+    if List.ofSeq keys <> [ "keydown:a"; "keyup:a" ] then
+        failwithf "keys %A" (List.ofSeq keys)
+
+    let button = Query.get root "button"
+    button.addEventListener ("custom", listener = Fable.Core.U2.Case1 (fun (e: Event) -> e.preventDefault ()))
+
+    let cancelled =
+        Interact.dispatch
+            root
+            "button"
+            {
+                Type = "custom"
+                Kind = EventKind.Plain
+                Bubbles = true
+                Cancelable = true
+                Init = []
+            }
+
+    let accepted =
+        Interact.dispatch
+            root
+            "button"
+            {
+                Type = "other"
+                Kind = EventKind.Plain
+                Bubbles = true
+                Cancelable = true
+                Init = []
+            }
+
+    if (cancelled, accepted) <> (false, true) then
+        failwithf "dispatch returned %A" (cancelled, accepted)
+
+    host.remove ()
+
+type private Counted = { Count: Signal<int> }
+
+let private counted =
+    Component.define (fun _ () -> { Count = Api.createSignal 4 }) (fun t ->
+        t.button [| t.Attrs.className "single" |] [| t.text (fun (c: Counted) -> string c.Count.Value) |])
+
+let private fragmentCounted =
+    Component.define (fun _ () -> { Count = Api.createSignal 5 }) (fun t ->
+        t.fragment
+            [|
+                t.p [||] [| t.text "fragment label" |]
+                t.button [| t.Attrs.className "fragment" |] [| t.text (fun (c: Counted) -> string c.Count.Value) |]
+            |])
+
+let private excerptInMessages () =
+    use graph = new Graph ()
+    let target = (Conformance.document ()).createElement "main"
+
+    let page =
+        Component.define (fun _ () -> ()) (fun t ->
+            t.div
+                [||]
+                (Array.append
+                    (Array.init 60 (fun _ -> t.p [||] [| t.text "earlier sibling" |]))
+                    [| t.render counted (fun _ -> ()); t.render fragmentCounted (fun _ -> ()) |]))
+
+    let mounted =
+        Mounting.mount graph None (fun errors -> failwithf "%A" errors) target None (fun context ->
+            Program.run (Component.render page ()) context.Backend)
+
+    let message =
+        failureOf (fun () -> Expect.text (target :> Node) "button.single" "nope")
+
+    let button = Query.get target "button.single"
+    let queryMessage = failureOf (fun () -> Query.get button ".missing" |> ignore)
+
+    let fragmentMessage =
+        failureOf (fun () -> Expect.text target "button.fragment" "nope")
+
+    mounted.Dispose ()
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    for name, failure in [ "expectation excerpt", message; "query excerpt", queryMessage ] do
+        if
+            not (failure.Contains "instance Counted")
+            || not (failure.Contains "=\"4\"")
+        then
+            failwithf "no focused excerpt in %s" failure
+
+        if failure.Contains "earlier sibling" then
+            failwithf "excerpt starts outside the failing instance: %s" failure
+
+        Conformance.recordIfRunning name failure
+
+    if
+        not (fragmentMessage.Contains "fragment label")
+        || not (fragmentMessage.Contains "=\"5\"")
+        || fragmentMessage.Contains "earlier sibling"
+    then
+        failwithf "no fragment instance excerpt in %s" fragmentMessage
+
+    Conformance.recordIfRunning "fragment expectation excerpt" fragmentMessage
+#else
+    if message.Contains "instance" then
+        failwithf "an excerpt in %s" message
+#endif
+
 let cases: Conformance.Case array =
     Conformance.ofChecks
         [|
             "interactions drive input, check and key and the expectations read the result", interactions
             "a query or expectation that fails raises with the selector", failures
             "byText returns the innermost element with the text", byText
+            "input, select and value read and write textareas and selects", values
+            "each expectation and query failure names what it expected and found", failureMessages
+            "an expectation failure under a mount carries the dump excerpt in inspect builds", excerptInMessages
+            "select with an unknown value and unchecking a radio raise", unreachableStates
+            "byText normalises whitespace; key fires keydown and keyup; dispatch returns whether the event was accepted", textAndEvents
             "the selector engine and querySelectorAll agree on child and descendant combinators", selectorsAgree
         |]

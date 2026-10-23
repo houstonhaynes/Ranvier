@@ -247,37 +247,78 @@ let unguardedEmitsAcross (files: (string * string) list) : string list =
     let declared =
         Regex (@"^\s*let (?:inline )?(?:private )?(?:internal )?(?:rec )?(\w+)")
 
+    let nestedModule = Regex (@"^(\s*)module (?:internal |private )?(\w+)\s*=")
+
+    // Each file with its lines, Fable branches and Fable-only names; each name with the modules that own it: the
+    // file's module and the nested module it is declared in.
     let parsed =
         [
             for file, text in files ->
                 let lines = text.Replace("\r", "").Split '\n'
                 let inFable, elseless = fableBranches lines
+                let fileModule = moduleName text
 
                 let fableOnly =
-                    set
-                        [
-                            for i in 0 .. lines.Length - 1 do
-                                if elseless[i] >= 0 then
-                                    let found = declared.Match lines[i]
+                    [
+                        for i in 0 .. lines.Length - 1 do
+                            if elseless[i] >= 0 then
+                                let found = declared.Match lines[i]
 
-                                    if found.Success then
-                                        found.Groups[1].Value
-                        ]
+                                if found.Success then
+                                    let indent = lines[i].Length - lines[i].TrimStart().Length
 
-                file, moduleName text, lines, inFable, fableOnly
+                                    let nested =
+                                        [ 0 .. i - 1 ]
+                                        |> List.rev
+                                        |> List.tryPick (fun k ->
+                                            let m = nestedModule.Match lines[k]
+
+                                            if m.Success && m.Groups[1].Length < indent then
+                                                Some m.Groups[2].Value
+                                            else
+                                                None)
+
+                                    found.Groups[1].Value,
+                                    [ fileModule; yield! Option.toList nested ]
+                                    |> List.filter ((<>) "")
+                    ]
+
+                file, lines, inFable, fableOnly
         ]
 
-    let qualified =
+    let owned =
         [
-            for _, owner, _, _, names in parsed do
-                if owner <> "" then
-                    for name in names do
-                        owner + "." + name
+            for _, _, _, names in parsed do
+                for name, owners in names do
+                    for owner in owners do
+                        owner, name
         ]
+
+    let violation prefix name (line: string) =
+        $"{prefix}{name} is declared in a Fable branch without #else and used here: {line.Trim ()}"
 
     [
-        for file, _, lines, inFable, fableOnly in parsed do
+        for file, lines, inFable, fableOnly in parsed do
             let prefix = if files.Length > 1 then file + ": " else ""
+            let text = String.concat "\n" lines
+
+            // Modules this file opens: their Fable-only names are reachable bare.
+            let opened =
+                set
+                    [
+                        for m in Regex.Matches (text, @"^\s*open (?:global\.)?([\w.]+)", RegexOptions.Multiline) ->
+                            m.Groups[1].Value.Split('.') |> Array.last
+                    ]
+
+            let bare =
+                [
+                    for name, _ in fableOnly do
+                        yield name
+                    for owner, name in owned do
+                        if opened.Contains owner then
+                            yield name
+                ]
+                |> List.distinct
 
             for i in 0 .. lines.Length - 1 do
                 let line = lines[i]
@@ -289,13 +330,21 @@ let unguardedEmitsAcross (files: (string * string) list) : string list =
                     if emit.IsMatch line then
                         prefix + line.Trim ()
 
-                    for name in fableOnly do
+                    for name in bare do
                         if Regex.IsMatch (line, @"(?<![\w.])" + Regex.Escape name + @"\b") then
-                            $"{prefix}{name} is declared in a Fable branch without #else and used here: {line.Trim ()}"
+                            violation prefix name line
 
-                    for name in qualified do
-                        if Regex.IsMatch (line, @"(?<![\w.])" + Regex.Escape name + @"\b") then
-                            $"{prefix}{name} is declared in a Fable branch without #else and used here: {line.Trim ()}"
+                    // Qualified by its module, with or without the namespace in front.
+                    for owner, name in owned do
+                        if
+                            Regex.IsMatch (
+                                line,
+                                @"(?<![\w.])(?:\w+\.)*"
+                                + Regex.Escape (owner + "." + name)
+                                + @"\b"
+                            )
+                        then
+                            violation prefix (owner + "." + name) line
     ]
     |> List.distinct
 
@@ -345,6 +394,30 @@ let private guardedEmitsRejects () =
                 "Uses.fs", "module Uses\n#if FABLE_COMPILER\nlet b = Helpers.a 1\n#else\nlet b = 1\n#endif\n"
             ])
 
+let private guardedEmitsReach () =
+    let helper =
+        "module Helpers\n#if FABLE_COMPILER\n[<Emit(\"$0.a\")>]\nlet a x = jsNative\n#endif\n"
+
+    // Through an open, then a bare name.
+    equal 1 (unguardedEmitsAcross [ "Helpers.fs", helper; "Uses.fs", "module Uses\nopen Helpers\nlet b = a 1\n" ]).Length
+
+    // Fully qualified with the namespace.
+    equal
+        1
+        (unguardedEmitsAcross
+            [
+                "Helpers.fs", helper
+                "Uses.fs", "module Uses\nlet b = Ranvier.View.Portable.Helpers.a 1\n"
+            ])
+            .Length
+
+    // Declared in a nested module and qualified by it.
+    let nested =
+        "module Outer\nmodule Inner =\n#if FABLE_COMPILER\n    [<Emit(\"$0.a\")>]\n    let a x = jsNative\n#endif\n    let z = 1\n"
+
+    equal 1 (unguardedEmitsAcross [ "Outer.fs", nested; "Uses.fs", "module Uses\nlet b = Inner.a 1\n" ]).Length
+    equal [] (unguardedEmitsAcross [ "Outer.fs", nested; "Uses.fs", "module Uses\nlet b = Inner.z\n" ])
+
 let cases: (string * (unit -> unit)) array =
     [|
         "the portable project references only src/Ranvier and the Xantham type bindings", browserReferences
@@ -355,4 +428,5 @@ let cases: (string * (unit -> unit)) array =
         "every Emit and emitJsExpr of the portable files other than Native.fs sits in a Fable branch, and Fable-only helpers stay in Fable branches",
         guardedEmits
         "the guarded-Emit check rejects an unguarded emitJsExpr, an unguarded Emit and a Fable-only helper used on .NET", guardedEmitsRejects
+        "the guarded-Emit check follows a Fable-only helper through an open, a namespace and a nested module", guardedEmitsReach
     |]

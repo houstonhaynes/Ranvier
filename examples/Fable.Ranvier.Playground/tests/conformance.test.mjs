@@ -11,11 +11,22 @@ import { modules } from "../generated-tests/ConformanceCases.js";
 import { skippedOn } from "../generated-tests/experiments/Ranvier.View.Testing/Conformance.js";
 import { makeClock, interceptIn, trackShared } from "./conformance-host.mjs";
 
-const globals = ["window", "document", "Event", "MouseEvent", "PointerEvent", "KeyboardEvent", "InputEvent", "FocusEvent"];
+const globals = ["window", "document", "Event", "MouseEvent", "PointerEvent", "KeyboardEvent", "InputEvent", "FocusEvent", "MutationObserver", "Node", "EventTarget"];
 
 const root = new URL("../generated-conformance/jsdom/", import.meta.url);
 rmSync(root, { recursive: true, force: true });
-export const slug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+// FNV-1a over the name's UTF-16 code units, as hex: TwinHarness.slug computes the same.
+const nameHash = name => {
+  let hash = 2166136261;
+  for (let i = 0; i < name.length; i++) hash = Math.imul(hash ^ name.charCodeAt(i), 16777619) >>> 0;
+  return hash.toString(16).padStart(8, "0");
+};
+// A case's artefact directory: its name in lower-case words, cut to 71 characters plus the name's hash when longer
+// than 80.
+export const slug = name => {
+  const text = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return text.length > 80 ? text.slice(0, 71).replace(/-+$/, "") + "-" + nameHash(name) : text;
+};
 
 // Listener failures reach the virtual console, as they would a browser's; jsdom's "Not implemented" notices (form
 // submission, navigation) have no twin counterpart and stay out of the listener failures.
@@ -45,10 +56,20 @@ function resetDocument() {
   for (const attribute of [...document.documentElement.attributes]) document.documentElement.removeAttribute(attribute.name);
 }
 
+// Two case names of a module have distinct slugs.
+for (const [moduleName, cases] of modules) {
+  const slugs = new Map();
+  for (const [name] of cases) {
+    const directory = slug(name);
+    if (slugs.has(directory)) throw new Error(`${moduleName}: "${name}" and "${slugs.get(directory)}" share the artefact directory ${directory}`);
+    slugs.set(directory, name);
+  }
+}
+
 for (const [moduleName, cases] of modules) {
   for (const [name, run] of cases) {
     if (skippedOn("jsdom", name)) { test(`${moduleName}: ${name}`, { skip: "another host's case" }, () => {}); continue; }
-    test(`${moduleName}: ${name}`, () => {
+    test(`${moduleName}: ${name}`, async () => {
       const directory = new URL(`${moduleName}/${slug(name)}/`, root);
       let count = 0;
       resetDocument();
@@ -76,7 +97,19 @@ for (const [moduleName, cases] of modules) {
       const intercept = interceptIn(dom.window);
       const restores = [];
       let left = [];
-      try { run(create(dom.window.document, host)); }
+      let pending = [];
+      try {
+        const result = run(create(dom.window.document, host));
+        const awaits = result && typeof result.then === "function";
+        if (!awaits) pending = clock.pending();
+        // A case that returns a promise awaits JavaScript promise delivery: the real timer and microtask functions
+        // return, with the work queued so far, before the await.
+        if (awaits) {
+          mock.timers.reset();
+          clock.handOff();
+          await result;
+        }
+      }
       finally {
         for (const restore of restores.reverse()) restore();
         clock.restore();
@@ -84,6 +117,7 @@ for (const [moduleName, cases] of modules) {
         left = leftovers();
       }
       if (left.length > 0) throw new Error(`The case left state on the shared document: ${left.join("; ")}`);
+      if (pending.length > 0) throw new Error(`The case left work queued on the harness clock: ${pending.join("; ")}`);
     });
   }
 }

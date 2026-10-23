@@ -16,7 +16,7 @@ type internal Interception =
     {
         Target: TwinNode
         Name: string
-        Wrap: Func<Func<obj array, obj>, obj array, obj>
+        Wrap: Func<Func<obj array, obj>, obj, obj array, obj>
     }
 
 /// <summary>The members served on the current thread while a recording is open.</summary>
@@ -29,14 +29,37 @@ type internal ServedOnThread =
         with get () = ServedOnThread.recording
         and set (value: HashSet<string>) = ServedOnThread.recording <- value
 
+/// <summary>The live-list rebuilds on the current thread.</summary>
+[<Sealed; AbstractClass>]
+type internal ListBuilds =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private count: int
+
+    static member Count
+        with get () = ListBuilds.count
+        and set (value: int) = ListBuilds.count <- value
+
 /// <summary>
 /// A live list of twin nodes, which the bridge presents as the declared list interface. <c>Key</c> names the list on
 /// its owner, so every read of the same list returns the same object.
 /// </summary>
-type internal ListValue(owner: obj, key: string, nodes: unit -> TwinNode seq) =
+type internal ListValue(owner: obj, key: string, nodes: unit -> TwinNode seq, version: unit -> int) =
+    let mutable items: TwinNode array = null
+    let mutable itemsVersion = -1
+
     member _.Owner = owner
     member _.Key = key
-    member _.Nodes = nodes ()
+
+    /// <summary>The list's nodes, rebuilt only when <c>version</c> has moved since the last read.</summary>
+    member _.Items: TwinNode array =
+        let current = version ()
+
+        if isNull items || current <> itemsVersion then
+            items <- Array.ofSeq (nodes ())
+            itemsVersion <- current
+            ListBuilds.Count <- ListBuilds.Count + 1
+
+        items
 
 /// <summary>An element's attributes, which the bridge presents as <c>NamedNodeMap</c>.</summary>
 type internal AttributesValue(element: TwinElement) =
@@ -134,10 +157,15 @@ and internal BridgeCore private () =
         | :? TwinCharacterData as c when c.Kind = NodeKind.Text -> BridgeCore.Interface "Text"
         | :? TwinCharacterData -> BridgeCore.Interface "Comment"
         | :? TwinElement as e ->
-            let map = BridgeCore.Interface "HTMLElementTagNameMap"
+            // The tag map and base interface of the element's namespace.
+            let map, fallback =
+                match e.Namespace with
+                | "svg" -> "SVGElementTagNameMap", "SVGElement"
+                | "math" -> "MathMLElementTagNameMap", "MathMLElement"
+                | _ -> "HTMLElementTagNameMap", "HTMLElement"
 
-            match map.GetProperty e.LocalName with
-            | null -> BridgeCore.Interface "HTMLElement"
+            match (BridgeCore.Interface map).GetProperty e.LocalName with
+            | null -> BridgeCore.Interface fallback
             | property -> property.PropertyType
         | _ -> BridgeCore.Interface "Node"
 
@@ -194,7 +222,7 @@ and internal BridgeCore private () =
                 match m.Name with
                 | "get_length" ->
                     BridgeCore.ServeMethod m
-                    box (float (Seq.length list.Nodes))
+                    box (float list.Items.Length)
                 | "item"
                 | "get_Item" ->
                     BridgeCore.ServeMethod m
@@ -204,7 +232,7 @@ and internal BridgeCore private () =
                         if index < 0 then
                             null
                         else
-                            list.Nodes |> Seq.tryItem index |> Option.toObj
+                            Array.tryItem index list.Items |> Option.toObj
 
                     BridgeCore.Wrap (m, m.ReturnType, box item)
                 | _ -> raise (BridgeCore.Unsupported m)
@@ -342,7 +370,10 @@ and internal BridgeCore private () =
                 // A later interception wraps the earlier ones, as a later patch of a JavaScript method does.
                 let call =
                     applying
-                    |> List.fold (fun (inner: obj array -> obj) i -> fun (a: obj array) -> i.Wrap.Invoke (Func<obj array, obj> inner, a)) original
+                    |> List.fold
+                        (fun (inner: obj array -> obj) i ->
+                            fun (a: obj array) -> i.Wrap.Invoke (Func<obj array, obj> inner, BridgeCore.ProxyOf node, a))
+                        original
 
                 // The wrappers see the arguments as DOM objects: nodes as their proxies, options and unions unwrapped.
                 let visible =
@@ -357,7 +388,9 @@ and internal BridgeCore private () =
         | None -> raise (BridgeCore.Unsupported targetMethod)
 
     /// <summary>Routes calls of the method <c>name</c> on <c>target</c>, or on every node of <c>document</c> when null, through <c>wrap</c>.</summary>
-    static member Intercept(document: TwinDocument, target: TwinNode, name: string, wrap: Func<Func<obj array, obj>, obj array, obj>) : unit -> unit =
+    static member Intercept
+        (document: TwinDocument, target: TwinNode, name: string, wrap: Func<Func<obj array, obj>, obj, obj array, obj>)
+        : unit -> unit =
         let list = interceptions.GetValue (document, fun _ -> ResizeArray ())
 
         let interception =
@@ -413,7 +446,7 @@ module Bridge =
     /// <c>target</c> is null, through <c>wrap</c> until the returned function runs. <c>wrap</c> receives the original
     /// method and the call's arguments, and its result is the call's result.
     /// </summary>
-    let intercept (document: TwinDocument) (target: TwinNode) (name: string) (wrap: Func<Func<obj array, obj>, obj array, obj>) =
+    let intercept (document: TwinDocument) (target: TwinNode) (name: string) (wrap: Func<Func<obj array, obj>, obj, obj array, obj>) =
         BridgeCore.Intercept (document, target, name, wrap)
 
     /// <summary>The members served on the calling thread while <c>run</c> runs, sorted.</summary>
@@ -466,9 +499,9 @@ module Bridge =
         match node with
         | :? TwinElement as e ->
             if e.Namespace = "html" then
-                e.LocalName.ToUpperInvariant ()
+                e.QualifiedName.ToUpperInvariant ()
             else
-                e.LocalName
+                e.QualifiedName
         | _ ->
             match node.Kind with
             | NodeKind.Text -> "#text"
@@ -486,7 +519,7 @@ module Bridge =
         }
 
     let private childList (owner: TwinNode) (key: string) (nodes: unit -> TwinNode seq) : obj =
-        box (ListValue (owner, key, nodes))
+        box (ListValue (owner, key, nodes, (fun () -> owner.ChildVersion)))
 
     let private nodes = [ "Node" ]
     let private elements = [ "Element" ]
@@ -522,7 +555,7 @@ module Bridge =
 
     let private writeTextContent (n: TwinNode) (v: obj) =
         if n.Kind <> NodeKind.Document then
-            n.TextContent <- text v
+            n.AsOneChange (fun () -> n.TextContent <- text v)
 
     let private nodeArgument (owner: TwinNode) (value: obj) : TwinNode =
         match value with
@@ -551,6 +584,37 @@ module Bridge =
             for replacement in inserted do
                 parent.InsertBefore (replacement, viable)
                 |> ignore
+
+    // HTML's title element: the first HTML title element of the document in tree order.
+    let private titleElement (document: TwinDocument) : TwinElement =
+        let rec find (node: TwinNode) =
+            node.Children
+            |> List.tryPick (fun child ->
+                match child with
+                | :? TwinElement as e when e.LocalName = "title" && e.Namespace = "html" -> Some e
+                | _ -> find child)
+
+        find document |> Option.toObj
+
+    // createElementNS with a qualified name: the prefix and the local name split at the first colon.
+    let private createElementNS (n: TwinNode) (a: obj array) : obj =
+        let ns =
+            match BridgeCore.Unwrap a[0] with
+            | :? string as uri when uri = "http://www.w3.org/1999/xhtml" -> "html"
+            | :? string as uri when uri = "http://www.w3.org/2000/svg" -> "svg"
+            | :? string as uri when uri = "http://www.w3.org/1998/Math/MathML" -> "math"
+            | uri -> raise (NotSupportedException $"The DOM twin creates no element in the namespace {uri}")
+
+        let qualified = string a[1]
+
+        let prefix, local =
+            match qualified.IndexOf ':' with
+            | -1 -> null, qualified
+            | colon -> qualified.Substring (0, colon), qualified.Substring (colon + 1)
+
+        let created = (n :?> TwinDocument).CreateElementIn(ns, local)
+        created.Prefix <- prefix
+        box created
 
     let private core =
         lazy
@@ -611,11 +675,12 @@ module Bridge =
                      (a[0] :?> obj array)
                      |> Array.map (BridgeCore.Unwrap >> nodeArgument n)
 
-                 for child in n.Children do
-                     n.RemoveChild child |> ignore
+                 n.AsOneChange (fun () ->
+                     for child in n.Children do
+                         n.RemoveChild child |> ignore
 
-                 for child in replacements do
-                     n.AppendChild child |> ignore
+                     for child in replacements do
+                         n.AppendChild child |> ignore)
 
                  null)
              // Element
@@ -630,7 +695,7 @@ module Bridge =
                      | _ -> "http://www.w3.org/1999/xhtml"
                  ))
 
-             getter elements "prefix" (fun _ -> null)
+             getter elements "prefix" (fun n -> box (element n).Prefix)
              getter elements "id" (fun n -> box (text ((element n).GetAttribute "id")))
              setter elements "id" (fun n v -> (element n).SetAttribute("id", text v))
              getter elements "className" (fun n -> box (text ((element n).GetAttribute "class")))
@@ -655,10 +720,11 @@ module Bridge =
                      | :? TwinElement as e when e.LocalName = "template" -> e.Content
                      | _ -> n
 
-                 for child in target.Children do
-                     target.RemoveChild child |> ignore
+                 target.AsOneChange (fun () ->
+                     for child in target.Children do
+                         target.RemoveChild child |> ignore
 
-                 Html.parseInto n (text v))
+                     Html.parseInto n (text v)))
 
              getter elements "outerHTML" (fun n -> box (Html.outer n))
              // HTMLTemplateElement
@@ -675,6 +741,24 @@ module Bridge =
              getter inputs "defaultChecked" (fun n -> box ((element n).HasAttribute "checked"))
              getter [ "HTMLOptionElement" ] "selected" (fun n -> box (element n).Selected)
              setter [ "HTMLOptionElement" ] "selected" (fun n v -> (element n).Selected <- flag v)
+
+             getter [ "HTMLSelectElement" ] "selectedIndex" (fun n ->
+                 box (
+                     float (
+                         (element n).Options
+                         |> List.tryFindIndex (fun o -> o.Selected)
+                         |> Option.defaultValue -1
+                     )
+                 ))
+
+             setter [ "HTMLSelectElement" ] "selectedIndex" (fun n v ->
+                 let index = int (unbox<float> v)
+
+                 (element n).Options
+                 |> List.iteri (fun i o ->
+                     let selected = i = index
+                     o.SetSelectedness selected))
+
              getter inputs "type" (fun n -> box (element n).InputType)
              getter [ "HTMLTextAreaElement" ] "type" (fun _ -> box "textarea")
              getter disableable "disabled" (fun n -> box ((element n).HasAttribute "disabled"))
@@ -684,41 +768,135 @@ module Bridge =
                      (element n).SetAttribute("disabled", "")
                  else
                      (element n).RemoveAttribute "disabled")
+             // HTMLMeterElement.high, reflecting its attribute clamped as HTML clamps it; without one it is the maximum.
+             getter [ "HTMLMeterElement" ] "high" (fun n ->
+                 let number name fallback =
+                     match
+                         Double.TryParse (
+                             (element n).GetAttribute name,
+                             Globalization.NumberStyles.Float,
+                             Globalization.CultureInfo.InvariantCulture
+                         )
+                     with
+                     | true, value -> value
+                     | false, _ -> fallback
+
+                 // HTML's clamping: max at least min, low within [min, max], high within [low, max].
+                 let minimum = number "min" 0.0
+                 let maximum = max minimum (number "max" 1.0)
+                 let low = min maximum (max minimum (number "low" minimum))
+                 box (min maximum (max low (number "high" maximum))))
+
+             setter [ "HTMLMeterElement" ] "high" (fun n v ->
+                 (element n).SetAttribute("high", Convert.ToDouble(v).ToString(Globalization.CultureInfo.InvariantCulture)))
+             // HTMLElement.popover: the attribute's state, "auto" for an empty value and "manual" for an unknown one.
+             getter [ "HTMLElement" ] "popover" (fun n ->
+                 match (element n).GetAttribute "popover" with
+                 | null -> null
+                 | "" -> box "auto"
+                 | value ->
+                     match value.ToLowerInvariant () with
+                     | "auto"
+                     | "manual"
+                     | "hint" as state -> box state
+                     | _ -> box "manual")
+
+             setter [ "HTMLElement" ] "popover" (fun n v ->
+                 match v with
+                 | null -> (element n).RemoveAttribute "popover"
+                 | value -> (element n).SetAttribute("popover", string value))
+             // ARIAMixin: each string aria* property reflects its aria-* attribute; null removes it.
+             for property in typeof<Fable.Core.TS.Dom.ARIAMixin>.GetProperties() do
+                 let name = property.Name
+
+                 if
+                     name.StartsWith "aria"
+                     && (property.PropertyType = typeof<string>
+                         || property.PropertyType = typeof<string option>)
+                 then
+                     let attribute = "aria-" + name.Substring(4).ToLowerInvariant()
+                     getter [ "ARIAMixin" ] name (fun n -> box ((element n).GetAttribute attribute))
+
+                     setter [ "ARIAMixin" ] name (fun n v ->
+                         match v with
+                         | null -> (element n).RemoveAttribute attribute
+                         | value -> (element n).SetAttribute(attribute, string value))
              // Document
              getter documents "head" (fun n -> box (n :?> TwinDocument).Head)
              getter documents "body" (fun n -> box (n :?> TwinDocument).Body)
              getter documents "documentElement" (fun n -> box (n :?> TwinDocument).Html)
 
+             // DOMImplementation.createHTMLDocument: a new document on the same thread, with a title element when titled.
+             getter documents "implementation" (fun n ->
+                 BridgeCore.ValueProxyOf (
+                     typeof<Fable.Core.TS.Dom.DOMImplementation>,
+                     fun m args ->
+                         match m.Name with
+                         | "createHTMLDocument" ->
+                             BridgeCore.ServeMethod m
+                             let created = new TwinDocument ()
+                             (n :?> TwinDocument).OnDispose(fun () -> (created :> IDisposable).Dispose())
+
+                             match BridgeCore.Unwrap (if args.Length > 0 then args[0] else null) with
+                             | null -> ()
+                             | title ->
+                                 let element = created.CreateElement "title"
+                                 element.TextContent <- string title
+                                 created.Head.AppendChild element |> ignore
+
+                             BridgeCore.ProxyOf created
+                         | _ -> raise (BridgeCore.Unsupported m)
+                 ))
+
              getter [ "Document"; "HTMLElement" ] "title" (fun n ->
                  match n with
                  | :? TwinDocument as d ->
-                     d.Head.Children
-                     |> List.tryPick (fun c ->
-                         match c with
-                         | :? TwinElement as e when e.LocalName = "title" -> Some (box e.TextContent)
-                         | _ -> None)
-                     |> Option.defaultValue (box "")
+                     match titleElement d with
+                     | null -> box ""
+                     | title ->
+                         // The child text content: the data of the title's Text children, stripped and collapsed.
+                         let content =
+                             title.Children
+                             |> List.choose (fun child ->
+                                 match child with
+                                 | :? TwinCharacterData as data when child.Kind = NodeKind.Text -> Some data.Data
+                                 | _ -> None)
+                             |> String.concat ""
+
+                         let words =
+                             content.Split ([| ' '; '\t'; '\n'; '\f'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
+
+                         box (String.Join (" ", words))
                  | _ -> box (text ((element n).GetAttribute "title")))
 
              setter [ "Document"; "HTMLElement" ] "title" (fun n v ->
                  match n with
                  | :? TwinDocument as d ->
-                     let existing =
-                         d.Head.Children
-                         |> List.tryPick (fun c ->
-                             match c with
-                             | :? TwinElement as e when e.LocalName = "title" -> Some e
-                             | _ -> None)
-
                      let title =
-                         match existing with
-                         | Some t -> t
-                         | None -> d.Head.AppendChild (d.CreateElement "title") :?> TwinElement
+                         match titleElement d with
+                         | null -> d.Head.AppendChild (d.CreateElement "title") :?> TwinElement
+                         | existing -> existing
 
                      title.TextContent <- text v
                  | _ -> (element n).SetAttribute("title", text v))
 
              method documents "createElement" 2 (fun n a -> box ((n :?> TwinDocument).CreateElement(string a[0])))
+
+             method documents "createElementNS" 2 createElementNS
+             // The text selection of an input or a textarea.
+             getter [ "HTMLInputElement"; "HTMLTextAreaElement" ] "selectionStart" (fun n -> box (float (element n).SelectionStart))
+             getter [ "HTMLInputElement"; "HTMLTextAreaElement" ] "selectionEnd" (fun n -> box (float (element n).SelectionEnd))
+
+             method [ "HTMLInputElement"; "HTMLTextAreaElement" ] "setSelectionRange" 3 (fun n a ->
+                 let offset (value: obj) =
+                     match BridgeCore.Unwrap value with
+                     | null -> 0
+                     | number -> int (Convert.ToDouble number)
+
+                 (element n).SetSelectionRange(offset a[0], offset a[1])
+                 null)
+
+             method documents "createElementNS" 3 createElementNS
              method documents "createTextNode" 1 (fun n a -> box ((n :?> TwinDocument).CreateText(text a[0])))
              method documents "createComment" 1 (fun n a -> box ((n :?> TwinDocument).CreateComment(text a[0])))
              method documents "createDocumentFragment" 0 (fun n _ -> box ((n :?> TwinDocument).CreateFragment()))
@@ -740,7 +918,7 @@ module Bridge =
 
              for name in [ "Ranvier.View.Twin.Events"; "Ranvier.View.Twin.SelectorMembers" ] do
                  match assembly.GetType name with
-                 | null -> ()
+                 | null -> invalidOp $"Bridge.ensureAll: the type {name} was not found"
                  | t ->
                      match
                          t.GetMethod (
@@ -750,7 +928,7 @@ module Bridge =
                              ||| BindingFlags.Static
                          )
                      with
-                     | null -> ()
+                     | null -> invalidOp $"Bridge.ensureAll: {name}.ensure was not found"
                      | ensure -> ensure.Invoke (null, [||]) |> ignore)
 
     /// <summary>Registers the core members once per process; every entry point that creates a proxy calls it first.</summary>

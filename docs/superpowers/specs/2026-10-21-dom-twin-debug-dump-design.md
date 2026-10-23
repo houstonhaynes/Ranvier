@@ -74,7 +74,8 @@ This spec adds:
 2. **Conformance.** One shared suite of F# cases runs under jsdom (Fable) and on the twin (.NET). Every case passes on
    both, and the per-step artefacts (host HTML in jsdom form, dump text) are byte-equal between the two runs (§6.3).
 3. **Bundle 0 B.** Client bundles that do not call `Debug.dump` are byte-identical before and after the change: the
-   `sugar-size.mjs` minified entries hash equal at the merge base and on the branch (§7.1).
+   `sugar-size.mjs` minified entries hash equal at the merge base and on the branch (§7.1), apart from the explicitly
+   scoped production changes recorded in the #159 completion amendment below.
 4. **Loop time.** Edit-to-result for one view check is measured on both loops; the twin loop in SageFs is the faster
    one by the factor recorded in §7.2 (no target is set before the phase 0 baseline exists).
 5. **Dump non-interference.** A dump changes no core counter, observer count or trace event (§6.5).
@@ -804,8 +805,8 @@ in review.
   first byte difference, printing a unified diff.
 - **Divergence cases** named for each hand-ported block: delegated dispatch with nested hosts, `stopPropagation` in a
   handler and in a native listener between target and host (`docs/content/view/events.md:57-68`); head restore after a
-  failed hydration (`keepHead`); held exits across reorder, clear and disposal; SameValueZero keys with structurally
-  equal records.
+  failed hydration (`keepHead`); held exits across reorder, clear and disposal; structurally equal
+  record keys, which are one key under `=` (`docs/content/view/collections.md:61`): a duplicate on both hosts.
 - **Platform-specific cases** carry a `[jsdom]` or `[twin]` tag in their name and are skipped on the other host, with
   the reason in the case; the list is reviewed with each phase.
 
@@ -831,6 +832,15 @@ nothing and keeps the server's nodes (the hydrated button is the same object as 
 ## 7. Measurement plan
 
 ### 7.1 Bundle: 0 B
+
+**#159 completion amendment (2026-10-22).** The original byte-identity target below remains the rule for the twin
+and inspect-only machinery. This release also retains the head-placement failure fix and additive core
+`Status.Stale` / `createEffectNode` API. Those changes are explicit exceptions to gates 1 and 3, not a zero-cost
+claim: against pristine master `9651ffad`, the six entries each grow 157 raw bytes and 28–39 bytes gzip (level 9).
+The [research note](../../research/2026-10-21-dom-twin.md#named-exceptions-to-gates-1-and-3) records exact body patches,
+both baseline hashes, toolchain provenance and measurements. Gate 1 now pins `bundle-production.json`; gate 3
+requires those exact patches and rejects extra production changes. Gate 2 remains unchanged, and primitive
+instruction-count comparisons and existing size budgets remain mandatory. Historical baselines are retained.
 
 The repository measures bundles with `benchmarks/frameworks/sugar-size.mjs`: Vite builds of the `explicit`,
 `explicit-combined`, `sugared`, `members`, `class` and `combined` entries, minified and unminified, reported raw,

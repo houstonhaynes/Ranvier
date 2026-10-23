@@ -1,0 +1,16 @@
+--- a/src/Ranvier/Api.js
++++ b/src/Ranvier/Api.js
+@@ -303,6 +303,13 @@
+  */
+ export function Api_createEffect(body) {
+     Effect_Create_Z2C5AF67C(Graph_get_Current(), body);
++}
++
++/**
++ * An effect, as <c>createEffect</c> makes, returned as its node so its <c>Status</c> can be read.
++ */
++export function Api_createEffectNode(body) {
++    return Effect_Create_Z2C5AF67C(Graph_get_Current(), body);
+ }
+ 
+ /**

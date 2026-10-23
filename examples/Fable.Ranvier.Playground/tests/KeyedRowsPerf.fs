@@ -10,8 +10,13 @@ open Ranvier.View.Dom
 type KeyedRow = { Id: int; Label: Signal<string> }
 
 /// <summary>A copy of the rows without the row at <c>index</c>, built with <c>slice</c> and <c>splice</c> as the Solid fixture builds it.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const next = $1.slice(); next.splice($0, 1); return next; })()")>]
 let private without (index: int) (rows: KeyedRow array) : KeyedRow array = jsNative
+#else
+let private without (index: int) (rows: KeyedRow array) : KeyedRow array =
+    Array.removeAt index rows
+#endif
 
 /// <summary>Counts row clicks; the handlers exist to match the benchmark's row shape.</summary>
 let mutable private clicks = 0

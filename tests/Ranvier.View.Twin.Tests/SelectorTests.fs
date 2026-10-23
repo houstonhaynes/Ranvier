@@ -42,6 +42,32 @@ let tests =
                 Expect.equal (Selector.queryAll root ".b").Length 2 "class"
                 Expect.equal (Selector.queryAll root "*").Length 7 "universal"
 
+            testCase ":scope matches the query's root, and the element itself in matches"
+            <| fun () ->
+                let document, root =
+                    markup "<div><div><i></i></div></div><section><div><div></div></div></section>"
+
+                use _ = document
+                Expect.equal (Selector.queryAll root ":scope > div > div").Length 1 "a child of the root's child"
+                let inner = (Selector.queryAll root "i")[0]
+                Expect.isTrue (Selector.matches (Selector.parse ":scope") inner) "the element is its own scope"
+                Expect.isFalse (Selector.matchesIn root (Selector.parse ":scope") inner) "another scope"
+
+            testCase ":scope in a document's query matches its root element"
+            <| fun () ->
+                SelectorMembers.ensure ()
+                use document = new TwinDocument ()
+                Html.parseInto document.Body "<p></p>"
+                let root = document.Native :?> Node
+
+                Expect.equal
+                    ((Selector.queryAll root ":scope").Length,
+                     (Selector.queryAll root ":scope > body").Length,
+                     (Selector.queryAll root ":scope > html").Length,
+                     (Selector.queryAll root ":scope p").Length)
+                    (1, 1, 0, 1)
+                    "as jsdom gives"
+
             testCase "attribute operators"
             <| fun () ->
                 let document, root = tree ()

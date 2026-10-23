@@ -1,16 +1,7 @@
 /// <summary>The twin's HTML: a parser for the subset Server writes and template markup holds, and two serialisers.</summary>
 /// <remarks>
-/// <para>
-/// The subset is markup the HTML parser builds as written: every element closed by its own end tag or void, tables
-/// with explicit <c>tbody</c>, SVG and MathML with their case tables, raw and escapable raw text, comments, the full
-/// named reference table and numeric references. Accepted markup serialises as jsdom serialises it.
-/// </para>
-/// <para>
-/// Markup the HTML parser would restructure raises <c>TwinParseException</c> naming the construct: an implied end tag
-/// (a p in button scope closed by a block, an li, dd or dt inside an open one, a heading inside a heading), a nested
-/// a, button, form or nobr, a table part outside a table, foster-parented content, an HTML breakout tag inside SVG or
-/// MathML, an element inside a MathML text integration point, and document-level tags outside a document parse.
-/// </para>
+/// Accepted markup preserves its authored tree and serialises as jsdom serialises it.
+/// Markup requiring HTML tree restructuring raises <c>TwinParseException</c> naming the construct.
 /// </remarks>
 module Ranvier.View.Twin.Html
 
@@ -41,7 +32,9 @@ let private voids =
             "wbr"
         ]
 
-let private rawText = HashSet<string> [ "script"; "style" ]
+let private rawText =
+    HashSet<string> [ "script"; "style"; "xmp"; "iframe"; "noembed"; "noframes" ]
+
 let private escapableRaw = HashSet<string> [ "textarea"; "title" ]
 
 let private serialisedRaw =
@@ -612,6 +605,18 @@ let private parseNodes (parent: TwinNode) (html: string) (documentMode: bool) =
             | _ -> None)
         |> List.ofSeq
 
+    // The form element pointer a fragment parse starts with: set when the parse root has a form ancestor, as the
+    // context element's nearest form sets it; a template boundary ends the search.
+    let contextForm =
+        let rec walk (node: TwinNode) =
+            match node with
+            | null -> false
+            | :? TwinElement as e when e.Namespace = "html" && e.LocalName = "form" -> true
+            | :? TwinElement as e when e.LocalName = "template" -> false
+            | _ -> walk node.Parent
+
+        not documentMode && walk parent
+
     // HTML's "has an element in scope", in button scope when `button` is set.
     let inScope (target: string) (button: bool) =
         let rec walk (elements: TwinElement list) =
@@ -659,7 +664,6 @@ let private parseNodes (parent: TwinNode) (html: string) (documentMode: bool) =
 
         walk (openElements ())
 
-    // The namespace of an element named `name` started under the current element.
     let namespaceFor (name: string) =
         match current () with
         | _ when name = "svg" -> "svg"
@@ -816,7 +820,6 @@ let private parseNodes (parent: TwinNode) (html: string) (documentMode: bool) =
         reader.Advance (if selfClosed then 2 else 1)
         attributes, selfClosed
 
-    // Consumes the raw text element's end tag, which readUntil found.
     let closeRaw (name: string) =
         reader.Advance (name.Length + 2)
         skipSpace ()
@@ -907,8 +910,13 @@ let private parseNodes (parent: TwinNode) (html: string) (documentMode: bool) =
                     ->
                     reader.Fail "a nested <a>"
                 | "form" when
-                    openElements ()
-                    |> List.exists (fun e -> e.Namespace = "html" && e.LocalName = "form")
+                    (contextForm
+                     && not (
+                         openElements ()
+                         |> List.exists (fun e -> e.Namespace = "html" && e.LocalName = "template")
+                     ))
+                    || openElements ()
+                       |> List.exists (fun e -> e.Namespace = "html" && e.LocalName = "form")
                     ->
                     reader.Fail "a nested <form>"
                 | "button" when inScope "button" false -> reader.Fail "a nested <button>"
@@ -1108,7 +1116,7 @@ let rec private write
     =
     match node with
     | :? TwinElement as e ->
-        out.Append('<').Append e.LocalName |> ignore
+        out.Append('<').Append e.QualifiedName |> ignore
 
         for name, value in e.Attributes do
             out.Append(' ').Append(name).Append("=\"").Append(attribute value).Append '"'
@@ -1137,7 +1145,7 @@ let rec private write
             for child in children do
                 write out text attribute server e.LocalName child
 
-            out.Append("</").Append(e.LocalName).Append '>'
+            out.Append("</").Append(e.QualifiedName).Append '>'
             |> ignore
     | :? TwinCharacterData as c when c.Kind = NodeKind.Comment ->
         out.Append("<!--").Append(c.Data).Append "-->"
@@ -1180,6 +1188,8 @@ let outer (node: TwinNode) : string =
 let inner (node: TwinNode) : string =
     serialise jsdomText jsdomAttribute false (childrenOf node) (nameOf node)
 
-/// <summary>The node's children in Server's escaping, with Server's doubled leading line feed in <c>pre</c>, <c>textarea</c> and <c>listing</c>.</summary>
+/// <summary>
+/// The node's children in Server's escaping, with its doubled leading line feed in <c>pre</c>, <c>textarea</c> and <c>listing</c>.
+/// </summary>
 let server (node: TwinNode) : string =
     serialise (Ranvier.View.Representation.escapeHtml false) (Ranvier.View.Representation.escapeHtml true) true (childrenOf node) (nameOf node)

@@ -453,7 +453,7 @@ type StreamMemo<'S>
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface ISource with
         member _.AddObserver(observer, slot) =

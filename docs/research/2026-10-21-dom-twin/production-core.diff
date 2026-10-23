@@ -1,0 +1,272 @@
+--- a/src/Ranvier/Core.js
++++ b/src/Ranvier/Core.js
+@@ -2291,49 +2291,49 @@
+         Memo$1__Dispose(this$);
+     }
+     get Scope() {
+         const _ = this;
+         if (_.scope == null) {
+             if (_.mode === 1) {
+                 _.scope = Owner_$ctor_2591009F(Graph__get_Root(_.graph));
+                 if (_.disposed) {
+                     Owner__Dispose(_.scope);
+                 }
+             }
+             else {
+                 _.violated = true;
+                 throw InvalidOperationException_$ctor_Z721C83C5(ScopeMessages_forMode(_.mode));
+             }
+         }
+         return _.scope;
+     }
+     get Id() {
+         const _ = this;
+         return _.id | 0;
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__Add_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     TryAddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__TryAdd_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     RemoveObserverAt(c, handle) {
+         const _ = this;
+         ObserverSet__RemoveAt_Z13C4C09A(_.observers, c, handle);
+     }
+     UpdateIfNecessary() {
+         const this$ = this;
+         Memo$1__EnsureCurrent(this$);
+     }
+     AddSource(s) {
+         const this$ = this;
+         SourceList__Add_Z47AEE590(this$.sources, this$, s);
+     }
+     MovedIn(slot, handle) {
+         const _ = this;
+         SourceList__MovedIn_Z37302880(_.sources, slot, handle);
+@@ -2688,63 +2688,63 @@
+ }
+ 
+ /**
+  * A side effect that re-runs when its dependencies change.
+  */
+ export class Effect {
+     constructor(graph, body) {
+         const this$ = new FSharpRef(defaultOf());
+         this.graph = graph;
+         this.body = body;
+         this$.contents = this;
+         this.id = (Graph__NextId(this.graph) | 0);
+         this.sources = SourceList_$ctor();
+         this.pendingSources = defaultOf();
+         this.scope = defaultOf();
+         this.freshness = 0;
+         this.status = 4;
+         this.failure = defaultOf();
+         this.queued = false;
+         this.disposed = false;
+         this.link = defaultOf();
+         this.runs = 0;
+         this.inCleanup = false;
+         this.publishes = false;
+-        this["init@3683"] = 1;
++        this["init@3691"] = 1;
+         Effect__Start(this$.contents);
+     }
+     Release() {
+         const this$ = this;
+         this$.link = defaultOf();
+         Effect__Dispose(this$);
+     }
+     get Id() {
+         const _ = this;
+         return _.id | 0;
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddSource(s) {
+         const this$ = this;
+         SourceList__Add_Z47AEE590(this$.sources, this$, s);
+     }
+     MovedIn(slot, handle) {
+         const _ = this;
+         SourceList__MovedIn_Z37302880(_.sources, slot, handle);
+     }
+     MarkDirty() {
+         const this$ = this;
+         if (!this$.disposed && !this$.inCleanup) {
+             this$.freshness = 2;
+             if (!this$.queued) {
+                 this$.queued = true;
+                 if (this$.publishes) {
+                     Graph__SchedulePass_B041F36(this$.graph, this$);
+                 }
+                 else {
+                     Graph__Schedule_B041F36(this$.graph, this$);
+                 }
+             }
+         }
+     }
+@@ -2964,49 +2964,49 @@
+         this.acting = false;
+         this.violated = false;
+         this.freshness = 0;
+         this.status = 4;
+         this.error = defaultOf();
+         this.queued = false;
+         this.disposed = false;
+         this.link = defaultOf();
+     }
+     Dispose() {
+         const this$ = this;
+         EffectOn$1__Dispose(this$);
+     }
+     Release() {
+         const this$ = this;
+         this$.link = defaultOf();
+         EffectOn$1__Dispose(this$);
+     }
+     get Id() {
+         const _ = this;
+         return _.id | 0;
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddSource(source) {
+         const this$ = this;
+         SourceList__Add_Z47AEE590(this$.sources, this$, source);
+     }
+     MovedIn(slot, handle) {
+         const _ = this;
+         SourceList__MovedIn_Z37302880(_.sources, slot, handle);
+     }
+     MarkDirty() {
+         const this$ = this;
+         if (!this$.disposed) {
+             this$.freshness = 2;
+             if (!this$.queued) {
+                 this$.queued = true;
+                 Graph__Schedule_B041F36(this$.graph, this$);
+             }
+         }
+     }
+     MarkCheck() {
+         const this$ = this;
+         if (!this$.disposed) {
+             if (this$.freshness === 0) {
+                 this$.freshness = 1;
+@@ -3290,49 +3290,49 @@
+         AsyncMemo$1__Dispose(this$);
+     }
+     get Scope() {
+         const _ = this;
+         if (_.scope == null) {
+             if (_.mode === 1) {
+                 _.scope = Owner_$ctor_2591009F(Graph__get_Root(_.graph));
+                 if (_.disposed) {
+                     Owner__Dispose(_.scope);
+                 }
+             }
+             else {
+                 _.violated = true;
+                 throw InvalidOperationException_$ctor_Z721C83C5(ScopeMessages_forMode(_.mode));
+             }
+         }
+         return _.scope;
+     }
+     get Id() {
+         const _ = this;
+         return _.id | 0;
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__Add_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     TryAddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__TryAdd_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     RemoveObserverAt(c, handle) {
+         const _ = this;
+         ObserverSet__RemoveAt_Z13C4C09A(_.observers, c, handle);
+     }
+     UpdateIfNecessary() {
+         const this$ = this;
+         AsyncMemo$1__EnsureCurrent(this$);
+     }
+     AddSource(s) {
+         const this$ = this;
+         SourceList__Add_Z47AEE590(this$.sources, this$, s);
+     }
+     MovedIn(slot, handle) {
+         const _ = this;
+         SourceList__MovedIn_Z37302880(_.sources, slot, handle);
+@@ -4085,49 +4085,49 @@
+         this.shown = false;
+         this.scope = defaultOf();
+     }
+     Release() {
+         const this$ = this;
+         this$.link = defaultOf();
+         Boundary$1__Dispose(this$);
+     }
+     get Scope() {
+         const _ = this;
+         if (_.scope == null) {
+             _.scope = Owner_$ctor_2591009F(Graph__get_Root(_.graph));
+             if (_.disposed) {
+                 Owner__Dispose(_.scope);
+             }
+         }
+         return _.scope;
+     }
+     get Id() {
+         const _ = this;
+         return _.id | 0;
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__Add_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     TryAddObserver(c, slot) {
+         const _ = this;
+         return ObserverSet__TryAdd_Z13C4C09A(_.observers, c, slot) | 0;
+     }
+     RemoveObserverAt(c, handle) {
+         const _ = this;
+         ObserverSet__RemoveAt_Z13C4C09A(_.observers, c, handle);
+     }
+     UpdateIfNecessary() {
+         const this$ = this;
+         Boundary$1__EnsureCurrent(this$);
+     }
+     AddSource(s) {
+         const this$ = this;
+         SourceList__Add_Z47AEE590(this$.sources, this$, s);
+     }
+     MovedIn(slot, handle) {
+         const _ = this;
+         SourceList__MovedIn_Z37302880(_.sources, slot, handle);

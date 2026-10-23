@@ -43,6 +43,14 @@ type internal Freshness =
     | Check = 1uy
     | Dirty = 2uy
 
+module internal Staleness =
+    /// <summary><c>Status.Stale</c> when the node is not <c>Clean</c>.</summary>
+    let inline ofFreshness (freshness: Freshness) =
+        if freshness = Freshness.Clean then
+            Status.None
+        else
+            Status.Stale
+
 /// <summary>
 /// A node that can be depended upon (AKA IObservable).
 /// </summary>
@@ -3528,7 +3536,7 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface ISource with
         member _.AddObserver(c, slot) =
@@ -3788,7 +3796,7 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface IComputation with
         member this.AddSource s =
@@ -4175,7 +4183,7 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface IComputation with
         member this.AddSource source =
@@ -4885,7 +4893,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface ISource with
         member _.AddObserver(c, slot) =
@@ -5469,7 +5477,7 @@ type Boundary<'T>
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface ISource with
         member _.AddObserver(c, slot) =

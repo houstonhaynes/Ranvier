@@ -19,6 +19,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)Threading.fs" Link="Threading.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Edges.fs" Link="Edges.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Invalidation.fs" Link="Invalidation.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Staleness.fs" Link="Staleness.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Lifetime.fs" Link="Lifetime.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Retention.fs" Link="Retention.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Tracing.fs" Link="Tracing.fs" />

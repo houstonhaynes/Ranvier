@@ -8,6 +8,7 @@ open Fable.Core.JsInterop
 open Fable.Core.TS.Dom
 open Ranvier.View
 open Ranvier.View.Dom
+open Ranvier.View.Testing
 open CheckSupport
 open ServerFixtures
 
@@ -79,42 +80,136 @@ let private serve (definition: Component<'props>) (props: 'props) : HTMLElement 
 let private hydrate graph options (host: HTMLElement) (definition: Component<'props>) (props: 'props) =
     Hydration.hydrate graph None strict options host definition props
 
+// The values of the page's retention cases, which run outside a conformance case.
+let private pageLocals = Collections.Generic.Dictionary<string, obj>()
+
+// The running case's value under the key; outside a case, the page's value under the key.
+let private caseLocal (key: string) (create: unit -> 'T) : 'T =
+    if Conformance.isRunning () then
+        Conformance.local key create
+    else
+        match pageLocals.TryGetValue key with
+        | true, existing -> unbox<'T> existing
+        | false, _ ->
+            let created = create ()
+            pageLocals[key] <- box created
+            created
+
 /// <summary>Every node under <c>root</c>, in document order.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const w = document.createTreeWalker($0, 0xFFFFFFFF); const a = []; while (w.nextNode()) a.push(w.currentNode); return a; })()")>]
 let private nodesOf (root: Node) : Node array = jsNative
+#else
+let private nodesOf (root: Node) : Node array =
+    let found = ResizeArray<Node>()
 
+    let rec walk (node: Node) =
+        let mutable child = node.firstChild
+
+        while child.IsSome do
+            let current = unbox<Node> child.Value
+            found.Add current
+            walk current
+            child <- current.nextSibling
+
+    walk root
+    found.ToArray ()
+#endif
+
+#if FABLE_COMPILER
 [<Emit("Array.from($0.querySelectorAll($1))")>]
 let private all (root: Node) (selector: string) : Node array = jsNative
+#else
+let private all (root: Node) (selector: string) : Node array =
+    [|
+        for element in Ranvier.View.Testing.Query.queryAll root selector -> element :> Node
+    |]
+#endif
 
 let private sameNodes (before: Node array) (after: Node array) =
     before.Length = after.Length
     && Array.forall2 (fun (left: Node) (right: Node) -> obj.ReferenceEquals (left, right)) before after
 
 /// <summary>Records mutations under <c>root</c>; the returned function stops and returns their count.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const o = new MutationObserver(() => {}); o.observe($0, { subtree: true, childList: true, attributes: true, characterData: true }); return () => { const n = o.takeRecords().length; o.disconnect(); return n; }; })()")>]
 let private recordMutations (root: Node) : unit -> int = jsNative
+#else
+// The child list, attribute and character data changes under the root until the result is called, as a
+// MutationObserver counts them.
+let private recordMutations (root: Node) : unit -> int =
+    let stop = (Conformance.harness ()).ObserveMutations root
+    fun () -> (stop ()).Length
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.dispatchEvent(new FocusEvent('focus'))")>]
 let private focus (node: Node) : unit = jsNative
+#else
+let private focus (node: Node) : unit =
+    node.dispatchEvent (
+        EventSpec.create
+            (pageOrCaseDocument ())
+            {
+                Type = "focus"
+                Kind = EventKind.Focus
+                Bubbles = false
+                Cancelable = false
+                Init = []
+            }
+    )
+    |> ignore
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.remove()")>]
 let private detach (node: Node) : unit = jsNative
+#else
+let private detach (node: Node) : unit =
+    (unbox<ChildNode> node).remove()
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.setSelectionRange($1, $2)")>]
 let private select (node: Node) (start: int) (finish: int) : unit = jsNative
+#else
+let private select (node: Node) (start: int) (finish: int) : unit =
+    match box node with
+    | :? HTMLTextAreaElement as area -> area.setSelectionRange (float start, float finish)
+    | _ -> (unbox<HTMLInputElement> node).setSelectionRange(float start, float finish)
+#endif
 
+#if FABLE_COMPILER
 [<Emit("[$0.selectionStart, $0.selectionEnd]")>]
 let private selection (node: Node) : int array = jsNative
+#else
+let private selection (node: Node) : int array =
+    match box node with
+    | :? HTMLTextAreaElement as area -> [| int area.selectionStart; int area.selectionEnd |]
+    | _ ->
+        let input = unbox<HTMLInputElement> node
+        [| int input.selectionStart.Value; int input.selectionEnd.Value |]
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.textContent = $1")>]
 let private setText (node: obj) (text: string) : unit = jsNative
+#else
+let private setText (node: obj) (text: string) : unit =
+    (unbox<Node> node).textContent <- Some text
+#endif
+
+/// <summary>The first element under <c>root</c> matching <c>selector</c>, or null.</summary>
+let private find (root: ParentNode) (selector: string) : Element =
+    match root.querySelector selector with
+    | Some found -> found
+    | None -> Unchecked.defaultof<_>
 
 let private element (host: HTMLElement) (selector: string) =
-    host.querySelector selector |> unbox<HTMLElement>
+    find host selector |> unbox<HTMLElement>
 
 let private input (host: HTMLElement) (selector: string) =
-    host.querySelector selector
-    |> unbox<HTMLInputElement>
+    find host selector |> unbox<HTMLInputElement>
 
 type private CardState =
     {
@@ -163,7 +258,7 @@ let private updatesAndDisposes () =
     let button = element host "button"
     button.click ()
     equal "1" button.textContent
-    focus (unbox<Node>(host.querySelector "input"))
+    focus (unbox<Node>(find host "input"))
     equal "11" button.textContent
     mounted.Dispose ()
     equal 0. host.childNodes.length
@@ -174,8 +269,13 @@ let private updatesAndDisposes () =
 /// Makes the document parsed from <c>html</c> the global document's element; the returned function restores the
 /// previous element.
 /// </summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const parsed = new window.DOMParser().parseFromString($0, 'text/html'); const previous = document.documentElement; document.replaceChild(document.importNode(parsed.documentElement, true), previous); return () => { document.replaceChild(previous, document.documentElement); }; })()")>]
 let private loadDocument (html: string) : unit -> unit = jsNative
+#else
+let private loadDocument (html: string) : unit -> unit =
+    raise (System.NotSupportedException "jsdom only: replaces the document element with a parsed document")
+#endif
 
 let private hydratesRenderedDocument () =
     let json = "{\"title\":\"a\"}"
@@ -191,7 +291,7 @@ let private hydratesRenderedDocument () =
     let restore = loadDocument (Server.renderDocument omit document card "a")
 
     try
-        let host = unbox<HTMLElement>(globalThis.document.getElementById "app")
+        let host = unbox<HTMLElement>((pageOrCaseDocument ()).getElementById "app")
         let first = host.firstChild.Value
 
         let shape =
@@ -199,8 +299,8 @@ let private hydratesRenderedDocument () =
             && (unbox<Comment> first).data = "[r",
             host.childNodes.length,
             Hydration.readState "card-props",
-            (all globalThis.document.body "script").Length,
-            obj.ReferenceEquals (host.parentNode.Value, globalThis.document.body)
+            (all (pageOrCaseDocument ()).body "script").Length,
+            obj.ReferenceEquals (host.parentNode.Value, (pageOrCaseDocument ()).body)
 
         use graph = new Graph ()
         let before = nodesOf host
@@ -336,7 +436,7 @@ let private foreignSiblings () =
          + Server.render omit card "a"
          + "<script type=\"application/json\">{}</script>\n")
 
-    let paragraph, script = host.querySelector "p", host.querySelector "script"
+    let paragraph, script = find host "p", find host "script"
     let mounted = hydrate graph strictOptions host card "a"
     (element host "button").click()
     equal "Title: a1" (element host "div").textContent
@@ -344,9 +444,9 @@ let private foreignSiblings () =
 
     equal
         (true, true, true, "\n  before{}\n")
-        (obj.ReferenceEquals (paragraph, host.querySelector "p"),
-         obj.ReferenceEquals (script, host.querySelector "script"),
-         isNull (box (host.querySelector "div")),
+        (obj.ReferenceEquals (paragraph, find host "p"),
+         obj.ReferenceEquals (script, find host "script"),
+         isNull (box (find host "div")),
          host.textContent)
 
 let private carriageReturn () =
@@ -386,9 +486,9 @@ let private rootMismatch () =
     let mounted =
         Hydration.hydrate graph None reports.Add lenientOptions host otherRoot "a"
 
-    equal (true, "a", true) (singleMismatch reports, host.textContent, isNull (box (host.querySelector "div")))
+    equal (true, "a", true) (singleMismatch reports, host.textContent, isNull (box (find host "div")))
     mounted.Dispose ()
-    equal true (isNull (box (host.querySelector "span")))
+    equal true (isNull (box (find host "span")))
 
 let private linkCard =
     Component.define (fun _ (title: string) -> Api.createSignal title) (fun t ->
@@ -460,11 +560,12 @@ let private a = { Id = 1; Text = "a" }
 let private b = { Id = 2; Text = "b" }
 let private c = { Id = 3; Text = "c" }
 
-let mutable private liveItems: Signal<Listed array> = Unchecked.defaultof<_>
+let private liveItems () =
+    caseLocal "HydrationChecks.liveItems" (fun () -> ref (Unchecked.defaultof<_>: Signal<Listed array>))
 
 let private live (items: Listed array) =
     let signal = Api.createSignal items
-    liveItems <- signal
+    (liveItems ()).Value <- signal
     signal
 
 let private liveList =
@@ -483,13 +584,13 @@ let private listsHydrate () =
     let mounted = hydrate graph strictOptions host liveList [| a; b |]
     equal (0, true, "ab") (mutations (), sameNodes before (nodesOf host), (element host "ul").textContent)
     let first, second = (all host "li")[0], (all host "li")[1]
-    graph.Run (fun () -> liveItems.Value <- [| b; a |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; a |])
     equal ("ba", true) ((element host "ul").textContent, sameNodes [| second; first |] (all host "li"))
-    graph.Run (fun () -> liveItems.Value <- [| b; a; c |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; a; c |])
     equal ("bac", true) ((element host "ul").textContent, sameNodes [| second; first |] ((all host "li")[0..1]))
-    graph.Run (fun () -> liveItems.Value <- [| b; c |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; c |])
     equal ("bc", true) ((element host "ul").textContent, obj.ReferenceEquals (second, (all host "li")[0]))
-    graph.Run (fun () -> liveItems.Value <- [||])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [||])
     equal "<!--[--><!--]-->" (element host "ul").innerHTML
     mounted.Dispose ()
 
@@ -518,23 +619,29 @@ let private nestedRegions () =
     let before = nodesOf host
     let mounted = hydrate graph strictOptions host nestedList [| a; b |]
     equal (true, "a1a2b1b2") (sameNodes before (nodesOf host), (element host "ul").textContent)
-    graph.Run (fun () -> liveItems.Value <- [| { a with Text = "z" }; b |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| { a with Text = "z" }; b |])
     equal "z1z2b1b2" (element host "ul").textContent
     mounted.Dispose ()
 
-let mutable private liveTexts: Signal<string array> = Unchecked.defaultof<_>
+let private liveTexts () =
+    caseLocal "HydrationChecks.liveTexts" (fun () -> ref (Unchecked.defaultof<_>: Signal<string array>))
 
 let private liveStrings (items: string array) =
     let signal = Api.createSignal items
-    liveTexts <- signal
+    (liveTexts ()).Value <- signal
     signal
 
 let private textList =
     Component.define (fun _ (items: string array) -> liveStrings items) (fun t ->
         t.div [||] [| t.each id (fun (items: Signal<string array>) -> items.Value) textRow |])
 
+#if FABLE_COMPILER
 [<Emit("$0.childNodes[$1]")>]
 let private childAt (parent: Node) (index: int) : Node = jsNative
+#else
+let private childAt (parent: Node) (index: int) : Node =
+    unbox<Node>(parent.childNodes.item (float index))
+#endif
 
 let private textRowSeparators () =
     use graph = new Graph ()
@@ -546,7 +653,7 @@ let private textRowSeparators () =
 
     equal ("<!--[-->ab<!--]-->", 4., true) (list.innerHTML, list.childNodes.length, sameNodes texts [| childAt list 1; childAt list 2 |])
 
-    graph.Run (fun () -> liveTexts.Value <- [| "b"; "a"; "c" |])
+    graph.Run (fun () -> (liveTexts ()).Value.Value <- [| "b"; "a"; "c" |])
     equal ("bac", true) (list.textContent, sameNodes [| texts[1]; texts[0] |] [| childAt list 1; childAt list 2 |])
     mounted.Dispose ()
 
@@ -579,10 +686,10 @@ let private zeroRootRows () =
     let after = element host "span"
     let mounted = hydrate graph strictOptions host emptyList [| "a"; "b" |]
     equal true (sameNodes before (nodesOf host))
-    graph.Run (fun () -> liveTexts.Value <- [| "a"; "b"; "c" |])
+    graph.Run (fun () -> (liveTexts ()).Value.Value <- [| "a"; "b"; "c" |])
     let list = element host "div"
     equal (6., "after", true) (list.childNodes.length, list.textContent, obj.ReferenceEquals (after, list.lastChild.Value))
-    graph.Run (fun () -> liveTexts.Value <- [| "b"; "c" |])
+    graph.Run (fun () -> (liveTexts ()).Value.Value <- [| "b"; "c" |])
 
     equal
         (5., true, "after", true)
@@ -592,13 +699,14 @@ let private zeroRootRows () =
 
 type private TrackedRow = { Item: unit -> Listed; Id: string }
 
-let private rowCleanups = ResizeArray<string>()
+let private rowCleanups () =
+    caseLocal "HydrationChecks.rowCleanups" (fun () -> ResizeArray<string>())
 
 let private trackedRow =
     Component.define
         (fun setup (item: unit -> Listed) ->
             let text = (item ()).Text
-            setup.OnCleanup (fun () -> rowCleanups.Add text)
+            setup.OnCleanup (fun () -> (rowCleanups ()).Add text)
             { Item = item; Id = setup.CreateId () })
         (fun t -> t.li [| t.Attrs.id (fun (row: TrackedRow) -> Some row.Id) |] [| t.text (fun row -> (row.Item ()).Text) |])
 
@@ -644,7 +752,7 @@ let private rowCountMismatch () =
              obj.ReferenceEquals (list, element host "ul"),
              obj.ReferenceEquals (start, list.firstChild.Value))
 
-        graph.Run (fun () -> liveItems.Value <- [| c; a |])
+        graph.Run (fun () -> (liveItems ()).Value.Value <- [| c; a |])
         equal "ca" list.textContent
         mounted.Dispose ()
 
@@ -656,7 +764,7 @@ let private rowCountMismatch () =
     let mounted =
         Hydration.hydrate graph None reports.Add lenientOptions host failingCharacters [| "a"; "b"; "c" |]
 
-    graph.Run (fun () -> liveTexts.Value <- [| "a"; "b"; "c"; "d" |])
+    graph.Run (fun () -> (liveTexts ()).Value.Value <- [| "a"; "b"; "c"; "d" |])
 
     equal ([ [ "Hydration mismatch at #0: expected <b>, found <!--]-->" ]; [ "cell d" ] ], "abc") (messages reports, (element host "div").textContent)
 
@@ -718,7 +826,7 @@ let private rowStartsWithRegion () =
     let spans = all host "span"
     let mounted = hydrate graph strictOptions host regionFirstList [| a; b |]
     equal true (sameNodes before (nodesOf host))
-    graph.Run (fun () -> liveItems.Value <- [| b; a |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; a |])
     equal ("bendaend", true) ((element host "div").textContent, sameNodes [| spans[1]; spans[0] |] (all host "span"))
     mounted.Dispose ()
 
@@ -728,7 +836,7 @@ let private reorderedItems () =
     let serverRows = all host "li"
     let mounted = hydrate graph strictOptions host liveList [| b; a |]
     equal ("ba", true) ((element host "ul").textContent, sameNodes serverRows (all host "li"))
-    graph.Run (fun () -> liveItems.Value <- [| a; b |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| a; b |])
     let rows = all host "li"
 
     equal
@@ -763,9 +871,9 @@ let private armsHydrate () =
     let mutations = recordMutations host
     let mounted = hydrate graph strictOptions host staged (Working 3)
     equal (0, true, "working 3") (mutations (), sameNodes before (nodesOf host), (element host "div").textContent)
-    let span = host.querySelector "span"
+    let span = find host "span"
     graph.Run (fun () -> stage.Value.Value <- Working 4)
-    equal ("working 4", true) ((element host "div").textContent, obj.ReferenceEquals (span, host.querySelector "span"))
+    equal ("working 4", true) ((element host "div").textContent, obj.ReferenceEquals (span, find host "span"))
     graph.Run (fun () -> stage.Value.Value <- Complete "x")
 
     equal ("complete x", 1, false) ((element host "div").textContent, (all host "span").Length, host.contains (unbox<Node> span))
@@ -778,11 +886,11 @@ let private armPayloadCorrected () =
     let stage = ref Unchecked.defaultof<Signal<Stage>>
     let staged = liveStaged stage
     let host = serve staged (Working 3)
-    let span = host.querySelector "span"
+    let span = find host "span"
     let mounted = hydrate graph strictOptions host staged (Working 4)
-    equal ("working 4", true) ((element host "div").textContent, obj.ReferenceEquals (span, host.querySelector "span"))
+    equal ("working 4", true) ((element host "div").textContent, obj.ReferenceEquals (span, find host "span"))
     graph.Run (fun () -> stage.Value.Value <- Working 5)
-    equal ("working 5", true) ((element host "div").textContent, obj.ReferenceEquals (span, host.querySelector "span"))
+    equal ("working 5", true) ((element host "div").textContent, obj.ReferenceEquals (span, find host "span"))
     mounted.Dispose ()
 
 let private differentArm () =
@@ -828,7 +936,7 @@ let private servedWithExtra (staged: Component<Stage>) =
     let host = serve staged (Working 3)
     let div = element host "div"
 
-    div.insertBefore (globalThis.document.createElement "b", unbox<Node> div.lastChild)
+    div.insertBefore ((pageOrCaseDocument ()).createElement "b", unbox<Node> div.lastChild.Value)
     |> ignore
 
     host
@@ -877,7 +985,7 @@ let private flagged =
 let private equalShapes () =
     use graph = new Graph ()
     let host = serve flagged true
-    let served = host.querySelector "span"
+    let served = find host "span"
     let reports = ResizeArray<exn list>()
 
     let mounted =
@@ -885,7 +993,7 @@ let private equalShapes () =
 
     equal
         (true, "y", false, 1)
-        (singleMismatch reports, (element host "div").textContent, obj.ReferenceEquals (served, host.querySelector "span"), (all host "span").Length)
+        (singleMismatch reports, (element host "div").textContent, obj.ReferenceEquals (served, find host "span"), (all host "span").Length)
 
     mounted.Dispose ()
 
@@ -972,7 +1080,7 @@ let private armsInRows () =
          obj.ReferenceEquals (spans[0], (all host "span")[0]),
          obj.ReferenceEquals (spans[1], (all host "span")[1]))
 
-    graph.Run (fun () -> liveItems.Value <- [| b; { a with Text = "y" } |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; { a with Text = "y" } |])
     equal ("yy", true) ((element host "ul").textContent, sameNodes [| rows[1]; rows[0] |] (all host "li"))
     mounted.Dispose ()
 
@@ -1011,7 +1119,7 @@ let private rowsInArms () =
     let mounted = hydrate graph strictOptions host armedList [| a; b |]
     equal (true, "ab") (sameNodes before (nodesOf host), (element host "ul").textContent)
     let rows = all host "li"
-    graph.Run (fun () -> liveItems.Value <- [| b; a |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; a |])
     equal ("ba", true) ((element host "ul").textContent, sameNodes [| rows[1]; rows[0] |] (all host "li"))
     mounted.Dispose ()
 
@@ -1024,7 +1132,7 @@ let private rowsInArms () =
         Hydration.hydrate graph None reports.Add lenientOptions host armedList [| a; b; c |]
 
     equal (true, "abc", true) (singleMismatch reports, list.textContent, obj.ReferenceEquals (list, element host "ul"))
-    graph.Run (fun () -> liveItems.Value <- [| c; a |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| c; a |])
     equal ("ca", 1) (list.textContent, reports.Count)
     mounted.Dispose ()
 
@@ -1040,14 +1148,15 @@ let private rowsInArms () =
 
     equal ("Hydration mismatch at #0: expected <li>, found <!--]-->", before, true) (error.Message, host.innerHTML, sameNodes nodes (nodesOf host))
 
-let private armLog = ResizeArray<string>()
+let private armLog () =
+    caseLocal "HydrationChecks.armLog" (fun () -> ResizeArray<string>())
 
 /// <summary>An arm whose setup and cleanup are logged as <c>name</c>.</summary>
 let private loggedArm (name: string) =
     Component.define
         (fun setup (_: unit -> unit) ->
-            armLog.Add ("setup " + name)
-            setup.OnCleanup (fun () -> armLog.Add ("cleanup " + name)))
+            (armLog ()).Add("setup " + name)
+            setup.OnCleanup (fun () -> (armLog ()).Add("cleanup " + name)))
         (fun t -> t.span [||] [| t.text name |])
 
 let private pArm = loggedArm "p"
@@ -1070,28 +1179,28 @@ let private armSwitchCleanups () =
                     |])
 
     let host = serve tracked true
-    armLog.Clear ()
-    let served = host.querySelector "span"
+    (armLog ()).Clear()
+    let served = find host "span"
     let mounted = hydrate graph strictOptions host tracked true
 
     let hydrated =
-        List.ofSeq armLog, (element host "div").textContent, obj.ReferenceEquals (served, host.querySelector "span")
+        List.ofSeq (armLog ()), (element host "div").textContent, obj.ReferenceEquals (served, find host "span")
 
-    armLog.Clear ()
+    (armLog ()).Clear()
     graph.Run (fun () -> holder.Value.Value <- false)
 
     let toQ =
-        List.ofSeq armLog, (element host "div").textContent, host.contains (unbox<Node> served)
+        List.ofSeq (armLog ()), (element host "div").textContent, host.contains (unbox<Node> served)
 
-    armLog.Clear ()
+    (armLog ()).Clear()
     graph.Run (fun () -> holder.Value.Value <- true)
-    let toP = List.ofSeq armLog, (element host "div").textContent
-    armLog.Clear ()
+    let toP = List.ofSeq (armLog ()), (element host "div").textContent
+    (armLog ()).Clear()
     mounted.Dispose ()
 
     equal
         (([ "setup p" ], "p", true), ([ "cleanup p"; "setup q" ], "q", false), ([ "cleanup q"; "setup p" ], "p"), [ "cleanup p" ])
-        (hydrated, toQ, toP, List.ofSeq armLog)
+        (hydrated, toQ, toP, List.ofSeq (armLog ()))
 
 let private viewHolesRerender () =
     use graph = new Graph ()
@@ -1104,7 +1213,7 @@ let private viewHolesRerender () =
                 Body = Program.element (HtmlTag "em") [||] [| Program.text "server" |]
             }
 
-    let serverEm = server.querySelector "em"
+    let serverEm = find server "em"
     let div = element server "div"
 
     let client =
@@ -1118,7 +1227,7 @@ let private viewHolesRerender () =
     equal
         ("Aclient", false, false, true)
         (div.textContent,
-         obj.ReferenceEquals (serverEm, server.querySelector "em"),
+         obj.ReferenceEquals (serverEm, find server "em"),
          server.contains (unbox<Node> serverEm),
          obj.ReferenceEquals (div, element server "div"))
 
@@ -1224,8 +1333,14 @@ let private serveCase (case: BoundaryCase) (definition: Component<unit>) (server
     case.Sources.Clear ()
     host
 
+#if FABLE_COMPILER
 [<Emit("$0.nodeType === 8 && ($0.data === 'ranvier:start' || $0.data === 'ranvier:end')")>]
 let private isRangeComment (node: Node) : bool = jsNative
+#else
+let private isRangeComment (node: Node) : bool =
+    node.nodeType = 8.0
+    && (let data = (unbox<CharacterData> node).data in data = "ranvier:start" || data = "ranvier:end")
+#endif
 
 /// <summary>Every node under <c>root</c> in document order, without the range comments of nested mounts.</summary>
 let private serverNodes (root: Node) =
@@ -1252,9 +1367,9 @@ let private contentHydratesInPlace () =
 
     use graph = new Graph ()
     let host = serveCase case definition (Settles "server") (Settles "client")
-    let span = host.querySelector "span"
+    let span = find host "span"
     let mounted = hydrate graph strictOptions host definition ()
-    equal ("client", true) ((element host "div").textContent, obj.ReferenceEquals (span, host.querySelector "span"))
+    equal ("client", true) ((element host "div").textContent, obj.ReferenceEquals (span, find host "span"))
     mounted.Dispose ()
 
 let private serverContentStaysPending () =
@@ -1262,17 +1377,17 @@ let private serverContentStaysPending () =
     let case = boundaryCase ()
     let definition = bounded case
     let host = serveCase case definition (Settles "server") Pends
-    let span = host.querySelector "span"
+    let span = find host "span"
     let mounted = hydrate graph strictOptions host definition ()
 
     // The content bound the server's span, which is held detached; a copy of the server's nodes is the pending view.
     let pending =
-        (element host "div").innerHTML, obj.ReferenceEquals (span, host.querySelector "span"), List.ofSeq case.Log
+        (element host "div").innerHTML, obj.ReferenceEquals (span, find host "span"), List.ofSeq case.Log
 
     graph.Run (fun () -> case.Sources[0].Settle "client")
 
     let revealed =
-        (element host "div").textContent, obj.ReferenceEquals (span, host.querySelector "span")
+        (element host "div").textContent, obj.ReferenceEquals (span, find host "span")
 
     mounted.Dispose ()
 
@@ -1301,7 +1416,7 @@ let private pendingContentInert () =
     let case = boundaryCase ()
     let definition = clickedContent case
     let host = serveCase case definition (Settles "server") Pends
-    let served = host.querySelector "button"
+    let served = find host "button"
     let reports = ResizeArray<exn list>()
 
     let mounted =
@@ -1313,7 +1428,7 @@ let private pendingContentInert () =
     (element host "button").click()
 
     let revealed =
-        (element host "div").textContent, obj.ReferenceEquals (served, host.querySelector "button"), List.ofSeq case.Log, messages reports
+        (element host "div").textContent, obj.ReferenceEquals (served, find host "button"), List.ofSeq case.Log, messages reports
 
     mounted.Dispose ()
 
@@ -1328,7 +1443,7 @@ let private serverPendingHydrates () =
     let host = serveCase case definition Pends Pends
     equal "<!--[r--><div><!--[p--><span>loading</span><!--]--></div><!--]-->" host.innerHTML
     let before = nodesOf host
-    let loading = host.querySelector "span"
+    let loading = find host "span"
     let mounted = hydrate graph strictOptions host definition ()
 
     let hydrated =
@@ -1343,7 +1458,7 @@ let private serverPendingHydrates () =
     // Content ready on the client replaces the server's pending view at once.
     use graph = new Graph ()
     let host = serveCase case definition Pends (Settles "client")
-    let loading = host.querySelector "span"
+    let loading = find host "span"
     let mounted = hydrate graph strictOptions host definition ()
 
     equal ("client", false, [ "content setup" ]) ((element host "div").textContent, host.contains (unbox<Node> loading), List.ofSeq case.Log)
@@ -1356,12 +1471,21 @@ let private serverErrorRerenders () =
     let definition = bounded case
     let host = serveCase case definition Fails (Settles "client")
     equal "<!--[r--><div><!--[e--><span>failed</span><!--]--></div><!--]-->" host.innerHTML
-    let failed = host.querySelector "span"
+    let failed = find host "span"
     let mounted = hydrate graph strictOptions host definition ()
 
     equal ("client", false, [ "content setup" ]) ((element host "div").textContent, host.contains (unbox<Node> failed), List.ofSeq case.Log)
 
     mounted.Dispose ()
+
+/// <summary>Whether two JSON texts hold equal values.</summary>
+#if FABLE_COMPILER
+[<Emit("JSON.stringify(JSON.parse($0)) === JSON.stringify(JSON.parse($1))")>]
+let private sameJson (left: string) (right: string) : bool = jsNative
+#else
+let private sameJson (left: string) (right: string) : bool =
+    System.Text.Json.Nodes.JsonNode.DeepEquals (System.Text.Json.Nodes.JsonNode.Parse left, System.Text.Json.Nodes.JsonNode.Parse right)
+#endif
 
 let private stateRoundTrip () =
     let json =
@@ -1377,7 +1501,7 @@ let private stateRoundTrip () =
 
     let same =
         read
-        |> Option.map (fun text -> JS.JSON.stringify (JS.JSON.parse text) = JS.JSON.stringify (JS.JSON.parse json))
+        |> Option.map (fun text -> sameJson text json)
 
     let shown = (all container "script").Length, (element container "p").textContent
     detach container
@@ -1632,7 +1756,7 @@ let private boundaryMismatches () =
         let host = serveCase case (bounded case) (Settles "x") (Settles "x")
         let div = element host "div"
 
-        div.insertBefore (globalThis.document.createElement "b", unbox<Node> div.lastChild)
+        div.insertBefore ((pageOrCaseDocument ()).createElement "b", unbox<Node> div.lastChild.Value)
         |> ignore
 
         host
@@ -1734,7 +1858,7 @@ let private nestedRowMismatch () =
         (element host "ul").textContent, sameNodes order (all host "li"), (all host "i").Length, (all host "b").Length
 
     equal ([ [ mismatch ]; [ mismatch ] ], ("a1a2b1b2", true, 4, 0)) (messages reports, shown rows)
-    graph.Run (fun () -> liveItems.Value <- [| b; { a with Text = "z" } |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; { a with Text = "z" } |])
     equal ("b1b2z1z2", true, 4, 0) (shown [| rows[1]; rows[0] |])
     mounted.Dispose ()
 
@@ -1754,27 +1878,28 @@ let private adoptedRowsKeepCleanupsAndIds () =
     let served = servedIds trackedList [| a; b |]
     use graph = new Graph ()
     let host = serve trackedList [| a; b |]
-    rowCleanups.Clear ()
+    (rowCleanups ()).Clear()
     let rows = all host "li"
     let mounted = hydrate graph strictOptions host trackedList [| a; b |]
     let hydrated = domIds host, sameNodes rows (all host "li")
-    graph.Run (fun () -> liveItems.Value <- [| b; c |])
+    graph.Run (fun () -> (liveItems ()).Value.Value <- [| b; c |])
 
     let updated =
-        domIds host, (element host "ul").textContent, List.ofSeq rowCleanups, obj.ReferenceEquals (rows[1], (all host "li")[0])
+        domIds host, (element host "ul").textContent, List.ofSeq (rowCleanups ()), obj.ReferenceEquals (rows[1], (all host "li")[0])
 
     mounted.Dispose ()
 
     equal
         ((served, true), ([ "r-0.r0.1-0"; "r-0.r0.2-0" ], "bc", [ "a" ], true), [ "a"; "b"; "c" ])
-        (hydrated, updated, List.sort (List.ofSeq rowCleanups))
+        (hydrated, updated, List.sort (List.ofSeq (rowCleanups ())))
 
-let mutable private holeFails = false
+let private holeFails () =
+    caseLocal "HydrationChecks.holeFails" (fun () -> ref false)
 
 let private failingView =
     Component.define
         (fun _ () ->
-            if holeFails then
+            if (holeFails ()).Value then
                 failwith "boom")
         (fun t -> t.span [||] [||])
 
@@ -1801,7 +1926,7 @@ let private rowFailureRestores () =
         let host = serve holedList [| a; b |]
         let before = host.innerHTML
         let nodes = nodesOf host
-        holeFails <- true
+        (holeFails ()).Value <- true
 
         let error =
             try
@@ -1809,7 +1934,7 @@ let private rowFailureRestores () =
                     hydrate graph options host holedList [| a; b |]
                     |> ignore)
             finally
-                holeFails <- false
+                (holeFails ()).Value <- false
 
         equal ("boom", before, true) (error.Message, host.innerHTML, sameNodes nodes (nodesOf host))
 
@@ -2102,12 +2227,12 @@ let private rawContentRewritten () =
     use graph = new Graph ()
     let host = serve rawCard "<b>x</b>"
     let content = element host "span"
-    let server = host.querySelector "b"
+    let server = find host "b"
     let mutations = recordMutations content
     let mounted = hydrate graph strictOptions host rawCard "<b>x</b>"
 
     let rewritten =
-        mutations (), content.innerHTML, obj.ReferenceEquals (server, host.querySelector "b")
+        mutations (), content.innerHTML, obj.ReferenceEquals (server, find host "b")
 
     (element host "button").click()
     let updated = content.innerHTML
@@ -2158,7 +2283,7 @@ let private placedOnAdopted () =
     let host = serve placedCard log
 
     let root, span, widget =
-        host.querySelector "div", host.querySelector "span", host.querySelector ":scope > div > div"
+        find host "div", find host "span", find host ":scope > div > div"
 
     let served = host.innerHTML
     let mounted = hydrate graph strictOptions host placedCard log
@@ -2190,9 +2315,7 @@ let private emptyRcdataText () =
     use graph = new Graph ()
     let host = serve noted ""
 
-    let area =
-        host.querySelector "textarea"
-        |> unbox<HTMLTextAreaElement>
+    let area = find host "textarea" |> unbox<HTMLTextAreaElement>
 
     let served = area.childNodes.length
     let mounted = hydrate graph strictOptions host noted ""
@@ -2280,13 +2403,14 @@ let private withTrailingRoot (definition: Component<'props>) (props: 'props) =
     + "<b></b><!--]-->"
 
 /// <summary>Runs once, in the setup of the next <c>sabotage</c> instance.</summary>
-let mutable private sabotageOnce: unit -> unit = ignore
+let private sabotageOnce () =
+    caseLocal "HydrationChecks.sabotageOnce" (fun () -> ref (ignore: unit -> unit))
 
 let private sabotage =
     Component.define
         (fun _ () ->
-            let run = sabotageOnce
-            sabotageOnce <- ignore
+            let run = (sabotageOnce ()).Value
+            (sabotageOnce ()).Value <- ignore
             run ())
         (fun t -> t.b [||] [||])
 
@@ -2298,7 +2422,7 @@ let private rollbackFailureReported () =
     let host = host ()
     loadServed host (withTrailingRoot sabotaged "")
     // Detaching the text node that replaced the empty-text placeholder makes the placeholder's restore fail.
-    sabotageOnce <- fun () -> detach (element host "span").firstChild.Value
+    (sabotageOnce ()).Value <- fun () -> detach (element host "span").firstChild.Value
     let reports = ResizeArray<exn list>()
 
     let mounted =
@@ -2323,14 +2447,32 @@ let private rollbackFailureReported () =
          "<!--[r--><!--ranvier:start--><span><b></b></span><!--ranvier:end--><!--]-->")
         (reported, shown)
 
+#if FABLE_COMPILER
 [<Emit("Array.from($0.childNodes).filter(node => node.nodeType === 8 && node.data === ']')")>]
 let private endMarkers (parent: Node) : Node array = jsNative
+#else
+let private endMarkers (parent: Node) : Node array =
+    [|
+        let mutable child = parent.firstChild
+
+        while child.IsSome do
+            let current = unbox<Node> child.Value
+
+            if
+                current.nodeType = 8.0
+                && (unbox<CharacterData> current).data = "]"
+            then
+                current
+
+            child <- current.nextSibling
+    |]
+#endif
 
 let private sabotagedRow =
     Component.define
         (fun _ (item: unit -> Listed) ->
-            let run = sabotageOnce
-            sabotageOnce <- ignore
+            let run = (sabotageOnce ()).Value
+            (sabotageOnce ()).Value <- ignore
             run ()
             item)
         (fun t ->
@@ -2365,7 +2507,7 @@ let private unclosedRowRegion () =
 
     // The re-raise is reachable only through a DOM mutation during hydration.
     // The first row's setup removes every end marker in the list.
-    sabotageOnce <- fun () -> Array.iter detach ends
+    (sabotageOnce ()).Value <- fun () -> Array.iter detach ends
 
     let error =
         ServerChecks.failure (fun () ->
@@ -2390,13 +2532,9 @@ let private inlined (definition: Component<'props>) =
 
 /// <summary>The textarea value, the checkbox state and the select's selected index.</summary>
 let private formState (host: HTMLElement) =
-    (host.querySelector "textarea"
-     |> unbox<HTMLTextAreaElement>)
-        .value,
+    (find host "textarea" |> unbox<HTMLTextAreaElement>).value,
     (input host "input").``checked``,
-    (host.querySelector "select"
-     |> unbox<HTMLSelectElement>)
-        .selectedIndex
+    (find host "select" |> unbox<HTMLSelectElement>).selectedIndex
 
 let private strictRestoresValues () =
     let check (definition: Component<'props>) (served: 'props) (client: 'props) (shown: HTMLElement -> 'shown) =
@@ -2702,7 +2840,7 @@ let private pendingRowsHydrate () =
     mounted.Dispose ()
 
     let host = serveCase case definition (Settles "ab") Pends
-    let list = host.querySelector "ul"
+    let list = find host "ul"
     let reports = ResizeArray<exn list>()
 
     let mounted =
@@ -2738,25 +2876,54 @@ let private hydratedRootWidgetMoves () =
     use graph = new Graph ()
     let log = ResizeArray<string>()
     let host = serve rootWidget log
-    let widget = host.querySelector "div"
+    let widget = find host "div"
     let other = CheckSupport.host ()
     let mounted = hydrate graph strictOptions host rootWidget log
     mounted.MoveBefore (other, None)
-    let moved = obj.ReferenceEquals (widget, other.querySelector "div")
+    let moved = obj.ReferenceEquals (widget, find other "div")
     mounted.Dispose ()
     equal (true, [ "attached"; "destroyed" ], 0.) (moved, List.ofSeq log, other.childNodes.length)
 
+/// <summary>
+/// The value and checked writes to the input and textarea controls under <c>root</c> until the result is called; a
+/// select's value is a browser-only property, written at every hydration, and is not counted. The count is 0 under
+/// Fable, where jsdom keeps no record of property writes.
+/// </summary>
+let private recordControlWrites (root: Node) : unit -> int =
+#if FABLE_COMPILER
+    fun () -> 0
+#else
+    let count = ref 0
+
+    let restores =
+        [
+            for name in [ "set_value"; "set_checked" ] ->
+                Conformance.interceptOn null name (fun original target args ->
+                    match target with
+                    | :? Element as element when
+                        root.contains element
+                        && element.localName <> "select"
+                        ->
+                        count.Value <- count.Value + 1
+                    | _ -> ()
+
+                    original args)
+        ]
+
+    fun () ->
+        for restore in restores do
+            restore ()
+
+        count.Value
+#endif
+
 let private formsHydrate () =
     let shown (host: HTMLElement) =
-        let area =
-            host.querySelector "textarea"
-            |> unbox<HTMLTextAreaElement>
+        let area = find host "textarea" |> unbox<HTMLTextAreaElement>
 
         let toggle = input host "input"
 
-        let list =
-            host.querySelector "select"
-            |> unbox<HTMLSelectElement>
+        let list = find host "select" |> unbox<HTMLSelectElement>
 
         area.value, toggle.``checked``, list.selectedIndex, (element host "pre").textContent
 
@@ -2778,12 +2945,17 @@ let private formsHydrate () =
         use graph = new Graph ()
         let host = serve ServerChecks.formFixture served
         let mutations = recordMutations host
+        let formWrites = recordControlWrites host
         let mounted = hydrate graph strictOptions host ServerChecks.formFixture client
         let outcome = mutations (), shown host
+        let written = formWrites ()
         mounted.Dispose ()
-        outcome
+        outcome, written
 
-    equal ((0, ("\nline", true, 1., "\nline")), ("other", false, 0., "other")) (hydrateWith served, snd (hydrateWith differing))
+    let matching, matchingWrites = hydrateWith served
+    let corrected, _ = hydrateWith differing
+    equal ((0, ("\nline", true, 1., "\nline")), ("other", false, 0., "other")) (matching, snd corrected)
+    equal 0 matchingWrites
 
 /// <summary>
 /// Mounts <c>definition</c> and checks that the client's sorted id log and its DOM ids in document order equal
@@ -2853,11 +3025,32 @@ let private atStep (step: string) expected actual =
     if expected <> actual then
         failwithf "At %s: expected %A; got %A" step expected actual
 
+#if FABLE_COMPILER
 [<Emit("$0.dispatchEvent(new Event($1, { bubbles: true }))")>]
 let private dispatch (node: Node) (name: string) : unit = jsNative
+#else
+let private dispatch (node: Node) (name: string) : unit =
+    node.dispatchEvent (
+        EventSpec.create
+            (pageOrCaseDocument ())
+            {
+                Type = name
+                Kind = EventKind.Plain
+                Bubbles = true
+                Cancelable = false
+                Init = []
+            }
+    )
+    |> ignore
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.isConnected")>]
 let private connected (node: Node) : bool = jsNative
+#else
+let private connected (node: Node) : bool =
+    node.isConnected
+#endif
 
 /// <summary>Every node under <c>root</c>, in document order, that is <c>region</c> or lies outside it.</summary>
 let private nodesBesides (region: Node) (root: Node) =
@@ -2944,13 +3137,13 @@ let private journeyPage (journey: Journey) =
                         t.input
                             [|
                                 t.Props.Input.value (fun r -> r.Name.Value)
-                                t.Events.on ("input", fun r event -> r.Name.Value <- (unbox<HTMLInputElement> event.target).value)
+                                t.Events.on ("input", fun r event -> r.Name.Value <- (unbox<HTMLInputElement> event.target.Value).value)
                             |]
                         t.input
                             [|
                                 t.Attrs.Input.``type`` "checkbox"
                                 t.Props.Input.``checked`` (fun r -> r.Wide.Value)
-                                t.Events.on ("change", fun r event -> r.Wide.Value <- (unbox<HTMLInputElement> event.target).``checked``)
+                                t.Events.on ("change", fun r event -> r.Wide.Value <- (unbox<HTMLInputElement> event.target.Value).``checked``)
                             |]
                         t.span [||] [| t.text (fun r -> r.Name.Value) |]
                         t.ul [||] [| t.each (fun (item: Listed) -> item.Id) (fun r -> r.Items.Value) row |]
@@ -3027,7 +3220,7 @@ let private hydrationJourney (host: HTMLElement) =
     let section = element host "section"
     let served = nodesBesides section host
     let servedSection = section.innerHTML
-    let servedArm = unbox<Node>(host.querySelector "b")
+    let servedArm = unbox<Node>(find host "b")
     let rows = all host "li"
     let reports = ResizeArray<exn list>()
 
@@ -3155,7 +3348,7 @@ let private retryJourney () =
     let case = boundaryCase ()
     let definition = retrying case
     let host = serveCase case definition (Settles "server") Pends
-    let served = unbox<Node>(host.querySelector "span")
+    let served = unbox<Node>(find host "span")
     let reports = ResizeArray<exn list>()
 
     let mounted =
@@ -3164,7 +3357,7 @@ let private retryJourney () =
     atStep
         "hydrate"
         ("<!--[c--><span id=\"r-0.r0.0-0\">server</span><!--]-->", false, [ "content setup" ], [])
-        ((element host "div").innerHTML, obj.ReferenceEquals (served, host.querySelector "span"), List.ofSeq case.Log, messages reports)
+        ((element host "div").innerHTML, obj.ReferenceEquals (served, find host "span"), List.ofSeq case.Log, messages reports)
 
     graph.Run (fun () -> case.Sources[0].Fail(Exception "failed"))
 
@@ -3222,14 +3415,14 @@ let private pendingListJourney () =
     case.Log.Clear ()
     case.Sources.Clear ()
     let rows = all host "li"
-    let served = unbox<Node>(host.querySelector "span")
+    let served = unbox<Node>(find host "span")
     let reports = ResizeArray<exn list>()
 
     let mounted =
         Hydration.hydrate graph None reports.Add strictOptions host definition [| a; b |]
 
     let boundary = element host "div"
-    let copy = unbox<Node>(boundary.querySelector "span")
+    let copy = unbox<Node>(find boundary "span")
 
     atStep
         "hydrate"
@@ -3252,7 +3445,7 @@ let private pendingListJourney () =
          sameNodes [| rows[1]; rows[0] |] updated[0..1],
          mutations (),
          boundary.innerHTML,
-         obj.ReferenceEquals (copy, boundary.querySelector "span"),
+         obj.ReferenceEquals (copy, find boundary "span"),
          List.ofSeq case.Log,
          messages reports)
 
@@ -3262,7 +3455,7 @@ let private pendingListJourney () =
         "reveal"
         ("client", true, false, [ "content setup" ], "bac", true, [])
         (boundary.textContent,
-         obj.ReferenceEquals (served, boundary.querySelector "span"),
+         obj.ReferenceEquals (served, find boundary "span"),
          connected copy,
          List.ofSeq case.Log,
          (element host "ul").textContent,
@@ -3292,7 +3485,7 @@ let private recoveryJourney (host: HTMLElement) =
 
     // Round 1: an extra element before the root's end marker re-renders the root.
     loadServed host (withTrailingRoot page props)
-    let servedRoot = unbox<Node>(host.querySelector "div")
+    let servedRoot = unbox<Node>(find host "div")
     let reports = ResizeArray<exn list>()
     let mounted = ref Unchecked.defaultof<Mounting.Mounted>
 
@@ -3360,17 +3553,50 @@ let private recoveryJourney (host: HTMLElement) =
     mounted.Value.Dispose ()
     atStep "round 2 dispose" (0., [], 1) (host.childNodes.length, messages secondReports, reports.Count)
 
+#if FABLE_COMPILER
 [<Emit("document.head.insertAdjacentHTML('beforeend', $0)")>]
 let private appendHead (html: string) : unit = jsNative
+#else
+let private appendHead (html: string) : unit =
+    let document = pageOrCaseDocument ()
 
+    let template =
+        document.createElement "template"
+        |> unbox<HTMLTemplateElement>
+
+    template.innerHTML <- html
+
+    document.head.appendChild template.content
+    |> ignore
+#endif
+
+#if FABLE_COMPILER
 [<Emit("Array.from(document.head.querySelectorAll('[data-ranvier-head]'))")>]
 let private markedHead () : Node array = jsNative
+#else
+let private markedHead () : Node array =
+    let found = (pageOrCaseDocument ()).head.querySelectorAll "[data-ranvier-head]"
+    [| for i in 0 .. int found.length - 1 -> unbox<Node>(found.item (float i)) |]
+#endif
 
+#if FABLE_COMPILER
 [<Emit("document.head.childNodes.length")>]
 let private headLength () : int = jsNative
+#else
+let private headLength () : int =
+    int (pageOrCaseDocument ()).head.childNodes.length
+#endif
 
+#if FABLE_COMPILER
 [<Emit("document.head.querySelectorAll('[data-ranvier-head]').forEach(node => node.remove())")>]
 let private clearMarkedHead () : unit = jsNative
+#else
+let private clearMarkedHead () : unit =
+    let found = (pageOrCaseDocument ()).head.querySelectorAll "[data-ranvier-head]"
+
+    for node in [ for i in 0 .. int found.length - 1 -> found.item (float i) ] do
+        (unbox<ChildNode> node).remove()
+#endif
 
 let private outerHtml (nodes: Node array) =
     [ for node in nodes -> (unbox<Element> node).outerHTML ]
@@ -3458,8 +3684,19 @@ let private headJourney () =
         clearMarkedHead ()
 
 /// <summary>Replaces each <c>tag</c> element under <c>root</c> with an empty HTML element named <c>x:tag</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("$0.querySelectorAll($1).forEach(e => e.replaceWith(e.ownerDocument.createElementNS('http://www.w3.org/1999/xhtml', 'x:' + $1)))")>]
 let private prefixElements (root: Node) (tag: string) : unit = jsNative
+#else
+let private prefixElements (root: Node) (tag: string) : unit =
+    let document = pageOrCaseDocument ()
+
+    for element in Ranvier.View.Testing.Query.queryAll root tag do
+        let replacement =
+            document.createElementNS (namespaceURI = Some "http://www.w3.org/1999/xhtml", qualifiedName = "x:" + tag)
+
+        (unbox<ChildNode> element).replaceWith [| Fable.Core.U2.Case2 (replacement :> Node) |]
+#endif
 
 let private boldRoot =
     Component.define (fun _ () -> ()) (fun t -> t.element (HtmlTag "b") [||] [| t.text "x" |])
@@ -3497,11 +3734,34 @@ let private prefixedElementsMismatch () =
         (raised boldRoot "b", raised titledItalic "i", raised boldThenItalic "i")
 
 /// <summary>A marked meta element appended to the document's head, whose <c>remove</c> raises <c>"stray removal"</c>.</summary>
+#if FABLE_COMPILER
 [<Emit("(() => { const m = document.createElement('meta'); m.setAttribute('data-ranvier-head', 'stray'); m.remove = () => { throw new Error('stray removal'); }; document.head.appendChild(m); return m; })()")>]
 let private strayHeadElement () : Element = jsNative
+#else
+// A marked head element whose remove () raises until removeStray removes it.
+let private strayHeadElement () : Element =
+    let document = pageOrCaseDocument ()
+    let meta = document.createElement "meta"
+    meta.setAttribute ("data-ranvier-head", "stray")
 
+    let restore =
+        Conformance.intercept meta "remove" (fun _ _ -> raise (exn "stray removal"))
+
+    caseLocal "HydrationChecks.strayRestore" (fun () -> ref ignore)
+    |> fun cell -> cell.Value <- restore
+
+    document.head.appendChild meta |> ignore
+    meta
+#endif
+
+#if FABLE_COMPILER
 [<Emit("(delete $0.remove, $0.remove())")>]
 let private removeStray (element: Element) : unit = jsNative
+#else
+let private removeStray (element: Element) : unit =
+    (caseLocal "HydrationChecks.strayRestore" (fun () -> ref ignore)).Value()
+    (unbox<ChildNode> element).remove()
+#endif
 
 let private headRemovalFailureDisposes () =
     use graph = new Graph ()
@@ -3589,11 +3849,23 @@ let private rollbackLogsDiscarded () =
     equal ([ for _ in succeeded -> (true, 0), true ], ((true, 0), false), served) (succeeded, failed, host.innerHTML)
 #endif
 
+#if FABLE_COMPILER
 [<Emit("new WeakRef($0)")>]
 let private weakRef (target: obj) : obj = jsNative
+#else
+let private weakRef (target: obj) : obj =
+    box (System.WeakReference target)
+#endif
 
+#if FABLE_COMPILER
 [<Emit("$0.deref() === undefined")>]
 let private collected (reference: obj) : bool = jsNative
+#else
+let private collected (reference: obj) : bool =
+    System.GC.Collect ()
+    System.GC.WaitForPendingFinalizers ()
+    not (reference :?> System.WeakReference).IsAlive
+#endif
 
 /// <summary>
 /// Hydrates <c>definition</c> for <c>client</c> over its server HTML for <c>served</c>, and returns the check to run
@@ -3611,7 +3883,7 @@ let private removedNodeCollected
     : unit -> unit =
     let graph = new Graph ()
     let host = serve definition served
-    let removed = weakRef (host.querySelector selector)
+    let removed = weakRef (find host selector)
     let mounted = Hydration.hydrate graph None ignore options host definition client
 
     fun () ->
@@ -3722,7 +3994,7 @@ let private clientCycle (queued: bool) (graph: Graph) : obj array =
     if queued then
         mounted.Flush ()
 
-    let div = target.querySelector "div"
+    let div = find target "div"
     mounted.Dispose ()
     [| div; mounted |]
 
@@ -3734,7 +4006,7 @@ let private hydratedCycle (selector: string) (graph: Graph) : obj array =
     shared <- Unchecked.defaultof<_>
     let target = serve readingPage ()
     shared <- sources
-    let served = target.querySelector selector
+    let served = find target selector
     let mounted = hydrate graph strictOptions target readingPage ()
     mounted.Dispose ()
     [| served; mounted |]
@@ -3754,7 +4026,7 @@ let private emptiedRowsCollected (hydrated: bool) : unit -> unit =
             mount graph target (Component.render liveList [| a; b |])
 
     let rows = [| for node in all target "li" -> weakRef node |]
-    let items = liveItems
+    let items = (liveItems ()).Value
     graph.Run (fun () -> items.Value <- [||])
 
     fun () ->
@@ -3831,7 +4103,7 @@ let retentionCases: (string * (unit -> (unit -> unit))) array =
         "a hydrated mount's removed server rows are collected while the mount is live", fun () -> emptiedRowsCollected true
     |]
 
-let cases: (string * (unit -> unit)) array =
+let private checks: (string * (unit -> unit)) array =
     strictCases
         [|
             "a client mount issues the server's ids for the same structure", clientIdentity
@@ -3846,7 +4118,10 @@ let cases: (string * (unit -> unit)) array =
             "hydrating server HTML adopts every node", adoptsEveryNode
             "an element with a prefix is a mismatch for a template element of its local name, named at its path", prefixedElementsMismatch
             "a hydrated template updates, dispatches delegated and direct events, and disposes like a mount", updatesAndDisposes
-            "a parsed renderDocument page hydrates its host with the transferred state and handles a click", hydratesRenderedDocument
+            Conformance.platformOnly
+                "jsdom"
+                "replaces the document element with a parsed document"
+                ("a parsed renderDocument page hydrates its host with the transferred state and handles a click", hydratesRenderedDocument)
             "hydration writes no text or attribute when values match", matchingValuesWriteNothing
             "hydration corrects differing values without a report", differingValuesCorrected
             "empty text slots hydrate through their placeholder and update", emptyTextHydrates
@@ -3874,8 +4149,11 @@ let cases: (string * (unit -> unit)) array =
             "a different selected arm re-renders the region and reports once; Strict raises", differentArm
             "a node after an adopted arm raises at the arm region's end; the region re-renders and reports once; Strict raises", armExtraNode
             "two arms with equal shape and different static text are distinguished by hash", equalShapes
-            "a client arm the server plan rejects is a hash mismatch: the region re-renders and reports once; Strict raises",
-            rejectedArmHashMismatches
+            Conformance.platformOnly
+                "jsdom"
+                "parses a table without tbody, which the twin parser rejects"
+                ("a client arm the server plan rejects is a hash mismatch: the region re-renders and reports once; Strict raises",
+                 rejectedArmHashMismatches)
             "arms in hydrated rows adopt under an equal hash, and a different arm re-renders only its region; Strict raises", armsInRows
             "rows in a hydrated arm adopt and reorder, and a row-count mismatch re-renders only the list; Strict raises", rowsInArms
             "arm switches after hydration run one cleanup per arm", armSwitchCleanups
@@ -3916,7 +4194,10 @@ let cases: (string * (unit -> unit)) array =
             "inputs edited before hydration keep their values, focus and selection when the server and client values agree", editedInputsKept
             "a live input value differing from the server's is written by hydration", differingInputsCorrected
             "hydration rewrites raw content once and the slot then updates", rawContentRewritten
-            "raw content that closes its element re-renders the root and reports once", rawHtmlClosesElement
+            Conformance.platformOnly
+                "jsdom"
+                "parses an end tag that closes an open element, which the twin parser rejects"
+                ("raw content that closes its element re-renders the root and reports once", rawHtmlClosesElement)
             "placed hooks run on the adopted nodes after adoption, and a widget attaches to its adopted empty element", placedOnAdopted
             "an empty text slot in a textarea the server left empty hydrates into a created text node", emptyRcdataText
             "a structural mismatch names the path, the expected and the found node, and leaves the server HTML as it was", mismatchRestores
@@ -3944,12 +4225,10 @@ let cases: (string * (unit -> unit)) array =
 
 /// <summary>The text and value of the first element matching <c>selector</c> after the browser parses <c>html</c>.</summary>
 let private parsed (html: string) (selector: string) : string * string =
-    let container = globalThis.document.createElement "div"
+    let container = (pageOrCaseDocument ()).createElement "div"
     container.innerHTML <- html
 
-    let element =
-        container.querySelector selector
-        |> unbox<HTMLElement>
+    let element = find container selector |> unbox<HTMLElement>
 
     element.textContent, (if isNull element?value then "" else string element?value)
 
@@ -3976,9 +4255,9 @@ type private Shape =
 
 let rec private build (shape: Shape) : Node =
     match shape with
-    | Tx text -> globalThis.document.createTextNode text :> Node
+    | Tx text -> (pageOrCaseDocument ()).createTextNode text :> Node
     | El (tag, children) ->
-        let created = globalThis.document.createElement tag
+        let created = (pageOrCaseDocument ()).createElement tag
 
         for child in children do
             created.appendChild (build child) |> ignore
@@ -3992,12 +4271,17 @@ let rec private templateOf (t: TemplateBuilder<unit>) (shape: Shape) : TemplateV
     | El (tag, children) -> t.element (HtmlTag tag) [||] [| for child in children -> templateOf t child |]
 
 /// <summary>The body's serialisation after <c>html</c> is parsed as the body of a document, as a served page is.</summary>
+#if FABLE_COMPILER
 [<Emit("new DOMParser().parseFromString('<!doctype html><body>' + $0, 'text/html').body.innerHTML")>]
 let private documentParsed (html: string) : string = jsNative
+#else
+let private documentParsed (html: string) : string =
+    raise (NotSupportedException "browser only: parses a document with DOMParser")
+#endif
 
 /// <summary>The serialisation of <c>shape</c> built node by node, and of that markup parsed as a document body.</summary>
 let private parsedAgain (shape: Shape) =
-    let built = globalThis.document.createElement "div"
+    let built = (pageOrCaseDocument ()).createElement "div"
     built.appendChild (build shape) |> ignore
     built.innerHTML, documentParsed built.innerHTML
 
@@ -4055,8 +4339,13 @@ let private rejectedMarkupRestructures () =
         ]
         outcomes
 
+#if FABLE_COMPILER
 [<Emit("$0.replace(/<!--.*?-->/g, '')")>]
 let private withoutComments (html: string) : string = jsNative
+#else
+let private withoutComments (html: string) : string =
+    System.Text.RegularExpressions.Regex.Replace (html, "<!--.*?-->", "")
+#endif
 
 /// <summary>
 /// Every accepted fixture's server HTML, parsed as a document body and under a div, serialises as the client mount's DOM
@@ -4093,10 +4382,14 @@ let private acceptedFixturesParse () =
 
     equal [ for _, client in pairs -> client ] [ for served, _ in pairs -> served ]
 
-let browserCases: (string * (unit -> unit)) array =
+let private browserChecks: (string * (unit -> unit)) array =
     [|
         "textarea value and pre text keep a leading line feed after parsing", leadingLineFeeds
         "each content-model rule's markup parses differently from the client DOM, and the server rejects it with that rule",
         rejectedMarkupRestructures
         "every accepted fixture's server HTML parses to the client DOM's serialisation", acceptedFixturesParse
     |]
+
+let cases: Conformance.Case array = Conformance.ofChecks checks
+
+let browserCases: Conformance.Case array = Conformance.ofChecks browserChecks

@@ -18,32 +18,45 @@ let private rejects (html: string) (construct: string) =
             Expect.isGreaterThan column 0 "column"
         | other -> failtestf "unexpected %O" other)
 
-/// <summary>Markup the HTML parser restructures, with the construct the twin's rejection names.</summary>
+/// <summary>
+/// Markup the HTML parser restructures, with the construct the twin's rejection names; restructured.test.mjs checks
+/// each against jsdom.
+/// </summary>
 let restructured: (string * string) list =
-    [
-        "<p><span><div>x</div></span></p>", "implied end tag (<p> closed by <div>)"
-        "<p><li>x</li></p>", "implied end tag (<p> closed by <li>)"
-        "<p><dd>x</dd></p>", "implied end tag (<p> closed by <dd>)"
-        "<p><center>x</center></p>", "implied end tag (<p> closed by <center>)"
-        "<p><summary>x</summary></p>", "implied end tag (<p> closed by <summary>)"
-        "<h1><h2>x</h2></h1>", "implied end tag (<h1> closed by <h2>)"
-        "<a><a>x</a></a>", "nested <a>"
-        "<a><span><a>x</a></span></a>", "nested <a>"
-        "<button><span><button>x</button></span></button>", "nested <button>"
-        "<form><div><form></form></div></form>", "nested <form>"
-        "<ul><li><p>a<li>b</li></p></li></ul>", "implied end tag (<li> inside <li>)"
-        "<ul><li><span><li>b</li></span></li></ul>", "implied end tag (<li> inside <li>)"
-        "<dl><dd><dt>x</dt></dd></dl>", "implied end tag (<dt> inside <dd>)"
-        "<svg><div>x</div></svg>", "HTML element <div> inside foreign content"
-        "<math><p>x</p></math>", "HTML element <p> inside foreign content"
-        "<math><mi><b>x</b></mi></math>", "an element inside a MathML text integration point"
-    ]
+    System.Text.Json.JsonSerializer.Deserialize<string array array>(
+        System.IO.File.ReadAllText (System.IO.Path.Combine (__SOURCE_DIRECTORY__, "restructured.json"))
+    )
+    |> Array.map (fun pair -> pair[0], pair[1])
+    |> List.ofArray
 
 [<Tests>]
 let tests =
     testList
         "Html"
         [
+            testCase "xmp, iframe, noembed and noframes hold their content as one text node"
+            <| fun () ->
+                for tag in [ "xmp"; "iframe"; "noembed"; "noframes" ] do
+                    use document = new TwinDocument ()
+                    let fragment = Html.parse document $"<{tag}><b>x</b> &amp;</{tag}>"
+                    let element = fragment.FirstChild
+
+                    Expect.equal [ for c in element.Children -> c.Kind ] [ NodeKind.Text ] $"{tag} has one text child"
+
+                    Expect.equal element.TextContent "<b>x</b> &amp;" $"{tag} text is raw"
+
+            testCase "a form start tag in a fragment parsed inside a form is rejected"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let form = document.CreateElement "form"
+                let div = document.CreateElement "div"
+                form.AppendChild div |> ignore
+
+                Expect.throwsC (fun () -> Html.parseInto div "<form><i>q</i></form>") (fun e ->
+                    match e with
+                    | Html.TwinParseException (construct, _, _) -> Expect.stringContains construct "nested <form>" "construct"
+                    | other -> failtestf "unexpected %O" other)
+
             testCase "markers, attributes and void elements round trip"
             <| fun () ->
                 let html =

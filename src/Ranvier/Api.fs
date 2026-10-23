@@ -294,6 +294,10 @@ module Api =
     let createEffect (body: unit -> unit) =
         Effect.Create (Graph.Current, body) |> ignore
 
+    /// <summary>An effect, as <c>createEffect</c> makes, returned as its node so its <c>Status</c> can be read.</summary>
+    let createEffectNode (body: unit -> unit) : INode =
+        Effect.Create (Graph.Current, body) :> INode
+
     /// <summary>
     /// A side effect split in two: <c>compute</c> reads the dependencies and <c>act</c> performs the effect with its
     /// result. Disposed with the enclosing scope.

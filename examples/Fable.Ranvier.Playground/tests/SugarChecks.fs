@@ -7,9 +7,231 @@ open Fable.Core
 open Fable.Core.TS.Dom
 open Ranvier.View
 open Ranvier.View.Dom
+open Ranvier.View.Testing
 open CheckSupport
 open SugarFixtures
+#if FABLE_COMPILER
 open TwinTrace
+#else
+
+type private Step =
+    | Write of (unit -> unit)
+    | Each of (HTMLElement -> unit)
+
+/// <summary>Native writes recorded under a root since the previous drain.</summary>
+type private WriteWatch =
+    abstract drain: unit -> string array
+    abstract stop: unit -> unit
+
+// The writes to nodes under the root since the last drain, one entry per DOM call: the member, then the attribute
+// name or the number of nodes inserted.
+let private watchWrites (root: HTMLElement) : WriteWatch =
+    let log = ResizeArray<string>()
+
+    let under (target: obj) =
+        match target with
+        | :? Node as node -> root.contains node
+        | _ -> false
+
+    let inserted (node: obj) =
+        match node with
+        | :? DocumentFragment as fragment -> string fragment.childNodes.length
+        | _ -> "1"
+
+    let detail (name: string) (args: obj array) =
+        match name with
+        | "setAttribute"
+        | "removeAttribute" -> name + ":" + string args[0]
+        | "appendChild" -> name + ":" + inserted args[0]
+        | "insertBefore" -> name + ":" + inserted args[0]
+        | _ -> name
+
+    let restores =
+        [
+            for name in
+                [
+                    "appendChild"
+                    "insertBefore"
+                    "removeChild"
+                    "replaceChild"
+                    "remove"
+                    "replaceWith"
+                    "replaceChildren"
+                    "setAttribute"
+                    "removeAttribute"
+                    "set_data"
+                    "set_textContent"
+                    "set_innerHTML"
+                    "set_className"
+                    "set_id"
+                    "set_title"
+                    "set_disabled"
+                    "set_popover"
+                    "set_high"
+                    "set_value"
+                    "set_checked"
+                ] ->
+                Conformance.interceptOn null name (fun original target args ->
+                    if under target then
+                        log.Add (detail name args)
+
+                    original args)
+        ]
+
+    { new WriteWatch with
+        member _.drain() =
+            let drained = log.ToArray ()
+            log.Clear ()
+            drained
+
+        member _.stop() =
+            for restore in restores do
+                restore ()
+    }
+
+/// <summary>Listener registrations made through <c>addEventListener</c> since the wrap was installed.</summary>
+type private ListenerWatch =
+    abstract under: HTMLElement -> int
+    abstract stop: unit -> unit
+
+// The addEventListener calls since the watch began whose target is under the root when counted.
+let private watchListeners () : ListenerWatch =
+    let targets = ResizeArray<obj>()
+
+    let restore =
+        Conformance.interceptOn null "addEventListener" (fun original target args ->
+            targets.Add target
+            original args)
+
+    { new ListenerWatch with
+        member _.under root =
+            targets
+            |> Seq.filter (fun target ->
+                match target with
+                | :? Node as node -> root.contains node
+                | _ -> false)
+            |> Seq.length
+
+        member _.stop() =
+            restore ()
+    }
+
+let private countersExpected () : bool = false
+
+/// <summary>The graph counters as name-value pairs; fails when counters are expected but not compiled.</summary>
+let private tally () : (string * float) list =
+#if RANVIER_COUNTERS
+    [ for name, value in Counters.Snapshot () -> name, float value ]
+#else
+    if countersExpected () then
+        failwith "The run expects counters; compile with RanvierCounters=true"
+
+    []
+#endif
+
+let private delta (before: (string * float) list) (after: (string * float) list) =
+    List.map2 (fun (name, was) (_, now) -> name, now - was) before after
+
+let private click (selector: string) (root: HTMLElement) =
+    (root.querySelector selector
+     |> Option.get
+     |> unbox<HTMLElement>)
+        .click()
+
+/// <summary>
+/// One twin's run: markup, reports, counter deltas, listener registrations under the host and native writes after the
+/// mount and each step, plus the counter delta and writes of the disposal.
+/// </summary>
+type private Trace =
+    {
+        Shots: string list
+        Reports: string list list
+        Counts: (string * float) list list
+        Listeners: int list
+        Writes: string array list
+    }
+
+/// <summary>
+/// Mounts <c>view</c> on a graph and state of its own, runs <c>steps</c> and disposes. Counters are read around the
+/// mount, each step and the disposal.
+/// </summary>
+let private run queued (make: Graph -> 'state) (view: 'state -> Program.View) (steps: 'state -> Step list) =
+    use graph = new Graph ()
+    let state = make graph
+    let target = host ()
+    let reports = ResizeArray<exn list>()
+    let writes = watchWrites target
+    let listeners = watchListeners ()
+
+    try
+        let shots, counts, registrations, native =
+            ResizeArray (), ResizeArray (), ResizeArray (), ResizeArray ()
+
+        let measured (act: unit -> unit) =
+            let before = tally ()
+            act ()
+            counts.Add (delta before (tally ()))
+
+        let mounted = ref Unchecked.defaultof<_>
+
+        measured (fun () ->
+            mounted.Value <- mountTemplate queued graph reports.Add target (view state)
+            mounted.Value.Flush ())
+
+        let record () =
+            shots.Add target.innerHTML
+            registrations.Add (listeners.under target)
+            native.Add (writes.drain ())
+
+        record ()
+
+        for step in steps state do
+            measured (fun () ->
+                match step with
+                | Write write -> graph.Run write
+                | Each act -> act target
+
+                mounted.Value.Flush ())
+
+            record ()
+
+        measured mounted.Value.Dispose
+        shots.Add target.innerHTML
+        native.Add (writes.drain ())
+
+        {
+            Shots = List.ofSeq shots
+            Reports = messages reports
+            Counts = List.ofSeq counts
+            Listeners = List.ofSeq registrations
+            Writes = List.ofSeq native
+        },
+        state
+    finally
+        writes.stop ()
+        listeners.stop ()
+
+/// <summary>Runs the explicit twin, then the sugared twin, each on its own graph and state.</summary>
+let private twins queued make explicitView sugarView steps =
+    let explicitTrace, explicitState = run queued make explicitView steps
+    let sugarTrace, sugarState = run queued make sugarView steps
+    (explicitTrace, sugarTrace), (explicitState, sugarState)
+
+let private same (explicitTrace: Trace, sugarTrace: Trace) =
+    equal explicitTrace.Shots sugarTrace.Shots
+    equal explicitTrace.Reports sugarTrace.Reports
+
+    for index, (left, right) in List.indexed (List.zip explicitTrace.Counts sugarTrace.Counts) do
+        equal (index, left) (index, right)
+
+    equal explicitTrace.Listeners sugarTrace.Listeners
+
+    for index, (left, right) in List.indexed (List.zip explicitTrace.Writes sugarTrace.Writes) do
+        equal (index, left) (index, right)
+
+let private pair queued make explicitView sugarView steps =
+    same (fst (twins queued make explicitView sugarView steps))
+#endif
 
 let private benchClicks queued () =
     pair queued (fun _ -> ()) (fun () -> Component.render benchExplicit 3) (fun () -> Component.render benchSugar 3) (fun () ->
@@ -150,8 +372,14 @@ let private nestedLive queued () =
 let private bounded queued () =
     pair queued (fun _ -> ()) (fun () -> Component.render boundedExplicit ()) (fun () -> Component.render boundedSugar ()) (fun () -> [])
 
+#if FABLE_COMPILER
 [<Emit("Array.from($1.querySelectorAll($0)).forEach(node => node.click())")>]
 let private clickAll (selector: string) (root: HTMLElement) : unit = jsNative
+#else
+let private clickAll (selector: string) (root: HTMLElement) : unit =
+    for node in Query.queryAll root selector do
+        (unbox<HTMLElement> node).click()
+#endif
 
 /// <summary>Clicks every button twice on both twins; each static <c>View</c> ran once.</summary>
 let private mixedClicks (sugared: Component<unit>) queued () =
@@ -178,11 +406,33 @@ let private renderPropsAreUntracked queued () =
     // Shot 0 is the mount, shot 1 the markup after the write.
     equal true ((List.item 1 (snd traces).Shots).Contains "one")
 
+#if FABLE_COMPILER
 [<Emit("(() => { const w = document.createTreeWalker($0, 0xFFFFFFFF); const a = []; while (w.nextNode()) a.push(w.currentNode); return a; })()")>]
 let private nodesOf (root: Node) : Node array = jsNative
+#else
+let private nodesOf (root: Node) : Node array =
+    let found = ResizeArray<Node>()
 
+    let rec walk (node: Node) =
+        let mutable child = node.firstChild
+
+        while child.IsSome do
+            let current = unbox<Node> child.Value
+            found.Add current
+            walk current
+            child <- current.nextSibling
+
+    walk root
+    found.ToArray ()
+#endif
+
+#if FABLE_COMPILER
 [<Emit("$1.contains($0)")>]
 let private within (node: Node) (root: Node) : bool = jsNative
+#else
+let private within (node: Node) (root: Node) : bool =
+    root.contains node
+#endif
 
 let private omit =
     { Server.Options.defaults with
@@ -380,8 +630,21 @@ let private hydration () =
                 graph
 
 /// <summary>The elements under <c>root</c> that carry event handlers, as one <c>position:handler keys</c> entry each.</summary>
+#if FABLE_COMPILER
 [<Emit("Array.from($0.querySelectorAll('*')).map((node, index) => [index, Object.getOwnPropertyNames(node).filter(name => name.startsWith('$$ranvier')).join(',')]).filter(([, keys]) => keys !== '').map(([index, keys]) => index + ':' + keys).join(' ')")>]
 let private handlerSites (root: HTMLElement) : string = jsNative
+#else
+let private handlerSites (root: HTMLElement) : string =
+    Query.queryAll root "*"
+    |> Array.mapi (fun index node ->
+        index,
+        Ranvier.View.Native.expandoNames (box node)
+        |> List.filter (fun name -> name.StartsWith "$$ranvier")
+        |> String.concat ",")
+    |> Array.filter (fun (_, keys) -> keys <> "")
+    |> Array.map (fun (index, keys) -> string index + ":" + keys)
+    |> String.concat " "
+#endif
 
 /// <summary>The production keyed fixture and its sugared rewrite, driven by the same operations; markup and handler sites agree after each.</summary>
 let private keyedFixtures () =
@@ -433,8 +696,27 @@ let private demoLayout () =
         equal (name, layoutSignature PlaygroundSugar.demoExplicit.Root) (name, layoutSignature definition.Root)
         equal (name, Server.render omit PlaygroundSugar.demoExplicit state) (name, Server.render omit definition state)
 
+#if FABLE_COMPILER
 [<Emit("(() => { const field = $2.querySelector($0); field.value = $1; field.dispatchEvent(new Event('input', { bubbles: true })); })()")>]
 let private typeInto (selector: string) (text: string) (root: HTMLElement) : unit = jsNative
+#else
+let private typeInto (selector: string) (text: string) (root: HTMLElement) : unit =
+    let field = Query.get root selector
+    (unbox<HTMLInputElement> field).value <- text
+
+    field.dispatchEvent (
+        EventSpec.create
+            (Conformance.document ())
+            {
+                Type = "input"
+                Kind = EventKind.Plain
+                Bubbles = true
+                Cancelable = false
+                Init = []
+            }
+    )
+    |> ignore
+#endif
 
 let private demoClicks (definition: Component<PlaygroundSugar.DemoState>) queued () =
     pair queued demoState (Component.render PlaygroundSugar.demoExplicit) (Component.render definition) (fun state ->
@@ -447,7 +729,7 @@ let private demoClicks (definition: Component<PlaygroundSugar.DemoState>) queued
             Write (fun () -> state.Name.Value <- "Grace")
         ])
 
-let cases: (string * (unit -> unit)) array =
+let private checks: (string * (unit -> unit)) array =
     strictCases (
         Array.concat
             [
@@ -479,3 +761,5 @@ let cases: (string * (unit -> unit)) array =
                 [| "sugared and explicit twins hydrate each other's server HTML", hydration |]
             ]
     )
+
+let cases: Conformance.Case array = Conformance.ofChecks checks

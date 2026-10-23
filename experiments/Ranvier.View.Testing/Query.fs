@@ -1,14 +1,46 @@
 module Ranvier.View.Testing.Query
 
+open Fable.Core
 open Fable.Core.TS.Dom
+
+#if FABLE_COMPILER
+/// <summary>The value of a form control: an input, a textarea or a select.</summary>
+[<Emit("$0.value")>]
+let internal valueOf (element: Element) : string = jsNative
+
+/// <summary>Writes the value of a form control: an input, a textarea or a select.</summary>
+[<Emit("$0.value = $1")>]
+let internal setValue (element: Element) (value: string) : unit = jsNative
+#else
+/// <summary>The value of a form control: an input, a textarea or a select.</summary>
+let internal valueOf (element: Element) : string =
+    match box element with
+    | :? HTMLInputElement as input -> input.value
+    | :? HTMLTextAreaElement as area -> area.value
+    | :? HTMLSelectElement as select -> select.value
+    | _ -> raise (System.NotSupportedException $"A <{element.localName}> has no value")
+
+/// <summary>Writes the value of a form control: an input, a textarea or a select.</summary>
+let internal setValue (element: Element) (value: string) : unit =
+    match box element with
+    | :? HTMLInputElement as input -> input.value <- value
+    | :? HTMLTextAreaElement as area -> area.value <- value
+    | :? HTMLSelectElement as select -> select.value <- value
+    | _ -> raise (System.NotSupportedException $"A <{element.localName}> has no value")
+#endif
 
 /// <summary>A query that requires one match found <c>count</c>; <c>excerpt</c> is a dump of the root.</summary>
 exception QueryException of selector: string * count: int * excerpt: string with
     override this.Message =
         $"Expected one match for '{this.selector}', found {this.count}.{this.excerpt}"
 
-/// <summary>The dump excerpt appended to query and expectation failures.</summary>
-let mutable internal excerptOf: Node -> string = fun _ -> ""
+/// <summary>Up to 40 lines of the nearest instance, appended to query and expectation failures.</summary>
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+let internal excerptOf (root: Node) : string =
+    Ranvier.View.Dom.Debug.excerpt root
+#else
+let internal excerptOf (_: Node) : string = ""
+#endif
 
 let query (root: Node) (selector: string) : Element option =
     Selector.query root selector

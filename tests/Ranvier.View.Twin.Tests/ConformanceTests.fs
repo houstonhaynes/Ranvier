@@ -10,7 +10,7 @@ let output () =
 
 /// <summary>
 /// What a case left on its document and the document's html, head and body: live listeners and the view's expandos.
-/// The jsdom runner fails a case for the same leftovers, since its cases share one document.
+/// The jsdom runner fails a case for the same leftovers.
 /// </summary>
 let leftovers (document: TwinDocument) : string list =
     [
@@ -39,6 +39,21 @@ let runIn (directory: string) (run: Conformance.Harness -> unit) =
         match leftovers host.Document with
         | [] -> ()
         | left -> failwithf "The case left state on the shared document: %s" (String.concat "; " left)
+
+        let pending = host.Clock.Pending
+
+        let queued =
+            [
+                if pending.Microtasks > 0 then
+                    $"{pending.Microtasks} queued microtask(s)"
+                if pending.Timers > 0 then
+                    $"{pending.Timers} pending timer(s)"
+                if pending.Frames > 0 then
+                    $"{pending.Frames} pending animation frame(s)"
+            ]
+
+        if not queued.IsEmpty then
+            failwithf "The case left work queued on the harness clock: %s" (String.concat "; " queued)
     finally
         (host.Document :> System.IDisposable).Dispose()
 
@@ -59,6 +74,12 @@ let tests =
     testList
         "Conformance"
         [
+            testCase "each case of a module writes under its own artefact directory"
+            <| fun () ->
+                for moduleName, cases in ConformanceCases.modules do
+                    let slugs = [ for name, _ in cases -> TwinHarness.slug name ]
+                    Expect.equal (List.distinct slugs).Length slugs.Length $"{moduleName}: distinct slugs"
+
             for moduleName, cases in ConformanceCases.modules do
                 testList
                     moduleName

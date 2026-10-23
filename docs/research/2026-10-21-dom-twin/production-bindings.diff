@@ -1,0 +1,11 @@
+--- a/src/Ranvier/Bindings.js
++++ b/src/Ranvier/Bindings.js
+@@ -36,7 +36,7 @@
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddSource(_arg) {
+     }

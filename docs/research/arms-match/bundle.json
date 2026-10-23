@@ -2,38 +2,38 @@
   "defines": [],
   "sizes": {
     "explicitOne": {
-      "raw": 206783,
-      "gzip": 60140,
-      "brotli": 52825
+      "raw": 206940,
+      "gzip": 60176,
+      "brotli": 52815
     },
     "matchOne": {
-      "raw": 207525,
-      "gzip": 60514,
-      "brotli": 53135
+      "raw": 207681,
+      "gzip": 60543,
+      "brotli": 53184
     },
     "explicitTwo": {
-      "raw": 207626,
-      "gzip": 60331,
-      "brotli": 52974
+      "raw": 207783,
+      "gzip": 60382,
+      "brotli": 53032
     },
     "matchTwo": {
-      "raw": 208370,
-      "gzip": 60715,
-      "brotli": 53240
+      "raw": 208527,
+      "gzip": 60752,
+      "brotli": 53335
     },
     "plain": {
-      "raw": 204819,
-      "gzip": 59587,
-      "brotli": 52340
+      "raw": 204976,
+      "gzip": 59624,
+      "brotli": 52379
     }
   },
   "one": {
-    "deltaGzip": 374,
+    "deltaGzip": 367,
     "budgetGzip": 400,
     "withinBudget": true
   },
   "perSite": {
-    "deltaGzip": 10,
+    "deltaGzip": 3,
     "budgetGzip": 60,
     "withinBudget": true
   },

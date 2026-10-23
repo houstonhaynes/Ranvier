@@ -10,6 +10,204 @@ let tests =
     testList
         "Bridge"
         [
+            testCase "meter high clamps to the maximum and the low boundary"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let meter = document.CreateElement "meter"
+                let native = meter.Native :?> HTMLMeterElement
+                meter.SetAttribute ("max", "0.5")
+                meter.SetAttribute ("high", "2")
+                Expect.equal native.high 0.5 "clamped to max"
+                meter.SetAttribute ("low", "0.4")
+                meter.SetAttribute ("high", "0.1")
+                Expect.equal native.high 0.4 "raised to low"
+
+            testCase "document.title strips and collapses the title element's whitespace"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let native = document.Native :?> Document
+                let title = document.Head.AppendChild (document.CreateElement "title")
+                title.TextContent <- "\n  Lamp \t · \r\n Shop  "
+                Expect.equal native.title "Lamp · Shop" "stripped and collapsed"
+                Expect.equal title.TextContent "\n  Lamp \t · \r\n Shop  " "the text is unchanged"
+
+            testCase "document.title reads the first title element in tree order and only its Text children"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let native = document.Native :?> Document
+                let title = document.Body.AppendChild (document.CreateElement "title")
+
+                title.AppendChild (document.CreateText "a")
+                |> ignore
+
+                let skipped = title.AppendChild (document.CreateElement "b")
+
+                skipped.AppendChild (document.CreateText "skipped")
+                |> ignore
+
+                title.AppendChild (document.CreateText " b")
+                |> ignore
+
+                Expect.equal native.title "a b" "a title in the body, its element children skipped"
+                native.title <- "c"
+                Expect.equal (Html.inner document.Head, Html.inner title) ("", "c") "the setter writes that title"
+
+            testCase "implementation.createHTMLDocument makes a separate titled document"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let native = document.Native :?> Document
+                let other = native.implementation.createHTMLDocument "Other"
+                Expect.equal other.title "Other" "titled"
+                Expect.isFalse (obj.ReferenceEquals (other.head, native.head)) "its own head"
+
+            testCase "aria properties reflect their aria attributes and null removes them"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let div = document.CreateElement "div"
+                let native = div.Native :?> ARIAMixin
+                native.ariaRowIndexText <- Some "two"
+                Expect.equal (div.GetAttribute "aria-rowindextext") "two" "written"
+                Expect.equal native.ariaRowIndexText (Some "two") "read"
+                native.ariaRowIndexText <- None
+                Expect.isFalse (div.HasAttribute "aria-rowindextext") "removed"
+
+            testCase "mutation observers see each change kind, and a whole-content replacement as one change"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let div = document.CreateElement "div"
+                document.Body.AppendChild div |> ignore
+                let changes = ResizeArray<string * string>()
+
+                use _ =
+                    document.ObserveMutations (fun (kind, target) -> changes.Add ((kind, (unbox<Node> target.Native).nodeName)))
+
+                (div.Native :?> Element).innerHTML <- "<b>x</b><i>y</i>"
+                div.SetAttribute ("title", "t")
+                (unbox<CharacterData> div.FirstChild.FirstChild.Native).data <- "z"
+
+                Expect.equal (List.ofSeq changes) [ "childList", "DIV"; "attributes", "DIV"; "characterData", "#text" ] "one change per operation"
+
+            testCase "createElementNS with a qualified name gives the element a prefix"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let native = document.Native :?> Document
+
+                let element =
+                    native.createElementNS (namespaceURI = Some "http://www.w3.org/1999/xhtml", qualifiedName = "x:b")
+
+                Expect.equal (element.localName, element.prefix, element.tagName, element.outerHTML) ("b", Some "x", "X:B", "<x:b></x:b>") "prefixed"
+
+            testCase "setSelectionRange clamps to the value and a value write moves the selection to the end"
+            <| fun () ->
+                use document = new TwinDocument ()
+
+                let input =
+                    document.CreateElement "input"
+                    |> fun e -> e.Native :?> HTMLInputElement
+
+                input.value <- "abcd"
+                Expect.equal (input.selectionStart, input.selectionEnd) (Some 4., Some 4.) "at the end after a write"
+                input.setSelectionRange (1., 9.)
+                Expect.equal (input.selectionStart, input.selectionEnd) (Some 1., Some 4.) "clamped"
+                input.setSelectionRange (3., 2.)
+                Expect.equal (input.selectionStart, input.selectionEnd) (Some 2., Some 2.) "a start past the end moves to it"
+
+            testCase "selectedIndex in a multiple select, past a disabled option and through an optgroup"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let multiple = document.CreateElement "select"
+                multiple.SetAttribute ("multiple", "")
+                Html.parseInto multiple "<option>a</option><option selected>b</option><option selected>c</option>"
+                let many = multiple.Native :?> HTMLSelectElement
+                Expect.equal many.selectedIndex 1. "the first selected option"
+                many.selectedIndex <- 0.
+                let third = multiple.Children |> List.item 2 :?> TwinElement
+                Expect.equal (many.selectedIndex, many.value, third.Selected) (0., "a", false) "selecting one deselects the others"
+                let single = document.CreateElement "select"
+                Html.parseInto single "<option disabled>a</option><optgroup><option>b</option><option>c</option></optgroup>"
+                let one = single.Native :?> HTMLSelectElement
+                Expect.equal (one.selectedIndex, one.value) (1., "b") "the first enabled option, inside the optgroup"
+
+            testCase "selectedIndex reads and selects an option by position"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let select = document.CreateElement "select"
+                Html.parseInto select "<option>a</option><option selected>b</option><option>c</option>"
+                let native = select.Native :?> HTMLSelectElement
+                Expect.equal native.selectedIndex 1. "the selected option"
+                native.selectedIndex <- 2.
+                Expect.equal (native.selectedIndex, native.value) (2., "c") "written"
+                native.selectedIndex <- -1.
+                Expect.equal (native.selectedIndex, native.value) (-1., "") "none"
+
+            testCase "SVG and MathML elements take their namespace's interfaces"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let svg = document.CreateElement "div"
+                Html.parseInto svg "<svg><g></g><a></a></svg><math><mi>x</mi></math>"
+                let g = svg.FirstChild.FirstChild
+                Expect.isTrue (g.Native :? SVGGElement) "svg g"
+                Expect.isFalse (g.Native :? HTMLElement) "not an HTML element"
+                Expect.isTrue (svg.FirstChild.LastChild.Native :? SVGAElement) "svg a"
+                Expect.isTrue (svg.LastChild.FirstChild.Native :? MathMLElement) "math mi"
+
+            testCase "meter high and popover reflect their attributes"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let meter = document.CreateElement "meter"
+                let native = meter.Native :?> HTMLMeterElement
+                Expect.equal native.high 1.0 "the maximum by default"
+                native.high <- 0.25
+                Expect.equal (meter.GetAttribute "high", native.high) ("0.25", 0.25) "written"
+                let span = document.CreateElement "span"
+                let element = span.Native :?> HTMLElement
+                Expect.isNone element.popover "absent"
+                element.popover <- Some ""
+                Expect.equal element.popover (Some "auto") "empty is auto"
+                span.SetAttribute ("popover", "other")
+                Expect.equal element.popover (Some "manual") "unknown is manual"
+                element.popover <- None
+                Expect.isFalse (span.HasAttribute "popover") "removed"
+
+            testCase "replaceWith keeps a node among its own replacements and does nothing without a parent"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let parent = document.CreateElement "div"
+                Html.parseInto parent "<a></a><b></b><i></i>"
+                let a = parent.FirstChild
+                (a.Native :?> ChildNode).replaceWith [| Fable.Core.U2.Case2 a.Native |]
+                Expect.equal (Html.inner parent) "<a></a><b></b><i></i>" "self"
+
+                (a.Native :?> ChildNode).replaceWith [| Fable.Core.U2.Case2 a.NextSibling.Native; Fable.Core.U2.Case2 a.Native |]
+
+                Expect.equal (Html.inner parent) "<b></b><a></a><i></i>" "the next sibling, then self"
+                let lone = document.CreateElement "u"
+                (lone.Native :?> ChildNode).replaceWith [| Fable.Core.U2.Case1 "t" |]
+                Expect.isNull lone.Parent "parentless"
+
+            testCase "list items are read without rebuilding the list"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let div = document.CreateElement "div"
+
+                for i in 1..2000 do
+                    div.AppendChild (document.CreateElement "i")
+                    |> ignore
+
+                let list = div.Native.childNodes
+                let before = ListBuilds.Count
+
+                for i in 0 .. int list.length - 1 do
+                    list.item (float i) |> ignore
+
+                Expect.equal (ListBuilds.Count - before) 1 "one build for the whole iteration"
+
+                div.AppendChild (document.CreateElement "b")
+                |> ignore
+
+                Expect.equal list.length 2001.0 "the cache follows a mutation"
+                Expect.equal (unbox<Element>(list.item 2000.)).localName "b" "the appended item"
+
             testCase "a node has one bridged object"
             <| fun () ->
                 use document = new TwinDocument ()
@@ -114,7 +312,7 @@ let tests =
                 let seen = ResizeArray<string>()
 
                 let wrap label =
-                    Func<Func<obj array, obj>, obj array, obj>(fun original args ->
+                    Func<Func<obj array, obj>, obj, obj array, obj>(fun original _ args ->
                         seen.Add (label + ":" + (unbox<Node> args[0]).nodeName)
                         original.Invoke args)
 

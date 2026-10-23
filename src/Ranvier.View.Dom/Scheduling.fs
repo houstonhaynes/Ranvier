@@ -151,6 +151,11 @@ type Queue(graph: Graph, failure: CommitFailure, post: (unit -> unit) -> unit) a
 
     member _.Errors = Array.copy errors
 
+#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER
+    /// <summary>Whether the queue is running its pending commits.</summary>
+    member internal _.Flushing = flushing
+#endif
+
     /// <summary>Sends each scope the failures of its slots in one call, in commit order.</summary>
     static member private Report(failures: ResizeArray<exn>, slots: ResizeArray<Slot>) =
         let reporterErrors = ResizeArray<exn>()

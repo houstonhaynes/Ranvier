@@ -43,16 +43,18 @@
     <Compile Include="RepresentationChecks.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/Prepared.fs" Link="Prepared.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/Placement.fs" Link="Placement.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Inspect.fs" Link="Inspect.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/TemplateDom.fs" Link="TemplateDom.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/DocumentHead.fs" Link="DocumentHead.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/Mounting.fs" Link="Mounting.fs" />
     <Compile Include="../../../src/Ranvier.View.Dom/Hydration.fs" Link="Hydration.fs" />
+    <Compile Include="../../../src/Ranvier.View.Dom/Debug.fs" Link="Debug.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/EventSpec.fs" Link="Testing/EventSpec.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Selector.fs" Link="Testing/Selector.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Conformance.fs" Link="Testing/Conformance.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Query.fs" Link="Testing/Query.fs" />
-    <Compile Include="../../../experiments/Ranvier.View.Testing/Interact.fs" Link="Testing/Interact.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Testing/Expect.fs" Link="Testing/Expect.fs" />
+    <Compile Include="../../../experiments/Ranvier.View.Testing/Interact.fs" Link="Testing/Interact.fs" />
     <Compile Include="JsdomHarness.fs" />
     <Compile Include="RangeChecks.fs" />
     <Compile Include="BindingChecks.fs" />
@@ -118,6 +120,8 @@
     <Compile Include="../../../experiments/Ranvier.View.Checks/Fixtures.fs" Link="Fixtures.fs" />
     <Compile Include="RepresentationBench.fs" />
     <Compile Include="../../../experiments/Ranvier.View.Checks/SnapshotBench.fs" Link="SnapshotBench.fs" />
+    <Compile Include="DumpChecks.fs" />
+    <Compile Include="LoopBench.fs" />
     <Compile Include="ConformanceCases.fs" />
     <ProjectReference Include="../../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
     <ProjectReference Include="../../../src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />

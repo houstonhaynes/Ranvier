@@ -9,6 +9,36 @@ let tests =
     testList
         "Testing API"
         [
+            testCase "an expectation failure on a second thread carries that session's dump excerpt"
+            <| fun () ->
+                let mutable message = ""
+
+                let thread =
+                    System.Threading.Thread (fun () ->
+                        use session = Twin.mount Fixtures.counter 7
+
+                        try
+                            Expect.text (session.Host :> Fable.Core.TS.Dom.Node) "button" "nope"
+                        with Expect.ExpectationException text ->
+                            message <- text)
+
+                thread.Start ()
+                thread.Join ()
+                Expecto.Expect.stringContains message "instance CounterState" "the excerpt"
+                Expecto.Expect.stringContains message "Count  signal  7" "its field"
+
+            testCase "the twin harness raises for an interception target that is not a node"
+            <| fun () ->
+                let host = TwinHost.Create ()
+                use _ = host.Document
+                let harness = TwinHarness.create host (System.IO.Path.GetTempPath ())
+
+                Expect.throwsT<System.NotSupportedException>
+                    (fun () ->
+                        harness.Intercept (box "a window", "addEventListener", System.Func<_, _, _, _>(fun original _ args -> original.Invoke args))
+                        |> ignore)
+                    "not a node"
+
             testCase "a conformance case that leaves a listener on the body fails"
             <| fun () ->
                 let scratch =

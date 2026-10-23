@@ -16,6 +16,15 @@ let tests =
     testList
         "Tree"
         [
+            testCase "deselecting the selected option of a single select selects the first enabled option"
+            <| fun () ->
+                use document = new TwinDocument ()
+                let select = document.CreateElement "select"
+                Html.parseInto select "<option>a</option><option selected>b</option>"
+                let b = select.LastChild :?> TwinElement
+                b.Selected <- false
+                Expect.equal select.Value "a" "reset to the first option"
+
             testCase "a new document has html, head and body"
             <| fun () ->
                 use document = new TwinDocument ()
@@ -106,6 +115,28 @@ let tests =
                 input.SetAttribute ("value", "c")
                 Expect.equal input.Value "b" "dirty value"
                 Expect.equal input.DefaultValue "c" "defaultValue reflects the attribute"
+
+            testCase "a text-like input's value drops line breaks; url and email values are also trimmed"
+            <| fun () ->
+                use document = new TwinDocument ()
+
+                let valueOf (inputType: string) (written: string option) =
+                    let input = document.CreateElement "input"
+                    input.SetAttribute ("type", inputType)
+                    input.SetAttribute ("value", " a\r\nb ")
+
+                    written
+                    |> Option.iter (fun text -> input.Value <- text)
+
+                    input.Value, input.GetAttribute "value"
+
+                Expect.equal (valueOf "text" None) (" ab ", " a\r\nb ") "text: the attribute keeps its line breaks"
+                Expect.equal (valueOf "search" (Some "c\nd")) ("cd", " a\r\nb ") "search, written"
+                Expect.equal (valueOf "password" None) (" ab ", " a\r\nb ") "password"
+                Expect.equal (valueOf "url" None) ("ab", " a\r\nb ") "url"
+                Expect.equal (valueOf "email" (Some " e@f \n")) ("e@f", " a\r\nb ") "email, written"
+                Expect.equal (valueOf "hidden" None) (" a\r\nb ", " a\r\nb ") "hidden reads the attribute"
+                Expect.throwsT<System.NotSupportedException> (fun () -> valueOf "number" None |> ignore) "number is not sanitised"
 
             testCase "a checkbox's checked follows the attribute until it is written"
             <| fun () ->

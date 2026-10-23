@@ -18,7 +18,7 @@ let private registered =
                  |> List.ofArray
 
              // A static list: a fresh owner per call, so each call returns its own object.
-             box (ListValue (obj (), "querySelectorAll", fun () -> Seq.ofList found)))
+             box (ListValue (obj (), "querySelectorAll", (fun () -> Seq.ofList found), (fun () -> 0))))
 
          Bridge.registerMember (Bridge.declaredBy [ "Element" ]) "matches" 1 (fun node args ->
              box (Selector.matches (Selector.parse (string args[0])) (unbox node.Native)))
@@ -30,7 +30,7 @@ let private registered =
              while not (isNull cursor)
                    && not (
                        cursor :? TwinElement
-                       && Selector.matches parsed (unbox cursor.Native)
+                       && Selector.matchesIn node.Native parsed (unbox cursor.Native)
                    ) do
                  cursor <- cursor.Parent
 

@@ -16,6 +16,12 @@ let private root (body: string) = "<!--[r-->" + body + "<!--]-->"
 
 [<EntryPoint>]
 let main _ =
+    TwinChecks.twinClickIncrements ()
+    let counterDump = ViewDumps.dumpCounter ()
+
+    if not (counterDump.Contains "instance") then
+        failures.Add "view dump omitted its counter instance"
+
     use graph = new Graph ()
 
     graph.Run (fun () ->

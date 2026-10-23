@@ -1,0 +1,37 @@
+instance Board  path=r-0  hash=ab61253f
+  Columns  memo  uninitialised
+  Adding  signal  false
+  Cards  signal  [|{Id=1; Title="Write spec"}; {Id=3; Title="Ship"}; {Id=4; Title="Rest"}|] (3)
+  Editing  signal  true
+<div class="board">
+  <h2>
+    "Cards: "
+    ="3"
+  <ul>
+    list  path=r-0.r0  rows=3
+      row 1
+        instance CardState  path=r-0.r0.0  hash=eec3efef
+          Title  signal  "Write spec"
+        <li class="card">
+          ="Write spec"
+      leaving  key=2
+        <li class="card">
+          ="Review"
+      row 3
+        instance CardState  path=r-0.r0.2  hash=eec3efef
+          Title  signal  "Ship"
+        <li class="card">
+          ="Ship"
+      row 4
+        instance CardState  path=r-0.r0.3  hash=eec3efef
+          Title  signal  "Rest"
+        <li class="card">
+          ="Rest"
+  arm  path=r-0.r1  key="edit"  def=form#d6d741d4
+    instance unit  path=r-0.r1.0  hash=d6d741d4
+    <form>
+      "edit"
+  boundary  path=r-0.r2  state=pending  view=p#11e65dcc  waiting=1
+    instance unit  path=r-0.r2.1  hash=11e65dcc
+    <p>
+      "Loading"

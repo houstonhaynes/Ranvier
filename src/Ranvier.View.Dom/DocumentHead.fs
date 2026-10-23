@@ -305,6 +305,7 @@ and [<Sealed>] Registry(document: Document) =
     /// <summary>The records created and not yet withdrawn.</summary>
     member val Records = 0 with get, set
 
+#if FABLE_COMPILER
 // The registries of documents with records not yet withdrawn.
 let private registries = ResizeArray<Registry>()
 
@@ -329,6 +330,21 @@ let private registryOf (document: Document) =
         registries.Add found
 
     found
+#else
+// The registry of each document with records not yet withdrawn, keyed by the document: mounts and renders on parallel
+// threads against separate documents share none.
+let private registries =
+    System.Runtime.CompilerServices.ConditionalWeakTable<Document, Registry>()
+
+/// <summary>The registry of the document; null when it has no record.</summary>
+let private existingRegistry (document: Document) =
+    match registries.TryGetValue document with
+    | true, found -> found
+    | _ -> Unchecked.defaultof<_>
+
+let private registryOf (document: Document) =
+    registries.GetValue (document, (fun owner -> Registry owner))
+#endif
 
 let private stackOf (registry: Registry) (key: string) =
     match registry.Live.TryGetValue key with
@@ -518,7 +534,11 @@ let withdraw (record: Record) =
         registry.Records <- registry.Records - 1
 
         if registry.Records = 0 then
+#if FABLE_COMPILER
             registries.RemoveAt (indexOf registries registry)
+#else
+            registries.Remove registry.Document |> ignore
+#endif
 
 /// <summary>Stores a title record's latest value and writes it to the document while the record is shown.</summary>
 let setTitle (record: Record) (value: string) =

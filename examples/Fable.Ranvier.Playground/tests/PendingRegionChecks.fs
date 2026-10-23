@@ -7,6 +7,7 @@ open Ranvier.View
 open Ranvier.View.Dom
 open Ranvier.View.Dom.Scheduling
 open Ranvier.View.Sugar
+open Ranvier.View.Testing
 
 let private equal expected actual =
     if expected <> actual then
@@ -16,7 +17,7 @@ let private strict (errors: exn list) =
     failwithf "Unexpected report %A" [ for error in errors -> error.Message ]
 
 let private host () : HTMLElement =
-    globalThis.document.createElement "div"
+    (Conformance.document ()).createElement "div"
 
 let private modeOf queued =
     if queued then
@@ -386,29 +387,33 @@ let private nameOf kind =
 let private modeName queued =
     if queued then "queued" else "synchronous"
 
-let cases: (string * (unit -> unit)) array =
-    [|
-        for kind in kinds do
-            for queued in [ false; true ] do
-                $"{modeName queued}: a {nameOf kind} source reading a pending value waits with its boundary, then keeps its rows through a refetch",
-                waitsAndRefreshes kind queued
+let cases: Conformance.Case array =
+    Conformance.ofChecks
+        [|
+            for kind in kinds do
+                for queued in [ false; true ] do
+                    $"{modeName queued}: a {nameOf kind} source reading a pending value waits with its boundary, then keeps its rows through a refetch",
+                    waitsAndRefreshes kind queued
 
-                $"{modeName queued}: a {nameOf kind} source reading a pending value outside every boundary keeps its last rows",
-                keepsOutsideBoundary kind queued
+                    $"{modeName queued}: a {nameOf kind} source reading a pending value outside every boundary keeps its last rows",
+                    keepsOutsideBoundary kind queued
 
-                $"{modeName queued}: a {nameOf kind} source failing after a pending first read shows the error view", failsBeforeReveal kind queued
+                    $"{modeName queued}: a {nameOf kind} source failing after a pending first read shows the error view",
+                    failsBeforeReveal kind queued
 
-            $"server: a {nameOf kind} source reading a pending value renders the boundary's pending view", serverStates kind
-            $"server: a {nameOf kind} source reading a pending value outside every boundary raises", serverRejectsUnbounded kind
-            $"hydration: a {nameOf kind} source pending on the client reveals a ready server boundary once it settles", hydratesPending kind true
-            $"hydration: a {nameOf kind} source pending on the client reveals a pending server boundary once it settles", hydratesPending kind false
+                $"server: a {nameOf kind} source reading a pending value renders the boundary's pending view", serverStates kind
+                $"server: a {nameOf kind} source reading a pending value outside every boundary raises", serverRejectsUnbounded kind
+                $"hydration: a {nameOf kind} source pending on the client reveals a ready server boundary once it settles", hydratesPending kind true
 
-        "synchronous: hiding the arm that holds the one pending region reveals the boundary", removedPendingRegion false
-        "queued: hiding the arm that holds the one pending region reveals the boundary", removedPendingRegion true
-        "synchronous: hiding the arm that holds a refetching region clears IsPending", removedRefetchingRegion false
-        "queued: hiding the arm that holds a refetching region clears IsPending", removedRefetchingRegion true
-        "synchronous: an arm setup reading a pending value on the first pass shows the error view", armSetupReadsPending true false
-        "queued: an arm setup reading a pending value on the first pass shows the error view", armSetupReadsPending true true
-        "synchronous: an arm setup reading a pending value after the reveal leaves IsPending false", armSetupReadsPending false false
-        "queued: an arm setup reading a pending value after the reveal leaves IsPending false", armSetupReadsPending false true
-    |]
+                $"hydration: a {nameOf kind} source pending on the client reveals a pending server boundary once it settles",
+                hydratesPending kind false
+
+            "synchronous: hiding the arm that holds the one pending region reveals the boundary", removedPendingRegion false
+            "queued: hiding the arm that holds the one pending region reveals the boundary", removedPendingRegion true
+            "synchronous: hiding the arm that holds a refetching region clears IsPending", removedRefetchingRegion false
+            "queued: hiding the arm that holds a refetching region clears IsPending", removedRefetchingRegion true
+            "synchronous: an arm setup reading a pending value on the first pass shows the error view", armSetupReadsPending true false
+            "queued: an arm setup reading a pending value on the first pass shows the error view", armSetupReadsPending true true
+            "synchronous: an arm setup reading a pending value after the reveal leaves IsPending false", armSetupReadsPending false false
+            "queued: an arm setup reading a pending value after the reveal leaves IsPending false", armSetupReadsPending false true
+        |]

@@ -17,6 +17,21 @@ let tests =
     testList
         "Session"
         [
+            testCase "disposing a session whose mount raises on disposal still disposes its document"
+            <| fun () ->
+                let cleanupFails =
+                    Component.define (fun setup () -> setup.OnCleanup (fun () -> failwith "cleanup failed")) (fun t ->
+                        t.element (HtmlTag "div") [||] [||])
+
+                let session = Twin.mount cleanupFails ()
+
+                try
+                    (session :> IDisposable).Dispose()
+                with _ ->
+                    ()
+
+                Expect.throwsT<InvalidOperationException> (fun () -> Ranvier.View.Native.queueMicrotask ignore) "the host is uninstalled"
+
             testCase "a mounted component renders and a click updates it"
             <| fun () ->
                 use session = Twin.mount counter 1

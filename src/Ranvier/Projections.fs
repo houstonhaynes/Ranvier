@@ -1193,7 +1193,7 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
 
     interface INode with
         member _.Id = id
-        member _.Status = status
+        member _.Status = status ||| Staleness.ofFreshness freshness
 
     interface IComputation with
         member this.AddSource s =

@@ -1,0 +1,126 @@
+{
+  "loop": "sagefs",
+  "runs": 10,
+  "session": "69315cee",
+  "configuration": "Debug",
+  "version": "0.6.906",
+  "unit": "milliseconds",
+  "timing": "MCP call wall times; edit I/O and model time excluded; reset total is sum of reset request, Ready wait, and eval",
+  "editedFixture": "tests/Ranvier.View.Twin.Tests/Fixtures.fs",
+  "resetSamples": [
+    {
+      "round": 0,
+      "resetMs": 18,
+      "readyMs": 42702,
+      "evalMs": 665,
+      "totalMs": 43385
+    },
+    {
+      "round": 1,
+      "resetMs": 16,
+      "readyMs": 42107,
+      "evalMs": 679,
+      "totalMs": 42802
+    },
+    {
+      "round": 2,
+      "resetMs": 17,
+      "readyMs": 41733,
+      "evalMs": 670,
+      "totalMs": 42420
+    },
+    {
+      "round": 3,
+      "resetMs": 16,
+      "readyMs": 42154,
+      "evalMs": 674,
+      "totalMs": 42844
+    },
+    {
+      "round": 4,
+      "resetMs": 17,
+      "readyMs": 42004,
+      "evalMs": 659,
+      "totalMs": 42680
+    },
+    {
+      "round": 5,
+      "resetMs": 16,
+      "readyMs": 41289,
+      "evalMs": 663,
+      "totalMs": 41968
+    },
+    {
+      "round": 6,
+      "resetMs": 16,
+      "readyMs": 41084,
+      "evalMs": 686,
+      "totalMs": 41786
+    },
+    {
+      "round": 7,
+      "resetMs": 16,
+      "readyMs": 41063,
+      "evalMs": 666,
+      "totalMs": 41745
+    },
+    {
+      "round": 8,
+      "resetMs": 16,
+      "readyMs": 40804,
+      "evalMs": 663,
+      "totalMs": 41483
+    },
+    {
+      "round": 9,
+      "resetMs": 17,
+      "readyMs": 41203,
+      "evalMs": 663,
+      "totalMs": 41883
+    }
+  ],
+  "steps": {
+    "editResetEval": {
+      "cold": [
+        43385
+      ],
+      "warm": {
+        "samples": [
+          42802,
+          42420,
+          42844,
+          42680,
+          41968,
+          41786,
+          41745,
+          41483,
+          41883
+        ],
+        "median": 41968,
+        "min": 41483,
+        "max": 42844
+      }
+    },
+    "interactionDump": {
+      "cold": [
+        493
+      ],
+      "warm": {
+        "samples": [
+          652,
+          636,
+          640,
+          630,
+          634,
+          633,
+          638,
+          659,
+          632
+        ],
+        "median": 636,
+        "min": 630,
+        "max": 659
+      }
+    }
+  }
+}

@@ -28,3 +28,20 @@ test("a file present on one host only is a difference", () => {
   assert.equal(result.file, "M/c/01-x.txt");
   assert.match(result.diff, /missing on the twin/);
 });
+
+test("two empty trees are a difference: no artefacts were compared", () => {
+  const result = compareTrees(tree({}), tree({}));
+  assert.match(result.diff, /no artefacts/);
+});
+
+test("bytes that decode alike still differ", () => {
+  const root = name => { const r = tree({}); mkdirSync(join(r, "M", "c"), { recursive: true }); return r; };
+  const left = root(), right = root();
+  writeFileSync(join(left, "M", "c", "01-x.txt"), Buffer.from([0xff]));
+  writeFileSync(join(right, "M", "c", "01-x.txt"), Buffer.from([0xfe]));
+  assert.equal(compareTrees(left, right).file, "M/c/01-x.txt");
+});
+
+test("a platform-only case's artefacts are compared on its own host only", () => {
+  assert.equal(compareTrees(tree({ "M/jsdom-a-case-patches-x/01-x.txt": "a", "M/c/01-x.txt": "b" }), tree({ "M/c/01-x.txt": "b" })), null);
+});

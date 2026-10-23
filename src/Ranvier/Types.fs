@@ -12,6 +12,11 @@ type Status =
     | Pending = (1uy <<< 0)
     | Error = (1uy <<< 1)
     | Uninitialized = (1uy <<< 2)
+    /// <summary>
+    /// A computation whose sources changed after its last run: it re-runs, or confirms its value, on its next read or
+    /// flush. Reading the flag runs nothing and records no dependency.
+    /// </summary>
+    | Stale = (1uy <<< 3)
 
 /// <summary>
 /// Options of a keyed projection.

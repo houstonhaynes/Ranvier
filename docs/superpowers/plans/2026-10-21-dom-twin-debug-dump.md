@@ -5877,7 +5877,7 @@ let byText (root: Node) (text: string) : Element =
     | found -> raise (QueryException ($"text \"{text}\"", found.Length, excerptOf root))
 ```
 
-Under Fable, `excerptOf` is a module mutable read inside function bodies, which the inlining hazard does not touch. Check `Node.contains`'s parameter type with `fcs_signature_help` (Task 5's reflection shows `contains(FSharpOption)`).
+`excerptOf` is a plain function, empty until Task 22 defines it under `RANVIER_VIEW_INSPECT` (Phase 3 review I2). Check `Node.contains`'s parameter type with `fcs_signature_help` (Task 5's reflection shows `contains(FSharpOption)`).
 
 ```fsharp
 module Ranvier.View.Testing.Interact
@@ -6103,7 +6103,7 @@ Expected: PASS, 3 tests.
 
 - [ ] **Step 5: Record artefacts in the divergence cases**
 
-In each divergence case named by spec §6.3 that exists after Tasks 6 and 13 (delegated dispatch with nested hosts, `stopPropagation` in a handler and in a native listener between target and host, and the keyed cases in `TemplateChecks` whose keys are structurally equal records), add `Conformance.recordIfRunning "<step>" host.innerHTML` after each interaction, with a step name that says what happened (`"after the second click"`). The keyed case with structurally equal records: if `TemplateChecks` has none, add `"rows keyed by structurally equal records keep one row per reference"` mounting a list keyed by `id` over `[| { Id = 1 }; { Id = 1 } |]` and recording `innerHTML` after the mount and after reversing the array.
+In each divergence case named by spec §6.3 that exists after Tasks 6 and 13 (delegated dispatch with nested hosts, `stopPropagation` in a handler and in a native listener between target and host, and the keyed cases in `TemplateChecks` whose keys are structurally equal records), add `Conformance.recordIfRunning "<step>" host.innerHTML` after each interaction, with a step name that says what happened (`"after the second click"`). The keyed case with structurally equal records: if `TemplateChecks` has none, add `"rows keyed by structurally equal records share one key and fail as duplicates"` mounting a list keyed by `id` over `[| { Id = 1 }; { Id = 1 } |]`: keys compare with `=` (`docs/content/view/collections.md:61`), so the mount fails as a duplicate key on both hosts, and the case records the failure and the host's `innerHTML`.
 
 - [ ] **Step 6: Migrate `BoundaryChecks` and `PlacementChecks`**
 
@@ -6770,7 +6770,7 @@ Message: `feat(view): Debug.dump text and JSON of a mounted view, read through P
 - Create: `examples/Fable.Ranvier.Playground/tests/DumpChecks.fs` (the golden fixtures as conformance cases), added to `ConformanceCases.modules` under `#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER`
 - Create: `tests/Ranvier.View.Twin.Tests/dumps/*.txt` (generated, then reviewed)
 - Create: `tests/Ranvier.View.Twin.Tests/GoldenTests.fs`
-- Modify: `experiments/Ranvier.View.Testing/Query.fs` (`excerptOf` set from `Debug` under the define)
+- Modify: `experiments/Ranvier.View.Testing/Query.fs` (`excerptOf` defined from `Debug` under the define)
 - Modify: `examples/Fable.Ranvier.Playground/package.json` (`test:conformance-inspect`: `npm run compile:tests -- --define RANVIER_VIEW_COUNTERS --define RANVIER_VIEW_INSPECT && node --test tests/conformance.test.mjs`; appended to `test`)
 - Create: `examples/Fable.Ranvier.Playground/benchmarks/frameworks/sugar-size-inspect.mjs`; modify `bundle-hashes.mjs` (`--inspect-cost`)
 - Modify: `docs/research/2026-10-21-dom-twin.md`
@@ -6792,7 +6792,7 @@ Expected: FAIL, `dumps/board.txt` missing. Then run once with `RANVIER_UPDATE_DU
 
 - [ ] **Step 3: Wire the excerpts**
 
-In `Query.fs`, under `#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER`, set `excerptOf` to the first 40 lines of `Debug.text (Debug.captureNode Debug.DumpOptions.defaults <graph> root)` for the nearest enclosing instance, prefixed by a newline; the graph comes from the mount probe that `Inspect` registered above `root`. Add a `TestingApiChecks` case asserting that the `ExpectationException` message holds `instance` on the twin and, under the inspect build, under jsdom.
+In `Query.fs`, define `excerptOf` under `#if RANVIER_VIEW_INSPECT || !FABLE_COMPILER` as a function of `root` returning the first 40 lines of `Debug.text (Debug.captureNode Debug.DumpOptions.defaults <graph> root)` for the nearest enclosing instance, prefixed by a newline, and as `fun _ -> ""` otherwise, with no mutable or setter on either host; the graph comes from the mount probe that `Inspect` registered above `root`. Add a `TestingApiChecks` case asserting that the `ExpectationException` message holds `instance` on the twin and, under the inspect build, under jsdom. A twin test raises an `Expect` failure on a second thread and checks that its message carries the excerpt.
 
 - [ ] **Step 4: Run both hosts, with and without the define**
 

@@ -28,10 +28,12 @@
         <Compile Include="Generated/Html.fs" />
         <Compile Include="Prepared.fs" />
         <Compile Include="Placement.fs" />
+        <Compile Include="Inspect.fs" />
         <Compile Include="TemplateDom.fs" />
         <Compile Include="DocumentHead.fs" />
         <Compile Include="Mounting.fs" />
         <Compile Include="Hydration.fs" />
+        <Compile Include="Debug.fs" />
         <Compile Include="Components.fs" />
         <Compile Include="Authoring.fs" />
         <None Include="README.md" Pack="true" PackagePath="\" />

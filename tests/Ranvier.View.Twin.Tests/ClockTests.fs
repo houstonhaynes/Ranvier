@@ -31,6 +31,21 @@ let tests =
                 Expect.equal (List.ofSeq log) [ "a"; "b"; "b-micro"; "c" ] "order"
                 Expect.equal clock.Now 10.0 "now"
 
+            testCase "Settle runs a due timer only after every queued microtask"
+            <| fun () ->
+                let clock = TwinClock ()
+                use graph = new Ranvier.Graph ()
+                let log = ResizeArray<string>()
+
+                clock.SetTimeout ((fun () -> log.Add "timer"), 0.0)
+                |> ignore
+
+                for i in 1..1500 do
+                    clock.Post (fun () -> log.Add (string i))
+
+                clock.Settle graph
+                Expect.equal (log.IndexOf "timer") 1500 "the timer runs after the 1500 microtasks"
+
             testCase "frames run at each FrameMs boundary crossed"
             <| fun () ->
                 let clock = TwinClock ()

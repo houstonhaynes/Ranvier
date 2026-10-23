@@ -10,8 +10,8 @@
         <Compile Include="Selector.fs" />
         <Compile Include="Conformance.fs" />
         <Compile Include="Query.fs" />
-        <Compile Include="Interact.fs" />
         <Compile Include="Expect.fs" />
+        <Compile Include="Interact.fs" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />

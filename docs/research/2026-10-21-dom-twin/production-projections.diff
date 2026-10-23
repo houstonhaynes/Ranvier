@@ -1,0 +1,11 @@
+--- a/src/Ranvier/Projections.js
++++ b/src/Ranvier/Projections.js
+@@ -493,7 +493,7 @@
+     }
+     get Status() {
+         const _ = this;
+-        return _.status;
++        return _.status | ((_.freshness === 0) ? 0 : 8);
+     }
+     AddSource(s) {
+         const this$ = this;

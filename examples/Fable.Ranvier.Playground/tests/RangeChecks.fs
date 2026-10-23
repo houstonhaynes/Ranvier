@@ -842,8 +842,14 @@ let private failedMovementRollback () =
         try
             handle.MoveBefore (other, None)
         with error ->
-            // .NET's AggregateException appends the inner messages to its own.
+#if FABLE_COMPILER
+            equal "Range movement and rollback failed" error.Message
+#else
+            // .NET's AggregateException appends the inner messages to its own; they are the move's and the rollback's.
             equal true (error.Message.StartsWith "Range movement and rollback failed")
+
+            equal [ "move"; "rollback" ] [ for inner in (error :?> AggregateException).InnerExceptions -> inner.Message ]
+#endif
             caught <- true
 
         equal true caught

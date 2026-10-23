@@ -73,7 +73,18 @@ module PropertyHtml =
 
     /// <summary>A <c>string option</c> written as the attribute <c>name</c>; <c>None</c> omits it.</summary>
     let optional (name: string) : PropertySerialization =
-        AsAttribute (name, Func<obj, string option>(fun value -> unbox<string option> value))
+        AsAttribute (
+            name,
+            Func<obj, string option>(fun value ->
+#if FABLE_COMPILER
+                unbox<string option> value)
+#else
+                // Some null is omitted, as None is and as Fable's erased option is.
+                match unbox<string option> value with
+                | Some null -> None
+                | other -> other)
+#endif
+        )
 
     let childText = AsChildText
 
@@ -215,7 +226,7 @@ let private contentSame =
     Func<obj, obj, bool>(fun left right -> markupOf left = markupOf right)
 
 let private innerHtml =
-    Func<obj, obj, unit>(fun node markup -> (unbox<HTMLElement> node).innerHTML <- unbox<string> markup)
+    Func<obj, obj, unit>(fun node markup -> (unbox<Element> node).innerHTML <- unbox<string> markup)
 
 let private contentSlot (slots: Slot array) =
     slots
