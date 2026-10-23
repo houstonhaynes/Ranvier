@@ -25,3 +25,6 @@ generated-keyed-profile/
 generated-tests-base/
 generated-conformance/
 generated-inspect/
+generated-pages/
+/index.html
+.build-test-*/

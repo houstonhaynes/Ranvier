@@ -2,6 +2,7 @@
 module StoryPage
 
 open Ranvier.View
+open Ranvier.View.Sugar
 
 /// <summary>The story and its scroll observers.</summary>
 let page =
@@ -9,7 +10,7 @@ let page =
         ref Unchecked.defaultof<Story.Story>
 
     let view (state: Story.Story ref) =
-        Component.define (fun _ () -> ()) (fun t -> t.render Story.view (fun () -> fun created -> state.Value <- created))
+        Component.template (fun _ () -> ()) (render Story.view (fun () -> fun created -> state.Value <- created))
 
     PageLayout.declaration
         "story"

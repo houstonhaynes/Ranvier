@@ -74,5 +74,11 @@ and regenerates after source edits before reloading. Missing output and renderin
 a switch to an empty client-mounted page. Hash routing applies the browser fragment after hydrating the server's
 initial route, because fragments are not sent to the server.
 
+The main `examples/Fable.Ranvier.Playground` uses the same generation and development helper. Its shared
+`Playground.fs` declaration produces the document and browser entry; ordinary panels are server-rendered and
+hydrated. Its scheduling panel retains an explicit mount to demonstrate commit modes and remounting. The generated
+entry also connects the page handle to the playground's F# test controls. See its [README](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Fable.Ranvier.Playground/README.md)
+for the build commands and the deliberate manual test fixtures.
+
 The [lower-level deployment example](deployment.md) remains useful for applications that manage their own document
 shell or browser lifecycle.

@@ -29,6 +29,19 @@ dotnet fsi build.fsx -- format          # Fantomas over every source file
 
 CI rejects unformatted F#. `dotnet fsi build.fsx -- format --dry-format` checks without writing.
 
+## Examples and playgrounds
+
+Ordinary examples, playgrounds and experimental demos use the current public authoring syntax.
+For Ranvier.View, prefer typed Sugar tags, `Attrs`, `Props`, `Events`, component declaration helpers
+and shared [page declarations](docs/content/server/pages.md) that generate HTML and browser startup.
+Keep application markup and initialization in F# rather than handwritten HTML and JavaScript adapters.
+
+Explicit builders, manual mounting and low-level operations remain appropriate when demonstrating
+those semantics, testing their contracts, or measuring them against another form. State that purpose
+in the example or fixture documentation. Preserve compiler diagnostic fixtures and benchmark baselines;
+changing their syntax can change the behavior they are intended to test. Runtime implementations under
+`experiments/` are not demo code and do not need cosmetic API rewrites.
+
 ## Commit messages
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`,

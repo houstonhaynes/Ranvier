@@ -6,10 +6,10 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "compile": "dotnet fickl Playground.fsproj --outDir generated --configuration Release",
+    "compile": "npm run server && npm run compile:client",
     "compile:tests": "dotnet build ../../experiments/Ranvier.View.Arms.FablePlugin/Ranvier.View.Arms.FablePlugin.fsproj -c Release -v q && node tests/arms-fresh.mjs generated-tests Release",
-    "dev": "npm run compile && concurrently --kill-others \"dotnet fickl watch Playground.fsproj --outDir generated --configuration Release\" \"vite --host 127.0.0.1\"",
-    "dev:test": "concurrently --kill-others \"dotnet fickl watch Playground.fsproj --outDir generated --configuration Release\" \"vite --host 127.0.0.1 --port 5178 --strictPort\"",
+    "dev": "npm run compile && vite --host 127.0.0.1",
+    "dev:test": "vite --host 127.0.0.1 --port 5178 --strictPort",
     "build": "npm run compile && vite build",
     "test:dom": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS && node --test tests/dom.test.mjs tests/scheduled.test.mjs tests/lifetime.test.mjs tests/representation.test.mjs tests/component.test.mjs tests/binding.test.mjs tests/mounting-investigation.test.mjs tests/integration.test.mjs tests/server.test.mjs tests/sugar-server.test.mjs tests/sugar-emit.test.mjs tests/sugar-release.test.mjs tests/elmish-nested.test.mjs tests/sugar-rows.test.mjs benchmarks/frameworks/gates.test.mjs tests/conformance.test.mjs tests/conformance-diff.test.mjs tests/conformance-host.test.mjs tests/restructured.test.mjs",
     "test:arms": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS && node --test tests/arms-server.test.mjs tests/arms.test.mjs tests/arms-hydration.test.mjs && node tests/sugar-counters-build.mjs && node --test tests/arms-counters.test.mjs",
@@ -17,7 +17,7 @@
     "test:sugar-debug": "npm run compile:tests && node tests/arms-fresh.mjs generated-tests-debug Debug && node --test tests/sugar-debug.test.mjs tests/arms-debug.test.mjs",
     "test:browser": "npm run compile:tests && npm run compile && playwright test",
     "test:conformance-inspect": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS --define RANVIER_VIEW_INSPECT && node --test tests/conformance.test.mjs",
-    "test": "npm run test:dom && npm run test:sugar-debug && npm run test:sugar-counters && npm run test:conformance-inspect && npm run test:browser",
+    "test": "npm run test:build && npm run test:dom && npm run test:sugar-debug && npm run test:sugar-counters && npm run test:conformance-inspect && npm run test:browser",
     "bench:dom": "npm run compile:tests && node benchmarks/dom-scheduling.mjs",
     "bench:view": "npm run compile:tests && node benchmarks/view-representation.mjs",
     "bench:binding": "npm run compile:tests && node benchmarks/binding-minimal.mjs",
@@ -25,7 +25,10 @@
     "bench:frameworks": "node benchmarks/frameworks/run.mjs --build",
     "bench:frameworks:verify": "node benchmarks/frameworks/run.mjs --build --verify-only",
     "bench:branch": "npm run compile:tests && node benchmarks/branch-snapshots.mjs",
-    "bench:snapshot:dotnet": "pwsh -NoProfile -File benchmarks/snapshot-dotnet.ps1"
+    "bench:snapshot:dotnet": "pwsh -NoProfile -File benchmarks/snapshot-dotnet.ps1",
+    "compile:client": "dotnet fickl Client.fsproj --outDir generated --configuration Release",
+    "server": "dotnet build Server/Server.fsproj -c Release -m:1 -p:BuildInParallel=false && dotnet run --project Server/Server.fsproj -c Release --no-build -- --write-pages",
+    "test:build": "node --test tests/page-build.test.mjs"
   },
   "devDependencies": {
     "@babel/core": "8.0.7",
@@ -33,7 +36,6 @@
     "@playwright/test": "1.64.1",
     "@solidjs/compiler": "2.0.0-rc.15",
     "@solidjs/web": "2.0.0-rc.15",
-    "concurrently": "10.0.6",
     "jsdom": "30.1.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",

@@ -1,8 +1,10 @@
 # Fable.Ranvier playground
 
-A small browser playground for the `Ranvier.View.Dom` renderer. The shell and the
-demo are component templates; the shell embeds the demo and the keyed-row panels through widget
-elements, each one a mount with its own commit mode; the keyed-row panels also have their own graph.
+A browser playground for the `Ranvier.View.Dom` renderer. A shared F# page declaration generates
+the HTML document and browser entry. The shell, keyed rows, load-result panel and component examples
+arrive rendered from .NET and hydrate in place. Components use the typed Sugar authoring syntax.
+The counter's scheduling panel deliberately owns a separate manual mount so it can demonstrate
+switching commit modes and unmounting while preserving state.
 Ranvier updates text, attributes and DOM properties without rebuilding the tree. Try the counter,
 editable name field and unmount/remount button. Select **Use microtasks**, then **Burst +100** to
 exercise coalescing. **Flush DOM** commits queued work explicitly. Changing scheduling mode remounts the demo while preserving its state.
@@ -11,8 +13,7 @@ synchronous mode commits the final values before the handler returns; the microt
 subsequent DOM commits.
 
 The Playground project references `src/Ranvier.View.Dom` as a project, so the app compiles the
-repository's view sources. Its keyed-row panel is mounted with the `Ranvier.View` representation and
-range-mounting APIs; add and reverse rows to exercise reconciliation in the browser. The project keeps its
+repository's view sources. Add and reverse keyed rows to exercise reconciliation in the browser. The project keeps its
 `src/Fable.Ranvier` reference for the fixtures under `tests/` that check that library.
 
 ## Run
@@ -30,9 +31,10 @@ rtk proxy npm run dev
 ```
 
 Open the localhost URL printed by Vite (normally `http://127.0.0.1:5173`). Edit `App.fs` to change
-the demo. The development command compiles once, then runs Fickl watch and Vite together. Ctrl+C
-stops both. Vite hot reload disposes the old app's mounts and graph before starting a replacement;
-hot reload resets app state. The demo's own unmount/remount control preserves its state.
+the demo. The development command generates the document and entry, compiles them, then starts Vite.
+Source edits regenerate both outputs before a full page reload; a failed generation is reported instead
+of serving stale content. Reloading resets app state. The demo's own unmount/remount control preserves
+its state. Closing Vite stops any compilation it started.
 
 To launch after installation from the repository root:
 
@@ -52,7 +54,9 @@ rtk proxy npx playwright install chromium
 rtk proxy npm test
 ```
 
-`build` compiles F# before Vite bundles it into `dist/`. `test:dom` compiles the F# behavioural
+`build` renders HTML on .NET, generates the F# browser entry, and compiles it before Vite bundles the
+page into `dist/`. `test:build` checks clean and stale outputs, failed generation and manifest handling.
+`test:dom` compiles the F# behavioural
 checks and runs them with Node's test runner against jsdom. The test module is imported before
 DOM globals are installed to check import safety. `test:browser` compiles the fixtures and app and runs real
 Chromium interactions against a separate Vite server on port 5178. It checks output updates,
@@ -60,8 +64,9 @@ input node identity/focus/caret, the disabled property, and listener cleanup acr
 Scheduling checks cover mutation counts, disposal before commit, setter failures and a synthetic
 composition-input echo. Node checks also exercise Pending/Failed invalidation, shared graphs,
 setter ownership, reentrant writes and mounting inside a graph batch.
-It also edits and restores `App.fs` to verify the Fickl watch/Vite cleanup path without reloading
-the page. Run the browser suite in a checkout where `App.fs` is not being edited concurrently.
+The browser suite checks useful content with JavaScript disabled and verifies that startup retains
+server-rendered nodes. It also edits and restores `App.fs` to verify generation and reload after a
+source change. Run the browser suite in a checkout where `App.fs` is not being edited concurrently.
 The suites can be run separately with `npm run test:dom` and `npm run test:browser`.
 
 The private npm project pins dependencies in `package-lock.json`. Node 26 is the selected minimum
@@ -74,10 +79,14 @@ See [the benchmark method and results](../../docs/.ai/benchmarks/dom-scheduling/
 
 ## Layout
 
-- `App.fs`: the shell and demo templates and the keyed-row, component and load-result panels.
-- `Playground.fsproj`: references `src/Ranvier.View.Dom` and `src/Fable.Ranvier`.
-- `main.js`: imports the compiled app, registers disposal with Vite and exposes
-  `window.playground.dispose`.
+- `App.fs`: the shell and demo components, keyed rows, load-result panel and browser test controls.
+- `ComponentsExample.fs`: typed component composition and reactive props.
+- `Playground.fs`: the shared page declaration.
+- `Playground.fsproj`: shared code referencing `src/Ranvier.View.Dom` and `src/Fable.Ranvier`.
+- `Server/`: the .NET document and browser-entry generator.
+- `Client.fsproj`: compiles the generated entry after its shared declarations.
+- `vite.config.mjs` and `page-build.mjs`: manifest inputs and development generation, using
+  the helper shared with Motion in `../page-build.mjs`.
 - `style.css`: responsive layout and styling.
 - `tests/DomChecks.fs`: compiled F# checks of library behaviour.
 - `tests/dom.test.mjs`: Node/jsdom setup and test invocation.
@@ -85,8 +94,16 @@ See [the benchmark method and results](../../docs/.ai/benchmarks/dom-scheduling/
 - `tests/scheduled.html`, `tests/scheduled.spec.mjs`: browser scheduling checks.
 - `tests/playground.spec.mjs`: real browser interaction checks.
 
-`generated/`, `generated-tests/` and `dist/` are generated and ignored. The Node project references
-the local `src/Fable.Ranvier` project, so library edits are part of the Fickl watch loop.
+`index.html`, `generated-pages/`, `generated/`, `generated-tests/` and `dist/` are generated and ignored.
+Library edits are included in development regeneration.
+
+## Deliberate manual examples
+
+The scheduling/remount panel uses explicit mounting to demonstrate its lifecycle and commit modes.
+The HTML and JavaScript under `tests/` are harnesses for individual renderer and hydration contracts;
+their manual setup is part of those tests. Benchmark entries compare particular authoring and runtime
+forms, so their explicit variants remain intact. New ordinary demos use shared page declarations and
+modern Sugar components; see [the contributor guide](../../CONTRIBUTING.md#examples-and-playgrounds).
 
 ## PoC limits
 

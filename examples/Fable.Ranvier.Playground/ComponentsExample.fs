@@ -1,119 +1,131 @@
 module ComponentsExample
 
-open global.Ranvier
-open Ranvier.View.Dom.Authoring
-open Ranvier.View.Dom.Components
+open Ranvier
 open Ranvier.View
-open Ranvier.View.Dom.Generated.Html.Authoring
+open Ranvier.View.Sugar
 open Fable.Core.TS.Dom
 
-module Html = Ranvier.View.Dom.Generated.Html.Program
-module Events = Ranvier.View.Dom.Generated.Html.Events
-
-/// <summary>Inputs to a counter instance, including its reactive label and projected child views.</summary>
-type CounterProps =
+type private CounterProps =
     {
         Id: string
-        Label: Prop<string>
+        Label: Signal<string>
         InitialCount: int
         Changed: int -> unit
-        Children: Program.View array
+        Child: unit -> string
     }
 
-/// <summary>Creates a counter with state owned by its mounted instance.</summary>
-let counter props =
-    createComponent
-        (fun _ props ->
-            let count = Api.createSignal props.InitialCount
+type private Counter =
+    {
+        Props: CounterProps
+        Count: Signal<int>
+    }
 
-            Html.article
-                [|
-                    Attrs.id props.Id
-                    Attrs.className "panel"
-                    Attrs.title (fun () -> Prop.read props.Label)
-                |]
-                [|
-                    Html.h2 [||] [| propText props.Label |]
-                    Html.output [| Attrs.id (props.Id + "-count"); Attrs.className "count" |] [| reactiveText (fun () -> string count.Value) |]
-                    Html.button
-                        [|
-                            Attrs.id (props.Id + "-increment")
-                            Attrs.className "primary"
-                            Attrs.Button.``type`` "button"
-                            Events.onClick (fun _ ->
-                                count.Value <- count.Value + 1
-                                props.Changed count.Value)
-                        |]
-                        [| text "Increment" |]
-                    fragment props.Children
-                |])
-        props
+    static member Create(_: Setup, props: CounterProps) =
+        {
+            Props = props
+            Count = createSignal props.InitialCount
+        }
 
-/// <summary>Creates two counters sharing a label and reporting changes to their parent.</summary>
-let view () =
-    createComponent
-        (fun _ () ->
-            let label = Api.createSignal "Shared label"
-            let changed = Api.createSignal "No changes yet"
-            let renamed = Api.createMemo (fun _ -> label.Value = "Renamed")
-            let selected = Api.createSignal false
+    static member View: TemplateView<Counter> =
+        article (Attrs.id _.Props.Id, Attrs.className "panel", Attrs.title _.Props.Label.Value) {
+            h2 () { fun c -> c.Props.Label.Value }
+            output (Attrs.id (fun c -> c.Props.Id + "-count"), Attrs.className "count") { fun c -> string c.Count.Value }
 
-            Html.section
-                [| Attrs.id "component-example" |]
-                [|
-                    Html.h2 [||] [| text "Reusable components" |]
-                    Html.input
-                        [|
-                            Attrs.id "component-label"
-                            Attrs.Input.placeholder "Shared label"
-                            Props.Input.value label
-                            Events.onInput (fun event -> label.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
-                        |]
-                    Html.button
-                        [|
-                            Attrs.id "component-rename"
-                            Attrs.Button.``type`` "button"
-                            Props.Button.disabled renamed
-                            Events.onClick (fun _ -> label.Value <- "Renamed")
-                        |]
-                        [| text "Rename both counters" |]
-                    Html.p [| Attrs.id "component-changed" |] [| reactiveText (fun () -> changed.Value) |]
-                    Html.input
-                        [|
-                            Attrs.id "component-checkbox"
-                            Attrs.Input.``type`` "checkbox"
-                            Props.Input.``checked`` selected
-                            Events.onChange (fun event -> selected.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).``checked``)
-                        |]
-                    Html.output
-                        [| Attrs.id "component-checkbox-state" |]
-                        [| reactiveText (fun () -> if selected.Value then "Checked" else "Unchecked") |]
-                    Html.button
-                        [|
-                            Attrs.id "component-toggle-checkbox"
-                            Attrs.Button.``type`` "button"
-                            Events.onClick (fun _ -> selected.Value <- not selected.Value)
-                        |]
-                        [| text "Toggle checkbox" |]
-                    Html.div
-                        [| Attrs.className "demo-grid" |]
-                        [|
-                            counter
-                                {
-                                    Id = "component-first"
-                                    Label = Prop.ofSignal label
-                                    InitialCount = 0
-                                    Changed = fun value -> changed.Value <- "First changed to " + string value
-                                    Children = [| Html.p [||] [| text "First counter child content" |] |]
-                                }
-                            counter
-                                {
-                                    Id = "component-second"
-                                    Label = Prop.ofSignal label
-                                    InitialCount = 10
-                                    Changed = fun value -> changed.Value <- "Second changed to " + string value
-                                    Children = [| Html.p [||] [| reactiveText (fun () -> "Child sees " + label.Value) |] |]
-                                }
-                        |]
-                |])
-        ()
+            button (
+                Attrs.id (fun c -> c.Props.Id + "-increment"),
+                Attrs.className "primary",
+                Attrs.Button.``type`` "button",
+                Events.onClick (fun c _ ->
+                    c.Count.Value <- c.Count.Value + 1
+                    c.Props.Changed c.Count.Value)
+            ) {
+                "Increment"
+            }
+
+            p () { fun c -> c.Props.Child () }
+        }
+
+let private counter =
+    Component.template (fun setup props -> Counter.Create (setup, props)) Counter.View
+
+type private Example =
+    {
+        Label: Signal<string>
+        Changed: Signal<string>
+        Renamed: Memo<bool>
+        Selected: Signal<bool>
+    }
+
+    static member Create(_: Setup, ()) =
+        let label = createSignal "Shared label"
+
+        {
+            Label = label
+            Changed = createSignal "No changes yet"
+            Renamed = createMemo (fun _ -> label.Value = "Renamed")
+            Selected = createSignal false
+        }
+
+    static member View: TemplateView<Example> =
+        section (Attrs.id "component-example") {
+            h2 () { "Reusable components" }
+
+            input (
+                Attrs.id "component-label",
+                Attrs.Input.placeholder "Shared label",
+                Props.Input.value _.Label.Value,
+                Events.onInput (fun state event -> state.Label.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
+            )
+
+            button (
+                Attrs.id "component-rename",
+                Attrs.Button.``type`` "button",
+                Props.Button.disabled _.Renamed.Value,
+                Events.onClick (fun state _ -> state.Label.Value <- "Renamed")
+            ) {
+                "Rename both counters"
+            }
+
+            p (Attrs.id "component-changed") { fun state -> state.Changed.Value }
+
+            input (
+                Attrs.id "component-checkbox",
+                Attrs.Input.``type`` "checkbox",
+                Props.Input.``checked`` _.Selected.Value,
+                Events.onChange (fun state event -> state.Selected.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).``checked``)
+            )
+
+            output (Attrs.id "component-checkbox-state") { fun state -> if state.Selected.Value then "Checked" else "Unchecked" }
+
+            button (
+                Attrs.id "component-toggle-checkbox",
+                Attrs.Button.``type`` "button",
+                Events.onClick (fun state _ -> state.Selected.Value <- not state.Selected.Value)
+            ) {
+                "Toggle checkbox"
+            }
+
+            div (Attrs.className "demo-grid") {
+                render counter (fun state ->
+                    {
+                        Id = "component-first"
+                        Label = state.Label
+                        InitialCount = 0
+                        Changed = fun value -> state.Changed.Value <- "First changed to " + string value
+                        Child = fun () -> "First counter child content"
+                    })
+
+                render counter (fun state ->
+                    {
+                        Id = "component-second"
+                        Label = state.Label
+                        InitialCount = 10
+                        Changed = fun value -> state.Changed.Value <- "Second changed to " + string value
+                        Child = fun () -> "Child sees " + state.Label.Value
+                    })
+            }
+        }
+
+/// <summary>Two independently owned counters sharing a reactive label and reporting changes to their parent.</summary>
+let ``component`` =
+    Component.template (fun setup props -> Example.Create (setup, props)) Example.View

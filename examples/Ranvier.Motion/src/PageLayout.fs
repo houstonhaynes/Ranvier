@@ -74,7 +74,7 @@ let private navigation (prefix: string) (current: string) : TemplateView<'instan
     }
 
 let private metadata (t: TemplateBuilder<'instance>) (title: string) (description: string) =
-    t.fragment
+    fragment
         [|
             t.Document.title title
             t.Document.meta [| t.Attrs.attribute ("charset", "utf-8") |]
@@ -113,7 +113,7 @@ let pageView name create view activate =
             let nested = view state
 
             let selected =
-                Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.render nested (fun () -> ()))
+                Component.template (fun _ (_: unit -> unit) -> ()) (renderOf nested ())
 
             state, selected)
         (fun t ->
@@ -123,10 +123,10 @@ let pageView name create view activate =
                         let graph = Graph.Current
                         global.Page.afterRender (fun () -> activate graph state))
                 ) {
-                    t.matchWith snd (fun selected -> t.arm selected ())
+                    matchWith snd (fun selected -> arm selected ())
                 }
 
-            t.fragment
+            fragment
                 [|
                     metadata t (entry.Title + " · Ranvier Motion") entry.Description
                     if name = "story" then content else framed entry content

@@ -156,7 +156,7 @@ let view: Component<Playground -> unit> =
 
                 label (Attrs.className "switch") {
                     input (
-                        Attrs.attribute ("type", "checkbox"),
+                        Attrs.Input.``type`` "checkbox",
                         Attrs.className "reduced",
                         Props.Input.``checked`` (fun (p: Playground) -> p.Policy.Value = Reactive.Reduced),
                         Events.onChange (fun (p: Playground) event ->
@@ -182,7 +182,7 @@ let view: Component<Playground -> unit> =
                 }
 
                 input (
-                    Attrs.attribute ("type", "range"),
+                    Attrs.Input.``type`` "range",
                     Attrs.attribute ("min", "0"),
                     Attrs.attribute ("max", "1000"),
                     Attrs.className "scrub",

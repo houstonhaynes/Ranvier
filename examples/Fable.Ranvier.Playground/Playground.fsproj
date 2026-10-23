@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="ComponentsExample.fs" />
     <Compile Include="App.fs" />
+    <Compile Include="Playground.fs" />
     <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
     <ProjectReference Include="..\..\src\Ranvier.View.Dom\Ranvier.View.Dom.fsproj" />

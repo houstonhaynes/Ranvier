@@ -3,303 +3,247 @@ module App
 open System
 open Fable.Core
 open Fable.Core.TS.Dom
-open global.Ranvier
+open Ranvier
 open Ranvier.View
+open Ranvier.View.Sugar
+open Ranvier.View.Dom
 
-module FoundationMounting = Ranvier.View.Dom.Mounting
-module FoundationProgram = Ranvier.View.Representation.Program
-module View = Ranvier.View.Dom.Authoring
-module GeneratedHtml = Ranvier.View.Dom.Generated.Html
-module Elements = GeneratedHtml.Program
-module GeneratedAttrs = GeneratedHtml.Attrs
-module FoundationMicrotask = Ranvier.View.Dom.Microtask
-module FoundationScheduling = Ranvier.View.Dom.Scheduling
-
-[<Global "document">]
-let private document: Document = jsNative
-
-/// <summary>A mount's report: writes each failure to the browser console.</summary>
-let private reportToConsole (errors: exn list) =
-    for error in errors do
-        JS.console.error ("Ranvier mount failure", error)
-
-/// <summary>The demo's state, kept on the app's graph so a remount keeps it.</summary>
-type DemoState =
+type private DemoState =
     {
         Count: Signal<int>
         Name: Signal<string>
     }
 
-type DemoInstance =
-    { State: DemoState; Doubled: Memo<int> }
+type private Demo =
+    {
+        State: DemoState
+        Doubled: Memo<int>
+    }
 
-let private demoView =
-    Component.define
-        (fun _ (state: DemoState) ->
-            {
-                State = state
-                Doubled = Api.createMemo (fun _ -> state.Count.Value * 2)
-            })
-        (fun t ->
-            t.section
-                [|
-                    t.Attrs.className "demo-grid"
-                    t.Attrs.data ("testid", "demo-root")
-                    t.Attrs.data ("parity", (fun (demo: DemoInstance) -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd")))
-                |]
-                [|
-                    t.article
-                        [| t.Attrs.className "panel counter-panel" |]
-                        [|
-                            t.div
-                                [| t.Attrs.className "panel-heading" |]
-                                [|
-                                    t.span [| t.Attrs.className "eyebrow" |] [| t.text "01 / Counter" |]
-                                    t.span [| t.Attrs.className "tag" |] [| t.text "signal → text" |]
-                                |]
-                            t.output
-                                [|
-                                    t.Attrs.className "count"
-                                    t.Attrs.data ("testid", "count")
-                                    t.Attrs.aria ("live", "polite")
-                                |]
-                                [| t.text (fun (demo: DemoInstance) -> string demo.State.Count.Value) |]
-                            t.div
-                                [| t.Attrs.className "derived" |]
-                                [|
-                                    t.span [||] [| t.text "Doubled" |]
-                                    t.output
-                                        [| t.Attrs.data ("testid", "doubled") |]
-                                        [| t.text (fun (demo: DemoInstance) -> string demo.Doubled.Value) |]
-                                |]
-                            t.div
-                                [| t.Attrs.className "actions" |]
-                                [|
-                                    t.button
-                                        [|
-                                            t.Attrs.className "primary"
-                                            t.Attrs.data ("testid", "increment")
-                                            t.Attrs.attribute ("type", "button")
-                                            t.Events.onClick (fun (demo: DemoInstance) _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
-                                        |]
-                                        [| t.text "Increment +1" |]
-                                    t.button
-                                        [|
-                                            t.Attrs.className "secondary"
-                                            t.Attrs.data ("testid", "reset")
-                                            t.Attrs.attribute ("type", "button")
-                                            t.Props.Button.disabled (fun (demo: DemoInstance) -> demo.State.Count.Value = 0)
-                                            t.Events.onClick (fun (demo: DemoInstance) _ -> demo.State.Count.Value <- 0)
-                                        |]
-                                        [| t.text "Reset" |]
-                                    t.button
-                                        [|
-                                            t.Attrs.className "secondary"
-                                            t.Attrs.data ("testid", "burst")
-                                            t.Attrs.attribute ("type", "button")
-                                            t.Events.onClick (fun (demo: DemoInstance) _ ->
-                                                Api.batch (fun () ->
-                                                    for _ in 1..100 do
-                                                        demo.State.Count.Value <- demo.State.Count.Value + 1))
-                                        |]
-                                        [| t.text "Burst +100" |]
-                                |]
-                            t.p [| t.Attrs.className "note" |] [| t.text "The output changes. The DOM nodes stay." |]
-                        |]
-                    t.article
-                        [| t.Attrs.className "panel name-panel" |]
-                        [|
-                            t.div
-                                [| t.Attrs.className "panel-heading" |]
-                                [|
-                                    t.span [| t.Attrs.className "eyebrow" |] [| t.text "02 / Input" |]
-                                    t.span [| t.Attrs.className "tag" |] [| t.text "event → signal" |]
-                                |]
-                            t.label [| t.Attrs.attribute ("for", "name-field") |] [| t.text "Your name" |]
-                            t.input
-                                [|
-                                    t.Attrs.id "name-field"
-                                    t.Attrs.attribute ("type", "text")
-                                    t.Attrs.attribute ("autocomplete", "off")
-                                    t.Attrs.data ("testid", "name")
-                                    t.Props.Input.value (fun (demo: DemoInstance) -> demo.State.Name.Value)
-                                    t.Events.onInput (fun (demo: DemoInstance) event ->
-                                        demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
-                                |]
-                            t.p
-                                [|
-                                    t.Attrs.className "greeting"
-                                    t.Attrs.data ("testid", "greeting")
-                                    t.Attrs.aria ("live", "polite")
-                                |]
-                                [| t.text (fun (demo: DemoInstance) -> $"Hello, {demo.State.Name.Value}") |]
-                            t.p [| t.Attrs.className "note" |] [| t.text "Type anywhere in the field. Focus and selection are preserved." |]
-                        |]
-                |])
+    static member Create(_: Setup, state: DemoState) =
+        {
+            State = state
+            Doubled = createMemo (fun _ -> state.Count.Value * 2)
+        }
 
-/// <summary>The shell's state, and the operations invoked by its controls and widget elements.</summary>
-type ShellProps =
+    static member View: TemplateView<Demo> =
+        section (
+            Attrs.className "demo-grid",
+            Attrs.data ("testid", "demo-root"),
+            Attrs.data ("parity", fun demo -> Some (if demo.State.Count.Value % 2 = 0 then "even" else "odd"))
+        ) {
+            article (Attrs.className "panel counter-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "01 / Counter" }
+                    span (Attrs.className "tag") { "signal → text" }
+                }
+
+                output (Attrs.className "count", Attrs.data ("testid", "count"), Attrs.aria ("live", "polite")) {
+                    fun demo -> string demo.State.Count.Value
+                }
+
+                div (Attrs.className "derived") {
+                    span () { "Doubled" }
+                    output (Attrs.data ("testid", "doubled")) { fun demo -> string demo.Doubled.Value }
+                }
+
+                div (Attrs.className "actions") {
+                    button (
+                        Attrs.className "primary",
+                        Attrs.data ("testid", "increment"),
+                        Attrs.Button.``type`` "button",
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- demo.State.Count.Value + 1)
+                    ) {
+                        "Increment +1"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "reset"),
+                        Attrs.Button.``type`` "button",
+                        Props.Button.disabled (fun demo -> demo.State.Count.Value = 0),
+                        Events.onClick (fun demo _ -> demo.State.Count.Value <- 0)
+                    ) {
+                        "Reset"
+                    }
+
+                    button (
+                        Attrs.className "secondary",
+                        Attrs.data ("testid", "burst"),
+                        Attrs.Button.``type`` "button",
+                        Events.onClick (fun demo _ ->
+                            batch (fun () ->
+                                for _ in 1..100 do
+                                    demo.State.Count.Value <- demo.State.Count.Value + 1))
+                    ) {
+                        "Burst +100"
+                    }
+                }
+
+                p (Attrs.className "note") { "The output changes. The DOM nodes stay." }
+            }
+
+            article (Attrs.className "panel name-panel") {
+                div (Attrs.className "panel-heading") {
+                    span (Attrs.className "eyebrow") { "02 / Input" }
+                    span (Attrs.className "tag") { "event → signal" }
+                }
+
+                label (Attrs.attribute ("for", "name-field")) { "Your name" }
+
+                input (
+                    Attrs.id "name-field",
+                    Attrs.Input.``type`` "text",
+                    Attrs.attribute ("autocomplete", "off"),
+                    Attrs.data ("testid", "name"),
+                    Props.Input.value _.State.Name.Value,
+                    Events.onInput (fun demo event -> demo.State.Name.Value <- (unbox<HTMLInputElement> event.currentTarget.Value).value)
+                )
+
+                p (Attrs.className "greeting", Attrs.data ("testid", "greeting"), Attrs.aria ("live", "polite")) {
+                    fun demo -> $"Hello, {demo.State.Name.Value}"
+                }
+
+                p (Attrs.className "note") { "Type anywhere in the field. Focus and selection are preserved." }
+            }
+        }
+
+let private demoComponent =
+    Component.template (fun setup props -> Demo.Create (setup, props)) Demo.View
+
+type private Foundation =
+    {
+        Rows: Signal<(int * string) array>
+        Busy: unit -> bool
+        Status: unit -> string
+        Result: unit -> string
+        Error: unit -> string
+        Pending: unit -> unit
+        Fail: unit -> unit
+        Recover: unit -> unit
+    }
+
+    static member Create(_: Setup, ()) =
+        let graph = Graph.Current
+        let source = createSignal (createAsyncSource<string>())
+
+        let result =
+            createBoundary (fun _ -> "Loading…") (fun _ _ -> "Could not load the result") (fun () -> source.Value.Value)
+
+        source.Value.Settle "Loaded result"
+
+        {
+            Rows = createSignal [| 1, "Alpha"; 2, "Beta" |]
+            Busy =
+                fun () ->
+                    result.Value |> ignore
+                    result.IsWaiting
+            Status =
+                fun () ->
+                    result.Value |> ignore
+
+                    if result.IsWaiting then "Pending"
+                    elif not (isNull result.Caught) then "Failed"
+                    else "Ready"
+            Result = fun () -> result.Value
+            Error =
+                fun () ->
+                    result.Value |> ignore
+                    if isNull result.Caught then "" else result.Caught.Message
+            Pending = fun () -> graph.Run (fun () -> source.Value <- createAsyncSource<string>())
+            Fail = fun () -> source.Value.Fail (Exception "Connection unavailable")
+            Recover = fun () -> source.Value.Settle "Recovered result"
+        }
+
+    static member View: TemplateView<Foundation> =
+        section () {
+            section (
+                Attrs.id "foundation-demo",
+                Attrs.className "panel",
+                Attrs.data ("row-count", fun state -> Some (string state.Rows.Value.Length))
+            ) {
+                "Foundation implementation: keyed rows"
+
+                button (
+                    Attrs.id "foundation-add",
+                    Attrs.Button.``type`` "button",
+                    Events.onClick (fun state _ ->
+                        let next =
+                            state.Rows.Value
+                            |> Array.map fst
+                            |> Array.max
+                            |> (+) 1
+
+                        state.Rows.Value <- Array.append state.Rows.Value [| next, "Item " + string next |])
+                ) {
+                    "Add row"
+                }
+
+                button (
+                    Attrs.id "foundation-reverse",
+                    Attrs.Button.``type`` "button",
+                    Events.onClick (fun state _ -> state.Rows.Value <- Array.rev state.Rows.Value)
+                ) {
+                    "Reverse rows"
+                }
+
+                forEach
+                    fst
+                    _.Rows.Value
+                    (div (Attrs.id (fun current -> "foundation-row-" + string (fst (current ())))) { fun current -> snd (current ()) })
+            }
+
+            renderOf ComponentsExample.``component`` ()
+
+            div (
+                Attrs.id "foundation-load",
+                Attrs.role "region",
+                Attrs.aria ("label", "Load result"),
+                Attrs.aria ("busy", fun state -> Some (if state.Busy () then "true" else "false"))
+            ) {
+                "Load result"
+                div (Attrs.id "foundation-load-status") { fun state -> state.Status () }
+                div (Attrs.id "foundation-load-result") { fun state -> state.Result () }
+                div (Attrs.id "foundation-load-error") { fun state -> state.Error () }
+
+                button (Attrs.id "foundation-pending", Attrs.Button.``type`` "button", Events.onClick (fun state _ -> state.Pending ())) {
+                    "Start loading"
+                }
+
+                button (Attrs.id "foundation-fail", Attrs.Button.``type`` "button", Events.onClick (fun state _ -> state.Fail ())) {
+                    "Simulate failure"
+                }
+
+                button (Attrs.id "foundation-recover", Attrs.Button.``type`` "button", Events.onClick (fun state _ -> state.Recover ())) { "Recover" }
+            }
+        }
+
+let private foundationComponent =
+    Component.template (fun setup props -> Foundation.Create (setup, props)) Foundation.View
+
+type private Shell =
     {
         Mounted: Signal<bool>
         Queued: Signal<bool>
         Toggle: unit -> unit
         ToggleScheduling: unit -> unit
         Flush: unit -> unit
-        /// <summary>Mounts the demo into its widget element; the returned cleanup disposes it.</summary>
-        AttachDemo: HTMLElement -> (unit -> unit)
-        /// <summary>Mounts the Foundation panels into their widget element; the returned cleanup disposes them.</summary>
-        AttachFoundation: HTMLElement -> (unit -> unit)
+        AttachDemo: HTMLDivElement -> (unit -> unit)
     }
 
-let private shellView =
-    Component.define (fun _ (props: ShellProps) -> props) (fun t ->
-        t.div
-            [| t.Attrs.className "playground" |]
-            [|
-                t.header
-                    [| t.Attrs.className "page-heading" |]
-                    [|
-                        t.div
-                            [| t.Attrs.className "brand" |]
-                            [|
-                                t.span [| t.Attrs.className "brand-mark" |] [| t.text "r" |]
-                                t.span [||] [| t.text "Fable.Ranvier" |]
-                            |]
-                        t.span [| t.Attrs.className "preview" |] [| t.text "DOM PoC" |]
-                    |]
-                t.section
-                    [| t.Attrs.className "intro" |]
-                    [|
-                        t.p [| t.Attrs.className "eyebrow" |] [| t.text "F# · Fable · Browser DOM" |]
-                        t.h1
-                            [||]
-                            [|
-                                t.text "Create once."
-                                t.br [||]
-                                t.span [||] [| t.text "Update what changes." |]
-                            |]
-                        t.p
-                            [| t.Attrs.className "lead" |]
-                            [|
-                                t.text "A small playground for reactive text, properties and events. No component tree rebuild on each edit."
-                            |]
-                    |]
-                t.div
-                    [| t.Attrs.className "mount-bar" |]
-                    [|
-                        t.span
-                            [| t.Attrs.data ("testid", "scheduling-status") |]
-                            [|
-                                t.text (fun (shell: ShellProps) ->
-                                    if shell.Queued.Value then
-                                        "Microtask DOM commits"
-                                    else
-                                        "Synchronous DOM commits")
-                            |]
-                        t.button
-                            [|
-                                t.Attrs.className "secondary"
-                                t.Attrs.data ("testid", "scheduling-toggle")
-                                t.Attrs.attribute ("type", "button")
-                                t.Events.onClick (fun (shell: ShellProps) _ -> shell.ToggleScheduling ())
-                            |]
-                            [|
-                                t.text (fun (shell: ShellProps) ->
-                                    if shell.Queued.Value then
-                                        "Use synchronous"
-                                    else
-                                        "Use microtasks")
-                            |]
-                        t.button
-                            [|
-                                t.Attrs.className "secondary"
-                                t.Attrs.data ("testid", "flush-dom")
-                                t.Attrs.attribute ("type", "button")
-                                t.Events.onClick (fun (shell: ShellProps) _ -> shell.Flush ())
-                            |]
-                            [| t.text "Flush DOM" |]
-                    |]
-                t.div
-                    [| t.Attrs.className "mount-bar" |]
-                    [|
-                        t.div
-                            [| t.Attrs.className "mount-state" |]
-                            [|
-                                t.span
-                                    [|
-                                        t.Attrs.className "status-dot"
-                                        t.Attrs.data ("active", (fun (shell: ShellProps) -> if shell.Mounted.Value then Some "true" else None))
-                                    |]
-                                    [||]
-                                t.span
-                                    [| t.Attrs.data ("testid", "mount-status") |]
-                                    [|
-                                        t.text (fun (shell: ShellProps) ->
-                                            if shell.Mounted.Value then
-                                                "Demo mounted"
-                                            else
-                                                "Demo unmounted")
-                                    |]
-                            |]
-                        t.button
-                            [|
-                                t.Attrs.className "secondary toggle"
-                                t.Attrs.data ("testid", "mount-toggle")
-                                t.Attrs.attribute ("type", "button")
-                                t.Events.onClick (fun (shell: ShellProps) _ -> shell.Toggle ())
-                            |]
-                            [|
-                                t.text (fun (shell: ShellProps) ->
-                                    if shell.Mounted.Value then
-                                        "Unmount demo"
-                                    else
-                                        "Remount demo")
-                            |]
-                    |]
-                t.div
-                    [|
-                        t.Hooks.widget (fun (shell: ShellProps) (host: HTMLDivElement) -> shell.AttachDemo (host :> HTMLElement))
-                    |]
-                    [||]
-                t.section
-                    [|
-                        t.Hooks.widget (fun (shell: ShellProps) (host: HTMLElement) -> shell.AttachFoundation host)
-                    |]
-                    [||]
-                t.section
-                    [|
-                        t.Attrs.className "empty-state"
-                        t.Attrs.hidden (fun (shell: ShellProps) -> shell.Mounted.Value)
-                    |]
-                    [|
-                        t.h2 [||] [| t.text "The mount is disposed." |]
-                        t.p
-                            [||]
-                            [|
-                                t.text "Its nodes, bindings and event listeners have been removed. Remount to continue with the same state."
-                            |]
-                    |]
-                t.footer
-                    [||]
-                    [|
-                        t.text "Built with Xantham DOM bindings and Ranvier scopes. Experimental API; DOM scheduling is opt-in."
-                    |]
-            |])
+    static member Create(_: Setup, ()) =
+        let graph = Graph.Current
 
-let start () : unit -> unit =
-    let graph = new Graph ()
-    let foundationGraph = new Graph ()
+        let state =
+            {
+                Count = createSignal 0
+                Name = createSignal "world"
+            }
 
-    try
-        let host =
-            document.getElementById ("app")
-            |> Option.defaultWith (fun () -> invalidOp "The playground needs an #app host.")
-
-        let count, name, mounted, queued =
-            graph.Run (fun () -> createSignal 0, createSignal "world", createSignal true, createSignal false)
-
-        let mutable demoHost: HTMLElement = Unchecked.defaultof<_>
-        let mutable demo: FoundationMounting.Mounted option = None
+        let mounted = createSignal true
+        let queued = createSignal false
+        let mutable host: HTMLElement = Unchecked.defaultof<_>
+        let mutable demo: Mounting.Mounted option = None
 
         let disposeDemo () =
             demo
@@ -310,186 +254,155 @@ let start () : unit -> unit =
         let mountDemo () =
             let mode =
                 if queued.Value then
-                    FoundationMicrotask.mode FoundationScheduling.CollectAndContinue
+                    Microtask.mode Scheduling.CollectAndContinue
                 else
-                    FoundationScheduling.SynchronousCommits
+                    Scheduling.SynchronousCommits
+
+            let report (errors: exn list) =
+                for error in errors do
+                    JS.console.error ("Ranvier mount failure", error)
 
             demo <-
                 Some (
-                    FoundationMounting.mountWith mode graph None reportToConsole demoHost None (fun context ->
-                        FoundationProgram.run (Component.render demoView { Count = count; Name = name }) context.Backend)
+                    Mounting.mountWith mode graph None report host None (fun context ->
+                        Program.run (Ranvier.View.Template.Component.render demoComponent state) context.Backend)
                 )
 
-        let toggle () =
-            match demo with
-            | Some _ ->
-                disposeDemo ()
-                mounted.Value <- false
-            | None ->
-                mountDemo ()
-                mounted.Value <- true
+        {
+            Mounted = mounted
+            Queued = queued
+            Toggle =
+                fun () ->
+                    match demo with
+                    | Some _ ->
+                        disposeDemo ()
+                        mounted.Value <- false
+                    | None ->
+                        mountDemo ()
+                        mounted.Value <- true
+            ToggleScheduling =
+                fun () ->
+                    queued.Value <- not queued.Value
 
-        let toggleScheduling () =
-            queued.Value <- not queued.Value
+                    if demo.IsSome then
+                        disposeDemo ()
+                        mountDemo ()
+            Flush =
+                fun () ->
+                    demo
+                    |> Option.iter (fun current -> current.Flush ())
+            AttachDemo =
+                fun element ->
+                    host <- element
 
-            if demo.IsSome then
-                disposeDemo ()
-                mountDemo ()
+                    if mounted.Value then
+                        mountDemo ()
 
-        let attachDemo (element: HTMLElement) =
-            demoHost <- element
-
-            if mounted.Value then
-                mountDemo ()
-
-            fun () ->
-                disposeDemo ()
-                demoHost <- Unchecked.defaultof<_>
-
-        let foundationRows =
-            foundationGraph.Run (fun () -> createSignal [| 1, "Alpha"; 2, "Beta" |])
-
-        let loadSource =
-            foundationGraph.Run (fun () -> createSignal (createAsyncSource<string>()))
-
-        let loadResult =
-            foundationGraph.Run (fun () ->
-                createBoundary (fun _ -> "Loading…") (fun _ _ -> "Could not load the result") (fun () -> loadSource.Value.Value))
-
-        foundationGraph.Run (fun () -> loadSource.Value.Settle "Loaded result")
-
-        let foundationRowsView =
-            View.keyedArray fst (fun () -> foundationRows.Value) (fun current ->
-                let key = fst (current ())
-
-                Elements.div [| GeneratedAttrs.idStatic ("foundation-row-" + string key) |] [| View.reactiveText (fun () -> snd (current ())) |])
-
-        let foundationView =
-            Elements.section
-                [|
-                    GeneratedAttrs.idStatic "foundation-demo"
-                    GeneratedAttrs.classStatic "panel"
-                    GeneratedAttrs.dataReactive "row-count" (fun () -> Some (string foundationRows.Value.Length))
-                |]
-                [|
-                    View.text "Foundation implementation: keyed rows"
-                    Elements.button
-                        [|
-                            GeneratedAttrs.idStatic "foundation-add"
-                            GeneratedHtml.Button.onClick (fun _ ->
-                                let next =
-                                    foundationRows.Value
-                                    |> Array.map fst
-                                    |> Array.max
-                                    |> (+) 1
-
-                                foundationRows.Value <- Array.append foundationRows.Value [| next, "Item " + string next |])
-                        |]
-                        [| View.text "Add row" |]
-                    Elements.button
-                        [|
-                            GeneratedAttrs.idStatic "foundation-reverse"
-                            GeneratedHtml.Button.onClick (fun _ -> foundationRows.Value <- Array.rev foundationRows.Value)
-                        |]
-                        [| View.text "Reverse rows" |]
-                    foundationRowsView
-                |]
-
-        let attachFoundation (element: HTMLElement) =
-            let foundation =
-                FoundationMounting.mountWith
-                    (FoundationMicrotask.mode FoundationScheduling.CollectAndContinue)
-                    foundationGraph
-                    None
-                    reportToConsole
-                    element
-                    None
-                    (fun context ->
-                        FoundationProgram.run foundationView context.Backend
-                        FoundationProgram.run (ComponentsExample.view ()) context.Backend
-
-                        let action id label update =
-                            Elements.button
-                                [|
-                                    GeneratedAttrs.idStatic id
-                                    GeneratedHtml.Button.onClick (fun _ -> update ())
-                                |]
-                                [| View.text label |]
-
-                        let statusPanel =
-                            Elements.div
-                                [|
-                                    GeneratedAttrs.idStatic "foundation-load"
-                                    GeneratedAttrs.roleStatic "region"
-                                    GeneratedAttrs.ariaLabelStatic "Load result"
-                                    GeneratedAttrs.ariaBusyReactive (fun () ->
-                                        loadResult.Value |> ignore
-                                        Some loadResult.IsWaiting)
-                                |]
-                                [|
-                                    View.text "Load result"
-                                    Elements.div
-                                        [| GeneratedAttrs.idStatic "foundation-load-status" |]
-                                        [|
-                                            View.reactiveText (fun () ->
-                                                loadResult.Value |> ignore
-
-                                                if loadResult.IsWaiting then "Pending"
-                                                elif not (isNull loadResult.Caught) then "Failed"
-                                                else "Ready")
-                                        |]
-                                    Elements.div
-                                        [| GeneratedAttrs.idStatic "foundation-load-result" |]
-                                        [| View.reactiveText (fun () -> loadResult.Value) |]
-                                    Elements.div
-                                        [| GeneratedAttrs.idStatic "foundation-load-error" |]
-                                        [|
-                                            View.reactiveText (fun () ->
-                                                loadResult.Value |> ignore
-
-                                                if isNull loadResult.Caught then
-                                                    ""
-                                                else
-                                                    loadResult.Caught.Message)
-                                        |]
-                                    action "foundation-pending" "Start loading" (fun () ->
-                                        foundationGraph.Run (fun () -> loadSource.Value <- createAsyncSource<string>()))
-                                    action "foundation-fail" "Simulate failure" (fun () ->
-                                        loadSource.Value.Fail (Exception "Connection unavailable"))
-                                    action "foundation-recover" "Recover" (fun () -> loadSource.Value.Settle "Recovered result")
-                                |]
-
-                        FoundationProgram.run statusPanel context.Backend)
-
-            fun () -> foundation.Dispose ()
-
-        let shellProps =
-            {
-                Mounted = mounted
-                Queued = queued
-                Toggle = toggle
-                ToggleScheduling = toggleScheduling
-                Flush =
                     fun () ->
-                        demo
-                        |> Option.iter (fun current -> current.Flush ())
-                AttachDemo = attachDemo
-                AttachFoundation = attachFoundation
+                        disposeDemo ()
+                        host <- Unchecked.defaultof<_>
+        }
+
+    static member View: TemplateView<Shell> =
+        div (Attrs.className "playground") {
+            header (Attrs.className "page-heading") {
+                div (Attrs.className "brand") {
+                    span (Attrs.className "brand-mark") { "r" }
+                    span () { "Fable.Ranvier" }
+                }
+
+                span (Attrs.className "preview") { "DOM PoC" }
             }
 
-        let shell =
-            FoundationMounting.mountWith FoundationScheduling.SynchronousCommits graph None reportToConsole host None (fun context ->
-                FoundationProgram.run (Component.render shellView shellProps) context.Backend)
+            section (Attrs.className "intro") {
+                p (Attrs.className "eyebrow") { "F# · Fable · Browser DOM" }
 
-        let mutable stopped = false
+                h1 () {
+                    "Create once."
+                    br ()
+                    span () { "Update what changes." }
+                }
 
-        fun () ->
-            if not stopped then
-                stopped <- true
-                shell.Dispose ()
-                foundationGraph.Dispose ()
-                graph.Dispose ()
-    with _ ->
-        foundationGraph.Dispose ()
-        graph.Dispose ()
-        reraise ()
+                p (Attrs.className "lead") { "A small playground for reactive text, properties and events. No component tree rebuild on each edit." }
+            }
+
+            div (Attrs.className "mount-bar") {
+                span (Attrs.data ("testid", "scheduling-status")) {
+                    fun shell ->
+                        if shell.Queued.Value then
+                            "Microtask DOM commits"
+                        else
+                            "Synchronous DOM commits"
+                }
+
+                button (
+                    Attrs.className "secondary",
+                    Attrs.data ("testid", "scheduling-toggle"),
+                    Attrs.Button.``type`` "button",
+                    Events.onClick (fun shell _ -> shell.ToggleScheduling ())
+                ) {
+                    fun shell ->
+                        if shell.Queued.Value then
+                            "Use synchronous"
+                        else
+                            "Use microtasks"
+                }
+
+                button (
+                    Attrs.className "secondary",
+                    Attrs.data ("testid", "flush-dom"),
+                    Attrs.Button.``type`` "button",
+                    Events.onClick (fun shell _ -> shell.Flush ())
+                ) {
+                    "Flush DOM"
+                }
+            }
+
+            div (Attrs.className "mount-bar") {
+                div (Attrs.className "mount-state") {
+                    span (Attrs.className "status-dot", Attrs.data ("active", fun shell -> if shell.Mounted.Value then Some "true" else None)) { }
+
+                    span (Attrs.data ("testid", "mount-status")) {
+                        fun shell ->
+                            if shell.Mounted.Value then
+                                "Demo mounted"
+                            else
+                                "Demo unmounted"
+                    }
+                }
+
+                button (
+                    Attrs.className "secondary toggle",
+                    Attrs.data ("testid", "mount-toggle"),
+                    Attrs.Button.``type`` "button",
+                    Events.onClick (fun shell _ -> shell.Toggle ())
+                ) {
+                    fun shell ->
+                        if shell.Mounted.Value then
+                            "Unmount demo"
+                        else
+                            "Remount demo"
+                }
+            }
+            // This widget owns the mount whose commit scheduler and lifetime the controls demonstrate.
+            div (Hooks.widget (fun shell element -> shell.AttachDemo element)) { }
+            renderOf foundationComponent ()
+
+            section (Attrs.className "empty-state", Attrs.hidden _.Mounted.Value) {
+                h2 () { "The mount is disposed." }
+                p () { "Its nodes, bindings and event listeners have been removed. Remount to continue with the same state." }
+            }
+
+            footer () { "Built with Xantham DOM bindings and Ranvier scopes. Experimental API; DOM scheduling is opt-in." }
+        }
+
+/// <summary>The shared playground shell, keyed rows, load status and reusable component examples.</summary>
+let ``component`` =
+    Component.template (fun setup props -> Shell.Create (setup, props)) Shell.View
+
+[<Emit("globalThis.playground = { dispose: $0 }")>]
+let private publish (dispose: unit -> unit) : unit = jsNative
+
+/// <summary>Publishes the generated page's disposal handle for browser lifecycle tests.</summary>
+let expose (page: PageClient.Started) =
+    publish page.Dispose

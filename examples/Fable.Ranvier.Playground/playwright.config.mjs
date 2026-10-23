@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.mjs",
   fullyParallel: false,
+  // The regeneration test edits source used by the shared development server.
+  workers: 1,
   timeout: 15_000,
   expect: { timeout: 3_000 },
   use: { baseURL: "http://127.0.0.1:5178", browserName: "chromium" },

@@ -2,6 +2,7 @@
 module PhysicsPage
 
 open Ranvier.View
+open Ranvier.View.Sugar
 
 /// <summary>The physics playground and its browser controls.</summary>
 let page =
@@ -9,7 +10,7 @@ let page =
         ref Unchecked.defaultof<Physics.Playground>
 
     let view (state: Physics.Playground ref) =
-        Component.define (fun _ () -> ()) (fun t -> t.render Physics.view (fun () -> fun created -> state.Value <- created))
+        Component.template (fun _ () -> ()) (render Physics.view (fun () -> fun created -> state.Value <- created))
 
     PageLayout.declaration
         "physics"

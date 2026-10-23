@@ -230,20 +230,19 @@ test("microtask mode batches a burst and preserves state across scheduling chang
   })).toBe("101");
 });
 
-test("Fable watch replaces the app through Vite cleanup without reloading the page", async ({ page }) => {
+test("an F# edit regenerates the server document and reloads the hydrated page", async ({ page, request }) => {
   test.setTimeout(180_000);
   const source = new URL("../App.fs", import.meta.url);
   const original = await readFile(source, "utf8");
-  const modified = original.replace('t.text "Create once."', 't.text "Create once, live."');
+  const modified = original.replace('"Create once."', '"Create once, live."');
   expect(modified).not.toBe(original);
   await expect(page.getByTestId("count")).toHaveText("0");
-  const oldRoot = await page.getByTestId("demo-root").elementHandle();
   await page.evaluate(() => { document.documentElement.dataset.watchProbe = "same-document"; });
   try {
     await writeFile(source, modified);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Create once, live.", { timeout: 60_000 });
-    expect(await page.evaluate(() => document.documentElement.dataset.watchProbe)).toBe("same-document");
-    expect(await oldRoot.evaluate(element => element.parentNode === null)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.dataset.watchProbe)).toBeUndefined();
+    expect(await (await request.get("/")).text()).toContain("Create once, live.");
     await expect(page.getByTestId("demo-root")).toHaveCount(1);
     await page.getByTestId("increment").click();
     await expect(page.getByTestId("count")).toHaveText("1");
