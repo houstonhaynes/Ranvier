@@ -18,7 +18,7 @@ repository's view sources. Add and reverse keyed rows to exercise reconciliation
 
 ## Run
 
-Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fickl 0.3.0 (a Fable fork) in its
+Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fickl 0.5.3 (a Fable fork) in its
 local .NET tool manifest.
 
 From the repository root:

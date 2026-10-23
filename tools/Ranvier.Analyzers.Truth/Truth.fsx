@@ -59,7 +59,7 @@ let inlining () =
     check "Fickl compiles the inlining fixture" (code = 0) log
 
     check
-        "RAN001: Fickl Release (Fable 5.22) inlines each single-use snapshot (snapshot, closure, tuple)"
+        "RAN001: Fickl Release inlines each single-use snapshot (snapshot, closure, tuple)"
         (Regex.Matches(js, Regex.Escape "childSetups() - childSetups()").Count
          >= 3)
         js

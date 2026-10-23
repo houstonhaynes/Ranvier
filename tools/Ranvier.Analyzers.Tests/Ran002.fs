@@ -330,6 +330,7 @@ let queued (bs: Box list) = bs |> List.filter _.Inner.IsQueue\n"
                 Expect.equal (codesWith (Some (manifest "fable" "5.21.0"))) [ "RAN002" ] "Fable 5.21 drops the testers"
                 Expect.isEmpty (codesWith (Some (manifest "fable" "5.22.0"))) "Fable 5.22 declares them"
                 Expect.isEmpty (codesWith (Some (manifest "fickl" "0.3.0"))) "Fickl 0.3.0 declares them"
+                Expect.isEmpty (codesWith (Some (manifest "fickl" "0.5.3"))) "Fickl 0.5.3 declares them"
                 Expect.isEmpty (codesWith None) "no signal that Fable compiles the project"
 
                 Expect.equal

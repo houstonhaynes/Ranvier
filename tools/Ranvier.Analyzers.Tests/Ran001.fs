@@ -116,6 +116,7 @@ let matched () =
                     |> List.map _.Code
 
                 Expect.equal (codesWith (Some (manifest "fickl" "0.3.0"))) [ "RAN001" ] "Fickl 0.3.0 inlines"
+                Expect.equal (codesWith (Some (manifest "fickl" "0.5.3"))) [ "RAN001" ] "Fickl 0.5.3 inlines"
                 Expect.equal (codesWith (Some (manifest "fable" "5.22.0"))) [ "RAN001" ] "Fable 5.22 inlines"
                 Expect.isEmpty (codesWith None) "no signal that Fable compiles the project"
             }

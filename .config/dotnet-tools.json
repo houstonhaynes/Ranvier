@@ -8,15 +8,15 @@
       "rollForward": false
     }
     ,
-    "fickl": {
-      "version": "0.3.0",
-      "commands": [ "fickl" ],
-      "rollForward": false
-    }
-    ,
     "fsharp-analyzers": {
       "version": "0.41.0",
       "commands": [ "fsharp-analyzers" ],
+      "rollForward": false
+    }
+    ,
+    "fickl": {
+      "version": "0.5.3",
+      "commands": [ "fickl" ],
       "rollForward": false
     }
   }

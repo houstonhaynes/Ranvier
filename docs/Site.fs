@@ -29,15 +29,30 @@ let theme =
         Theme.navbar
             [
                 NavbarSection ("Guide", "guide", "/guide/")
-                NavbarSection ("Views", "view", "/view/")
-                NavbarSection ("Server", "server", "/server/")
+                NavbarDropdown (
+                    "Build",
+                    [
+                        NavbarSection ("Views", "view", "/view/")
+                        NavbarSection ("Server", "server", "/server/")
+                        NavbarSection ("Fable", "fable", "/fable/")
+                    ]
+                )
                 NavbarSection ("Examples", "examples", "/examples/")
-                NavbarSection ("Concepts", "concepts", "/concepts/")
-                NavbarSection ("Blog", "blog", "/blog/")
-                NavbarSection ("Benchmarks", "benchmarks", "/benchmarks/")
-                NavbarSection ("Fable", "fable", "/fable/")
-                NavbarDivider
-                NavbarSection ("Reference", "reference", "/reference/")
+                NavbarDropdown (
+                    "Reference",
+                    [
+                        NavbarSection ("API reference", "reference", "/reference/")
+                        NavbarSection ("Analyzers", "analyzers", "/analyzers/")
+                    ]
+                )
+                NavbarDropdown (
+                    "Learn",
+                    [
+                        NavbarSection ("Concepts", "concepts", "/concepts/")
+                        NavbarSection ("Blog", "blog", "/blog/")
+                        NavbarSection ("Benchmarks", "benchmarks", "/benchmarks/")
+                    ]
+                )
             ]
         >> Theme.menu
             "guide"
