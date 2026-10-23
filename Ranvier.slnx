@@ -24,6 +24,10 @@
     <Project Path="examples/Ranvier.Motion/tests/MotionTests.fsproj" />
     <Project Path="examples/Ranvier.Motion/Server/ServerChecks.fsproj" />
   </Folder>
+  <Folder Name="/examples/Ranvier.Hydration/">
+    <Project Path="examples/Ranvier.Hydration/Shared.fsproj" />
+    <Project Path="examples/Ranvier.Hydration/Server/Server.fsproj" />
+  </Folder>
   <Folder Name="/experiments/Ranvier.View.Checks/">
     <Project Path="experiments/Ranvier.View.Checks/RepresentationChecks.fsproj" />
     <Project Path="experiments/Ranvier.View.Checks/SnapshotBench/SnapshotBench.fsproj" />
@@ -82,5 +86,7 @@
     <Project Path="docs/maps/Ranvier.Docs.Maps.fsproj" />
     <Project Path="docs/maps/tests/Ranvier.Docs.Maps.Tests.fsproj" />
     <Project Path="docs/samples/view/Ranvier.Docs.ViewSamples.fsproj" />
+    <Project Path="docs/samples/server-backends/Oxpecker/Oxpecker.fsproj" />
+    <Project Path="docs/samples/server-backends/Suave/Suave.fsproj" />
   </Folder>
 </Solution>

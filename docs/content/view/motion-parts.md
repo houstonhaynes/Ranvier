@@ -256,6 +256,9 @@ a motion hook. The server omits all three kinds.
 
 ## Examples
 
+The [browser examples menu](../examples/index.md) also links the main playground and the
+server hydration example.
+
 `examples/Ranvier.Motion` is a Vite app with five pages, each a sugar component tree run as a
 CI test under jsdom and Playwright. The site serves the built pages, with an
 [index](/Ranvier/examples/motion/index.html) of all five:

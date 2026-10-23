@@ -60,3 +60,10 @@ test('an analyzer rule page runs the analyzer suite, which compiles its examples
   assert.equal(docsOnly(['docs/content/analyzers/ran001.md']), false);
   assert.equal(docsOnly(['docs/content/analyzers/index.md', 'docs/content/guide/memos.md']), false);
 });
+
+test('server backend source changes run the hydration check', () => {
+  for (const file of ['docs/samples/server-backends/Oxpecker/Program.fs', 'docs/samples/server-backends/Suave/Suave.fsproj']) {
+    assert.equal(docsOnly([file]), false, file);
+  }
+  assert.equal(docsOnly(['docs/content/server/backends.md']), true);
+});

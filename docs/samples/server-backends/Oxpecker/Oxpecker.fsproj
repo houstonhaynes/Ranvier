@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Ranvier.Docs.Oxpecker</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+    <ProjectReference Include="../../../../examples/Ranvier.Hydration/Shared.fsproj" />
+    <PackageReference Include="Oxpecker" Version="2.1.1" />
+  </ItemGroup>
+</Project>

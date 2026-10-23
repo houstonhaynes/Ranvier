@@ -103,6 +103,8 @@ module Spec =
                 "examples/Ranvier.Motion/Motion.fsproj"
                 "examples/Ranvier.Motion/Server/ServerChecks.fsproj"
                 "examples/Ranvier.Motion/tests/MotionTests.fsproj"
+                "examples/Ranvier.Hydration/Shared.fsproj"
+                "examples/Ranvier.Hydration/Server/Server.fsproj"
                 "examples/Ranvier.Query.Dictionary/Ranvier.Query.Dictionary.fsproj"
                 "examples/Ranvier.FuncUI.Workload/Workload.Model.fsproj"
             ]
@@ -534,15 +536,20 @@ module Stage =
                         run "git" "worktree remove --force .docs-perf-data"
                     }
 
-                    // The site publishes the dist directory under examples/motion/ (docs/Site.fs). The story page is the
-                    // document rendered by the .NET server.
-                    stage "motion examples" {
+                    stage "browser examples" {
                         when' (not watch)
-                        workingDir Spec.motionExamples
-                        run "npm ci"
-                        run "npm run compile"
-                        run "npm run server"
-                        run "npx vite build"
+
+                        for name, directory in
+                            [
+                                "motion", Spec.motionExamples
+                                "playground", System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Fable.Ranvier.Playground")
+                                "hydration", System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Ranvier.Hydration")
+                            ] do
+                            stage $"{name} examples" {
+                                workingDir directory
+                                run "npm ci"
+                                run "npm run build"
+                            }
                     }
 
                     run (

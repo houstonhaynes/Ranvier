@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Ranvier.Docs.Suave</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+    <ProjectReference Include="../../../../examples/Ranvier.Hydration/Shared.fsproj" />
+    <PackageReference Include="Suave" Version="3.7.2" />
+  </ItemGroup>
+</Project>

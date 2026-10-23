@@ -7,6 +7,9 @@ description: Complete F# and C# applications built on Ranvier, in the Ranvier.Ex
 Preview — Ranvier is pre-release; its APIs may change.
 :::
 
+To try interactive views directly in your browser, open the [browser examples](../examples/index.md):
+the playground, Motion demos and a server-rendered hydration snapshot.
+
 [Ranvier.Examples](https://github.com/shayanhabibi/Ranvier.Examples) holds complete applications
 that use Ranvier for real workflows: remote data, file processing, data repair and Elmish-style
 review. Each workflow runs as a console scenario that checks its own outcome, and all four open

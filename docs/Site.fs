@@ -31,6 +31,7 @@ let theme =
                 NavbarSection ("Guide", "guide", "/guide/")
                 NavbarSection ("Views", "view", "/view/")
                 NavbarSection ("Server", "server", "/server/")
+                NavbarSection ("Examples", "examples", "/examples/")
                 NavbarSection ("Concepts", "concepts", "/concepts/")
                 NavbarSection ("Blog", "blog", "/blog/")
                 NavbarSection ("Benchmarks", "benchmarks", "/benchmarks/")
@@ -113,7 +114,13 @@ let theme =
         >> Theme.menu
             "view"
             [
-                Menu.section "Introduction" [ Menu.page "view/index.md"; Menu.page "view/getting-started.md" ]
+                Menu.section
+                    "Introduction"
+                    [
+                        Menu.page "view/index.md"
+                        Menu.page "view/getting-started.md"
+                        Menu.page "examples/index.md"
+                    ]
                 Menu.section
                     "Authoring"
                     [
@@ -153,6 +160,9 @@ let theme =
                         Menu.page "server/index.md"
                         Menu.page "server/rendering.md"
                         Menu.page "server/hydration.md"
+                        Menu.page "server/pages.md"
+                        Menu.page "server/backends.md"
+                        Menu.page "examples/index.md"
                         Menu.page "server/state-transfer.md"
                         Menu.page "server/deployment.md"
                         Menu.page "server/performance.md"
@@ -190,6 +200,7 @@ let theme =
                     ]
                 Menu.section "Ranvier.Query" [ Menu.page "benchmarks/queries.md" ]
             ]
+        >> Theme.menu "examples" [ Menu.section "Browser examples" [ Menu.page "examples/index.md" ] ]
         >> Theme.menu "fable" [ Menu.section "Fable" [ Menu.page "fable/index.md" ] ]
         >> Theme.menu
             "analyzers"
@@ -291,20 +302,27 @@ let private csharpGrammar (options: TreeSitterOptions) =
         :: options.Grammars
     )
 
-/// The Motion example pages, served under examples/motion/ from the Vite build that <c>build.fsx docs</c> runs. A build
-/// without that output publishes no example pages.
-let private motionExamples =
-    let dist =
-        Path.Combine (__SOURCE_DIRECTORY__, "../examples/Ranvier.Motion/dist")
-        |> Path.GetFullPath
-
+/// <summary>Copies the built browser examples into the documentation output.</summary>
+let private browserExamples =
     Site.plugin
         { new IPlugin with
-            member _.Name = "motion-examples"
+            member _.Name = "browser-examples"
 
             member _.Configure registry =
-                registry
-                |> Registry.asset (Asset.CopyDirectory (AbsolutePath.create dist, RelativePath.create "examples/motion"))
+                [
+                    "Ranvier.Motion", "motion"
+                    "Fable.Ranvier.Playground", "playground"
+                    "Ranvier.Hydration", "hydration"
+                ]
+                |> List.fold
+                    (fun assets (project, route) ->
+                        let dist =
+                            Path.Combine (__SOURCE_DIRECTORY__, $"../examples/{project}/dist")
+                            |> Path.GetFullPath
+
+                        assets
+                        |> Registry.asset (Asset.CopyDirectory (AbsolutePath.create dist, RelativePath.create $"examples/{route}")))
+                    registry
         }
 
 let reference =
@@ -325,7 +343,7 @@ let site =
     |> Sitemap.register
     |> FSharpApi.register apiOptions
     |> LinkValidator.register
-    |> motionExamples
+    |> browserExamples
     |> SolidExamples.registerWith solidExamples
     |> LiveExample.registerWith (
         LiveExample.preset (

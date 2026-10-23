@@ -1,7 +1,7 @@
 // Paths whose changes affect no build, test or measurement. The package READMEs of Ranvier.View and Ranvier.View.Anime and the analyzer rule pages are the exceptions: CheckDocs compiles the Ranvier.View README's samples, readme.test.mjs matches the Ranvier.View.Anime README's samples against its fixtures, and the analyzer suite compiles each rule page's examples. Formatting still checks the F# sources under docs/.
-// docs/maps holds the signal map model and its tests, which the .NET job runs.
+// docs/maps holds the signal map model and its tests; docs/samples/server-backends holds compiled server examples.
 const docsPatterns = [
-  /^docs\/(?!maps\/|content\/analyzers\/)/,
+  /^docs\/(?!maps\/|content\/analyzers\/|samples\/server-backends\/)/,
   /^brand\//,
   /^\.claude\//,
   /^(?!src\/Ranvier\.View(\.Anime)?\/README\.md$|docs\/content\/analyzers\/).*\.md$/i,

@@ -6,6 +6,9 @@ title: Page declarations
 that declaration; a generated F# browser entry hydrates the same declaration. Applications do not need a handwritten
 HTML shell or a JavaScript file that imports and calls `start`.
 
+Try the [hosted browser examples](../examples/index.md), including a hydration snapshot and
+instructions for running its F# backend locally.
+
 ## Declare the page
 
 This example uses `Counter.counter` and the shared `counterProps` codec from [State transfer](state-transfer.md).

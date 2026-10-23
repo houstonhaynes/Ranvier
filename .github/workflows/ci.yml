@@ -368,6 +368,49 @@ jobs:
             examples/Ranvier.Motion/test-results/
           if-no-files-found: ignore
 
+  hydration:
+    name: Server hydration example
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/Ranvier.Hydration
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: examples/Ranvier.Hydration/package-lock.json
+      - name: Install npm packages
+        run: npm ci
+      - name: Restore tools
+        run: dotnet tool restore
+        working-directory: .
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run the hydration example tests
+        run: npm test
+      - name: Check the alternative backend sources
+        run: |
+          dotnet build docs/samples/server-backends/Oxpecker/Oxpecker.fsproj -c Release
+          dotnet build docs/samples/server-backends/Suave/Suave.fsproj -c Release
+          node docs/samples/server-backends/smoke.mjs
+        working-directory: .
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: hydration-playwright
+          path: |
+            examples/Ranvier.Hydration/playwright-report/
+            examples/Ranvier.Hydration/test-results/
+          if-no-files-found: ignore
+
   # Arms.Match (experiments/Ranvier.View.Arms): the Fable plugin's tests, the discovery app, the jsdom suites (test:arms),
   # the bundle budget, Arms.Prepare on both runtime targets, and the trim annotation. The .NET lowering, fixture, golden
   # and runtime checks run inside the representation checks of the playground job.
@@ -526,7 +569,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

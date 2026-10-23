@@ -71,13 +71,15 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      # The Solid plugin compiles the live examples with Fable and Node. The Motion example pages, built into the site,
-      # require Node 26 or newer (examples/Ranvier.Motion/package.json engines).
+      # The browser examples built into the site require Node 26 or newer.
       - uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
-          cache-dependency-path: examples/Ranvier.Motion/package-lock.json
+          cache-dependency-path: |
+            examples/Ranvier.Motion/package-lock.json
+            examples/Fable.Ranvier.Playground/package-lock.json
+            examples/Ranvier.Hydration/package-lock.json
       - name: Collect performance history
         run: node .github/scripts/perf-site-data.cjs perf-data/runs docs/static/perf-data/index.json
       - name: Build the site

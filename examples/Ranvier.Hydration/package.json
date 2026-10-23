@@ -1,0 +1,15 @@
+{
+  "name": "ranvier-hydration",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=26.0.0" },
+  "scripts": {
+    "server:build": "dotnet build Server/Server.fsproj -c Release -m:1 -p:BuildInParallel=false",
+    "generate": "npm run server:build && dotnet run --project Server/Server.fsproj -c Release --no-build -- --write-pages",
+    "compile:client": "dotnet fickl Client.fsproj --outDir generated --configuration Release",
+    "build": "npm run generate && npm run compile:client && vite build",
+    "start": "dotnet run --project Server/Server.fsproj -c Release --no-build -- --urls http://127.0.0.1:5080",
+    "test": "npm run build && playwright test"
+  },
+  "devDependencies": { "@playwright/test": "1.64.1", "vite": "8.3.4" }
+}
