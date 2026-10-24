@@ -30,7 +30,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Async.fs | 56 | 45 | 45 | 56 | 45 | 45 | 4 | 0 |
 | Boundaries.fs | 27 | 27 | 27 | 27 | 27 | 27 | 1 | 0 |
-| Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
+| Threading.fs | 9 | 9 | 9 | 9 | 9 | 9 | 40 | 0 |
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1545 | 1524 | 1521 | 1687 | 1661 | 1658 | 108 | 1 |
+| **Total** | 1551 | 1530 | 1527 | 1693 | 1667 | 1664 | 122 | 1 |
 
 ## Tests.fs
 
@@ -443,12 +443,33 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Serialised: a settle from outside the graph is queued, even on the graph's context | JavaScript has one thread. |
 | Serialised: work posted from inside the graph runs inline | JavaScript has one thread. |
 | Serialised: a drain that finds the graph held leaves the work, and the holder posts it again | JavaScript has one thread. |
+| off-thread calls wait in the inbox, then run in arrival order with Dispatch on the graph thread | JavaScript has one thread. |
+| a synchronisation-context dispatcher completes the task without a manual pump | JavaScript has one thread. |
+| a continuation of a queued item's task runs outside the drain | JavaScript has one thread. |
+| a synchronous continuation of an inline call's task runs on the graph thread | JavaScript has one thread. |
+| queued work that throws faults its task, and later items still run | JavaScript has one thread. |
+| an off-thread call on a disposed graph faults the task and queues nothing | JavaScript has one thread. |
+| an item queued before disposal and drained after it faults and does not run | JavaScript has one thread. |
+| disposal faults an item still in the inbox, with no drain after it | JavaScript has one thread. |
+| an off-thread call with an already-cancelled token queues nothing | JavaScript has one thread. |
+| a token cancelled while the item waits cancels the task, and the drain skips the work | JavaScript has one thread. |
+| a queued item whose work cancels the token completes with the result | JavaScript has one thread. |
+| queued work that writes two signals in a batch runs the effect once, before the task completes | JavaScript has one thread. |
+| queued DispatchAsync and Dispatch run the same effects for the same work | JavaScript has one thread. |
+| Serialised: an item queued while another thread holds the graph completes after the holder's release | JavaScript has one thread. |
+| Serialised: a call from inside the graph runs inline | JavaScript has one thread. |
 
-<details><summary>3 passed in every build and delivery that runs them</summary>
+<details><summary>9 passed in every build and delivery that runs them</summary>
 
 - an on-thread settle runs inline and queues nothing
 - a graph with no ambient context defers
 - Serialised: writes, reads and effects run as on any graph
+- DispatchAsync / on the graph thread the work runs at the call and the task carries its result
+- DispatchAsync / inline work that throws faults the task with the same exception
+- DispatchAsync / a call on a disposed graph faults the task and does not run the work
+- DispatchAsync / an already-cancelled token cancels the task and does not run the work
+- DispatchAsync / a token cancelled by the work itself leaves the task completed with the result
+- DispatchAsync / inline inside an enclosing batch, the task completes before the batch's flush runs the effect
 
 </details>
 

@@ -103,6 +103,33 @@ let main _ =
         if not (isNull offThread) then
             raise offThread)
 
+    let answer = g.DispatchAsync (fun () -> counter.Value + 40)
+    equals "an inline DispatchAsync result" "42" (string answer.Result)
+
+    let boom = InvalidOperationException "boom"
+    let failing = g.DispatchAsync (fun () -> raise boom: int)
+
+    report
+        "a DispatchAsync fault carries the work's exception"
+        (failing.IsFaulted
+         && obj.ReferenceEquals (failing.Exception.InnerException, boom))
+        (string failing.Status)
+
+    let queued = ref null
+
+    let caller =
+        Thread (fun () -> queued.Value <- g.DispatchAsync (fun () -> counter.Value * 10))
+
+    caller.Start ()
+    caller.Join ()
+    g.Pump () |> ignore
+
+    report
+        "an off-thread DispatchAsync completes on the owner's pump"
+        (queued.Value.Wait (TimeSpan.FromSeconds 5.0)
+         && queued.Value.Result = 20)
+        (string queued.Value.Status)
+
     equals "Ready 3" "Ready 3" ((Ready 3).ToString())
     equals "Ready \"x\"" "Ready \"x\"" ((Ready "x").ToString())
     equals "Pending" "Pending" (Reading<int>.Pending.ToString())

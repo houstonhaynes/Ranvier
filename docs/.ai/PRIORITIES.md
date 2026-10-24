@@ -12,7 +12,7 @@ proposed scope for each, and does not implement them.
 | # | Issue | Priority | Depends on | Kind | Status |
 | --- | --- | --- | --- | --- | --- |
 | 1 | [#164](https://github.com/shayanhabibi/Ranvier/issues/164) perf(trace): traced/untraced performance and memory baselines | P0 foundation | — | implement | done |
-| 2 | [#167](https://github.com/shayanhabibi/Ranvier/issues/167) feat(graph): public awaitable graph dispatch | P0 | — | implement | todo |
+| 2 | [#167](https://github.com/shayanhabibi/Ranvier/issues/167) feat(graph): public awaitable graph dispatch | P0 | — | implement | done |
 | 3 | [#165](https://github.com/shayanhabibi/Ranvier/issues/165) feat(trace): incremental event cursors and checkpointed truncation | P0 | #164 baseline | implement | todo |
 | 4 | [#166](https://github.com/shayanhabibi/Ranvier/issues/166) feat(trace): stable diagnostics and provenance contracts | P0 | #165 | implement | todo |
 | 5 | [#168](https://github.com/shayanhabibi/Ranvier/issues/168) spike(mcp): agent-observable graph | P1 | #165, #166, #167 | implement | todo |
@@ -44,6 +44,7 @@ PR on the branch below it. Merge bottom-up.
 | --- | --- | --- | --- |
 | integration/issues | — | https://github.com/shayanhabibi/Ranvier/pull/170 | master |
 | issue/164 | #164 | https://github.com/shayanhabibi/Ranvier/pull/172 | integration/issues |
+| issue/167 | #167 | https://github.com/shayanhabibi/Ranvier/pull/176 | integration/issues |
 | issue/69 | #69 | https://github.com/shayanhabibi/Ranvier/pull/175 | integration/issues |
 | issue/70 | #70 | https://github.com/shayanhabibi/Ranvier/pull/174 | integration/issues |
 
@@ -57,3 +58,8 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-24 #69 research note written — docs/.ai/research/2026-10-24-issue-69.md — b6125ef5 — next: user decides scope
 - 2026-10-24 #70 research note written — docs/.ai/research/2026-10-24-issue-70.md — 92585c4e — next: user decides scope
 - 2026-10-24 #68 research note written — docs/.ai/research/2026-10-24-issue-68.md — c0e402fe — next: user decides scope
+- 2026-10-24 #167 gate passed — plan steps 1 to 12 done on `issue/167` after review fixes (disposal faults queued `DispatchAsync` tasks; `CancellationToken` overload; batching, `Serialised`, Fable, AOT, C# and sample coverage; contracts.md and async-graph.md). Gates: `build.fsx -- test` unfiltered (Ranvier.Tests 1476, CSharp 95, Twin 1067, Wire 290, Maps 76; 0 failed), traced Ranvier.Tests (1608 passed, 13 skipped), `build.fsx -- test-fable` (untraced and traced, inline and promise), `format --dry-format`, NativeAOT publish win-x64 traced and untraced with no IL warnings — 4d62da4b — next: integrate `issue/167` on `issue/164`
+- 2026-10-24 #167 in-progress — gate failed: netstandard2.1 build of `src/Ranvier/Core.fs(1555)` rejects `SetCanceled token` (FS0501; overload is .NET 5+), net10.0 build and tests pass — 9c1707f0 — next: replace `SetCanceled token` with `TrySetCanceled token` (or a parameterless call) for netstandard2.1, then re-run the gate
+- 2026-10-24 #167 gate passed — netstandard2.1 fix (`TrySetCanceled token`) in; gates under `gate-lock.ps1 shared`: `build.fsx -- test` unfiltered (Ranvier.Tests 1476, CSharp 95, Twin 1067, Wire 290, Maps 76; 0 failed), traced test stage (Ranvier.Tests 1608 + 13 skipped, CSharp 103, Twin 1069, Wire 290, Maps 76; 0 failed), `test-fable`, `format --dry-format`, `build.fsx -- build` (net10.0 and netstandard2.1 outputs), NativeAOT publish win-x64 untraced and traced with no IL warnings and all checks passed — ffc10c89 — next: integrate `issue/167` on `issue/164`
+- 2026-10-24 #167 done — `issue/167` rebased onto `issue/164` (8bae422c, docs-only changes), pushed, PR https://github.com/shayanhabibi/Ranvier/pull/176 on `issue/164` — 24dea685 — next: #165
+- 2026-10-24 #167 done — `DispatchAsync` contract scoped: thread-pool continuations apply only to queued items, inline-call continuations run on the graph thread (new Threading test) — e9b8bef7 — next: push `issue/167` to update PR #176

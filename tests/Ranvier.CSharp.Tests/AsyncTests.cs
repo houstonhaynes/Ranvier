@@ -314,4 +314,60 @@ public class AsyncTests
         graph.Pump();
         Assert.Equal(1, count.Value);
     }
+
+    [Fact]
+    public void AnExternalAsyncCallerAwaitsDispatchAsyncAgainstAPumpingOwner()
+    {
+        var graph = new Graph(GraphOptions.Default.WithDispatcher(new ManualDispatcher()));
+        using var active = graph.Activate();
+        var count = Signal(1);
+        var doubled = Memo(() => count.Value * 2);
+
+        var caller = Task.Run(async () =>
+        {
+            var before = await graph.DispatchAsync(() => doubled.Value);
+            await graph.DispatchAsync(() => count.Value = 5);
+            var after = await graph.DispatchAsync(() => doubled.Value);
+
+            try
+            {
+                await graph.DispatchAsync<int>(() => throw new InvalidOperationException("boom"));
+                return (before, after, failure: (Exception?)null);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return (before, after, failure: (Exception?)ex);
+            }
+        });
+
+        // The owner pumps its inbox until the caller finishes.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!caller.IsCompleted && DateTime.UtcNow < deadline)
+        {
+            graph.Pump();
+            Thread.Yield();
+        }
+
+        Assert.True(caller.IsCompletedSuccessfully);
+        var (before, after, failure) = caller.Result;
+        Assert.Equal(2, before);
+        Assert.Equal(10, after);
+        Assert.Equal("boom", failure?.Message);
+        Assert.Equal(5, count.Value);
+        Assert.Empty(graph.Root.Errors);
+    }
+
+    [Fact]
+    public void DispatchAsyncWithACancelledTokenReturnsACancelledTask()
+    {
+        var graph = new Graph(GraphOptions.Default.WithDispatcher(new ManualDispatcher()));
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        var ran = false;
+
+        var result = graph.DispatchAsync(() => ran = true, cancelled.Token);
+
+        Assert.True(result.IsCanceled);
+        Assert.False(ran);
+    }
 }

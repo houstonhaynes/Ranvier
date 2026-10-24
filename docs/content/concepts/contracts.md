@@ -32,6 +32,7 @@ dispatch runs inline, affinity checks are omitted, `IsOnGraphThread` is true, an
 | `signal.Value <- v` | Owning | Raises `InvalidOperationException` before the equality check. The value stays unchanged, and an equal write raises too. | Runs on any thread on the construction context while no other thread is inside the graph. Raises otherwise, before the equality check. |
 | `graph.Pump ()` | Owning | Raises `InvalidOperationException`. | As a write. |
 | `graph.Dispatch work` | Any | Queues `work` in the graph's inbox. On the owning thread, `work` runs inline. | Runs `work` inline on the thread inside the graph. Queues it from every other thread, including one on the construction context. |
+| `graph.DispatchAsync work` | Any | As `Dispatch`, and the returned task completes once `work` has run. On the owning thread, `work` runs inline and the task is already complete. | As `Dispatch`. |
 | `AsyncSource.Settle` and `Fail`, flight completions, stream items | Any | Queued in the inbox, as `Dispatch` is. On the owning thread, they apply inline. | As `Dispatch`. |
 | Stale reads, node creation, `batch`, `flush`, `untrack`, `createRoot`, `onCleanup`, `Dispose` | Owning | Raise `InvalidOperationException`. A read of a current value is unchecked. | As a write. |
 
@@ -72,6 +73,36 @@ the graph. `ThreadAffinity.Serialised` replaces it with a check that one thread 
 A direct write from another thread raises on that thread, and the running flush completes unaffected.
 `Dispatch`, `Settle` and `Fail` return at once, while the owning thread is still inside the flush. Their work
 waits in the inbox and applies at the next drain on the owning thread.
+
+### Awaiting dispatched work
+
+`graph.DispatchAsync (work)` returns a `Task<'T>` for result-producing work, for a caller outside the graph that
+awaits the outcome. `work` runs where `Dispatch` work runs. A
+[sample](https://github.com/shayanhabibi/Ranvier/blob/master/samples/dispatch-async.fsx) awaits it from the
+thread pool against a graph owned by a dedicated thread.
+
+| Case | Task |
+| --- | --- |
+| `work` returns | Completes with the result. |
+| `work` throws | Faults with that exception object; `await` rethrows it. `graph.Root.Errors` stays unchanged, and the rest of the inbox still runs. |
+| Called on the owning thread | `work` runs before the call returns, and the task is already complete or faulted. |
+| Called from another thread | `work` joins the inbox behind earlier `Dispatch`, `DispatchAsync`, settle and flight items, and runs in arrival order. Under `ManualDispatcher` the task completes at the owner's next `Pump ()`. |
+| Graph disposed at the call | Faults with `ObjectDisposedException`; `work` does not run and nothing is queued. |
+| Graph disposed while the item waits | Faults with `ObjectDisposedException` during `Dispose`; a later drain skips `work`. |
+| `cancellationToken` cancelled at the call | Cancelled; nothing is queued. |
+| `cancellationToken` cancelled while the item waits | Cancelled at once; the drain skips `work`. |
+| `cancellationToken` cancelled after `work` starts | Completes with `work`'s outcome. |
+
+- **Effects.** Completion marks the end of `work`, not of what it triggers. Effects woken by its writes run as
+  they do for `Dispatch` work: at the write, or at the end of a batch `work` opens, before the task completes.
+  An inline call inside an enclosing batch completes its task first, and that batch's flush runs the effects.
+  Async memos `work` starts settle later.
+- **Continuations.** On .NET a queued item's continuations run on the thread pool, outside the drain and outside a
+  `Serialised` graph. An `await` or an `ExecuteSynchronously` continuation on an inline call's task resumes at
+  once on the graph thread, inside the graph.
+- **Blocking.** Waiting on the task's `Result` from the owning thread deadlocks when that thread is the only one
+  that drains the inbox.
+- **Fable.** `work` runs inline, and the task is a promise settled before the call returns.
 
 ### Internal locks
 
@@ -154,6 +185,7 @@ Recovery happens through re-runs alone.
 | A boundary's `fallback` or `recover` | The boundary fails with that exception. |
 | A cleanup | Recorded, and the remaining cleanups and disposals still run. A `createRoot` scope keeps the error in its own `Errors`; a computation's scope records it in `graph.Root.Errors`. |
 | Work drained from the inbox | Recorded in `graph.Root.Errors`, and the rest of the inbox still runs. |
+| `DispatchAsync` work | Faults the returned task with that exception. `graph.Root.Errors` stays unchanged, and the rest of the inbox still runs. |
 | A signal's equality comparer | The write raises to the writer. The value stays unchanged, and readers stay asleep. |
 | The equality comparer of a memo, boundary, projection row, fold or lookup cell | The node fails with that exception and keeps its previous value, and its readers wake to see the failure. A boundary's `recover` does not see it. |
 | A `createEffectOn` comparer | Recorded on the effect as a failure of `compute`, and `act` does not run. |
