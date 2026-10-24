@@ -124,7 +124,7 @@ body:has(.nacara-layout--splash) { overflow-x: clip; }
 .nacara-content .rv-statelist__row p { margin: .125rem 0 0; font-size: .875rem; line-height: 1.55; color: var(--nacara-text-muted); }
 
 /* ---- Trace showcase: the live map on a glow, then the questions the log answers ---- */
-.nacara-layout--splash .partas-solid-card--map {
+.nacara-layout--splash .rv-map-card {
   margin: 0 0 2.5rem;
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--rv-contour) 22%, transparent),

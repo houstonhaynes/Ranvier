@@ -243,20 +243,39 @@ module Stage =
             let! format = formatInput
             and! dryRun = dryRun
 
-            let commandString =
+            // Relative paths in batches, so each command stays under the Windows command-line limit in a deep worktree.
+            let commands =
                 Spec.formattingSourceFiles
-                |> Seq.map (sprintf "\"%s\"")
-                |> String.concat " "
-                |> if dryRun then
-                       sprintf "dotnet fantomas %s --check"
-                   else
-                       sprintf "dotnet fantomas %s"
+                |> Seq.map (fun path -> sprintf "\"%s\"" (System.IO.Path.GetRelativePath (__REPOSITORY_DIRECTORY__, path)))
+                |> Seq.fold
+                    (fun (batches: string list list) file ->
+                        match batches with
+                        | current :: rest when
+                            (current |> List.sumBy (fun f -> f.Length + 1))
+                            + file.Length
+                                <
+                                24000
+                            ->
+                            (file :: current) :: rest
+                        | _ -> [ file ] :: batches)
+                    []
+                |> List.rev
+                |> List.map (List.rev >> String.concat " ")
+                |> List.map (
+                    if dryRun then
+                        sprintf "dotnet fantomas %s --check"
+                    else
+                        sprintf "dotnet fantomas %s"
+                )
 
             return
                 stage "format" {
                     when' (format || dryRun)
                     quiet
-                    run commandString
+                    workingDir __REPOSITORY_DIRECTORY__
+
+                    for index, command in List.indexed commands do
+                        stage $"format batch {index + 1}" { run command }
                 }
         }
 
@@ -518,7 +537,7 @@ module Stage =
                     quiet
 
                     stage "literate dependencies" {
-                        run "dotnet build docs/maps/model/Ranvier.Docs.MapModel.fsproj -c Debug -p:RanvierTrace=true -v q"
+                        run "dotnet build docs/maps/Ranvier.Docs.Maps.fsproj -c Debug -p:RanvierTrace=true -v q"
                         run "dotnet fsi --nologo docs/maps/tests/fixtures/literate.fsx"
                     }
 

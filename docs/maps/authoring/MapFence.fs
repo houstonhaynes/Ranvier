@@ -380,17 +380,25 @@ module MapFence =
     /// returns its controls, with <c>Trace.label</c> after node bindings and <c>Trace.named</c> around lookup and editable creation.
     /// </summary>
     /// <returns>The module's code, its spans and the bindings, or problems at fence lines.</returns>
+    let private literalsOf (lines: string[]) (literalStarts: Collections.Generic.HashSet<int>) =
+        let mutable offset = 0
+
+        lines
+        |> Array.map (fun line ->
+            let inside = literalStarts.Contains offset
+            offset <- offset + line.Length + 1
+            inside)
+
+    /// <summary>Whether each line of <c>code</c> starts inside a string literal; such a line keeps its exact text.</summary>
+    let literalLines (code: string) : bool[] =
+        let lines = code.Split '\n' |> Array.map _.TrimEnd('\r')
+        let _, _, literalStarts = mask (String.concat "\n" lines)
+        literalsOf lines literalStarts
+
     let scenario (cellId: string) (code: string) : Result<string * MapSpan list * (string * int * int) list, (int * string) list> =
         let lines = code.Split '\n' |> Array.map _.TrimEnd('\r')
         let uncommented, syntax, literalStarts = mask (String.concat "\n" lines)
-        let mutable offset = 0
-
-        let literal =
-            lines
-            |> Array.map (fun line ->
-                let inside = literalStarts.Contains offset
-                offset <- offset + line.Length + 1
-                inside)
+        let literal = literalsOf lines literalStarts
 
         let uncommented = uncommented.Split '\n'
         let syntax = syntax.Split '\n'

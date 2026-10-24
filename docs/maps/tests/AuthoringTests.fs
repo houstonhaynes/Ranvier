@@ -87,10 +87,10 @@ let tests =
                     "<figure class=\"nacara-code\" data-source=\"&lt;x&gt;\"><pre>let x = 1</pre></figure>"
 
                 let mount =
-                    "<div class=\"partas-solid\" data-partas-page=\"p1\" data-partas-cell=\"c1\"></div>"
+                    "<div class=\"rv-map-host\" id=\"rvm-p1-c1\" data-ranvier-map-page=\"p1\" data-ranvier-map-cell=\"c1\"></div>"
 
                 let html =
-                    "before<div class=\"partas-solid-card partas-solid-card--map\">"
+                    "before<div class=\"rv-map-card\">"
                     + code
                     + mount
                     + "</div>after"
@@ -121,11 +121,11 @@ let tests =
             }
 
             test "code-only cards cannot consume the next map's mount" {
-                let start = "<div class=\"partas-solid-card partas-solid-card--map\">"
+                let start = "<div class=\"rv-map-card\">"
                 let figure = "<figure class=\"nacara-code\"><pre>rv-map-code</pre></figure>"
 
                 let mount =
-                    "<div data-partas-cell=\"c2\" class=\"partas-solid\" data-partas-page=\"p1\"></div>"
+                    "<div data-ranvier-map-cell=\"c2\" class=\"rv-map-host\" data-ranvier-map-page=\"p1\"></div>"
 
                 let codeOnly = start + figure + "</div>"
                 let options = MapFlags.parse [] |> Result.defaultWith failwith

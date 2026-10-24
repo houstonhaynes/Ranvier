@@ -80,10 +80,17 @@ jobs:
             examples/Ranvier.Motion/package-lock.json
             examples/Fable.Ranvier.Playground/package-lock.json
             examples/Ranvier.Hydration/package-lock.json
+            docs/maps/tests/browser/package-lock.json
       - name: Collect performance history
         run: node .github/scripts/perf-site-data.cjs perf-data/runs docs/static/perf-data/index.json
       - name: Build the site
         run: dotnet fsi build.fsx -- docs
+      - name: Check the signal maps in a browser
+        working-directory: docs/maps/tests/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
       - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/output
