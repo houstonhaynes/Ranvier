@@ -62,8 +62,7 @@ let private framesOf (c: Cart) (act: unit -> unit) =
             .After
 
     act ()
-    let after = Trace.events c.Graph
-    MapModel.frames scene after[before.Length ..]
+    MapModel.frames scene (Trace.eventsSince c.Graph before[before.Length - 1].Seq)
 
 /// The landing page's example: an async price, a memo over it, and a boundary over the memo.
 type private Quote =

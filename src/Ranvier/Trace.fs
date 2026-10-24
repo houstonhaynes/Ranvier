@@ -95,6 +95,23 @@ type internal TraceLog(locked: bool) =
     // The target node id of the latest `Mark`.
     let mutable lastMarkTarget = 0
 
+    // The checkpoint's name, null before the first truncation.
+    let mutable checkpointName: string = null
+
+    // The checkpoint's snapshot, null before the first truncation.
+    let mutable checkpointSnapshot: obj = null
+
+    // Dropped dirty `Mark` seq to its `Other`, for the marks `firstDirty` still holds.
+    let mutable droppedOthers = Dictionary<int, int>()
+
+    // Node id to the description folded from its dropped events: kind, site, label and the `NodeNew` seq.
+    let dropped = Dictionary<int, struct (string * obj * obj * int)>()
+
+#if !FABLE_COMPILER
+    // Signal and async source id to its weakly held observer set and the clock after its `NodeNew`.
+    let collectable = Dictionary<int, struct (WeakReference<ITracedEdges> * int)>()
+#endif
+
     let mutable flushes = 0
 
     // The number of run-scope discharges in progress.
@@ -158,6 +175,35 @@ type internal TraceLog(locked: bool) =
             }
 
         clock
+
+    let kindName (kind: TraceNodeKind) =
+        match kind with
+        | TraceNodeKind.Signal -> "signal"
+        | TraceNodeKind.AsyncSource -> "async source"
+        | TraceNodeKind.Memo -> "memo"
+        | TraceNodeKind.Effect -> "effect"
+        | TraceNodeKind.AsyncMemo -> "async memo"
+        | TraceNodeKind.Boundary -> "boundary"
+        | TraceNodeKind.Projection -> "projection"
+        | TraceNodeKind.ProjectionBeacon -> "projection beacon"
+        | TraceNodeKind.RowWatch -> "row watch"
+        | TraceNodeKind.LookupCell -> "lookup cell"
+        | TraceNodeKind.Timed -> "timed node"
+        | TraceNodeKind.Binding -> "binding"
+        | TraceNodeKind.Stream -> "stream memo"
+        | _ -> "node"
+
+    // The description state of a node after event `e`: kind, site, label and the `NodeNew` seq, -2 before one.
+    let describeStep (struct (kind: string, site: obj, label: obj, created: int)) (e: TraceEvent) =
+        if e.Kind = TraceEventKind.NodeNew then
+            struct (kindName (enum<TraceNodeKind> e.Arg), e.Payload, label, e.Seq)
+        elif
+            e.Kind = TraceEventKind.Label
+            && (e.Arg = 1 || e.Seq = created + 1)
+        then
+            struct (kind, site, e.Payload, created)
+        else
+            struct (kind, site, label, created)
 
     let lookup (map: Dictionary<int, int>) key =
         match map.TryGetValue key with
@@ -439,40 +485,18 @@ type internal TraceLog(locked: bool) =
     /// <summary>The node's kind, id, label and creation site.</summary>
     member _.Describe(id: int) : string =
         sync (fun () ->
-            let mutable kind = "node"
-            let mutable site: obj = null
-            let mutable label: obj = null
-            let mutable created = -2
+            let mutable state =
+                match dropped.TryGetValue id with
+                | true, state -> state
+                | _ -> struct ("node", null, null, -2)
 
             for i in 0 .. events.Count - 1 do
                 let e = events[i]
 
                 if e.Node = id then
-                    if e.Kind = TraceEventKind.NodeNew then
-                        created <- i
-                        site <- e.Payload
+                    state <- describeStep state e
 
-                        kind <-
-                            match enum<TraceNodeKind> e.Arg with
-                            | TraceNodeKind.Signal -> "signal"
-                            | TraceNodeKind.AsyncSource -> "async source"
-                            | TraceNodeKind.Memo -> "memo"
-                            | TraceNodeKind.Effect -> "effect"
-                            | TraceNodeKind.AsyncMemo -> "async memo"
-                            | TraceNodeKind.Boundary -> "boundary"
-                            | TraceNodeKind.Projection -> "projection"
-                            | TraceNodeKind.ProjectionBeacon -> "projection beacon"
-                            | TraceNodeKind.RowWatch -> "row watch"
-                            | TraceNodeKind.LookupCell -> "lookup cell"
-                            | TraceNodeKind.Timed -> "timed node"
-                            | TraceNodeKind.Binding -> "binding"
-                            | TraceNodeKind.Stream -> "stream memo"
-                            | _ -> "node"
-                    elif
-                        e.Kind = TraceEventKind.Label
-                        && (e.Arg = 1 || i = created + 1)
-                    then
-                        label <- e.Payload
+            let struct (kind, site, label, _) = state
 
             let named =
                 if Platform.isNull label then
@@ -553,10 +577,12 @@ type internal TraceLog(locked: bool) =
     /// <summary>The <c>Other</c> of the event at <c>seq</c>, or 0 when no event has that seq.</summary>
     member _.OtherAt(seq: int) =
         sync (fun () ->
-            if seq >= 1 && seq <= events.Count then
-                events[seq - 1].Other
+            let floor = clock - events.Count
+
+            if seq > floor && seq <= clock then
+                events[seq - floor - 1].Other
             else
-                0)
+                lookup droppedOthers seq)
 
     /// <summary>The node id of the innermost walker frame, or 0.</summary>
     member _.Walker =
@@ -594,6 +620,182 @@ type internal TraceLog(locked: bool) =
 
     /// <summary>A copy of the recorded events, oldest first.</summary>
     member _.Events = sync (fun () -> events.ToArray ())
+
+    /// <summary>The checkpoint's name and snapshot, both null before the first truncation.</summary>
+    member _.Checkpoint: struct (string * obj) =
+        sync (fun () -> struct (checkpointName, checkpointSnapshot))
+
+    /// <summary>The checkpoint's name and snapshot, as <c>Checkpoint</c>, and a copy of the retained events.</summary>
+    member _.Retained: struct (string * obj * TraceEvent[]) =
+        sync (fun () -> struct (checkpointName, checkpointSnapshot, events.ToArray ()))
+
+    /// <summary>
+    /// Tracks <c>node</c>, a signal or async source, for release once the garbage collector reclaims
+    /// <c>observers</c>, its observer set. On Fable the node stays in the checkpoint for the log's lifetime.
+    /// </summary>
+    member _.Track(node: int, observers: ITracedEdges) =
+#if FABLE_COMPILER
+        ()
+#else
+        sync (fun () -> collectable[node] <- struct (WeakReference<ITracedEdges> observers, clock))
+#endif
+
+    /// <summary>
+    /// Removes and returns the tracked nodes created up to and including <c>seq</c> whose observer sets the garbage
+    /// collector reclaimed.
+    /// </summary>
+    member _.Collected(seq: int) : HashSet<int> =
+        sync (fun () ->
+            let ids = HashSet<int>()
+#if !FABLE_COMPILER
+            for KeyValue (id, struct (weak, created)) in collectable do
+                match weak.TryGetTarget () with
+                | false, _ when created <= seq -> ids.Add id |> ignore
+                | _ -> ()
+
+            for id in ids do
+                collectable.Remove id |> ignore
+#endif
+            ids)
+
+    /// <summary>The number of node descriptions folded from the dropped events.</summary>
+    member _.Descriptions = sync (fun () -> dropped.Count)
+
+    /// <summary>
+    /// Drops the events up to and including <c>seq</c>, and records <c>name</c> and <c>snapshot</c> as the checkpoint.
+    /// </summary>
+    /// <remarks>
+    /// <c>OtherAt</c> and <c>Describe</c> return the same results after the truncation, for the dirty marks pending
+    /// and the nodes neither disposed in the dropped events nor in <c>released</c>. The log's storage shrinks to the
+    /// retained events.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// <c>seq</c> is past the last seq, or before the seq preceding the first retained event.
+    /// </exception>
+    member _.Truncate(seq: int, name: string, snapshot: obj, released: HashSet<int>) =
+        sync (fun () ->
+            let floor = clock - events.Count
+
+            if seq < floor || seq > clock then
+                raise (
+                    ArgumentOutOfRangeException (
+                        nameof seq,
+                        String.Concat ("A checkpoint seq lies between ", string floor, " and ", string clock, ".")
+                    )
+                )
+
+            let count = seq - floor
+            let others = Dictionary<int, int>()
+
+            for mark in firstDirty.Values do
+                if mark > floor && mark <= seq then
+                    others[mark] <- events[mark - floor - 1].Other
+                elif mark <= floor then
+                    match droppedOthers.TryGetValue mark with
+                    | true, other -> others[mark] <- other
+                    | _ -> ()
+
+            for i in 0 .. count - 1 do
+                let e = events[i]
+
+                if e.Node <> 0 then
+                    if e.Kind = TraceEventKind.Dispose then
+                        dropped.Remove e.Node |> ignore
+                    elif e.Kind = TraceEventKind.NodeNew then
+                        dropped[e.Node] <- describeStep struct ("node", null, null, -2) e
+                    elif e.Kind = TraceEventKind.Label then
+                        match dropped.TryGetValue e.Node with
+                        | true, state -> dropped[e.Node] <- describeStep state e
+                        | _ -> ()
+
+            for id in released do
+                dropped.Remove id |> ignore
+
+            events.RemoveRange (0, count)
+#if !FABLE_COMPILER
+            events.TrimExcess ()
+#endif
+            droppedOthers <- others
+            checkpointName <- name
+            checkpointSnapshot <- snapshot)
+
+    /// <summary>A copy of the retained events with <c>Seq</c> up to and including <c>seq</c>, oldest first.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// <c>seq</c> is past the last seq, or before the seq preceding the first retained event.
+    /// </exception>
+    member _.EventsThrough(seq: int) : TraceEvent[] =
+        sync (fun () ->
+            let floor = clock - events.Count
+
+            if seq < floor || seq > clock then
+                raise (
+                    ArgumentOutOfRangeException (
+                        nameof seq,
+                        String.Concat ("A checkpoint seq lies between ", string floor, " and ", string clock, ".")
+                    )
+                )
+
+#if FABLE_COMPILER
+            events.GetRange(0, seq - floor).ToArray()
+#else
+            let prefix = Array.zeroCreate (seq - floor)
+            events.CopyTo (0, prefix, 0, prefix.Length)
+            prefix
+#endif
+        )
+
+    /// <summary>A copy of the retained events with <c>Seq</c> greater than <c>seq</c>, oldest first.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// <c>seq</c> is negative, past the last seq, or before the seq preceding the first retained event.
+    /// </exception>
+    member _.EventsSince(seq: int) : TraceEvent[] =
+        sync (fun () ->
+            let floor = clock - events.Count
+
+            if seq < 0 then
+                raise (ArgumentOutOfRangeException (nameof seq, "A trace cursor starts at 0."))
+
+            if seq > clock then
+                raise (ArgumentOutOfRangeException (nameof seq, String.Concat ("The cursor is past the log's last seq, ", string clock, ".")))
+
+            if seq < floor then
+                raise (
+                    ArgumentOutOfRangeException (
+                        nameof seq,
+                        String.Concat ("The cursor precedes the log's checkpoint at seq ", string floor, ". Resync from Trace.checkpointOf.")
+                    )
+                )
+
+            let index = seq - floor
+#if FABLE_COMPILER
+            events.GetRange(index, events.Count - index).ToArray()
+#else
+            let suffix = Array.zeroCreate (events.Count - index)
+            events.CopyTo (index, suffix, 0, suffix.Length)
+            suffix
+#endif
+        )
+
+    /// <summary>
+    /// True when the retained event at <c>seq</c> is a <c>NodeNew</c> or an <c>OwnerNew</c> whose <c>Label</c> is the
+    /// event at <c>seq + 1</c>.
+    /// </summary>
+    member _.LabelFollows(seq: int) : bool =
+        sync (fun () ->
+            let i = seq - (clock - events.Count) - 1
+
+            if i < 0 || i + 1 >= events.Count then
+                false
+            else
+                let e = events[i]
+                let l = events[i + 1]
+
+                (e.Kind = TraceEventKind.NodeNew
+                 || e.Kind = TraceEventKind.OwnerNew && e.Arg = 0)
+                && l.Kind = TraceEventKind.Label
+                && l.Arg = 0
+                && l.Node = e.Node
+                && e.Node <> 0)
 
 /// <summary>Traced state carried by an engine object: its graph's log and its own trace id.</summary>
 type internal ITraced =
@@ -832,20 +1034,28 @@ type internal Tracer =
         ()
 #endif
 
-    /// <summary>Records <c>NodeNew</c> for a signal.</summary>
+    /// <summary>
+    /// Records <c>NodeNew</c> for a signal. A checkpoint releases the signal once the garbage collector reclaims
+    /// <c>observers</c>, its observer set.
+    /// </summary>
     [<Conditional("RANVIER_TRACE")>]
-    static member SignalNew(graph: obj, id: int) =
+    static member SignalNew(graph: obj, id: int, observers: obj) =
 #if RANVIER_TRACE
         Tracer.Node (graph, id, TraceNodeKind.Signal, null)
+        (graph :?> ITraced).TraceLog.Track(id, observers :?> ITracedEdges)
 #else
         ()
 #endif
 
-    /// <summary>Records <c>NodeNew</c> for an async source.</summary>
+    /// <summary>
+    /// Records <c>NodeNew</c> for an async source. A checkpoint releases the source once the garbage collector
+    /// reclaims <c>observers</c>, its observer set.
+    /// </summary>
     [<Conditional("RANVIER_TRACE")>]
-    static member AsyncSourceNew(graph: obj, id: int) =
+    static member AsyncSourceNew(graph: obj, id: int, observers: obj) =
 #if RANVIER_TRACE
         Tracer.Node (graph, id, TraceNodeKind.AsyncSource, null)
+        (graph :?> ITraced).TraceLog.Track(id, observers :?> ITracedEdges)
 #else
         ()
 #endif

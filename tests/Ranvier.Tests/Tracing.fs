@@ -2007,5 +2007,560 @@ let tests =
                         Expect.stringContains message.Value "cycle" "the message names a cycle"
                     }
                 ]
+
+            testList
+                "Cursors and checkpoints"
+                [
+                    test "eventsSince returns the events after each cursor, oldest first" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        createEffect (fun () -> m.Value |> ignore)
+
+                        for i in 1..5 do
+                            s.Value <- i
+
+                        let events = Trace.events g
+                        let last = events[events.Length - 1].Seq
+
+                        for c in 0..last do
+                            let expected =
+                                events
+                                |> Array.filter (fun e -> e.Seq > c)
+                                |> Array.map _.Seq
+
+                            Expect.equal (Trace.eventsSince g c |> Array.map _.Seq) expected $"the suffix after cursor {c}"
+
+                        Expect.isEmpty (Trace.eventsSince g last) "the cursor at the last seq reads nothing"
+                    }
+
+                    test "eventsSince rejects a negative or future cursor" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        Signal (g, 0) |> ignore
+                        let events = Trace.events g
+                        let last = events[events.Length - 1].Seq
+
+                        Expect.throwsT<System.ArgumentOutOfRangeException> (fun () -> Trace.eventsSince g (-1) |> ignore) "a negative cursor throws"
+
+                        let message =
+                            try
+                                Trace.eventsSince g (last + 1) |> ignore
+                                ""
+                            with :? System.ArgumentOutOfRangeException as ex ->
+                                ex.Message
+
+                        Expect.stringContains message (string last) "a future cursor throws, naming the last seq"
+                    }
+
+                    test "a truncated log keeps a lazy memo's dirty source and description" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = Trace.named "doubled" (fun () -> createMemo (fun _ -> s.Value * 2))
+                        let reader = createMemo (fun _ -> m.Value + 1)
+                        reader.Value |> ignore
+                        s.Value <- 1
+                        let log = ((box g) :?> ITraced).TraceLog
+                        let id = (m :> INode).Id
+                        let description = log.Describe id
+                        let mark = log.FirstDirty id
+                        Expect.equal (log.OtherAt mark) (s :> INode).Id "the first dirty mark names the written signal"
+                        let last = (Trace.events g |> Array.last).Seq
+                        log.Truncate (last, "cut", null, System.Collections.Generic.HashSet ())
+                        Expect.isEmpty (Trace.events g) "the truncation drops every event"
+                        Expect.isEmpty (Trace.eventsSince g last) "the cursor at the truncation seq reads nothing"
+                        Expect.equal (log.Describe id) description "the description survives the truncation"
+                        Expect.stringContains description "\"doubled\"" "the description carries the label"
+                        Expect.equal (log.FirstDirty id) mark "the first dirty mark stays pending"
+                        Expect.equal (log.OtherAt mark) (s :> INode).Id "the dropped mark still names the written signal"
+                        Expect.equal reader.Value 3 "the reader recomputes"
+                    }
+
+                    test "Truncate rejects a seq outside the retained log" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        Signal (g, 0) |> ignore
+                        let log = ((box g) :?> ITraced).TraceLog
+                        let last = (Trace.events g |> Array.last).Seq
+
+                        Expect.throwsT<System.ArgumentOutOfRangeException>
+                            (fun () -> log.Truncate (last + 1, "cut", null, System.Collections.Generic.HashSet ()))
+                            "a future seq throws"
+
+                        log.Truncate (1, "first", null, System.Collections.Generic.HashSet ())
+
+                        Expect.throwsT<System.ArgumentOutOfRangeException>
+                            (fun () -> log.Truncate (0, "cut", null, System.Collections.Generic.HashSet ()))
+                            "an expired seq throws"
+
+                        log.Truncate (1, "renamed", null, System.Collections.Generic.HashSet ())
+                        Expect.equal (Trace.events g |> Array.map _.Seq) [| 2..last |] "a truncation at the checkpoint seq drops nothing"
+                    }
+
+                    test "checkpointOf before any checkpoint is unnamed and empty" {
+                        use g = new Graph ()
+
+                        Expect.equal
+                            (Trace.checkpointOf g)
+                            {
+                                Name = null
+                                Snapshot = TraceModel.emptySnapshot
+                            }
+                            "no checkpoint yet"
+                    }
+
+                    test "checkpoint folds the dropped events into its snapshot" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Trace.named "count" (fun () -> Signal (g, 0))
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        createEffect (fun () -> m.Value |> ignore)
+
+                        for i in 1..5 do
+                            s.Value <- i
+
+                        let events = Trace.events g
+                        let last = events[events.Length - 1].Seq
+                        let k = last / 2
+                        let before = Trace.snapshot g
+                        let at = Trace.snapshotAt g k
+                        Trace.checkpoint g k "cut"
+                        let checkpoint = Trace.checkpointOf g
+                        Expect.equal checkpoint.Name "cut" "the checkpoint takes its name"
+                        Expect.equal checkpoint.Snapshot at "the checkpoint holds the state at its seq"
+                        Expect.equal (Trace.events g |> Array.map _.Seq) [| k + 1 .. last |] "the log retains the events after the seq"
+
+                        Expect.equal
+                            (TraceModel.fold checkpoint.Snapshot (Trace.events g))
+                            before
+                            "the checkpoint and the tail fold to the full state"
+
+                        Trace.checkpoint g last "end"
+                        Expect.equal (Trace.checkpointOf g).Snapshot before "a second checkpoint folds onto the first"
+                        Expect.isEmpty (Trace.events g) "the log is empty at its last seq"
+                    }
+
+                    test "checkpoint rejects a seq outside the retained log" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        s.Value <- 1
+                        let last = (Trace.events g |> Array.last).Seq
+                        Expect.throwsT<System.ArgumentOutOfRangeException> (fun () -> Trace.checkpoint g (-1) "cut") "a negative seq throws"
+                        Expect.throwsT<System.ArgumentOutOfRangeException> (fun () -> Trace.checkpoint g (last + 1) "cut") "a future seq throws"
+                        Trace.checkpoint g 2 "cut"
+                        Expect.throwsT<System.ArgumentOutOfRangeException> (fun () -> Trace.checkpoint g 1 "cut") "an expired seq throws"
+                        Expect.throwsT<System.ArgumentNullException> (fun () -> Trace.checkpoint g 2 null) "a checkpoint is named"
+                        Trace.checkpoint g 2 "renamed"
+                        Expect.equal (Trace.checkpointOf g).Name "renamed" "a checkpoint at its own seq renames it"
+                        Expect.equal (Trace.checkpointOf g).Snapshot.Seq 2 "a rename drops nothing"
+                    }
+
+                    test "checkpoint rejects a seq between a NodeNew and its label" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Trace.named "count" (fun () -> Signal (g, 0))
+
+                        let created =
+                            ofKind TraceEventKind.NodeNew g
+                            |> Array.find (fun e -> e.Node = (s :> INode).Id)
+
+                        let before = Trace.snapshot g
+
+                        let message =
+                            try
+                                Trace.checkpoint g created.Seq "cut"
+                                ""
+                            with :? System.ArgumentOutOfRangeException as ex ->
+                                ex.Message
+
+                        Expect.stringContains message (string (created.Seq + 1)) "the split throws, naming the label's seq"
+                        Expect.equal (Trace.checkpointOf g).Name null "the refused checkpoint changes nothing"
+                        Trace.checkpoint g (created.Seq + 1) "cut"
+                        Expect.equal (Trace.snapshot g) before "a checkpoint after the label keeps the snapshot"
+                        Expect.equal (Trace.origin g s).Label (Some "count") "the label survives the checkpoint"
+                    }
+
+                    test "checkpoint rejects a seq between an OwnerNew and its label" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        Trace.named "scope" (fun () -> createRoot ignore)
+
+                        let created = ofKind TraceEventKind.OwnerNew g |> Array.last
+
+                        Expect.throwsT<System.ArgumentOutOfRangeException> (fun () -> Trace.checkpoint g created.Seq "cut") "the split throws"
+                    }
+
+                    test "checkpoint inside an effect's run raises" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let mutable raised = false
+
+                        createEffect (fun () ->
+                            try
+                                Trace.checkpoint g 1 "cut"
+                            with :? System.InvalidOperationException ->
+                                raised <- true)
+
+                        Expect.isTrue raised "a run in progress refuses the checkpoint"
+                        Expect.equal (Trace.checkpointOf g).Name null "the refused checkpoint changes nothing"
+                    }
+
+                    test "eventsSince rejects an expired cursor, and the checkpoint's seq resyncs" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+
+                        for i in 1..3 do
+                            s.Value <- i
+
+                        let events = Trace.events g
+                        let last = events[events.Length - 1].Seq
+                        Trace.checkpoint g 3 "cut"
+
+                        let message =
+                            try
+                                Trace.eventsSince g 2 |> ignore
+                                ""
+                            with :? System.ArgumentOutOfRangeException as ex ->
+                                ex.Message
+
+                        Expect.stringContains message "checkpoint at seq 3" "an expired cursor throws, naming the checkpoint seq"
+                        let resync = Trace.eventsSince g (Trace.checkpointOf g).Snapshot.Seq
+                        Expect.equal (resync |> Array.map _.Seq) [| 4..last |] "the resync reads the retained tail"
+                    }
+
+                    test "snapshot and snapshotAt fold the retained events onto the checkpoint" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Trace.named "count" (fun () -> Signal (g, 0))
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        createEffect (fun () -> m.Value |> ignore)
+
+                        for i in 1..5 do
+                            s.Value <- i
+
+                        let events = Trace.events g
+                        let last = events[events.Length - 1].Seq
+                        let k = last / 2
+                        let full = Trace.snapshot g
+                        let later = [| k..last |] |> Array.map (Trace.snapshotAt g)
+                        Trace.checkpoint g k "cut"
+                        Expect.equal (Trace.snapshot g) full "the snapshot is unchanged by the checkpoint"
+                        Expect.equal ([| k..last |] |> Array.map (Trace.snapshotAt g)) later "snapshotAt from the checkpoint seq is unchanged"
+
+                        Expect.throwsT<System.ArgumentOutOfRangeException>
+                            (fun () -> Trace.snapshotAt g (k - 1) |> ignore)
+                            "snapshotAt before the checkpoint throws"
+                    }
+
+                    test "why of a run caused before the checkpoint ends at BeforeCheckpoint" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        m.Value |> ignore
+                        s.Value <- 1
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        Expect.equal m.Value 2 "the memo reruns"
+                        Expect.equal (Trace.why g m).Root (Some (BeforeCheckpoint "cut")) "the dirty mark is before the checkpoint"
+                        Expect.equal (Trace.whyAt g m 2).Root (Some (BeforeCheckpoint "cut")) "whyAt names the checkpoint"
+                        Expect.equal (Trace.whyDepth g 0 m).Root (Some (BeforeCheckpoint "cut")) "whyDepth names the checkpoint"
+                        let history = Trace.history g m
+                        Expect.equal (history.Runs |> List.map _.Root) [ BeforeCheckpoint "cut" ] "history keeps the retained run"
+                    }
+
+                    test "why of a lazy memo's first run after the checkpoint ends at its creation" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = createMemo (fun _ -> s.Value * 2)
+
+                        let created =
+                            ofKind TraceEventKind.NodeNew g
+                            |> Array.find (fun e -> e.Node = (m :> INode).Id)
+
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        Expect.equal m.Value 0 "the memo runs after the checkpoint"
+                        Expect.equal (Trace.why g m).Root (Some (Created created.Seq)) "the root is the dropped NodeNew"
+                        Expect.equal (Trace.whyAt g m 1).Root (Some (Created created.Seq)) "whyAt reads the creation seq"
+                        Expect.equal (Trace.whyDepth g 0 m).Root (Some (Created created.Seq)) "whyDepth reads the creation seq"
+
+                        Expect.equal ((Trace.history g m).Runs |> List.map _.Root) [ Created created.Seq ] "history reads the creation seq"
+                    }
+
+                    test "origin of a node created before the checkpoint comes from the snapshot" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = Trace.named "doubled" (fun () -> createMemo (fun _ -> s.Value * 2))
+                        m.Value |> ignore
+                        let before = Trace.origin g m
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        Expect.equal (Trace.origin g m) { before with Run = 0 } "the origin survives the checkpoint, its run before it"
+                        Trace.label (g, m, "renamed")
+                        Expect.equal (Trace.origin g m).Label (Some "renamed") "a retained relabel wins"
+                    }
+
+                    test "reconcile is empty after a checkpoint" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        createEffect (fun () -> m.Value |> ignore)
+                        s.Value <- 1
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        Expect.isEmpty (Trace.reconcile g) "the checkpoint's edges match the live lists"
+                        s.Value <- 2
+                        Expect.isEmpty (Trace.reconcile g) "the checkpoint's and the tail's edges match the live lists"
+                    }
+
+                    test "whyNot after a checkpoint reads the edges recorded before it" {
+                        let whyNotAfter (checkpointed: bool) =
+                            use g = new Graph ()
+                            use _ = g.Activate ()
+                            let a = Signal (g, 1)
+                            let x = createMemo (fun _ -> a.Value % 2)
+                            let m = createMemo (fun _ -> x.Value + 10)
+                            createEffect (fun () -> m.Value |> ignore)
+
+                            if checkpointed then
+                                let events = Trace.events g
+                                Trace.checkpoint g events[events.Length - 1].Seq "cut"
+
+                            a.Value <- 3
+                            Trace.whyNot g m, (x :> INode).Id
+
+                        let reason, x = whyNotAfter true
+
+                        match reason with
+                        | Some (CheckedClean (_, upstream)) -> Expect.equal upstream [ x ] "the upstream comes from the checkpoint's edges"
+                        | other -> failwith $"expected CheckedClean, got %A{other}"
+
+                        Expect.equal reason (fst (whyNotAfter false)) "the checkpointed graph answers as its twin"
+                    }
+
+                    test "a checkpoint releases disposed roots and their nodes" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+
+                        let sizes () =
+                            let events = Trace.events g
+                            Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                            let snap = (Trace.checkpointOf g).Snapshot
+
+                            snap.Nodes.Count,
+                            snap.Owners.Count,
+                            snap.Incarnations.Count,
+                            snap.Siblings.Count,
+                            snap.Sources.Count,
+                            snap.Observers.Count
+
+                        let round () =
+                            for _ in 1..50 do
+                                let root =
+                                    createRoot (fun owner ->
+                                        let m = createMemo (fun _ -> s.Value + 1)
+                                        createEffect (fun () -> m.Value |> ignore)
+                                        owner)
+
+                                s.Value <- s.Value + 1
+                                root.Dispose ()
+
+                            sizes ()
+
+                        let first = round ()
+
+                        for _ in 1..3 do
+                            round () |> ignore
+
+                        Expect.equal (round ()) first "the checkpoint keeps the live nodes and owners alone"
+                        Expect.equal (Trace.snapshot g).Nodes.Count 1 "the signal is the one live node"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: Fable holds every signal for the log's lifetime.
+                    test "a checkpoint releases the collected signals and async sources of disposed roots" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Signal (g, 0)
+                        let log = ((box g) :?> ITraced).TraceLog
+                        let mutable last = 0
+
+                        let churn () =
+                            for _ in 1..50 do
+                                let root =
+                                    createRoot (fun owner ->
+                                        let local = Trace.named "local" (fun () -> Signal (g, 0))
+                                        createAsyncSource<int>() |> ignore
+                                        let m = createMemo (fun _ -> s.Value + local.Value)
+                                        createEffect (fun () -> m.Value |> ignore)
+                                        last <- (local :> INode).Id
+                                        owner)
+
+                                s.Value <- s.Value + 1
+                                root.Dispose ()
+
+                        let round () =
+                            churn ()
+                            System.GC.Collect ()
+                            System.GC.WaitForPendingFinalizers ()
+                            System.GC.Collect ()
+                            let events = Trace.events g
+                            Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                            (Trace.checkpointOf g).Snapshot.Nodes.Count
+
+                        let first = round ()
+                        Expect.equal first 1 "the top-level signal is the one live node"
+                        Expect.equal (round ()) first "the checkpoint keeps the live nodes alone"
+                        Expect.equal (log.Describe last) ("node " + string last) "the released signal drops its description"
+                        Expect.equal log.Descriptions 1 "the log keeps the top-level signal's description alone"
+                    }
+#endif
+
+                    test "a checkpoint keeps no description for a labelled root" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let log = ((box g) :?> ITraced).TraceLog
+
+                        let round () =
+                            for _ in 1..50 do
+                                let root = Trace.named "r" (fun () -> createRoot id)
+                                root.Dispose ()
+
+                            let events = Trace.events g
+                            Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                            log.Descriptions
+
+                        let first = round ()
+                        Expect.equal (round ()) first "labelled roots leave no descriptions behind"
+                        Expect.equal (round ()) first "labelled roots leave no descriptions behind"
+                    }
+
+                    test "a signal that outlives its creating root stays live across a checkpoint" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let mutable escaped = Unchecked.defaultof<Signal<int>>
+
+                        let first =
+                            createRoot (fun owner ->
+                                escaped <- Signal (g, 0)
+                                owner)
+
+                        let seen = ResizeArray<int>()
+
+                        let reader =
+                            createRoot (fun owner ->
+                                createEffect (fun () -> seen.Add escaped.Value)
+                                owner)
+
+                        first.Dispose ()
+                        escaped.Value <- 1
+                        let id = (escaped :> INode).Id
+                        Expect.notEqual (Trace.snapshot g).Nodes[id].Status TraceNodeStatus.Disposed "the signal is live"
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        escaped.Value <- 2
+                        Expect.equal (List.ofSeq seen) [ 0; 1; 2 ] "the effect follows the signal"
+                        Expect.isEmpty (Trace.reconcile g) "the checkpoint keeps the signal's observers"
+                        Expect.notEqual (Trace.snapshot g).Nodes[id].Status TraceNodeStatus.Disposed "the signal stays live"
+                        Expect.equal (Trace.origin g escaped).Node id "origin reads the live signal"
+                        reader.Dispose ()
+                    }
+
+                    test "a signal created in a run stays live when the run's computation runs again" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let trigger = Signal (g, 0)
+                        let mutable lazySignal = Unchecked.defaultof<Signal<int>>
+
+                        createEffect (fun () ->
+                            trigger.Value |> ignore
+
+                            if isNull (box lazySignal) then
+                                lazySignal <- Signal (g, 10))
+
+                        let reader = createMemo (fun _ -> lazySignal.Value * 2)
+                        createEffect (fun () -> reader.Value |> ignore)
+                        trigger.Value <- 1
+                        let id = (lazySignal :> INode).Id
+                        Expect.notEqual (Trace.snapshot g).Nodes[id].Status TraceNodeStatus.Disposed "the signal is live"
+                        Expect.isEmpty (Trace.reconcile g) "the edges fold to the live lists"
+                        let events = Trace.events g
+                        Trace.checkpoint g events[events.Length - 1].Seq "cut"
+                        Expect.isEmpty (Trace.reconcile g) "the checkpoint keeps the signal's observers"
+                        Expect.isTrue ((Trace.snapshot g).Nodes.ContainsKey id) "the checkpoint keeps the signal"
+                        lazySignal.Value <- 11
+                        Expect.equal reader.Value 22 "writes still propagate"
+                    }
+
+                    test "a checkpoint keeps the incarnations of a live host's children" {
+                        let incarnations (checkpointed: bool) =
+                            use g = new Graph ()
+                            use _ = g.Activate ()
+                            let s = Signal (g, 0)
+
+                            // The host creates its child on even values, so the checkpoint at 3 holds no live child.
+                            let host =
+                                createMemoWith (fun _ ->
+                                    if s.Value % 2 = 0 then
+                                        let child = Trace.named "child" (fun () -> createMemo (fun _ -> s.Value))
+                                        child.Value
+                                    else
+                                        s.Value)
+
+                            createEffect (fun () -> host.Value |> ignore)
+
+                            for i in 1..3 do
+                                s.Value <- i
+
+                            if checkpointed then
+                                let events = Trace.events g
+                                Trace.checkpoint g events[events.Length - 1].Seq "cut"
+
+                            s.Value <- 4
+
+                            (Trace.snapshot g).Nodes
+                            |> Map.toList
+                            |> List.choose (fun (_, n) ->
+                                if n.Status <> TraceNodeStatus.Disposed then
+                                    Some (n.Path, n.Incarnation)
+                                else
+                                    None)
+
+                        let twin = incarnations false
+                        Expect.isTrue (twin |> List.exists (fun (_, k) -> k > 1)) "the child's path recurs"
+                        Expect.equal (incarnations true) twin "the live child keeps its incarnation"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: TraceModel.parseDump is .NET only.
+                    test "a checkpointed dump parses back to the live snapshot" {
+                        use g = new Graph ()
+                        use _ = g.Activate ()
+                        let s = Trace.named "count" (fun () -> Signal (g, 0))
+                        let m = createMemo (fun _ -> s.Value * 2)
+                        createEffect (fun () -> m.Value |> ignore)
+
+                        for i in 1..3 do
+                            s.Value <- i
+
+                        let events = Trace.events g
+                        let k = events[events.Length - 1].Seq / 2
+                        Trace.checkpoint g k "cut"
+                        let dump = TraceModel.parseDump (Trace.dumpText g)
+                        Expect.equal dump.Checkpoint "cut" "the dump names the checkpoint"
+                        Expect.equal dump.SeqFrom (k + 1) "the dump starts after the checkpoint"
+                        Expect.equal (TraceModel.fold dump.Snapshot dump.Events) (Trace.snapshot g) "the dump folds to the live snapshot"
+                    }
+#endif
+                ]
 #endif
         ]

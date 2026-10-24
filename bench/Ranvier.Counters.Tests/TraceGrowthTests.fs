@@ -14,6 +14,7 @@ let private checkpoint (updates: int) (events: int) (retained: float) : Checkpoi
         SnapshotMs = 0.
         DumpTextMs = 0.
         TailReadMs = 0.
+        SinceMs = 0.
         TailEvents = 0
     }
 
@@ -114,6 +115,15 @@ let probeTests =
                     Expect.equal (TraceGrowth.read file) run "read back"
                 finally
                     System.IO.File.Delete file
+            }
+
+            test "the checkpointed memo workload retains the tail alone" {
+                let run =
+                    TraceGrowth.run TraceGrowth.dotnetHost "dotnet" [ "memo-checkpointed", [| 100; 300 |] ]
+
+                for c in run.Checkpoints do
+                    Expect.equal c.Events c.TailEvents $"the log at {c.Updates} holds the events since the read"
+                    Expect.equal (c.TailEvents > 0) run.Traced "tail events exactly when traced"
             }
 
             test "checkpoints closer than the tail read are refused" {

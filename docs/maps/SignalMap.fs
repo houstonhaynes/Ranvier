@@ -239,6 +239,7 @@ module SignalMapComponent =
         let mutable layoutKey = ""
         let mutable shown = start
         let mutable tail = start
+        // The seq of the last trace event drawn.
         let mutable read = 0
         let mutable graph: Graph option = None
         let mutable disposed = false
@@ -1017,8 +1018,11 @@ module SignalMapComponent =
 
         /// <summary>Takes the frames recorded so far as setup: drawn at once, logged, and left off the timeline.</summary>
         let baseline (g: Graph) =
-            let events = Trace.events g
-            read <- events.Length
+            let events = Trace.eventsSince g 0
+
+            if events.Length > 0 then
+                read <- events[events.Length - 1].Seq
+
             let frames = MapModel.frames start events
             history.AddRange frames
             setup <- frames.Length
@@ -1108,11 +1112,10 @@ module SignalMapComponent =
 
         /// <summary>Reads the events recorded since the last read and appends their frames.</summary>
         let drain (g: Graph) =
-            let events = Trace.events g
+            let fresh = Trace.eventsSince g read
 
-            if events.Length > read then
-                let fresh = events[read..]
-                read <- events.Length
+            if fresh.Length > 0 then
+                read <- fresh[fresh.Length - 1].Seq
                 append (MapModel.frames tail fresh)
 
         let rec start () =

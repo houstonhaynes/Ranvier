@@ -253,7 +253,7 @@ let private TailUpdates = 100
 
 /// <summary>
 /// A <c>memo</c>-workload graph after <c>updates</c> signal writes. <c>Read</c> is the log's length
-/// <c>TailUpdates</c> writes before the end, or 0 in an untraced build.
+/// <c>TailUpdates</c> writes before the end, which is also its last seq then, or 0 in an untraced build.
 /// </summary>
 type private MemoLog(updates: int) =
     let graph = new Graph ()
@@ -343,6 +343,11 @@ type TraceQueryBenchmarks() =
     member _.TailRead() : obj =
         let events = Trace.events log.Graph
         box events[log.Read ..]
+
+    /// <summary>The events recorded by the last 100 updates, read with <c>Trace.eventsSince</c> from a seq cursor.</summary>
+    [<Benchmark>]
+    member _.EventsSince() : obj =
+        box (Trace.eventsSince log.Graph log.Read)
 #else
     [<Benchmark>]
     member _.Events() : obj = null
@@ -361,6 +366,9 @@ type TraceQueryBenchmarks() =
 
     [<Benchmark>]
     member _.TailRead() : obj = null
+
+    [<Benchmark>]
+    member _.EventsSince() : obj = null
 #endif
 
 /// <summary>

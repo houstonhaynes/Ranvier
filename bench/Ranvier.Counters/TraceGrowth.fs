@@ -24,6 +24,8 @@ type Checkpoint =
         /// of the full log, sliced from the previous read's length.
         /// </summary>
         TailReadMs: float
+        /// <summary>Milliseconds to read the same events with <c>Trace.eventsSince</c> from the previous read's last seq.</summary>
+        SinceMs: float
         /// <summary>Events in the tail read.</summary>
         TailEvents: int
     }
@@ -173,14 +175,21 @@ let private fanout (graph: Ranvier.Graph) : unit -> unit =
 
 /// <summary>
 /// The measured workloads and their checkpoints. A <c>fanout</c> write records about 28 times the events of a
-/// <c>memo</c> write, so its checkpoints stop at 10,000 updates, about 3.9 million events.
+/// <c>memo</c> write, so its checkpoints stop at 10,000 updates, about 3.9 million events. <c>memo-checkpointed</c>
+/// is <c>memo</c> with a <c>Trace.checkpoint</c> at each read position, so its log retains the last
+/// <c>TailUpdates</c> writes.
 /// </summary>
 let plan: (string * int[]) list =
-    [ "memo", [| 1000; 10000; 100000 |]; "fanout", [| 100; 1000; 10000 |] ]
+    [
+        "memo", [| 1000; 10000; 100000 |]
+        "memo-checkpointed", [| 1000; 10000; 100000 |]
+        "fanout", [| 100; 1000; 10000 |]
+    ]
 
 let private workload (name: string) =
     match name with
-    | "memo" -> memo
+    | "memo"
+    | "memo-checkpointed" -> memo
     | "fanout" -> fanout
     | _ -> invalidArg (nameof name) $"No trace growth workload named '%s{name}'."
 
@@ -225,6 +234,14 @@ let probe (host: Host) (name: string) (checkpoints: int[]) : Checkpoint[] =
             for target in checkpoints do
                 advance (target - TailUpdates)
 #if RANVIER_TRACE
+                let cursor =
+                    match Ranvier.Trace.events graph with
+                    | [||] -> (Ranvier.Trace.checkpointOf graph).Snapshot.Seq
+                    | retained -> retained[retained.Length - 1].Seq
+
+                if name = "memo-checkpointed" then
+                    Ranvier.Trace.checkpoint graph cursor (string target)
+
                 let read = (Ranvier.Trace.events graph).Length
 #endif
                 advance target
@@ -245,6 +262,7 @@ let probe (host: Host) (name: string) (checkpoints: int[]) : Checkpoint[] =
                             fastest host (fun () ->
                                 let all = Ranvier.Trace.events graph
                                 box all[read..])
+                        SinceMs = fastest host (fun () -> box (Ranvier.Trace.eventsSince graph cursor))
                         TailEvents = events - read
                     }
 #else
@@ -258,6 +276,7 @@ let probe (host: Host) (name: string) (checkpoints: int[]) : Checkpoint[] =
                         SnapshotMs = 0.
                         DumpTextMs = 0.
                         TailReadMs = 0.
+                        SinceMs = 0.
                         TailEvents = 0
                     }
 #endif

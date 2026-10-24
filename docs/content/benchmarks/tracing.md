@@ -42,7 +42,7 @@ Both runtimes record the same events. The count is deterministic: two runs agree
 
 ### Retained memory
 
-The log holds every event for the graph's lifetime. Its retained cost is the traced build's heap
+The log holds every event until a checkpoint drops it. Its retained cost is the traced build's heap
 slope against update count minus the untraced slope, measured after a full collection.
 
 | Runtime | Workload | Log bytes per update | Log bytes per event |
@@ -52,8 +52,10 @@ slope against update count minus the untraced slope, measured after a full colle
 | Node.js | `memo` | 1,393 | 99.5 |
 | Node.js | `fanout` | 37,899 | 96.7 |
 
-History grows linearly and without bound: 100,000 `memo` updates hold 1.4 million events, about
-88 MB on .NET. In Chromium, a mounted keyed list retains about 600 to 700 more bytes per row
+Without a checkpoint, history grows linearly: 100,000 `memo` updates hold 1.4 million events,
+about 88 MB on .NET. Checkpointed 100 updates before each measurement, the same graph retains
+1,400 events and 156 KB on .NET (890 KB on Node.js) at 100,000 updates, with a retained slope
+under 1 B per update ([`b786373`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)). In Chromium, a mounted keyed list retains about 600 to 700 more bytes per row
 traced: 1,111 against 1,816 bytes per row at 1,000 rows, 976 against 1,584 at 10,000.
 
 ### Time and allocation per write
@@ -88,7 +90,7 @@ slower traced, apart from operations dominated by writes to existing rows: `upda
 
 ### Export and incremental reads
 
-Every query copies or walks the whole log, so each costs time proportional to the events held.
+Every query except `Trace.eventsSince` copies or walks the whole retained log, so each costs time proportional to the events held.
 Per 1,000 events held, from the BenchmarkDotNet run at 100,000 `memo` updates (1.4 million
 events) on .NET, and from the growth probe at the same checkpoint on Node.js:
 
@@ -101,9 +103,12 @@ events) on .NET, and from the growth probe at the same checkpoint on Node.js:
 | `Trace.dumpText` | 126 µs | 548 µs |
 | Tail read | 4.0 µs | 0.8 µs |
 
-The tail read is the signal maps' incremental read: `Trace.events`, then the events after the
-previous read. It reads 1,400 new events at every checkpoint, yet its cost follows the length of
-the whole log, which is the cost #165's event cursors replace.
+The tail read copies the log with `Trace.events` and slices the events after the previous read.
+It reads 1,400 new events at every checkpoint, yet its cost follows the length of the whole log.
+`Trace.eventsSince` reads the same events from a seq cursor and costs what it returns: 1.4 to
+1.9 µs and 54.7 KB at 1,000 to 100,000 updates on .NET, 2 µs or less on Node.js
+([`b786373`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)).
+The signal maps read with it.
 
 `Trace.history` is quadratic in the run count: 11.5 ms at 1,000 updates, 104 ms at 3,000 and
 4.2 s at 10,000.

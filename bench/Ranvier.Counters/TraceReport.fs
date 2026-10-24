@@ -266,15 +266,16 @@ let markdown
     line "## Export and incremental reads"
     line ""
     line "Fastest of three runs, in milliseconds, on the traced build. The tail read copies the full log and slices the"
-    line $"events of the last %d{TailUpdates} updates, as the signal maps read it."
+    line $"events of the last %d{TailUpdates} updates; Trace.eventsSince reads the same events from a seq cursor. Events"
+    line "counts the retained log, which memo-checkpointed truncates at each read position."
     line ""
-    line "| Runtime | Workload | Updates | Events | Trace.events | Trace.snapshot | Trace.dumpText | Tail read | Tail events |"
-    line "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
+    line "| Runtime | Workload | Updates | Events | Trace.events | Trace.snapshot | Trace.dumpText | Tail read | Trace.eventsSince | Tail events |"
+    line "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
 
     for run in tracedRuns do
         for c in run.Checkpoints do
             let timings =
-                [ c.EventsMs; c.SnapshotMs; c.DumpTextMs; c.TailReadMs ]
+                [ c.EventsMs; c.SnapshotMs; c.DumpTextMs; c.TailReadMs; c.SinceMs ]
                 |> List.map (number "0.000")
                 |> String.concat " | "
 

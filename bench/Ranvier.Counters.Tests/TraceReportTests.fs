@@ -52,6 +52,7 @@ let private checkpoint updates events retained ms : Checkpoint =
         SnapshotMs = ms
         DumpTextMs = ms
         TailReadMs = ms
+        SinceMs = ms
         TailEvents = if events = 0 then 0 else 1400
     }
 
@@ -144,7 +145,7 @@ let tests =
                 Expect.stringContains text "| Source | abc1234 |" "versions"
                 Expect.stringContains text "| dotnet | memo | Ranvier | 100 | 250 | 150 | 2.50 | yes |" "allocation ratio"
                 Expect.stringContains text "| dotnet | memo | 14.0 | 0.0 | 900.0 | 900.0 | 64.3 |" "growth summary"
-                Expect.stringContains text "| dotnet | memo | 10000 | 140016 | 5.000 | 5.000 | 5.000 | 5.000 | 1400 |" "export row"
+                Expect.stringContains text "| dotnet | memo | 10000 | 140016 | 5.000 | 5.000 | 5.000 | 5.000 | 5.000 | 1400 |" "export row"
                 Expect.stringContains text "| Method | Mean |" "BenchmarkDotNet table"
             }
 
