@@ -922,4 +922,538 @@ let tests =
                 Expect.equal a.TryValue (Ready 6) "and that drain applied the settle"
             }
 #endif
+
+            testList
+                "DispatchAsync"
+                [
+                    testCaseAsync "on the graph thread the work runs at the call and the task carries its result"
+                    <| async {
+                        let g = new Graph ()
+                        let sawGraphThread = ref false
+
+                        let result =
+                            g.DispatchAsync (fun () ->
+                                sawGraphThread.Value <- g.IsOnGraphThread
+                                41 + 1)
+
+                        Expect.isTrue sawGraphThread.Value "the work ran before DispatchAsync returned, on the graph thread"
+                        Expect.equal g.PendingWork 0 "inline work must not touch the inbox"
+#if !FABLE_COMPILER
+                        Expect.equal result.Status TaskStatus.RanToCompletion "the task is already completed"
+#endif
+                        let! value = Async.AwaitTask result
+                        Expect.equal value 42 "the task carries the work's result"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "off-thread calls wait in the inbox, then run in arrival order with Dispatch on the graph thread" {
+                        let g = new Graph ()
+                        let log = ResizeArray ()
+                        let onGraphThread = ResizeArray ()
+
+                        let record entry =
+                            log.Add entry
+                            onGraphThread.Add g.IsOnGraphThread
+
+                        let results =
+                            offThread (fun () ->
+                                [
+                                    for i in 1..5 do
+                                        g.Dispatch (fun () -> record $"dispatch {i}")
+
+                                        yield
+                                            g.DispatchAsync (fun () ->
+                                                record $"async {i}"
+                                                i * 10)
+                                ])
+
+                        Expect.equal g.PendingWork 10 "every item waits in the inbox"
+
+                        Expect.isTrue
+                            (results
+                             |> List.forall (fun t -> not t.IsCompleted))
+                            "no task completes before the drain"
+
+                        g.Pump () |> ignore
+
+                        Expect.sequenceEqual
+                            log
+                            [
+                                for i in 1..5 do
+                                    $"dispatch {i}"
+                                    $"async {i}"
+                            ]
+                            "FIFO across Dispatch and DispatchAsync"
+
+                        Expect.isTrue (Seq.forall id onGraphThread) "every item ran on the graph thread"
+
+                        Expect.sequenceEqual
+                            (results
+                             |> List.map (fun t ->
+                                 t.Wait (TimeSpan.FromSeconds 5.0) |> ignore
+                                 t.Result))
+                            [ 10; 20; 30; 40; 50 ]
+                            "each task carries its own work's result"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "a synchronisation-context dispatcher completes the task without a manual pump" {
+                        let context = RecordingContext ()
+
+                        let g =
+                            new Graph (GraphOptions.Default.WithDispatcher (SynchronizationContextDispatcher context))
+
+                        let result = offThread (fun () -> g.DispatchAsync (fun () -> g.IsOnGraphThread))
+
+                        Expect.equal context.Posted.Count 1 "the call posted a drain to the context"
+                        Expect.isFalse result.IsCompleted "the work waits for the context to run the drain"
+
+                        context.Drain ()
+
+                        Expect.isTrue (result.Wait (TimeSpan.FromSeconds 5.0)) "the context's drain completed the task"
+                        Expect.isTrue result.Result "the work ran on the graph thread"
+                        Expect.equal g.PendingWork 0 "inbox drained"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "a continuation of a queued item's task runs outside the drain" {
+                        let g = new Graph ()
+                        let result = offThread (fun () -> g.DispatchAsync (fun () -> 7))
+
+                        let continuation =
+                            result.ContinueWith ((fun (_: Task<int>) -> g.IsOnGraphThread), TaskContinuationOptions.ExecuteSynchronously)
+
+                        g.Pump () |> ignore
+
+                        Expect.isTrue (continuation.Wait (TimeSpan.FromSeconds 5.0)) "the continuation ran"
+                        Expect.isFalse continuation.Result "a synchronous continuation still resumes off the graph thread"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "a synchronous continuation of an inline call's task runs on the graph thread" {
+                        let g = new Graph ()
+                        let result = g.DispatchAsync (fun () -> 7)
+
+                        let continuation =
+                            result.ContinueWith ((fun (_: Task<int>) -> g.IsOnGraphThread), TaskContinuationOptions.ExecuteSynchronously)
+
+                        Expect.isTrue continuation.IsCompleted "the continuation ran before ContinueWith returned"
+                        Expect.isTrue continuation.Result "the already-complete task resumes the continuation on the graph thread"
+                    }
+#endif
+
+                    testCaseAsync "inline work that throws faults the task with the same exception"
+                    <| async {
+                        let g = new Graph ()
+                        let boom = InvalidOperationException "boom"
+                        let result = g.DispatchAsync (fun () -> raise boom: int)
+
+                        let! outcome = Async.Catch (Async.AwaitTask result)
+
+                        match outcome with
+                        | Choice2Of2 caught ->
+#if !FABLE_COMPILER
+                            let caught =
+                                match caught with
+                                | :? AggregateException as aggregate -> aggregate.InnerException
+                                | other -> other
+
+                            Expect.isTrue (obj.ReferenceEquals (result.Exception.InnerException, boom)) "the fault wraps the original"
+#endif
+                            Expect.isTrue (obj.ReferenceEquals (caught, boom)) "awaiting rethrows the original exception"
+                        | Choice1Of2 _ -> failtest "the task must fault"
+
+                        Expect.isEmpty g.Root.Errors "the caller receives the failure; the graph does not record it"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "queued work that throws faults its task, and later items still run" {
+                        let g = new Graph ()
+                        let boom = InvalidOperationException "boom"
+                        let log = ResizeArray ()
+
+                        let failing, following =
+                            offThread (fun () ->
+                                let failing = g.DispatchAsync (fun () -> raise boom: int)
+
+                                let following =
+                                    g.DispatchAsync (fun () ->
+                                        log.Add "ran"
+                                        1)
+
+                                failing, following)
+
+                        let ran = g.Pump ()
+
+                        Expect.equal ran 2 "both items were run"
+                        Expect.sequenceEqual log [ "ran" ] "the item behind the failure still ran"
+
+                        Expect.isTrue
+                            (try
+                                failing.Wait (TimeSpan.FromSeconds 5.0)
+                             with :? AggregateException ->
+                                 true)
+                            "the failing task completed"
+
+                        Expect.equal failing.Status TaskStatus.Faulted "the task faulted"
+                        Expect.isTrue (obj.ReferenceEquals (failing.Exception.InnerException, boom)) "with the original exception"
+                        Expect.isTrue (following.Wait (TimeSpan.FromSeconds 5.0)) "the following task completed"
+                        Expect.equal following.Result 1 "with its result"
+                        Expect.isEmpty g.Root.Errors "the graph does not record a failure the caller receives"
+                    }
+#endif
+
+                    testCaseAsync "a call on a disposed graph faults the task and does not run the work"
+                    <| async {
+                        let g = new Graph ()
+                        g.Dispose ()
+                        let ran = ref false
+
+                        let result =
+                            g.DispatchAsync (fun () ->
+                                ran.Value <- true
+                                1)
+
+                        let! outcome = Async.Catch (Async.AwaitTask result)
+
+                        match outcome with
+                        | Choice2Of2 caught ->
+#if !FABLE_COMPILER
+                            let caught =
+                                match caught with
+                                | :? AggregateException as aggregate -> aggregate.InnerException
+                                | other -> other
+#endif
+                            Expect.isTrue (isDisposedError caught) "the task faults with ObjectDisposedException"
+                        | Choice1Of2 _ -> failtest "the task must fault"
+
+                        Expect.isFalse ran.Value "the work did not run"
+                        Expect.equal g.PendingWork 0 "nothing was queued"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "an off-thread call on a disposed graph faults the task and queues nothing" {
+                        let g = new Graph ()
+                        g.Dispose ()
+                        let ran = ref false
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (fun () ->
+                                    ran.Value <- true
+                                    1))
+
+                        Expect.equal result.Status TaskStatus.Faulted "the task is already faulted"
+                        Expect.isTrue (isDisposedError result.Exception.InnerException) "with ObjectDisposedException"
+                        Expect.equal g.PendingWork 0 "nothing was queued"
+                        g.Pump () |> ignore
+                        Expect.isFalse ran.Value "the work never runs"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "an item queued before disposal and drained after it faults and does not run" {
+                        let g = new Graph ()
+                        let ran = ref false
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (fun () ->
+                                    ran.Value <- true
+                                    1))
+
+                        g.Dispose ()
+                        g.Pump () |> ignore
+
+                        Expect.isFalse ran.Value "the work did not run"
+
+                        Expect.isTrue
+                            (try
+                                result.Wait (TimeSpan.FromSeconds 5.0)
+                             with :? AggregateException ->
+                                 true)
+                            "the task completed"
+
+                        Expect.equal result.Status TaskStatus.Faulted "the task faulted"
+                        Expect.isTrue (isDisposedError result.Exception.InnerException) "with ObjectDisposedException"
+                        Expect.isEmpty g.Root.Errors "the graph does not record a failure the caller receives"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "disposal faults an item still in the inbox, with no drain after it" {
+                        let g = new Graph ()
+                        let ran = ref false
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (fun () ->
+                                    ran.Value <- true
+                                    1))
+
+                        Expect.equal result.Status TaskStatus.WaitingForActivation "the item waits in the inbox"
+
+                        g.Dispose ()
+
+                        Expect.equal result.Status TaskStatus.Faulted "disposal faulted the task"
+                        Expect.isTrue (isDisposedError result.Exception.InnerException) "with ObjectDisposedException"
+
+                        g.Pump () |> ignore
+                        Expect.isFalse ran.Value "a later drain skips the work"
+                        Expect.isEmpty g.Root.Errors "the graph does not record a failure the caller receives"
+                    }
+#endif
+
+                    testCaseAsync "an already-cancelled token cancels the task and does not run the work"
+                    <| async {
+                        let g = new Graph ()
+                        use source = new CancellationTokenSource ()
+                        source.Cancel ()
+                        let ran = ref false
+
+                        let result =
+                            g.DispatchAsync (
+                                (fun () ->
+                                    ran.Value <- true
+                                    1),
+                                source.Token
+                            )
+
+                        Expect.isFalse ran.Value "the work did not run"
+                        Expect.equal g.PendingWork 0 "nothing was queued"
+#if !FABLE_COMPILER
+                        Expect.equal result.Status TaskStatus.Canceled "the task is cancelled"
+#else
+                        let! outcome = Async.Catch (Async.AwaitTask result)
+
+                        match outcome with
+                        // Fable's type test does not distinguish OperationCanceledException from Exception.
+                        | Choice2Of2 caught -> Expect.equal caught.Message "The operation was canceled." "the task is cancelled"
+                        | Choice1Of2 _ -> failtest "the task must be cancelled"
+#endif
+                    }
+
+                    testCaseAsync "a token cancelled by the work itself leaves the task completed with the result"
+                    <| async {
+                        let g = new Graph ()
+                        use source = new CancellationTokenSource ()
+
+                        let result =
+                            g.DispatchAsync (
+                                (fun () ->
+                                    source.Cancel ()
+                                    5),
+                                source.Token
+                            )
+
+                        let! value = Async.AwaitTask result
+                        Expect.equal value 5 "the work started, so the token no longer applies"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "an off-thread call with an already-cancelled token queues nothing" {
+                        let g = new Graph ()
+                        use source = new CancellationTokenSource ()
+                        source.Cancel ()
+
+                        let result = offThread (fun () -> g.DispatchAsync ((fun () -> 1), source.Token))
+
+                        Expect.equal result.Status TaskStatus.Canceled "the task is cancelled"
+                        Expect.equal g.PendingWork 0 "nothing was queued"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "a token cancelled while the item waits cancels the task, and the drain skips the work" {
+                        let g = new Graph ()
+                        use source = new CancellationTokenSource ()
+                        let ran = ref false
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (
+                                    (fun () ->
+                                        ran.Value <- true
+                                        1),
+                                    source.Token
+                                ))
+
+                        Expect.equal g.PendingWork 1 "the item waits in the inbox"
+                        source.Cancel ()
+                        Expect.equal result.Status TaskStatus.Canceled "cancellation completed the task at once"
+
+                        g.Pump () |> ignore
+                        Expect.isFalse ran.Value "the drain skipped the work"
+                        Expect.isEmpty g.Root.Errors "a skipped item records nothing"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "a queued item whose work cancels the token completes with the result" {
+                        let g = new Graph ()
+                        use source = new CancellationTokenSource ()
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (
+                                    (fun () ->
+                                        source.Cancel ()
+                                        9),
+                                    source.Token
+                                ))
+
+                        g.Pump () |> ignore
+
+                        Expect.isTrue (result.Wait (TimeSpan.FromSeconds 5.0)) "the task completed"
+                        Expect.equal result.Result 9 "with the work's result"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "queued work that writes two signals in a batch runs the effect once, before the task completes" {
+                        let g = new Graph ()
+                        let a = Signal (g, 0)
+                        let b = Signal (g, 0)
+                        let seen = ResizeArray ()
+
+                        new Effect (g, (fun () -> seen.Add (a.Value + b.Value)))
+                        |> ignore
+
+                        let result =
+                            offThread (fun () ->
+                                g.DispatchAsync (fun () ->
+                                    g.Batch (fun () ->
+                                        a.Value <- 1
+                                        b.Value <- 2)
+
+                                    seen.ToArray ()))
+
+                        Expect.sequenceEqual seen [ 0 ] "the effect waits for the drain"
+                        g.Pump () |> ignore
+
+                        Expect.sequenceEqual seen [ 0; 3 ] "one run for both writes"
+                        Expect.isTrue (result.Wait (TimeSpan.FromSeconds 5.0)) "the task completed"
+                        Expect.sequenceEqual result.Result [| 0; 3 |] "the batch's flush ran inside the work"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "queued DispatchAsync and Dispatch run the same effects for the same work" {
+                        let runsFor (dispatch: Graph -> (unit -> unit) -> unit) =
+                            let g = new Graph ()
+                            let a = Signal (g, 0)
+                            let b = Signal (g, 0)
+                            let seen = ResizeArray ()
+
+                            new Effect (g, (fun () -> seen.Add (a.Value + b.Value)))
+                            |> ignore
+
+                            offThread (fun () ->
+                                dispatch g (fun () ->
+                                    a.Value <- 1
+                                    b.Value <- 2))
+
+                            g.Pump () |> ignore
+                            List.ofSeq seen
+
+                        let viaDispatch = runsFor (fun g work -> g.Dispatch work)
+
+                        let viaDispatchAsync =
+                            runsFor (fun g work -> g.DispatchAsync (fun () -> work ()) |> ignore)
+
+                        Expect.equal viaDispatchAsync viaDispatch "DispatchAsync keeps Dispatch's flush behaviour"
+                    }
+#endif
+
+                    testCaseAsync "inline inside an enclosing batch, the task completes before the batch's flush runs the effect"
+                    <| async {
+                        let g = new Graph ()
+                        let a = Signal (g, 0)
+                        let seen = ResizeArray ()
+
+                        new Effect (g, (fun () -> seen.Add a.Value))
+                        |> ignore
+
+                        let result, seenInBatch =
+                            g.Batch (fun () ->
+                                let result =
+                                    g.DispatchAsync (fun () ->
+                                        a.Value <- 1
+                                        a.Value)
+
+                                result, List.ofSeq seen)
+
+                        Expect.equal seenInBatch [ 0 ] "the batch deferred the effect past the inline call"
+                        Expect.sequenceEqual seen [ 0; 1 ] "the batch's flush ran it"
+#if !FABLE_COMPILER
+                        Expect.equal result.Status TaskStatus.RanToCompletion "the task completed inside the batch"
+#endif
+                        let! value = Async.AwaitTask result
+                        Expect.equal value 1 "with the work's result"
+                    }
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "Serialised: an item queued while another thread holds the graph completes after the holder's release" {
+                        let context = RecordingContext ()
+                        let g = serialisedUnder context
+                        let held = holdFlush context g
+
+                        let result, continuation =
+                            try
+                                let result = offThread (fun () -> g.DispatchAsync (fun () -> g.IsOnGraphThread))
+
+                                let continuation =
+                                    result.ContinueWith ((fun (_: Task<bool>) -> g.IsOnGraphThread), TaskContinuationOptions.ExecuteSynchronously)
+
+                                Expect.equal context.Posted.Count 1 "the call posted a drain"
+                                within context (fun () -> context.Drain ())
+                                Expect.equal g.PendingWork 1 "the drain found the graph held and left the item"
+                                Expect.isFalse result.IsCompleted "the task waits for the holder"
+                                result, continuation
+                            finally
+                                held.Release.Set ()
+                                held.Worker.Join ()
+
+                        Expect.equal context.Posted.Count 1 "the holder's release posted a new drain"
+                        within context (fun () -> context.Drain ())
+
+                        Expect.isTrue (result.Wait (TimeSpan.FromSeconds 5.0)) "that drain completed the task"
+                        Expect.isTrue result.Result "the work ran inside the graph"
+                        Expect.isTrue (continuation.Wait (TimeSpan.FromSeconds 5.0)) "the continuation ran"
+                        Expect.isFalse continuation.Result "the continuation ran outside the graph"
+                    }
+#endif
+
+#if !FABLE_COMPILER
+                    // .NET only: JavaScript has one thread.
+                    test "Serialised: a call from inside the graph runs inline" {
+                        let context = RecordingContext ()
+                        let g = serialisedUnder context
+
+                        let result =
+                            within context (fun () -> g.Batch (fun () -> g.DispatchAsync (fun () -> g.IsOnGraphThread)))
+
+                        Expect.equal result.Status TaskStatus.RanToCompletion "the task completed at the call"
+                        Expect.isTrue result.Result "the work ran inside the graph"
+                        Expect.equal g.PendingWork 0 "nothing was queued"
+                    }
+#endif
+                ]
         ]

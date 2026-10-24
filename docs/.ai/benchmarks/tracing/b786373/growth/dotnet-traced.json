@@ -1,0 +1,140 @@
+{
+  "Runtime": "dotnet",
+  "Traced": true,
+  "Checkpoints": [
+    {
+      "Workload": "memo",
+      "Updates": 1000,
+      "Events": 14017,
+      "RetainedBytes": 739168,
+      "EventsMs": 0.07639998197555542,
+      "SnapshotMs": 1.8614999949932098,
+      "DumpTextMs": 2.0031999945640564,
+      "TailReadMs": 0.09509998559951782,
+      "SinceMs": 0.007400006055831909,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo",
+      "Updates": 10000,
+      "Events": 140017,
+      "RetainedBytes": 11067760,
+      "EventsMs": 0.47189998626708984,
+      "SnapshotMs": 10.0140999853611,
+      "DumpTextMs": 18.85240000486374,
+      "TailReadMs": 0.3416999876499176,
+      "SinceMs": 0.0027000010013580322,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo",
+      "Updates": 100000,
+      "Events": 1400017,
+      "RetainedBytes": 88788168,
+      "EventsMs": 5.95550000667572,
+      "SnapshotMs": 93.55829998850822,
+      "DumpTextMs": 219.83610001206398,
+      "TailReadMs": 5.546000003814697,
+      "SinceMs": 0.0022999942302703857,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo-checkpointed",
+      "Updates": 1000,
+      "Events": 1400,
+      "RetainedBytes": 95120,
+      "EventsMs": 0.00210002064704895,
+      "SnapshotMs": 0.07039999961853027,
+      "DumpTextMs": 0.14869999885559082,
+      "TailReadMs": 0.0049000084400177,
+      "SinceMs": 0.002499997615814209,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo-checkpointed",
+      "Updates": 10000,
+      "Events": 1400,
+      "RetainedBytes": 156064,
+      "EventsMs": 0.0040000081062316895,
+      "SnapshotMs": 0.11669999361038208,
+      "DumpTextMs": 0.2150000035762787,
+      "TailReadMs": 0.005399972200393677,
+      "SinceMs": 0.003200024366378784,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo-checkpointed",
+      "Updates": 100000,
+      "Events": 1400,
+      "RetainedBytes": 156168,
+      "EventsMs": 0.0017000138759613037,
+      "SnapshotMs": 0.08649998903274536,
+      "DumpTextMs": 0.18880000710487366,
+      "TailReadMs": 0.005299985408782959,
+      "SinceMs": 0.002200007438659668,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 100,
+      "Events": 39721,
+      "RetainedBytes": 2826128,
+      "EventsMs": 0.18700000643730164,
+      "SnapshotMs": 5.014699995517731,
+      "DumpTextMs": 4.379799991846085,
+      "TailReadMs": 0.2184000015258789,
+      "SinceMs": 0.05820000171661377,
+      "TailEvents": 39200
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 1000,
+      "Events": 392521,
+      "RetainedBytes": 24148320,
+      "EventsMs": 1.3235999941825867,
+      "SnapshotMs": 50.06749999523163,
+      "DumpTextMs": 64.69339999556541,
+      "TailReadMs": 1.6477999985218048,
+      "SinceMs": 0.17219999432563782,
+      "TailEvents": 39200
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 10000,
+      "Events": 3920521,
+      "RetainedBytes": 184989048,
+      "EventsMs": 17.820199996232986,
+      "SnapshotMs": 614.1123000085354,
+      "DumpTextMs": 624.7003000080585,
+      "TailReadMs": 14.139299988746643,
+      "SinceMs": 0.28209999203681946,
+      "TailEvents": 39200
+    }
+  ],
+  "Summaries": [
+    {
+      "Workload": "memo",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 14.00017,
+      "BytesPerEvent": 62.779625053625054,
+      "EventSlope": 14,
+      "RetainedSlope": 878.9147507507507
+    },
+    {
+      "Workload": "memo-checkpointed",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 0.014,
+      "BytesPerEvent": 0,
+      "EventSlope": 0,
+      "RetainedSlope": 0.3671231231231231
+    },
+    {
+      "Workload": "fanout",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 392.0521,
+      "BytesPerEvent": 46.39233100447387,
+      "EventSlope": 392,
+      "RetainedSlope": 18185.793753753755
+    }
+  ]
+}

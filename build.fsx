@@ -23,6 +23,7 @@ module Spec =
         -- "**/obj/**/*.*"
         -- "**/AssemblyInfo.fs"
         -- "**/fable-modules/**/*.*"
+        -- "**/fable_modules/**/*.*"
         -- "src/Ranvier.Wire/Vendor/**/*.*"
 
     let projects = Repo.Project.AllProjects ()
@@ -922,6 +923,307 @@ module private Perf =
                 }
         }
 
+    /// <summary>The first line a process writes to standard output, trimmed.</summary>
+    let private firstLine (command: string) (arguments: string list) =
+        let info =
+            Diagnostics.ProcessStartInfo (
+                command,
+                WorkingDirectory = __REPOSITORY_DIRECTORY__,
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            )
+
+        for argument in arguments do
+            info.ArgumentList.Add argument
+
+        use child = Diagnostics.Process.Start info
+        let output = child.StandardOutput.ReadToEnd ()
+        child.WaitForExit ()
+
+        require
+            (child.ExitCode = 0)
+            (command
+             + " "
+             + String.concat " " arguments
+             + " failed")
+
+        let lines = output.Split '\n'
+        lines[0].Trim()
+
+    /// <summary>The processor's model name, or an empty string when the OS reports none.</summary>
+    let private cpuName () =
+        if OperatingSystem.IsWindows () then
+            Environment.GetEnvironmentVariable "PROCESSOR_IDENTIFIER"
+        elif OperatingSystem.IsLinux () then
+            File.ReadAllLines "/proc/cpuinfo"
+            |> Array.tryFind (fun line -> line.StartsWith "model name")
+            |> Option.map (fun line -> line.Substring(line.IndexOf ':' + 1).Trim())
+            |> Option.defaultValue ""
+        elif OperatingSystem.IsMacOS () then
+            firstLine "sysctl" [ "-n"; "machdep.cpu.brand_string" ]
+        else
+            ""
+
+    let private variants = [ false, "untraced"; true, "traced" ]
+
+    /// <summary>
+    /// Builds the counter bench and its Fable harness untraced and traced, runs the counter scenarios and the trace
+    /// growth probe of both on .NET and Node.js, runs the Playground's keyed-row harness on an untraced and a traced
+    /// Chromium bundle, runs the BenchmarkDotNet <c>Trace</c> category, and writes <c>versions.json</c> and
+    /// <c>report.md</c> into OUT.
+    /// </summary>
+    let trace =
+        input {
+            let! directory =
+                argument "OUT" "Fresh output directory for the builds, measurements and report"
+
+            and! short =
+                Input.option<bool> "--short"
+                |> Input.description "Runs BenchmarkDotNet's short job and one Chromium process: a smoke run, not a baseline"
+
+            and! noChromium =
+                Input.option<bool> "--no-chromium"
+                |> Input.description "Skips the Chromium keyed-row runs"
+
+            let output = absolute directory
+
+            let playground =
+                combine __REPOSITORY_DIRECTORY__ "examples/Fable.Ranvier.Playground"
+
+            let chromiumModes = "--modes=ranvier,ranvier-sugar"
+
+            let chromiumRuns =
+                if short then
+                    [ "--processes=1"; "--rounds=5" ]
+                else
+                    [ "--processes=3"; "--rounds=15" ]
+
+            let worker variant =
+                combine output ("dotnet/" + variant + "/Ranvier.Counters.dll")
+
+            let fable variant =
+                combine output ("fable/" + variant)
+
+            let pmc = if OperatingSystem.IsLinux () then [] else [ "--no-pmc" ]
+            let shortJob = if short then [ "--short" ] else []
+            let job = if short then "short" else "default"
+
+            return
+                stage "perf trace" {
+                    workingDir __REPOSITORY_DIRECTORY__
+
+                    run (fun _ ->
+                        require
+                            (not (Directory.Exists output)
+                             || Array.isEmpty (Directory.GetFileSystemEntries output))
+                            "The perf trace output directory is not empty; choose a fresh one."
+
+                        Directory.CreateDirectory output |> ignore)
+
+                    run (dotnet [ "tool"; "restore" ])
+
+                    for traced, variant in variants do
+                        stage ("dotnet " + variant) {
+                            run (
+                                dotnet
+                                    [
+                                        "build"
+                                        "bench/Ranvier.Counters"
+                                        "-c"
+                                        "Release"
+                                        "-p:RanvierTrace="
+                                        + (string traced).ToLowerInvariant()
+                                        "-p:RanvierCounters=false"
+                                        "-o"
+                                        combine output ("dotnet/" + variant)
+                                    ]
+                            )
+                        }
+
+                        stage ("fable " + variant) {
+                            envVars
+                                [
+                                    "RanvierCounters", "false"
+                                    "RanvierTrace", (string traced).ToLowerInvariant()
+                                ]
+
+                            runOperation (
+                                effect (fun () -> compilerTool __REPOSITORY_DIRECTORY__)
+                                |> Operation.bind (fun (command, _) ->
+                                    execute (
+                                        dotnet
+                                            [
+                                                command
+                                                "fable/Ranvier.Counters"
+                                                "-e"
+                                                ".fs.js"
+                                                "-o"
+                                                combine (fable variant) "plain"
+                                                "--noCache"
+                                                "--configuration"
+                                                "Release"
+                                            ]
+                                    ))
+                            )
+                        }
+
+                    stage "fable package" { run (fun _ -> File.WriteAllText (combine output "fable/package.json", "{\"type\":\"module\"}")) }
+
+                    for _, variant in variants do
+                        stage ("counters " + variant) {
+                            run (
+                                dotnet (
+                                    [
+                                        worker variant
+                                        "--fable"
+                                        fable variant
+                                        "--out"
+                                        combine output ("counters/" + variant)
+                                    ]
+                                    @ pmc
+                                )
+                            )
+                        }
+
+                        stage ("growth " + variant) {
+                            run (fun _ ->
+                                Directory.CreateDirectory (combine output "growth")
+                                |> ignore)
+
+                            run (
+                                dotnet
+                                    [
+                                        worker variant
+                                        "trace-growth"
+                                        "--out"
+                                        combine output ("growth/dotnet-" + variant + ".json")
+                                    ]
+                            )
+
+                            run (
+                                Cmd.ofList
+                                    "node"
+                                    [
+                                        "--expose-gc"
+                                        "--single-threaded"
+                                        combine (fable variant) "plain/Main.fs.js"
+                                        "--trace-growth"
+                                        "--out"
+                                        combine output ("growth/node-" + variant + ".json")
+                                    ]
+                            )
+                        }
+
+                    if not noChromium then
+                        stage "chromium packages" {
+                            workingDir playground
+                            run "npm ci"
+                        }
+
+                        // Each variant compiles the Playground's Fable output, so the keyed-heap bundle follows the
+                        // keyed-rows build of the same variant.
+                        for traced, variant in variants do
+                            stage ("chromium " + variant) {
+                                workingDir playground
+                                envVars [ ("RanvierTrace", (string traced).ToLowerInvariant()) ]
+
+                                run (
+                                    Cmd.ofList
+                                        "node"
+                                        ([
+                                            "benchmarks/frameworks/keyed-rows.mjs"
+                                            "--build"
+                                            "--dist=generated-keyed-" + variant
+                                            chromiumModes
+                                            "--out=" + combine output "chromium"
+                                            "--label=rows-" + variant
+                                         ]
+                                         @ chromiumRuns)
+                                )
+
+                                run (
+                                    Cmd.ofList
+                                        "node"
+                                        [
+                                            "benchmarks/frameworks/keyed-heap.mjs"
+                                            chromiumModes
+                                            (if short then "--processes=1" else "--processes=2")
+                                            "--out=" + combine output "chromium"
+                                            "--label=heap-" + variant
+                                        ]
+                                )
+                            }
+
+                    stage "benchmarks" {
+                        run (
+                            dotnet (
+                                [
+                                    "run"
+                                    "--project"
+                                    "bench/Ranvier.Benchmarks"
+                                    "-c"
+                                    "Release"
+                                    "--"
+                                    "--anyCategories"
+                                    "Trace"
+                                    "--filter"
+                                    "*"
+                                    "--artifacts"
+                                    combine output "benchmarks"
+                                ]
+                                @ shortJob
+                            )
+                        )
+                    }
+
+                    stage "versions" {
+                        run (fun _ ->
+                            let compiler, compilerVersion = compilerTool __REPOSITORY_DIRECTORY__
+
+                            let fableLibrary =
+                                Directory.GetFiles (fable "untraced", "package.json", SearchOption.AllDirectories)
+                                |> Array.tryPick (fun file ->
+                                    use package = readJson file
+                                    let mutable name = Unchecked.defaultof<JsonElement>
+
+                                    if
+                                        package.RootElement.TryGetProperty ("name", &name)
+                                        && name.GetString () = "@fable-org/fable-library-js"
+                                    then
+                                        Some (package.RootElement.GetProperty("version").GetString())
+                                    else
+                                        None)
+                                |> Option.defaultValue ""
+
+                            let revision = (gitOutput [ "rev-parse"; "HEAD" ]).Trim()
+
+                            let dirty =
+                                (gitOutput [ "status"; "--porcelain"; "--untracked-files=no" ]).Trim()
+                                <> ""
+
+                            File.WriteAllText (
+                                combine output "versions.json",
+                                JsonSerializer.Serialize (
+                                    {|
+                                        Source = if dirty then revision + "-dirty" else revision
+                                        Dotnet = string Environment.Version
+                                        Fable = compiler + " " + compilerVersion
+                                        FableLibrary = fableLibrary
+                                        Node = firstLine "node" [ "--version" ]
+                                        OS = Runtime.InteropServices.RuntimeInformation.OSDescription
+                                        CPU = cpuName ()
+                                        LogicalProcessors = Environment.ProcessorCount
+                                        BenchmarkJob = job
+                                    |},
+                                    JsonSerializerOptions (WriteIndented = true)
+                                )
+                            ))
+                    }
+
+                    stage "report" { run (dotnet [ worker "untraced"; "trace-report"; "--dir"; output ]) }
+                }
+        }
+
     let ab =
         input {
             let! leg = argument "LEG" "Measurement leg: arm64-counters or x64-timing"
@@ -1152,6 +1454,11 @@ exit
         command "build" {
             description "Builds the counter bench of a revision in a fresh worktree"
             Perf.build
+        }
+
+        command "trace" {
+            description "Measures traced against untraced builds on .NET and Node.js and writes the report"
+            Perf.trace
         }
 
         command "ab" {

@@ -30,12 +30,12 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | ValueReaders.fs | 21 | 21 | 21 | 21 | 21 | 21 | 0 | 0 |
 | Async.fs | 56 | 45 | 45 | 56 | 45 | 45 | 4 | 0 |
 | Boundaries.fs | 27 | 27 | 27 | 27 | 27 | 27 | 1 | 0 |
-| Threading.fs | 3 | 3 | 3 | 3 | 3 | 3 | 26 | 0 |
+| Threading.fs | 9 | 9 | 9 | 9 | 9 | 9 | 41 | 0 |
 | Edges.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
 | Invalidation.fs | 4 | 4 | 4 | 4 | 4 | 4 | 0 | 0 |
 | Lifetime.fs | 6 | 6 | 6 | 6 | 6 | 6 | 0 | 0 |
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 18 | 0 |
-| Tracing.fs | 2 | 2 | 2 | 84 | 79 | 79 | 1 | 0 |
+| Tracing.fs | 2 | 2 | 2 | 106 | 101 | 101 | 3 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
@@ -58,7 +58,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
 | Combinators.fs | 242 | 242 | 242 | 242 | 242 | 242 | 3 | 0 |
-| Timed.fs | 31 | 31 | 31 | 38 | 38 | 38 | 0 | 0 |
+| Timed.fs | 31 | 31 | 31 | 39 | 39 | 39 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
@@ -81,7 +81,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1545 | 1524 | 1521 | 1687 | 1661 | 1658 | 108 | 1 |
+| **Total** | 1551 | 1530 | 1527 | 1716 | 1690 | 1687 | 125 | 1 |
 
 ## Tests.fs
 
@@ -443,12 +443,33 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Serialised: a settle from outside the graph is queued, even on the graph's context | JavaScript has one thread. |
 | Serialised: work posted from inside the graph runs inline | JavaScript has one thread. |
 | Serialised: a drain that finds the graph held leaves the work, and the holder posts it again | JavaScript has one thread. |
+| off-thread calls wait in the inbox, then run in arrival order with Dispatch on the graph thread | JavaScript has one thread. |
+| a synchronisation-context dispatcher completes the task without a manual pump | JavaScript has one thread. |
+| a continuation of a queued item's task runs outside the drain | JavaScript has one thread. |
+| a synchronous continuation of an inline call's task runs on the graph thread | JavaScript has one thread. |
+| queued work that throws faults its task, and later items still run | JavaScript has one thread. |
+| an off-thread call on a disposed graph faults the task and queues nothing | JavaScript has one thread. |
+| an item queued before disposal and drained after it faults and does not run | JavaScript has one thread. |
+| disposal faults an item still in the inbox, with no drain after it | JavaScript has one thread. |
+| an off-thread call with an already-cancelled token queues nothing | JavaScript has one thread. |
+| a token cancelled while the item waits cancels the task, and the drain skips the work | JavaScript has one thread. |
+| a queued item whose work cancels the token completes with the result | JavaScript has one thread. |
+| queued work that writes two signals in a batch runs the effect once, before the task completes | JavaScript has one thread. |
+| queued DispatchAsync and Dispatch run the same effects for the same work | JavaScript has one thread. |
+| Serialised: an item queued while another thread holds the graph completes after the holder's release | JavaScript has one thread. |
+| Serialised: a call from inside the graph runs inline | JavaScript has one thread. |
 
-<details><summary>3 passed in every build and delivery that runs them</summary>
+<details><summary>9 passed in every build and delivery that runs them</summary>
 
 - an on-thread settle runs inline and queues nothing
 - a graph with no ambient context defers
 - Serialised: writes, reads and effects run as on any graph
+- DispatchAsync / on the graph thread the work runs at the call and the task carries its result
+- DispatchAsync / inline work that throws faults the task with the same exception
+- DispatchAsync / a call on a disposed graph faults the task and does not run the work
+- DispatchAsync / an already-cancelled token cancels the task and does not run the work
+- DispatchAsync / a token cancelled by the work itself leaves the task completed with the result
+- DispatchAsync / inline inside an enclosing batch, the task completes before the batch's flush runs the effect
 
 </details>
 
@@ -531,8 +552,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Excluded | Reason |
 | --- | --- |
 | an Unchecked graph creating nodes from two threads records every NodeNew | JavaScript has one thread. |
+| a checkpoint releases the collected signals and async sources of disposed roots | Fable holds every signal for the log's lifetime. |
+| a checkpointed dump parses back to the live snapshot | TraceModel.parseDump is .NET only. |
 
-<details><summary>79 passed in every build and delivery that runs them</summary>
+<details><summary>101 passed in every build and delivery that runs them</summary>
 
 - the assembly is traced exactly when RANVIER_TRACE is defined
 - named returns the thunk's result
@@ -613,6 +636,28 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - Rerun guard / a chain of writers that each wake one reader in turn runs to completion (traced only)
 - Rerun guard / a chain of writers behind an unchanged memo runs to completion (traced only)
 - Rerun guard / two effects writing each other's dependencies raise, naming a cycle (traced only)
+- Cursors and checkpoints / eventsSince returns the events after each cursor, oldest first (traced only)
+- Cursors and checkpoints / eventsSince rejects a negative or future cursor (traced only)
+- Cursors and checkpoints / a truncated log keeps a lazy memo's dirty source and description (traced only)
+- Cursors and checkpoints / Truncate rejects a seq outside the retained log (traced only)
+- Cursors and checkpoints / checkpointOf before any checkpoint is unnamed and empty (traced only)
+- Cursors and checkpoints / checkpoint folds the dropped events into its snapshot (traced only)
+- Cursors and checkpoints / checkpoint rejects a seq outside the retained log (traced only)
+- Cursors and checkpoints / checkpoint rejects a seq between a NodeNew and its label (traced only)
+- Cursors and checkpoints / checkpoint rejects a seq between an OwnerNew and its label (traced only)
+- Cursors and checkpoints / checkpoint inside an effect's run raises (traced only)
+- Cursors and checkpoints / eventsSince rejects an expired cursor, and the checkpoint's seq resyncs (traced only)
+- Cursors and checkpoints / snapshot and snapshotAt fold the retained events onto the checkpoint (traced only)
+- Cursors and checkpoints / why of a run caused before the checkpoint ends at BeforeCheckpoint (traced only)
+- Cursors and checkpoints / why of a lazy memo's first run after the checkpoint ends at its creation (traced only)
+- Cursors and checkpoints / origin of a node created before the checkpoint comes from the snapshot (traced only)
+- Cursors and checkpoints / reconcile is empty after a checkpoint (traced only)
+- Cursors and checkpoints / whyNot after a checkpoint reads the edges recorded before it (traced only)
+- Cursors and checkpoints / a checkpoint releases disposed roots and their nodes (traced only)
+- Cursors and checkpoints / a checkpoint keeps no description for a labelled root (traced only)
+- Cursors and checkpoints / a signal that outlives its creating root stays live across a checkpoint (traced only)
+- Cursors and checkpoints / a signal created in a run stays live when the run's computation runs again (traced only)
+- Cursors and checkpoints / a checkpoint keeps the incarnations of a live host's children (traced only)
 
 </details>
 
@@ -1693,7 +1738,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Timed.fs
 
-<details><summary>38 passed in every build and delivery that runs them</summary>
+<details><summary>39 passed in every build and delivery that runs them</summary>
 
 - system timer rejects a negative wait
 - system timer can disarm and dispose an unarmed long wait
@@ -1729,6 +1774,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - independent clock origins do not alter deterministic dumps (traced only)
 - admission comparer failure retains the winning source cause (traced only)
 - leading suppression retains the published winning capture (traced only)
+- timing reports a timed node created before a checkpoint (traced only)
 - admission names the winning capture and reports the held window (traced only)
 - recorded timing distinguishes pending capture and failure from published state (traced only)
 - timing rejects another graph with colliding node identifiers (traced only)

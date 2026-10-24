@@ -63,13 +63,16 @@ let private withCommonSettings (config: ManualConfig) =
 // of the measurement, so each measured call is repeated in an unrolled loop.
 let private unroll = 16
 
+let private runShape (isShort: bool) =
+    (if isShort then Job.ShortRun else Job.Default).WithUnrollFactor unroll
+
 /// <summary>
 /// The publishable run. Minutes, not seconds.
 /// </summary>
 let full =
     ManualConfig.CreateEmpty ()
     |> withCommonSettings
-    |> fun config -> config.AddJob (Job.Default.WithUnrollFactor(unroll).WithId "Default")
+    |> fun config -> config.AddJob ((runShape false).WithId("Default").AsDefault())
 
 /// <summary>
 /// A smoke run: enough to prove the harness works and to catch an
@@ -78,4 +81,46 @@ let full =
 let short =
     ManualConfig.CreateEmpty ()
     |> withCommonSettings
-    |> fun config -> config.AddJob (Job.ShortRun.WithUnrollFactor(unroll).WithId "Short")
+    |> fun config -> config.AddJob ((runShape true).WithId("Short").AsDefault())
+
+/// <summary>
+/// Two jobs that build the same benchmark source with <c>RanvierTrace=false</c> (<c>Untraced</c>, the ratio
+/// baseline) and <c>RanvierTrace=true</c> (<c>Traced</c>), with the run shape of <c>short</c> when
+/// <c>isShort</c> and of <c>full</c> otherwise. The jobs replace the default job of <c>full</c> and <c>short</c>.
+/// </summary>
+let traced (isShort: bool) =
+    let job (trace: bool) =
+        let value = if trace then "true" else "false"
+        (runShape isShort).WithArguments [| MsBuildArgument $"/p:RanvierTrace={value}" :> Argument |]
+
+    ManualConfig.CreateEmpty().AddJob(job(false).WithId("Untraced").AsBaseline()).AddJob(job(true).WithId "Traced")
+
+/// <summary>Runs the benchmarks of a class under the <c>traced</c> jobs, short when the process has <c>--short</c>.</summary>
+[<AttributeUsage(AttributeTargets.Class)>]
+type TracedConfigAttribute() =
+    inherit Attribute()
+
+    interface IConfigSource with
+        member _.Config =
+            traced (
+                Environment.GetCommandLineArgs ()
+                |> Array.contains "--short"
+            )
+
+/// <summary>
+/// The <c>Traced</c> job of <c>traced</c> alone, for benchmarks of operations that exist only in a traced build.
+/// </summary>
+let tracedOnly (isShort: bool) =
+    ManualConfig.CreateEmpty().AddJob((runShape isShort).WithArguments([| MsBuildArgument "/p:RanvierTrace=true" :> Argument |]).WithId "Traced")
+
+/// <summary>Runs the benchmarks of a class under the <c>tracedOnly</c> job, short when the process has <c>--short</c>.</summary>
+[<AttributeUsage(AttributeTargets.Class)>]
+type TracedOnlyConfigAttribute() =
+    inherit Attribute()
+
+    interface IConfigSource with
+        member _.Config =
+            tracedOnly (
+                Environment.GetCommandLineArgs ()
+                |> Array.contains "--short"
+            )

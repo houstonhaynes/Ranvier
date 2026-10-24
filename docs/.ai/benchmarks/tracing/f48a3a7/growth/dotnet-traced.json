@@ -1,0 +1,90 @@
+{
+  "Runtime": "dotnet",
+  "Traced": true,
+  "Checkpoints": [
+    {
+      "Workload": "memo",
+      "Updates": 1000,
+      "Events": 14017,
+      "RetainedBytes": 739000,
+      "EventsMs": 0.06620001792907715,
+      "SnapshotMs": 2.9395999908447266,
+      "DumpTextMs": 2.7318000197410583,
+      "TailReadMs": 0.07359999418258667,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo",
+      "Updates": 10000,
+      "Events": 140017,
+      "RetainedBytes": 11070760,
+      "EventsMs": 0.30230000615119934,
+      "SnapshotMs": 20.800300002098083,
+      "DumpTextMs": 35.302000015974045,
+      "TailReadMs": 0.5324999988079071,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "memo",
+      "Updates": 100000,
+      "Events": 1400017,
+      "RetainedBytes": 88791184,
+      "EventsMs": 7.280799984931946,
+      "SnapshotMs": 83.89010000228882,
+      "DumpTextMs": 217.8416000008583,
+      "TailReadMs": 5.302599996328354,
+      "TailEvents": 1400
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 100,
+      "Events": 39721,
+      "RetainedBytes": 2825984,
+      "EventsMs": 0.20429998636245728,
+      "SnapshotMs": 4.866800010204315,
+      "DumpTextMs": 4.988399982452393,
+      "TailReadMs": 0.38199999928474426,
+      "TailEvents": 39200
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 1000,
+      "Events": 392521,
+      "RetainedBytes": 24148272,
+      "EventsMs": 2.0530000030994415,
+      "SnapshotMs": 43.64190000295639,
+      "DumpTextMs": 52.99279999732971,
+      "TailReadMs": 2.265300005674362,
+      "TailEvents": 39200
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 10000,
+      "Events": 3920521,
+      "RetainedBytes": 184988992,
+      "EventsMs": 17.45489999651909,
+      "SnapshotMs": 283.0847000181675,
+      "DumpTextMs": 371.83939999341965,
+      "TailReadMs": 12.438599973917007,
+      "TailEvents": 39200
+    }
+  ],
+  "Summaries": [
+    {
+      "Workload": "memo",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 14.00017,
+      "BytesPerEvent": 62.780996138996144,
+      "EventSlope": 14,
+      "RetainedSlope": 878.933945945946
+    },
+    {
+      "Workload": "fanout",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 392.0521,
+      "BytesPerEvent": 46.39234356805785,
+      "EventSlope": 392,
+      "RetainedSlope": 18185.79867867868
+    }
+  ]
+}

@@ -192,3 +192,7 @@ let version () : string = jsNative
 
 [<Emit("JSON.stringify($0)")>]
 let toJson (value: obj) : string = jsNative
+
+/// <summary>Milliseconds on the process's monotonic clock.</summary>
+[<Emit("performance.now()")>]
+let now () : float = jsNative

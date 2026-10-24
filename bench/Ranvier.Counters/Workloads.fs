@@ -68,7 +68,7 @@ let SourcesPerWidget = 10
 /// <summary>Written by every reaction, so no reaction's result is provably unused.</summary>
 let mutable private sink = 0
 
-#if RANVIER_TRACE
+#if RANVIER_TRACE && RANVIER_COUNTERS
 let private created = ResizeArray<Graph>()
 
 /// <summary>The graphs created by <c>newGraph</c> since the last call, oldest first.</summary>

@@ -609,6 +609,21 @@ let traceTests =
                 let admitted = (Trace.timing graph output |> Option.get).WinningCapture
                 input.Value <- 2
                 Expect.equal (Trace.timing graph output |> Option.get).WinningCapture admitted "suppressed input did not win"
+            testCase "timing reports a timed node created before a checkpoint"
+            <| fun _ ->
+                use graph = new Graph ()
+                let clock = ManualClock ()
+                let input = Signal (graph, 0)
+
+                let output =
+                    throttleFirstWith { Clock = clock; Comparer = None } (TimeSpan.FromMilliseconds 100.) (fun () -> input.Value) graph
+
+                input.Value <- 1
+                let before = Trace.timing graph output
+                let events = Trace.events graph
+                Trace.checkpoint graph events[events.Length - 1].Seq "cut"
+                Expect.isTrue before.IsSome "the timed node reports its gate"
+                Expect.equal (Trace.timing graph output) before "the checkpoint keeps the gate"
             testCase "admission names the winning capture and reports the held window"
             <| fun _ ->
                 use graph = new Graph ()

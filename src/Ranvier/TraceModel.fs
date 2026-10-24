@@ -8,7 +8,7 @@ open System.Text
 type WhyRoot =
     /// <summary>A write from outside every run: the <c>Write</c> seq.</summary>
     | UserWrite of write: int
-    /// <summary>The node's first run, with no dirty mark: the <c>NodeNew</c> seq, or 0 when it is not in the log.</summary>
+    /// <summary>The node's first run, with no dirty mark: the <c>NodeNew</c> seq, or 0 when neither the log nor its checkpoint holds it.</summary>
     | Created of nodeNew: int
     /// <summary>A run with no dirty mark, started by a reader's pull: the reader's node id.</summary>
     | Pulled of reader: int
@@ -386,6 +386,22 @@ type TraceDump =
                 "Events", TraceText.array string this.Events
             ]
 
+/// <summary>A graph's trace checkpoint: its name and the state folded from the events dropped from the log.</summary>
+type TraceCheckpoint =
+    {
+        /// <summary>The name given to <c>Trace.checkpoint</c>, or null before the first checkpoint.</summary>
+        Name: string
+        /// <summary>
+        /// The state folded from the dropped events, pruned with <c>TraceModel.prune</c>. <c>Snapshot.Seq</c> is the
+        /// last dropped seq, or 0.
+        /// </summary>
+        Snapshot: TraceSnapshot
+    }
+
+    /// <summary>The checkpoint's name and snapshot in F# record syntax.</summary>
+    override this.ToString() =
+        TraceText.record [ "Name", TraceText.value this.Name; "Snapshot", string this.Snapshot ]
+
 /// <summary>Pure queries over an array of trace events, oldest first.</summary>
 /// <remarks>
 /// An array may start after seq 1 when earlier events were written to a checkpoint; a cause before the first event
@@ -485,12 +501,12 @@ module TraceModel =
         else
             line
 
-    /// <summary>
-    /// The source lists folded from <c>EdgeAdd</c>/<c>EdgeRemove</c>, by computation id, in slot order. Lists that
-    /// fold to empty are left out.
-    /// </summary>
-    let sources (events: TraceEvent[]) : Map<int, int list> =
+    // The source lists of `initial` advanced by the edge events.
+    let internal sourcesFrom (initial: Map<int, int list>) (events: TraceEvent[]) : Map<int, int list> =
         let lists = Dictionary<int, ResizeArray<int>>()
+
+        for KeyValue (node, list) in initial do
+            lists[node] <- ResizeArray list
 
         let listOf node =
             match lists.TryGetValue node with
@@ -522,11 +538,18 @@ module TraceModel =
         |> Map.ofSeq
 
     /// <summary>
-    /// The observer sets folded from <c>ObserverAdd</c>/<c>ObserverRemove</c>, by source id. Sets that fold to empty
-    /// are left out.
+    /// The source lists folded from <c>EdgeAdd</c>/<c>EdgeRemove</c>, by computation id, in slot order. Lists that
+    /// fold to empty are left out.
     /// </summary>
-    let observers (events: TraceEvent[]) : Map<int, Set<int>> =
+    let sources (events: TraceEvent[]) : Map<int, int list> =
+        sourcesFrom Map.empty events
+
+    // The observer sets of `initial` advanced by the observer events.
+    let internal observersFrom (initial: Map<int, Set<int>>) (events: TraceEvent[]) : Map<int, Set<int>> =
         let sets = Dictionary<int, HashSet<int>>()
+
+        for KeyValue (node, set) in initial do
+            sets[node] <- HashSet set
 
         for e in events do
             match e.Kind with
@@ -546,12 +569,17 @@ module TraceModel =
         |> Map.ofSeq
 
     /// <summary>
-    /// The cause chain of run number <c>run</c> of <c>node</c>, or of its last run when <c>run</c> is 0, stopped after
-    /// <c>depth</c> steps when <c>depth</c> is positive. <c>checkpoint</c> names the file holding earlier events, or is
-    /// null.
+    /// The observer sets folded from <c>ObserverAdd</c>/<c>ObserverRemove</c>, by source id. Sets that fold to empty
+    /// are left out.
     /// </summary>
-    /// <exception cref="T:System.ArgumentException">The events hold no matching <c>RunStart</c> for <c>node</c>.</exception>
-    let whyDepth (events: TraceEvent[]) (checkpoint: string) (depth: int) (node: int) (run: int) : Why =
+    let observers (events: TraceEvent[]) : Map<int, Set<int>> =
+        observersFrom Map.empty events
+
+    /// <summary>
+    /// <c>whyDepth</c>, with <c>created</c> giving the <c>NodeNew</c> seq of a node whose <c>NodeNew</c> precedes the
+    /// events, or 0.
+    /// </summary>
+    let internal whyDepthWith (created: int -> int) (events: TraceEvent[]) (checkpoint: string) (depth: int) (node: int) (run: int) : Why =
         let start =
             events
             |> Array.tryFindBack (fun e ->
@@ -612,7 +640,7 @@ module TraceModel =
                                 events
                                 |> Array.tryFind (fun n -> n.Kind = TraceEventKind.NodeNew && n.Node = e.Node)
                                 |> Option.map (fun n -> n.Seq)
-                                |> Option.defaultValue 0
+                                |> Option.defaultWith (fun () -> created e.Node)
                                 |> Created
                             elif e.Other <> 0 then
                                 Pulled e.Other
@@ -635,6 +663,15 @@ module TraceModel =
                 Steps = List.ofSeq steps
                 Root = root
             }
+
+    /// <summary>
+    /// The cause chain of run number <c>run</c> of <c>node</c>, or of its last run when <c>run</c> is 0, stopped after
+    /// <c>depth</c> steps when <c>depth</c> is positive. <c>checkpoint</c> names the file holding earlier events, or is
+    /// null.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentException">The events hold no matching <c>RunStart</c> for <c>node</c>.</exception>
+    let whyDepth (events: TraceEvent[]) (checkpoint: string) (depth: int) (node: int) (run: int) : Why =
+        whyDepthWith (fun _ -> 0) events checkpoint depth node run
 
     /// <summary>The full cause chain of run number <c>run</c> of <c>node</c>, or of its last run when <c>run</c> is 0.</summary>
     let why (events: TraceEvent[]) (checkpoint: string) (node: int) (run: int) : Why =
@@ -662,10 +699,10 @@ module TraceModel =
         defaultValueArg fromFlight moved.Arg
 
     /// <summary>
-    /// Every recorded run of <c>node</c>, oldest first. <c>checkpoint</c> names the file holding earlier events, or is
-    /// null.
+    /// <c>history</c>, with <c>created</c> giving the <c>NodeNew</c> seq of a node whose <c>NodeNew</c> precedes the
+    /// events, or 0.
     /// </summary>
-    let history (events: TraceEvent[]) (checkpoint: string) (node: int) : TraceHistory =
+    let internal historyWith (created: int -> int) (events: TraceEvent[]) (checkpoint: string) (node: int) : TraceHistory =
         let ends = Dictionary<int, RunStatus>()
         let moved = Dictionary<int, obj>()
         let flushes = ResizeArray<int>()
@@ -700,7 +737,7 @@ module TraceModel =
                             | _ -> None
                         Moved = moved.ContainsKey start.Arg
                         Root =
-                            (why events checkpoint node start.Arg).Root
+                            (whyDepthWith created events checkpoint 0 node start.Arg).Root
                             |> Option.defaultValue (Unrecorded start.Seq)
                         Flush = flush
                         Value = value
@@ -708,6 +745,13 @@ module TraceModel =
             ]
 
         { Node = node; Runs = runs }
+
+    /// <summary>
+    /// Every recorded run of <c>node</c>, oldest first. <c>checkpoint</c> names the file holding earlier events, or is
+    /// null.
+    /// </summary>
+    let history (events: TraceEvent[]) (checkpoint: string) (node: int) : TraceHistory =
+        historyWith (fun _ -> 0) events checkpoint node
 
     /// <summary>The pending sources read by <c>node</c>'s last run, and the node's flights.</summary>
     let waitingOn (events: TraceEvent[]) (node: int) : TraceWaiting =
@@ -764,16 +808,13 @@ module TraceModel =
             Flights = flights
         }
 
-    /// <summary>
-    /// The first <c>WhyNotReason</c> matching the events after <c>node</c>'s last <c>RunEnd</c>, or after its
-    /// <c>NodeNew</c> when it has not run; <c>None</c> when none matches.
-    /// </summary>
-    /// <remarks>
-    /// Reasons are tried in the order <c>Disposed</c>, <c>Queued</c>, <c>Unobserved</c>, <c>CheckedClean</c>,
-    /// <c>SkippedAsRunningReader</c>, <c>NotReached</c>. <c>SkippedAsRunningReader</c> also matches a skip inside
-    /// the last run.
-    /// </remarks>
-    let whyNot (events: TraceEvent[]) (node: int) : WhyNotReason option =
+    // `whyNot` over events that follow a checkpoint whose snapshot holds `initialSources` and `initialObservers`.
+    let internal whyNotFrom
+        (initialSources: Map<int, int list>)
+        (initialObservers: Map<int, Set<int>>)
+        (events: TraceEvent[])
+        (node: int)
+        : WhyNotReason option =
         let from =
             let last =
                 events
@@ -819,7 +860,10 @@ module TraceModel =
         let unobserved () =
             match first TraceEventKind.Mark with
             | Some mark when
-                not (observers events |> Map.containsKey node)
+                not (
+                    observersFrom initialObservers events
+                    |> Map.containsKey node
+                )
                 && not (window |> Array.exists pulled)
                 ->
                 Some (Unobserved mark.Seq)
@@ -830,7 +874,7 @@ module TraceModel =
             |> Array.tryFindBack (fun e -> on TraceEventKind.CheckResolved e && e.Flag = 0)
             |> Option.map (fun e ->
                 let upstream =
-                    sources events[.. e.Seq - events[0].Seq]
+                    sourcesFrom initialSources events[.. e.Seq - events[0].Seq]
                     |> Map.tryFind node
                     |> Option.defaultValue []
 
@@ -847,7 +891,7 @@ module TraceModel =
             |> Option.map (fun e -> SkippedAsRunningReader e.Seq)
 
         let notReached () =
-            let lists = sources events
+            let lists = sourcesFrom initialSources events
             let seen = HashSet<int>()
             let upstream = ResizeArray<int>()
 
@@ -894,6 +938,18 @@ module TraceModel =
             notReached
         ]
         |> List.tryPick (fun reason -> reason ())
+
+    /// <summary>
+    /// The first <c>WhyNotReason</c> matching the events after <c>node</c>'s last <c>RunEnd</c>, or after its
+    /// <c>NodeNew</c> when it has not run; <c>None</c> when none matches.
+    /// </summary>
+    /// <remarks>
+    /// Reasons are tried in the order <c>Disposed</c>, <c>Queued</c>, <c>Unobserved</c>, <c>CheckedClean</c>,
+    /// <c>SkippedAsRunningReader</c>, <c>NotReached</c>. <c>SkippedAsRunningReader</c> also matches a skip inside
+    /// the last run.
+    /// </remarks>
+    let whyNot (events: TraceEvent[]) (node: int) : WhyNotReason option =
+        whyNotFrom Map.empty Map.empty events node
 
     // -----------------------------------------------------------------------------------------------------------
     // Identity paths and snapshots
@@ -1255,6 +1311,107 @@ module TraceModel =
             s <- { s with Seq = e.Seq }
 
         s
+
+    // The path before the last separator of `path`: a `/` preceded by an even number of backslashes.
+    let private parentOf (path: string) =
+        let mutable cut = -1
+        let mutable i = path.Length - 1
+
+        while cut < 0 && i >= 0 do
+            if path[i] = '/' then
+                let mutable slashes = 0
+
+                while i - 1 - slashes >= 0
+                      && path[i - 1 - slashes] = '\\' do
+                    slashes <- slashes + 1
+
+                if slashes % 2 = 0 then
+                    cut <- i
+
+            i <- i - 1
+
+        if cut < 0 then "" else path.Substring (0, cut)
+
+    /// <summary>
+    /// <c>snapshot</c> pruned as by <c>prune</c>, with the nodes in <c>released</c> treated as disposed.
+    /// </summary>
+    let internal pruneReleasing (released: HashSet<int>) (snapshot: TraceSnapshot) : TraceSnapshot =
+        let nodes = HashSet<int>()
+        let owners = HashSet<int>()
+
+        let rec keepOwner id =
+            if owners.Add id then
+                match snapshot.Owners.TryFind id with
+                | Some o ->
+                    if o.Parent <> 0 then
+                        keepOwner o.Parent
+
+                    if o.Host <> 0 then
+                        keepNode o.Host
+                | None -> ()
+
+        and keepNode id =
+            if nodes.Add id then
+                match snapshot.Nodes.TryFind id with
+                | Some n when n.Owner <> 0 -> keepOwner n.Owner
+                | _ -> ()
+
+        if snapshot.Root <> 0 then
+            keepOwner snapshot.Root
+
+        for KeyValue (id, o) in snapshot.Owners do
+            if not o.Disposed then
+                keepOwner id
+
+        for KeyValue (id, n) in snapshot.Nodes do
+            if
+                n.Status <> TraceNodeStatus.Disposed
+                && not (released.Contains id)
+            then
+                keepNode id
+
+        let kept = Map.filter (fun id _ -> nodes.Contains id) snapshot.Nodes
+
+        let keptOwners = Map.filter (fun id _ -> owners.Contains id) snapshot.Owners
+
+        let paths = HashSet<string>()
+        let hosts = HashSet<string>()
+
+        for KeyValue (_, n) in kept do
+            paths.Add n.Path |> ignore
+            hosts.Add n.Path |> ignore
+
+        for KeyValue (_, o) in keptOwners do
+            paths.Add o.Path |> ignore
+
+        // A run of a kept node resets the sibling counts beneath its path, so a path beneath it can recur.
+        let rec beneathHost (path: string) =
+            path <> ""
+            && (let parent = parentOf path
+                hosts.Contains parent || beneathHost parent)
+
+        let reachable (path: string) _ =
+            paths.Contains path || beneathHost path
+
+        { snapshot with
+            Nodes = kept
+            Owners = keptOwners
+            Sources = Map.filter (fun id _ -> nodes.Contains id) snapshot.Sources
+            Observers = Map.filter (fun id _ -> nodes.Contains id) snapshot.Observers
+            Siblings = Map.filter reachable snapshot.Siblings
+            Incarnations = Map.filter reachable snapshot.Incarnations
+        }
+
+    /// <summary>
+    /// <c>snapshot</c> restricted to its live nodes and owners, the disposed ones a kept entry references as owner,
+    /// parent or host, their edges, and the sibling and incarnation counts of the paths that can recur.
+    /// </summary>
+    /// <remarks>
+    /// Pruning, folding later events and pruning again will give the pruned snapshot of the unpruned fold. A path
+    /// beneath a kept node can recur, so its counts stay for the node's lifetime.
+    /// </remarks>
+    let prune (snapshot: TraceSnapshot) : TraceSnapshot =
+        pruneReleasing (HashSet<int>()) snapshot
 
     /// <summary>The state folded from the events up to and including seq <c>seq</c>.</summary>
     let snapshotAt (events: TraceEvent[]) (seq: int) : TraceSnapshot =

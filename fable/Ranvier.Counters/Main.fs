@@ -12,6 +12,10 @@
 /// <c>--scenario</c> selects the cases of exactly one scenario.
 /// </para>
 /// <para>
+/// <c>--trace-growth</c> writes the trace growth probe's <c>GrowthRun</c> to the <c>--out</c> file in place of the
+/// scenarios, with the heap read as <c>process.memoryUsage().heapUsed</c> after a full collection.
+/// </para>
+/// <para>
 /// <c>--handshake</c> brackets each measured region for the processor-counter
 /// collector: the process writes <c>BEGIN &lt;region></c> or <c>END &lt;region></c> to standard
 /// output and blocks until a line arrives on standard input.
@@ -47,6 +51,7 @@ type private Options =
         Scenario: string
         Handshake: bool
         List: bool
+        TraceGrowth: bool
     }
 
 let rec private parse (options: Options) (args: string list) =
@@ -59,6 +64,7 @@ let rec private parse (options: Options) (args: string list) =
     | "--scenario" :: name :: rest -> parse { options with Scenario = name } rest
     | "--handshake" :: rest -> parse { options with Handshake = true } rest
     | "--list" :: rest -> parse { options with List = true } rest
+    | "--trace-growth" :: rest -> parse { options with TraceGrowth = true } rest
     | unknown :: _ -> failwith $"Unknown argument '%s{unknown}'."
 
 let private countersCompiled =
@@ -189,6 +195,7 @@ let main argv =
                 Scenario = ""
                 Handshake = false
                 List = false
+                TraceGrowth = false
             }
             (List.ofArray argv)
 
@@ -239,7 +246,21 @@ let main argv =
             |})
         |> List.toArray
 
-    if options.List then
+    if options.TraceGrowth then
+        let host: CounterBench.TraceGrowth.Host =
+            {
+                RetainedBytes =
+                    fun () ->
+                        Node.collect ()
+                        Node.heapUsed ()
+                Now = Node.now
+            }
+
+        let growth = CounterBench.TraceGrowth.run host "node" CounterBench.TraceGrowth.plan
+
+        if options.Out <> "" then
+            Node.writeFile (options.Out, Node.toJson growth)
+    elif options.List then
         Scenarios.all options.Scale
         @ loadAppended options.Scale
         |> List.map _.Scenario

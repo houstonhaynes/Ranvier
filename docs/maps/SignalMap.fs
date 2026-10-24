@@ -548,6 +548,7 @@ type internal MapMachine(settings: MapSettings) as this =
     let mutable timer = 0.0
     let mutable frame = 0.0
     let mutable tail = start
+    // The seq of the last trace event drawn.
     let mutable read = 0
     let mutable graph: Graph option = None
     let mutable run = 0
@@ -845,8 +846,11 @@ type internal MapMachine(settings: MapSettings) as this =
 
     // Takes the frames recorded so far as setup: drawn at once, logged, and left off the timeline.
     let baseline (g: Graph) =
-        let events = Trace.events g
-        read <- events.Length
+        let events = Trace.eventsSince g 0
+
+        if events.Length > 0 then
+            read <- events[events.Length - 1].Seq
+
         let frames = MapModel.frames start events
         history.AddRange frames
         tail <- MapModel.stateAt start frames (frames.Length - 1)
@@ -864,11 +868,10 @@ type internal MapMachine(settings: MapSettings) as this =
         refresh ()
 
     let drain (g: Graph) =
-        let events = Trace.events g
+        let fresh = Trace.eventsSince g read
 
-        if events.Length > read then
-            let fresh = events[read..]
-            read <- events.Length
+        if fresh.Length > 0 then
+            read <- fresh[fresh.Length - 1].Seq
             append (MapModel.frames tail fresh)
 
     let current (g: Graph) (generation: int) =

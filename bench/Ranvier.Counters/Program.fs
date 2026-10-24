@@ -35,6 +35,11 @@ Usage: Ranvier.Counters [options]
 
   ab --leg <name> --base <sha> <dir> --head <sha> <dir> --out <file>
                     Alternate base and head builds (optional --rounds, --scale, --only, --node).
+  trace-growth --out <file>
+                    Write the trace growth probe: retained heap, event count
+                    and export timings after sustained updates on one graph.
+  trace-report --dir <dir>
+                    Write <dir>/report.md from a `perf trace` output directory.
   compare --ab <file> [--ab <file>] --out <dir>
                     Write verdict.json and comment.md. Overrides: --label true,
                     --messages <NUL-separated file>, --accept <names|all>
@@ -565,9 +570,34 @@ let private legacyMain argv =
         eprintfn "Wrote %s.json and %s.md" stem stem
         0
 
+/// <summary>Runs <c>TraceGrowth.plan</c> on .NET, writes it to the <c>--out</c> file and prints each summary.</summary>
+let private traceGrowth (args: string list) =
+    match args with
+    | [ "--out"; path ] ->
+        let growth = TraceGrowth.run TraceGrowth.dotnetHost "dotnet" TraceGrowth.plan
+        TraceGrowth.write path growth
+
+        for s in growth.Summaries do
+            printfn
+                "%s: %.2f events/update, %.1f retained B/event, %.1f retained B/update"
+                s.Workload
+                s.EventsPerUpdate
+                s.BytesPerEvent
+                s.RetainedSlope
+
+        eprintfn "Wrote %s (traced: %b)" path growth.Traced
+        0
+    | _ ->
+        eprintfn "Usage: Ranvier.Counters trace-growth --out <file>"
+        2
+
 [<EntryPoint>]
 let main argv =
     match List.ofArray argv with
+    | "trace-growth" :: rest -> traceGrowth rest
+    | [ "trace-report"; "--dir"; directory ] ->
+        eprintfn "Wrote %s" (TraceReport.write directory)
+        0
     | "ab" :: rest -> Ab.main rest
     | "compare" :: rest -> Compare.main rest
     | ("record" | "timeline") :: _ -> History.main (List.ofArray argv)

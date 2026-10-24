@@ -47,9 +47,43 @@ type Tracing =
         Trace.label (graph, node, text)
 
 #if RANVIER_TRACE
-    /// <summary>A copy of the events <c>graph</c> has recorded, oldest first.</summary>
+    /// <summary>A copy of the events retained in <c>graph</c>'s log, oldest first.</summary>
+    /// <remarks>The events up to the checkpoint's seq are folded into <c>CheckpointOf(graph)</c>.</remarks>
     static member Events(graph: Graph) : TraceEvent[] =
         Trace.events graph
+
+    /// <summary>A copy of the events in <c>graph</c>'s log with <c>Seq</c> greater than <c>seq</c>, oldest first.</summary>
+    /// <remarks>
+    /// A cursor is the seq of the last event read, 0 before the first. A consumer with an expired cursor resyncs from
+    /// <c>CheckpointOf(graph)</c> and the events since its seq.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// <c>seq</c> is negative, past the log's last seq, or before the checkpoint's seq.
+    /// </exception>
+    static member EventsSince(graph: Graph, seq: int) : TraceEvent[] =
+        Trace.eventsSince graph seq
+
+    /// <summary>
+    /// Folds the events in <c>graph</c>'s log up to and including seq <c>seq</c> into the checkpoint named
+    /// <c>name</c>, and drops them from the log.
+    /// </summary>
+    /// <remarks>
+    /// The dropped events release their payloads. A <c>seq</c> equal to the checkpoint's seq renames the checkpoint.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException"><c>name</c> is null.</exception>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// <c>seq</c> is before the checkpoint's seq or past the log's last seq, or is the seq of a <c>NodeNew</c> or an
+    /// <c>OwnerNew</c> whose <c>Label</c> follows it.
+    /// </exception>
+    /// <exception cref="T:System.InvalidOperationException">
+    /// Called off the graph's thread, or while a flush, a discharge or a run is in progress.
+    /// </exception>
+    static member Checkpoint(graph: Graph, seq: int, name: string) : unit =
+        Trace.checkpoint graph seq name
+
+    /// <summary>The checkpoint of <c>graph</c>'s log: its name, null before the first, and its folded snapshot.</summary>
+    static member CheckpointOf(graph: Graph) : TraceCheckpoint =
+        Trace.checkpointOf graph
 
     /// <summary>The creation record of <c>node</c>: its identity path, kind, <c>file:line</c> site and seq.</summary>
     /// <exception cref="T:System.ArgumentException"><c>graph</c>'s log holds no <c>NodeNew</c> for <c>node</c>.</exception>

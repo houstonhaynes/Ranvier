@@ -135,6 +135,16 @@ graph, a write settles synchronously before the next line runs.
 
 [Contracts](contracts.md#threading) lists which operations each thread may call and where each kind of work runs.
 
+### Awaiting work from outside the graph
+
+A caller on another thread, such as a request handler or a tool host, awaits `graph.DispatchAsync (fun () -> ...)`.
+The work runs in the graph's consistency domain, as `Dispatch` work does, and the task completes with its result
+or faults with its exception. An optional `CancellationToken` cancels the item while it waits in the inbox.
+Disposing the graph faults every item still waiting with `ObjectDisposedException`.
+The [sample](https://github.com/shayanhabibi/Ranvier/blob/master/samples/dispatch-async.fsx) runs the owner on a
+dedicated thread that drains its inbox when its dispatcher wakes it, and reads a memo, writes a signal and catches
+a failure from the thread pool. [Contracts](contracts.md#awaiting-dispatched-work) lists every case.
+
 ### Where tracking state lives
 
 Tracking must not follow an `await` into its continuation. Code that resumes after an `await` is outside the

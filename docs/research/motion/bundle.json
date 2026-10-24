@@ -7,20 +7,20 @@
       },
       "handWritten": {
         "raw": 241787,
-        "gzip": 72967
+        "gzip": 72980
       },
-      "deltaGzip": 732,
+      "deltaGzip": 719,
       "budgetGzip": 900,
       "withinBudget": true
     },
     "flip": {
       "motion": {
         "raw": 271886,
-        "gzip": 81602
+        "gzip": 81597
       },
       "handWritten": {
         "raw": 269585,
-        "gzip": 81013
+        "gzip": 81008
       },
       "deltaGzip": 589,
       "budgetGzip": 600,

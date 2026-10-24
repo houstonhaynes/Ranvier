@@ -28,6 +28,27 @@ public class TracingTests
 
 #if RANVIER_TRACE
     [Fact]
+    public void EventsSinceReadsAfterTheCursorAndCheckpointDropsThePrefix()
+    {
+        var graph = new Graph();
+        using var active = graph.Activate();
+        var count = Signal(1);
+        count.Value = 2;
+        var events = Tracing.Events(graph);
+        var last = events[^1].Seq;
+
+        Assert.Equal(events.Skip(1).Select(e => e.Seq), Tracing.EventsSince(graph, 1).Select(e => e.Seq));
+        Assert.Null(Tracing.CheckpointOf(graph).Name);
+
+        Tracing.Checkpoint(graph, last, "cut");
+
+        Assert.Equal("cut", Tracing.CheckpointOf(graph).Name);
+        Assert.Equal(last, Tracing.CheckpointOf(graph).Snapshot.Seq);
+        Assert.Empty(Tracing.EventsSince(graph, last));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Tracing.EventsSince(graph, 0));
+    }
+
+    [Fact]
     public void OriginNamesTheLabelAndTheCallersFile()
     {
         var graph = new Graph();

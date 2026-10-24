@@ -1,0 +1,11 @@
+{
+  "BenchmarkJob": "default",
+  "CPU": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
+  "Dotnet": "10.0.13",
+  "Fable": "fickl 0.5.3",
+  "FableLibrary": "2.9.0",
+  "LogicalProcessors": 24,
+  "Node": "v26.7.0",
+  "OS": "Microsoft Windows 10.0.26200",
+  "Source": "f48a3a7fdf37c6e936ab6237d971642fd012a8ce"
+}
