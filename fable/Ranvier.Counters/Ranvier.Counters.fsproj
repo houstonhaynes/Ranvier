@@ -4,8 +4,9 @@
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <IsPackable>false</IsPackable>
-        <!-- Measured builds are untraced; the trace log would be measured. -->
-        <RanvierTrace>false</RanvierTrace>
+        <!-- Measured builds are untraced unless `RanvierTrace` is set, from `-p:` or the
+             environment; `RanvierTrace=true` compiles the harness and the library traced. -->
+        <RanvierTrace Condition="'$(RanvierTrace)' == ''">false</RanvierTrace>
         <RootNamespace>FableCounters</RootNamespace>
         <!-- Measurements are the product here; the docs would be noise. -->
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -25,6 +26,7 @@
         <Compile Include="..\..\experiments\Ranvier.View.Checks\ServerFixtures.fs" Link="ServerFixtures.fs" />
         <Compile Include="..\..\bench\Ranvier.Counters\ServerWorkloads.fs" Link="ServerWorkloads.fs" />
         <Compile Include="..\..\bench\Ranvier.Counters\Control.fs" Link="Control.fs" />
+        <Compile Include="..\..\bench\Ranvier.Counters\TraceGrowth.fs" Link="TraceGrowth.fs" />
         <Compile Include="Scenarios.fs" />
         <Compile Include="Appended.fs" />
         <Compile Include="Main.fs" />

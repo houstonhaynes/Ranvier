@@ -28,6 +28,7 @@
         <Compile Include="..\..\experiments\Ranvier.View.Checks\ServerFixtures.fs" Link="ServerFixtures.fs" />
         <Compile Include="ServerWorkloads.fs" />
         <Compile Include="Control.fs" />
+        <Compile Include="TraceGrowth.fs" />
         <Compile Include="Scenarios.fs" />
         <Compile Include="Reconcile.fs" />
         <Compile Include="Worker.fs" />
@@ -39,6 +40,7 @@
         <Compile Include="History.fs" />
         <Compile Include="Report.fs" />
         <Compile Include="Charts.fs" />
+        <Compile Include="TraceReport.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

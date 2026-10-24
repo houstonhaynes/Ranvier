@@ -59,6 +59,14 @@ comparable with it.
 | `EditableBenchmarks` | What do a local edit and an upstream change of a `createEditable` value cost, against a plain signal write? |
 | `SizeOfProbe` | What is the shallow size of `Memo`, `AsyncMemo`, `Boundary`, `Effect`, `AsyncSource` and `Failure`? Read the `Allocated` column. |
 | `DerivedValueComparison`, `ChainComparison`, `CutoffComparison` | The same work in FSharp.Data.Adaptive, R3, System.Reactive and by hand. |
+| `TraceCostBenchmarks`, `TraceConstructionBenchmarks` (category `Trace`) | What does the trace log add to a write (`signal`, `memo`, `chain`, `fanout`, `cutoff`, `batch`) and to construction and disposal? Each method runs under an `Untraced` job (the ratio baseline) and a `Traced` job built with `/p:RanvierTrace=true`. |
+| `TraceQueryBenchmarks`, `TraceHistoryBenchmarks` (category `Trace`, traced job only) | What do `Trace.events`, `snapshot`, `why`, `origin`, `dumpText`, the incremental tail read and `history` cost at 1,000 to 100,000 recorded updates? |
+
+The `Trace` group is run as part of `dotnet fsi build.fsx -- perf trace OUT`, which also runs
+the counter scenarios, the trace growth probe on .NET and Node.js, and the Chromium keyed-row
+harness traced and untraced. Baselines are committed under `tracing/<sha>/`; the current one is
+[`tracing/f48a3a7`](tracing/f48a3a7/README.md), and its budget is
+[`docs/content/benchmarks/tracing.md`](../../content/benchmarks/tracing.md).
 
 ## Regression sentinels
 

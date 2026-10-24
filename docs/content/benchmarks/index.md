@@ -17,6 +17,7 @@ Ranvier ships a BenchmarkDotNet suite covering signals, memos, effects, lifetime
 | [Suspension](suspension.md) | The cost of the pending and error channels: throwing through a chain, boundaries, settling a source, flights under each `FlightPolicy`, and failing recomputations. |
 | [Streams](streams.md) | Delivering bursts of items into a stream fold, against async-source settles, and restarting a stream against restarting an async memo. CI instruction counts only. |
 | [Instruction counts](counters.md) | Whole scenarios by instructions per operation, against FSharp.Data.Adaptive, R3 and Fable.Ripple, on .NET and Node.js. |
+| [Tracing cost](tracing.md) | What the traced build (`RanvierTrace=true`) costs against the untraced build on .NET, Node.js and Chromium: events and retained bytes per update, time and allocation ratios, export and incremental-read costs, and the budget for instrumentation changes. |
 
 ## Results
 

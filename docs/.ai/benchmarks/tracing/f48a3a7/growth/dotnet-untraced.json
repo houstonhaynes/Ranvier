@@ -1,0 +1,90 @@
+{
+  "Runtime": "dotnet",
+  "Traced": false,
+  "Checkpoints": [
+    {
+      "Workload": "memo",
+      "Updates": 1000,
+      "Events": 0,
+      "RetainedBytes": 7600,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    },
+    {
+      "Workload": "memo",
+      "Updates": 10000,
+      "Events": 0,
+      "RetainedBytes": 7680,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    },
+    {
+      "Workload": "memo",
+      "Updates": 100000,
+      "Events": 0,
+      "RetainedBytes": 7760,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 100,
+      "Events": 0,
+      "RetainedBytes": 26064,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 1000,
+      "Events": 0,
+      "RetainedBytes": 26144,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    },
+    {
+      "Workload": "fanout",
+      "Updates": 10000,
+      "Events": 0,
+      "RetainedBytes": 26224,
+      "EventsMs": 0,
+      "SnapshotMs": 0,
+      "DumpTextMs": 0,
+      "TailReadMs": 0,
+      "TailEvents": 0
+    }
+  ],
+  "Summaries": [
+    {
+      "Workload": "memo",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 0,
+      "BytesPerEvent": 0,
+      "EventSlope": 0,
+      "RetainedSlope": 0.0013213213213213214
+    },
+    {
+      "Workload": "fanout",
+      "Checkpoints": 3,
+      "EventsPerUpdate": 0,
+      "BytesPerEvent": 0,
+      "EventSlope": 0,
+      "RetainedSlope": 0.013213213213213212
+    }
+  ]
+}

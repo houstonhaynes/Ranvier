@@ -1,0 +1,5725 @@
+{
+  "Calibration": {
+    "Runs": 1,
+    "Divergences": [],
+    "Spreads": []
+  },
+  "Fable": {
+    "Node": "v26.7.0",
+    "Flags": "--expose-gc --single-threaded --min-semi-space-size=32 --max-semi-space-size=32",
+    "Mode": "not collected (--no-pmc)",
+    "Versions": {
+      "Fable.Ripple": "1.0.0-beta.5",
+      "Node.js": "v26.7.0",
+      "Ranvier": "f48a3a7f",
+      "Xantham.Fable.Core": "0.2.0",
+      "fable-library-js": "5.23.0"
+    },
+    "AllocationRuns": [
+      {
+        "ProcessId": 9712,
+        "CountersCompiled": false,
+        "Cases": [
+          {
+            "Scenario": "timed-capture-debounce",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 0,
+                "Bytes": 108816904,
+                "HeapUsedBytes": 108823736,
+                "CodeBytes": 0,
+                "Gen0Collections": 20,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 1,
+                "Bytes": -124065848,
+                "HeapUsedBytes": -124133744,
+                "CodeBytes": -71120,
+                "Gen0Collections": 40,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-debounce",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 2,
+                "Bytes": 226599736,
+                "HeapUsedBytes": 226606144,
+                "CodeBytes": 0,
+                "Gen0Collections": 50,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 3,
+                "Bytes": -1115153784,
+                "HeapUsedBytes": -1115208496,
+                "CodeBytes": -57936,
+                "Gen0Collections": 93,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-first",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 4,
+                "Bytes": 139850280,
+                "HeapUsedBytes": 139856920,
+                "CodeBytes": 0,
+                "Gen0Collections": 20,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 5,
+                "Bytes": 199905264,
+                "HeapUsedBytes": 199908696,
+                "CodeBytes": 0,
+                "Gen0Collections": 41,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-first",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 6,
+                "Bytes": 177075800,
+                "HeapUsedBytes": 177082728,
+                "CodeBytes": 0,
+                "Gen0Collections": 35,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 7,
+                "Bytes": -912424048,
+                "HeapUsedBytes": -912500776,
+                "CodeBytes": -79952,
+                "Gen0Collections": 69,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-last",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 8,
+                "Bytes": 94478456,
+                "HeapUsedBytes": 94484864,
+                "CodeBytes": 0,
+                "Gen0Collections": 20,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 9,
+                "Bytes": -130138632,
+                "HeapUsedBytes": -130154400,
+                "CodeBytes": -18992,
+                "Gen0Collections": 39,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-last",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 10,
+                "Bytes": 234274984,
+                "HeapUsedBytes": 234281912,
+                "CodeBytes": 0,
+                "Gen0Collections": 49,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 11,
+                "Bytes": -1098975856,
+                "HeapUsedBytes": -1099029248,
+                "CodeBytes": -56616,
+                "Gen0Collections": 91,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-both",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 12,
+                "Bytes": 94548136,
+                "HeapUsedBytes": 94554544,
+                "CodeBytes": 0,
+                "Gen0Collections": 20,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 13,
+                "Bytes": -113747920,
+                "HeapUsedBytes": -113780176,
+                "CodeBytes": -35480,
+                "Gen0Collections": 38,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-both",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 14,
+                "Bytes": 238330368,
+                "HeapUsedBytes": 238337296,
+                "CodeBytes": 0,
+                "Gen0Collections": 49,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 15,
+                "Bytes": -1121468880,
+                "HeapUsedBytes": -1121524720,
+                "CodeBytes": -59064,
+                "Gen0Collections": 92,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create",
+            "Engine": "Ranvier",
+            "Unit": "one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 16,
+                "Bytes": 24695760,
+                "HeapUsedBytes": 24702168,
+                "CodeBytes": 0,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 17,
+                "Bytes": 53567016,
+                "HeapUsedBytes": 53570240,
+                "CodeBytes": 0,
+                "Gen0Collections": 6,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create",
+            "Engine": "Fable.Ripple",
+            "Unit": "one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 18,
+                "Bytes": 10598712,
+                "HeapUsedBytes": 10605352,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 19,
+                "Bytes": 21186488,
+                "HeapUsedBytes": 21189920,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update",
+            "Engine": "Ranvier",
+            "Unit": "write every 10th of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 20,
+                "Bytes": 19192392,
+                "HeapUsedBytes": 19195632,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 21,
+                "Bytes": -52401744,
+                "HeapUsedBytes": -52624416,
+                "CodeBytes": -225912,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update",
+            "Engine": "Fable.Ripple",
+            "Unit": "write every 10th of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 22,
+                "Bytes": 1130928,
+                "HeapUsedBytes": 1134168,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 23,
+                "Bytes": 2252232,
+                "HeapUsedBytes": 2255472,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain",
+            "Engine": "Ranvier",
+            "Unit": "write the source of 4 memos, read the tail",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 24,
+                "Bytes": 51361400,
+                "HeapUsedBytes": 51364640,
+                "CodeBytes": 0,
+                "Gen0Collections": 4,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 25,
+                "Bytes": -44269904,
+                "HeapUsedBytes": -44322032,
+                "CodeBytes": -55368,
+                "Gen0Collections": 10,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain",
+            "Engine": "Fable.Ripple",
+            "Unit": "write the source of 4 memos, read the tail",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 26,
+                "Bytes": 10056,
+                "HeapUsedBytes": 13296,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 27,
+                "Bytes": 10056,
+                "HeapUsedBytes": 13296,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "cutoff",
+            "Engine": "Ranvier",
+            "Unit": "write an equal value to an observed source",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 28,
+                "Bytes": 18090944,
+                "HeapUsedBytes": 18094184,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 29,
+                "Bytes": 10062304,
+                "HeapUsedBytes": 10065544,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "cutoff",
+            "Engine": "Fable.Ripple",
+            "Unit": "write an equal value to an observed source",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 30,
+                "Bytes": 10056,
+                "HeapUsedBytes": 13296,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 31,
+                "Bytes": 10056,
+                "HeapUsedBytes": 13296,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose",
+            "Engine": "Ranvier",
+            "Unit": "dispose one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 32,
+                "Bytes": 13552384,
+                "HeapUsedBytes": 13555624,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 33,
+                "Bytes": 24347096,
+                "HeapUsedBytes": 24350336,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose",
+            "Engine": "Fable.Ripple",
+            "Unit": "dispose one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 34,
+                "Bytes": 238920,
+                "HeapUsedBytes": 242160,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 35,
+                "Bytes": 475072,
+                "HeapUsedBytes": 478312,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create-on",
+            "Engine": "Ranvier",
+            "Unit": "one root of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 36,
+                "Bytes": 27193128,
+                "HeapUsedBytes": 27196368,
+                "CodeBytes": 0,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 37,
+                "Bytes": 58612768,
+                "HeapUsedBytes": 58616008,
+                "CodeBytes": 0,
+                "Gen0Collections": 6,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update-on",
+            "Engine": "Ranvier",
+            "Unit": "write every 10th of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 38,
+                "Bytes": 20905736,
+                "HeapUsedBytes": 20908976,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 39,
+                "Bytes": -57157960,
+                "HeapUsedBytes": -57368632,
+                "CodeBytes": -213912,
+                "Gen0Collections": 4,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose-on",
+            "Engine": "Ranvier",
+            "Unit": "dispose one root of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 40,
+                "Bytes": 13551104,
+                "HeapUsedBytes": 13554344,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 41,
+                "Bytes": 24345336,
+                "HeapUsedBytes": 24348576,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "derive-effect",
+            "Engine": "Ranvier",
+            "Unit": "write a new value whose derived value is unchanged, Effect",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 42,
+                "Bytes": 97105856,
+                "HeapUsedBytes": 97109096,
+                "CodeBytes": 0,
+                "Gen0Collections": 14,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 43,
+                "Bytes": -187269800,
+                "HeapUsedBytes": -187311856,
+                "CodeBytes": -45296,
+                "Gen0Collections": 28,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "derive-on",
+            "Engine": "Ranvier",
+            "Unit": "write a new value whose derived value is unchanged, createEffectOn",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 44,
+                "Bytes": 80342584,
+                "HeapUsedBytes": 80345824,
+                "CodeBytes": 0,
+                "Gen0Collections": 15,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 45,
+                "Bytes": -168364416,
+                "HeapUsedBytes": -168410600,
+                "CodeBytes": -49424,
+                "Gen0Collections": 28,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-status",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 46,
+                "Bytes": 21063288,
+                "HeapUsedBytes": 21066528,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 47,
+                "Bytes": -58617440,
+                "HeapUsedBytes": -58790944,
+                "CodeBytes": -176744,
+                "Gen0Collections": 4,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-status",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 48,
+                "Bytes": 21411232,
+                "HeapUsedBytes": 21414472,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 49,
+                "Bytes": -34113416,
+                "HeapUsedBytes": -34260816,
+                "CodeBytes": -150640,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-value",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 50,
+                "Bytes": 21063288,
+                "HeapUsedBytes": 21066528,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 51,
+                "Bytes": -45053400,
+                "HeapUsedBytes": -45200624,
+                "CodeBytes": -150464,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-value",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 52,
+                "Bytes": 22488696,
+                "HeapUsedBytes": 22491936,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 53,
+                "Bytes": -36065432,
+                "HeapUsedBytes": -36214864,
+                "CodeBytes": -152672,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-form",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 54,
+                "Bytes": 37156080,
+                "HeapUsedBytes": 37159320,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 55,
+                "Bytes": 46403736,
+                "HeapUsedBytes": 46406976,
+                "CodeBytes": 0,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-form",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 56,
+                "Bytes": 34247392,
+                "HeapUsedBytes": 34250632,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 57,
+                "Bytes": 41260856,
+                "HeapUsedBytes": 41264096,
+                "CodeBytes": 0,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 58,
+                "Bytes": 77339832,
+                "HeapUsedBytes": 77343576,
+                "CodeBytes": 0,
+                "Gen0Collections": 13,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 59,
+                "Bytes": 151219248,
+                "HeapUsedBytes": 151222472,
+                "CodeBytes": 0,
+                "Gen0Collections": 26,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 60,
+                "Bytes": 2488784,
+                "HeapUsedBytes": 2495192,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 61,
+                "Bytes": 5081592,
+                "HeapUsedBytes": 5084816,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 62,
+                "Bytes": 78258280,
+                "HeapUsedBytes": 78264920,
+                "CodeBytes": 0,
+                "Gen0Collections": 13,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 63,
+                "Bytes": 152683616,
+                "HeapUsedBytes": 152687048,
+                "CodeBytes": 0,
+                "Gen0Collections": 26,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 64,
+                "Bytes": 1827920,
+                "HeapUsedBytes": 1831160,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 65,
+                "Bytes": 3645648,
+                "HeapUsedBytes": 3648888,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 66,
+                "Bytes": 77578832,
+                "HeapUsedBytes": 77582576,
+                "CodeBytes": 0,
+                "Gen0Collections": 13,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 67,
+                "Bytes": 151334344,
+                "HeapUsedBytes": 151337568,
+                "CodeBytes": 0,
+                "Gen0Collections": 26,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 68,
+                "Bytes": 2348680,
+                "HeapUsedBytes": 2355088,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 69,
+                "Bytes": 4768376,
+                "HeapUsedBytes": 4771600,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "server-render",
+            "Engine": "Ranvier",
+            "Unit": "render a 100-row keyed table as one request",
+            "Measurements": [
+              {
+                "Ops": 5,
+                "Region": 70,
+                "Bytes": 1481072,
+                "HeapUsedBytes": 1487712,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10,
+                "Region": 71,
+                "Bytes": 2952008,
+                "HeapUsedBytes": 2955440,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "app-table",
+            "Engine": "Ranvier",
+            "Unit": "alternate a filter query and a sort direction over 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 72,
+                "Bytes": 124285664,
+                "HeapUsedBytes": 124289408,
+                "CodeBytes": 0,
+                "Gen0Collections": 16,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 73,
+                "Bytes": -353325528,
+                "HeapUsedBytes": -353382640,
+                "CodeBytes": -60336,
+                "Gen0Collections": 31,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "app-detail",
+            "Engine": "Ranvier",
+            "Unit": "move the selection over 1000 rows; the detail rebuilds 20 memo and effect pairs",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 74,
+                "Bytes": 22126056,
+                "HeapUsedBytes": 22132464,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 75,
+                "Bytes": 13898080,
+                "HeapUsedBytes": 13901304,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "shape-diamond",
+            "Engine": "Ranvier",
+            "Unit": "write a source read by 100 memos joined by one",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 76,
+                "Bytes": 555889160,
+                "HeapUsedBytes": 555896088,
+                "CodeBytes": 0,
+                "Gen0Collections": 113,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 77,
+                "Bytes": -397332040,
+                "HeapUsedBytes": -397346440,
+                "CodeBytes": -17624,
+                "Gen0Collections": 224,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "shape-dynamic",
+            "Engine": "Ranvier",
+            "Unit": "alternate a branch flip and a write of every active source of 100 effects",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 78,
+                "Bytes": 72646552,
+                "HeapUsedBytes": 72652960,
+                "CodeBytes": 0,
+                "Gen0Collections": 13,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 79,
+                "Bytes": 150422208,
+                "HeapUsedBytes": 150425432,
+                "CodeBytes": 0,
+                "Gen0Collections": 26,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "async-resolve",
+            "Engine": "Ranvier",
+            "Unit": "reload 10 suspense widgets of 10 sources, then settle each",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 80,
+                "Bytes": 44706376,
+                "HeapUsedBytes": 44713016,
+                "CodeBytes": 0,
+                "Gen0Collections": 2,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 81,
+                "Bytes": 39026984,
+                "HeapUsedBytes": 39030416,
+                "CodeBytes": 0,
+                "Gen0Collections": 6,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "async-recover",
+            "Engine": "Ranvier",
+            "Unit": "fail one source of one error-boundary widget, then settle a replacement",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 82,
+                "Bytes": 23261728,
+                "HeapUsedBytes": 23264968,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 83,
+                "Bytes": 24983680,
+                "HeapUsedBytes": 24986920,
+                "CodeBytes": 0,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 84,
+                "Bytes": 10533584,
+                "HeapUsedBytes": 10536824,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 85,
+                "Bytes": 21122088,
+                "HeapUsedBytes": 21125328,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 86,
+                "Bytes": 10043544,
+                "HeapUsedBytes": 10046784,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 87,
+                "Bytes": 20127992,
+                "HeapUsedBytes": 20131232,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 88,
+                "Bytes": 9770304,
+                "HeapUsedBytes": 9773544,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 89,
+                "Bytes": 19412552,
+                "HeapUsedBytes": 19415792,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 90,
+                "Bytes": 10533488,
+                "HeapUsedBytes": 10536728,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 91,
+                "Bytes": 21122024,
+                "HeapUsedBytes": 21125264,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 92,
+                "Bytes": 18917384,
+                "HeapUsedBytes": 18920624,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 93,
+                "Bytes": 7143712,
+                "HeapUsedBytes": 7146952,
+                "CodeBytes": 0,
+                "Gen0Collections": 1,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 94,
+                "Bytes": 36591408,
+                "HeapUsedBytes": 36594648,
+                "CodeBytes": 0,
+                "Gen0Collections": 4,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 95,
+                "Bytes": 46817328,
+                "HeapUsedBytes": 46820568,
+                "CodeBytes": 0,
+                "Gen0Collections": 9,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 96,
+                "Bytes": 434344,
+                "HeapUsedBytes": 437584,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 97,
+                "Bytes": 854592,
+                "HeapUsedBytes": 857832,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 98,
+                "Bytes": 6490752,
+                "HeapUsedBytes": 6493992,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 99,
+                "Bytes": 12655696,
+                "HeapUsedBytes": 12658936,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 100,
+                "Bytes": 38450536,
+                "HeapUsedBytes": 38453776,
+                "CodeBytes": 0,
+                "Gen0Collections": 2,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 101,
+                "Bytes": -58247592,
+                "HeapUsedBytes": -58381672,
+                "CodeBytes": -137320,
+                "Gen0Collections": 6,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-restart",
+            "Engine": "Ranvier (stream)",
+            "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 102,
+                "Bytes": 14643696,
+                "HeapUsedBytes": 14646936,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 103,
+                "Bytes": 29352888,
+                "HeapUsedBytes": 29356128,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-restart",
+            "Engine": "Ranvier (async memo, CancelPrevious)",
+            "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 104,
+                "Bytes": 8717936,
+                "HeapUsedBytes": 8721176,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 105,
+                "Bytes": 17534464,
+                "HeapUsedBytes": 17537704,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 106,
+                "Bytes": 1882008,
+                "HeapUsedBytes": 1885248,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 107,
+                "Bytes": 3596384,
+                "HeapUsedBytes": 3599624,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 108,
+                "Bytes": 1487712,
+                "HeapUsedBytes": 1490952,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 109,
+                "Bytes": 2960600,
+                "HeapUsedBytes": 2963840,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 110,
+                "Bytes": 1909128,
+                "HeapUsedBytes": 1912368,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 111,
+                "Bytes": 3622896,
+                "HeapUsedBytes": 3626136,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "control",
+            "Engine": "Control",
+            "Unit": "refill a 256-entry closure table, sum it, and sort a copy of its array",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 112,
+                "Bytes": 2299832,
+                "HeapUsedBytes": 2303072,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 113,
+                "Bytes": 4590472,
+                "HeapUsedBytes": 4593712,
+                "CodeBytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "CounterRuns": [],
+    "PmcRuns": [],
+    "Rows": [
+      {
+        "Scenario": "timed-capture-debounce",
+        "Engine": "Ranvier",
+        "Unit": "capture a changed input in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -232882.752,
+          "Min": -232882.752,
+          "Max": -232882.752
+        },
+        "HeapUsedBytes": {
+          "Median": -232957.48,
+          "Min": -232957.48,
+          "Max": -232957.48
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-admit-debounce",
+        "Engine": "Ranvier",
+        "Unit": "capture and admit in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1341753.52,
+          "Min": -1341753.52,
+          "Max": -1341753.52
+        },
+        "HeapUsedBytes": {
+          "Median": -1341814.64,
+          "Min": -1341814.64,
+          "Max": -1341814.64
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-capture-first",
+        "Engine": "Ranvier",
+        "Unit": "capture a changed input in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 60054.984,
+          "Min": 60054.984,
+          "Max": 60054.984
+        },
+        "HeapUsedBytes": {
+          "Median": 60051.776,
+          "Min": 60051.776,
+          "Max": 60051.776
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-admit-first",
+        "Engine": "Ranvier",
+        "Unit": "capture and admit in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1089499.848,
+          "Min": -1089499.848,
+          "Max": -1089499.848
+        },
+        "HeapUsedBytes": {
+          "Median": -1089583.504,
+          "Min": -1089583.504,
+          "Max": -1089583.504
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-capture-last",
+        "Engine": "Ranvier",
+        "Unit": "capture a changed input in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -224617.088,
+          "Min": -224617.088,
+          "Max": -224617.088
+        },
+        "HeapUsedBytes": {
+          "Median": -224639.264,
+          "Min": -224639.264,
+          "Max": -224639.264
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-admit-last",
+        "Engine": "Ranvier",
+        "Unit": "capture and admit in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1333250.84,
+          "Min": -1333250.84,
+          "Max": -1333250.84
+        },
+        "HeapUsedBytes": {
+          "Median": -1333311.16,
+          "Min": -1333311.16,
+          "Max": -1333311.16
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-capture-both",
+        "Engine": "Ranvier",
+        "Unit": "capture a changed input in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -208296.056,
+          "Min": -208296.056,
+          "Max": -208296.056
+        },
+        "HeapUsedBytes": {
+          "Median": -208334.72,
+          "Min": -208334.72,
+          "Max": -208334.72
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "timed-admit-both",
+        "Engine": "Ranvier",
+        "Unit": "capture and admit in 64 timed nodes",
+        "N": 1000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1359799.248,
+          "Min": -1359799.248,
+          "Max": -1359799.248
+        },
+        "HeapUsedBytes": {
+          "Median": -1359862.016,
+          "Min": -1359862.016,
+          "Max": -1359862.016
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "create",
+        "Engine": "Ranvier",
+        "Unit": "one root of 1000 rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 3608907,
+          "Min": 3608907,
+          "Max": 3608907
+        },
+        "HeapUsedBytes": {
+          "Median": 3608509,
+          "Min": 3608509,
+          "Max": 3608509
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "create",
+        "Engine": "Fable.Ripple",
+        "Unit": "one root of 1000 rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1323472,
+          "Min": 1323472,
+          "Max": 1323472
+        },
+        "HeapUsedBytes": {
+          "Median": 1323071,
+          "Min": 1323071,
+          "Max": 1323071
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "update",
+        "Engine": "Ranvier",
+        "Unit": "write every 10th of 1000 rows",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1431882.72,
+          "Min": -1431882.72,
+          "Max": -1431882.72
+        },
+        "HeapUsedBytes": {
+          "Median": -1436400.96,
+          "Min": -1436400.96,
+          "Max": -1436400.96
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "update",
+        "Engine": "Fable.Ripple",
+        "Unit": "write every 10th of 1000 rows",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 22426.08,
+          "Min": 22426.08,
+          "Max": 22426.08
+        },
+        "HeapUsedBytes": {
+          "Median": 22426.08,
+          "Min": 22426.08,
+          "Max": 22426.08
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "chain",
+        "Engine": "Ranvier",
+        "Unit": "write the source of 4 memos, read the tail",
+        "N": 5000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -19126.2608,
+          "Min": -19126.2608,
+          "Max": -19126.2608
+        },
+        "HeapUsedBytes": {
+          "Median": -19137.3344,
+          "Min": -19137.3344,
+          "Max": -19137.3344
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "chain",
+        "Engine": "Fable.Ripple",
+        "Unit": "write the source of 4 memos, read the tail",
+        "N": 5000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        "HeapUsedBytes": {
+          "Median": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "cutoff",
+        "Engine": "Ranvier",
+        "Unit": "write an equal value to an observed source",
+        "N": 50000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -160.5728,
+          "Min": -160.5728,
+          "Max": -160.5728
+        },
+        "HeapUsedBytes": {
+          "Median": -160.5728,
+          "Min": -160.5728,
+          "Max": -160.5728
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "cutoff",
+        "Engine": "Fable.Ripple",
+        "Unit": "write an equal value to an observed source",
+        "N": 50000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        "HeapUsedBytes": {
+          "Median": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "dispose",
+        "Engine": "Ranvier",
+        "Unit": "dispose one root of 1000 rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1349339,
+          "Min": 1349339,
+          "Max": 1349339
+        },
+        "HeapUsedBytes": {
+          "Median": 1349339,
+          "Min": 1349339,
+          "Max": 1349339
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "dispose",
+        "Engine": "Fable.Ripple",
+        "Unit": "dispose one root of 1000 rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 29519,
+          "Min": 29519,
+          "Max": 29519
+        },
+        "HeapUsedBytes": {
+          "Median": 29519,
+          "Min": 29519,
+          "Max": 29519
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "create-on",
+        "Engine": "Ranvier",
+        "Unit": "one root of 1000 createEffectOn rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 3927455,
+          "Min": 3927455,
+          "Max": 3927455
+        },
+        "HeapUsedBytes": {
+          "Median": 3927455,
+          "Min": 3927455,
+          "Max": 3927455
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "update-on",
+        "Engine": "Ranvier",
+        "Unit": "write every 10th of 1000 createEffectOn rows",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1561273.92,
+          "Min": -1561273.92,
+          "Max": -1561273.92
+        },
+        "HeapUsedBytes": {
+          "Median": -1565552.16,
+          "Min": -1565552.16,
+          "Max": -1565552.16
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "dispose-on",
+        "Engine": "Ranvier",
+        "Unit": "dispose one root of 1000 createEffectOn rows",
+        "N": 8,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1349279,
+          "Min": 1349279,
+          "Max": 1349279
+        },
+        "HeapUsedBytes": {
+          "Median": 1349279,
+          "Min": 1349279,
+          "Max": 1349279
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "derive-effect",
+        "Engine": "Ranvier",
+        "Unit": "write a new value whose derived value is unchanged, Effect",
+        "N": 50000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -5687.51312,
+          "Min": -5687.51312,
+          "Max": -5687.51312
+        },
+        "HeapUsedBytes": {
+          "Median": -5688.41904,
+          "Min": -5688.41904,
+          "Max": -5688.41904
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "derive-on",
+        "Engine": "Ranvier",
+        "Unit": "write a new value whose derived value is unchanged, createEffectOn",
+        "N": 50000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -4974.14,
+          "Min": -4974.14,
+          "Max": -4974.14
+        },
+        "HeapUsedBytes": {
+          "Median": -4975.12848,
+          "Min": -4975.12848,
+          "Max": -4975.12848
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-status",
+        "Engine": "Ranvier (createEffect)",
+        "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1593614.56,
+          "Min": -1593614.56,
+          "Max": -1593614.56
+        },
+        "HeapUsedBytes": {
+          "Median": -1597149.44,
+          "Min": -1597149.44,
+          "Max": -1597149.44
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-status",
+        "Engine": "Ranvier (createEffectOn)",
+        "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1110492.96,
+          "Min": -1110492.96,
+          "Max": -1110492.96
+        },
+        "HeapUsedBytes": {
+          "Median": -1113505.76,
+          "Min": -1113505.76,
+          "Max": -1113505.76
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-value",
+        "Engine": "Ranvier (createEffect)",
+        "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1322333.76,
+          "Min": -1322333.76,
+          "Max": -1322333.76
+        },
+        "HeapUsedBytes": {
+          "Median": -1325343.04,
+          "Min": -1325343.04,
+          "Max": -1325343.04
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-value",
+        "Engine": "Ranvier (createEffectOn)",
+        "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -1171082.56,
+          "Min": -1171082.56,
+          "Max": -1171082.56
+        },
+        "HeapUsedBytes": {
+          "Median": -1174136,
+          "Min": -1174136,
+          "Max": -1174136
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-form",
+        "Engine": "Ranvier (createEffect)",
+        "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 184953.12,
+          "Min": 184953.12,
+          "Max": 184953.12
+        },
+        "HeapUsedBytes": {
+          "Median": 184953.12,
+          "Min": 184953.12,
+          "Max": 184953.12
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "work-form",
+        "Engine": "Ranvier (createEffectOn)",
+        "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 140269.28,
+          "Min": 140269.28,
+          "Max": 140269.28
+        },
+        "HeapUsedBytes": {
+          "Median": 140269.28,
+          "Min": 140269.28,
+          "Max": 140269.28
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-remove",
+        "Engine": "Ranvier (fresh items)",
+        "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1477588.32,
+          "Min": 1477588.32,
+          "Max": 1477588.32
+        },
+        "HeapUsedBytes": {
+          "Median": 1477577.92,
+          "Min": 1477577.92,
+          "Max": 1477577.92
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-remove",
+        "Engine": "Ranvier (stable items)",
+        "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 51856.16,
+          "Min": 51856.16,
+          "Max": 51856.16
+        },
+        "HeapUsedBytes": {
+          "Median": 51792.48,
+          "Min": 51792.48,
+          "Max": 51792.48
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-swap",
+        "Engine": "Ranvier (fresh items)",
+        "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1488506.72,
+          "Min": 1488506.72,
+          "Max": 1488506.72
+        },
+        "HeapUsedBytes": {
+          "Median": 1488442.56,
+          "Min": 1488442.56,
+          "Max": 1488442.56
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-swap",
+        "Engine": "Ranvier (stable items)",
+        "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 36354.56,
+          "Min": 36354.56,
+          "Max": 36354.56
+        },
+        "HeapUsedBytes": {
+          "Median": 36354.56,
+          "Min": 36354.56,
+          "Max": 36354.56
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-insert",
+        "Engine": "Ranvier (fresh items)",
+        "Unit": "alternately prepend a row and restore of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 1475110.24,
+          "Min": 1475110.24,
+          "Max": 1475110.24
+        },
+        "HeapUsedBytes": {
+          "Median": 1475099.84,
+          "Min": 1475099.84,
+          "Max": 1475099.84
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-insert",
+        "Engine": "Ranvier (stable items)",
+        "Unit": "alternately prepend a row and restore of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 48393.92,
+          "Min": 48393.92,
+          "Max": 48393.92
+        },
+        "HeapUsedBytes": {
+          "Median": 48330.24,
+          "Min": 48330.24,
+          "Max": 48330.24
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "server-render",
+        "Engine": "Ranvier",
+        "Unit": "render a 100-row keyed table as one request",
+        "N": 5,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 294187.2,
+          "Min": 294187.2,
+          "Max": 294187.2
+        },
+        "HeapUsedBytes": {
+          "Median": 293545.6,
+          "Min": 293545.6,
+          "Max": 293545.6
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "app-table",
+        "Engine": "Ranvier",
+        "Unit": "alternate a filter query and a sort direction over 1000 rows",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -9552223.84,
+          "Min": -9552223.84,
+          "Max": -9552223.84
+        },
+        "HeapUsedBytes": {
+          "Median": -9553440.96,
+          "Min": -9553440.96,
+          "Max": -9553440.96
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "app-detail",
+        "Engine": "Ranvier",
+        "Unit": "move the selection over 1000 rows; the detail rebuilds 20 memo and effect pairs",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -164559.52,
+          "Min": -164559.52,
+          "Max": -164559.52
+        },
+        "HeapUsedBytes": {
+          "Median": -164623.2,
+          "Min": -164623.2,
+          "Max": -164623.2
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "shape-diamond",
+        "Engine": "Ranvier",
+        "Unit": "write a source read by 100 memos joined by one",
+        "N": 5000,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -190644.24,
+          "Min": -190644.24,
+          "Max": -190644.24
+        },
+        "HeapUsedBytes": {
+          "Median": -190648.5056,
+          "Min": -190648.5056,
+          "Max": -190648.5056
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "shape-dynamic",
+        "Engine": "Ranvier",
+        "Unit": "alternate a branch flip and a write of every active source of 100 effects",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 155551.312,
+          "Min": 155551.312,
+          "Max": 155551.312
+        },
+        "HeapUsedBytes": {
+          "Median": 155544.944,
+          "Min": 155544.944,
+          "Max": 155544.944
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "async-resolve",
+        "Engine": "Ranvier",
+        "Unit": "reload 10 suspense widgets of 10 sources, then settle each",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -113587.84,
+          "Min": -113587.84,
+          "Max": -113587.84
+        },
+        "HeapUsedBytes": {
+          "Median": -113652,
+          "Min": -113652,
+          "Max": -113652
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "async-recover",
+        "Engine": "Ranvier",
+        "Unit": "fail one source of one error-boundary widget, then settle a replacement",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 3443.904,
+          "Min": 3443.904,
+          "Max": 3443.904
+        },
+        "HeapUsedBytes": {
+          "Median": 3443.904,
+          "Min": 3443.904,
+          "Max": 3443.904
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-1",
+        "Engine": "Ranvier (stream, batched)",
+        "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 21177.008,
+          "Min": 21177.008,
+          "Max": 21177.008
+        },
+        "HeapUsedBytes": {
+          "Median": 21177.008,
+          "Min": 21177.008,
+          "Max": 21177.008
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-1",
+        "Engine": "Ranvier (AsyncSource, batched)",
+        "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 20168.896,
+          "Min": 20168.896,
+          "Max": 20168.896
+        },
+        "HeapUsedBytes": {
+          "Median": 20168.896,
+          "Min": 20168.896,
+          "Max": 20168.896
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-1",
+        "Engine": "Ranvier (AsyncSource, unbatched)",
+        "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 19284.496,
+          "Min": 19284.496,
+          "Max": 19284.496
+        },
+        "HeapUsedBytes": {
+          "Median": 19284.496,
+          "Min": 19284.496,
+          "Max": 19284.496
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-16",
+        "Engine": "Ranvier (stream, batched)",
+        "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 21177.072,
+          "Min": 21177.072,
+          "Max": 21177.072
+        },
+        "HeapUsedBytes": {
+          "Median": 21177.072,
+          "Min": 21177.072,
+          "Max": 21177.072
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-16",
+        "Engine": "Ranvier (AsyncSource, batched)",
+        "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -23547.344,
+          "Min": -23547.344,
+          "Max": -23547.344
+        },
+        "HeapUsedBytes": {
+          "Median": -23547.344,
+          "Min": -23547.344,
+          "Max": -23547.344
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-16",
+        "Engine": "Ranvier (AsyncSource, unbatched)",
+        "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 20451.84,
+          "Min": 20451.84,
+          "Max": 20451.84
+        },
+        "HeapUsedBytes": {
+          "Median": 20451.84,
+          "Min": 20451.84,
+          "Max": 20451.84
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-256",
+        "Engine": "Ranvier (stream, batched)",
+        "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+        "N": 20,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 21012.4,
+          "Min": 21012.4,
+          "Max": 21012.4
+        },
+        "HeapUsedBytes": {
+          "Median": 21012.4,
+          "Min": 21012.4,
+          "Max": 21012.4
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-256",
+        "Engine": "Ranvier (AsyncSource, batched)",
+        "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+        "N": 20,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 308247.2,
+          "Min": 308247.2,
+          "Max": 308247.2
+        },
+        "HeapUsedBytes": {
+          "Median": 308247.2,
+          "Min": 308247.2,
+          "Max": 308247.2
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-burst-256",
+        "Engine": "Ranvier (AsyncSource, unbatched)",
+        "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+        "N": 20,
+        "Pmc": [],
+        "Bytes": {
+          "Median": -4834906.4,
+          "Min": -4834906.4,
+          "Max": -4834906.4
+        },
+        "HeapUsedBytes": {
+          "Median": -4841772.4,
+          "Min": -4841772.4,
+          "Max": -4841772.4
+        },
+        "GcFree": false,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-restart",
+        "Engine": "Ranvier (stream)",
+        "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 29418.384,
+          "Min": 29418.384,
+          "Max": 29418.384
+        },
+        "HeapUsedBytes": {
+          "Median": 29418.384,
+          "Min": 29418.384,
+          "Max": 29418.384
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "stream-restart",
+        "Engine": "Ranvier (async memo, CancelPrevious)",
+        "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+        "N": 500,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 17633.056,
+          "Min": 17633.056,
+          "Max": 17633.056
+        },
+        "HeapUsedBytes": {
+          "Median": 17633.056,
+          "Min": 17633.056,
+          "Max": 17633.056
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-remove",
+        "Engine": "Ranvier (memo-free rows)",
+        "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 34287.52,
+          "Min": 34287.52,
+          "Max": 34287.52
+        },
+        "HeapUsedBytes": {
+          "Median": 34287.52,
+          "Min": 34287.52,
+          "Max": 34287.52
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-swap",
+        "Engine": "Ranvier (memo-free rows)",
+        "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 29457.76,
+          "Min": 29457.76,
+          "Max": 29457.76
+        },
+        "HeapUsedBytes": {
+          "Median": 29457.76,
+          "Min": 29457.76,
+          "Max": 29457.76
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "keyed-insert",
+        "Engine": "Ranvier (memo-free rows)",
+        "Unit": "alternately prepend a row and restore of a 1000-row projection",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 34275.36,
+          "Min": 34275.36,
+          "Max": 34275.36
+        },
+        "HeapUsedBytes": {
+          "Median": 34275.36,
+          "Min": 34275.36,
+          "Max": 34275.36
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      },
+      {
+        "Scenario": "control",
+        "Engine": "Control",
+        "Unit": "refill a 256-entry closure table, sum it, and sort a copy of its array",
+        "N": 50,
+        "Pmc": [],
+        "Bytes": {
+          "Median": 45812.8,
+          "Min": 45812.8,
+          "Max": 45812.8
+        },
+        "HeapUsedBytes": {
+          "Median": 45812.8,
+          "Min": 45812.8,
+          "Max": 45812.8
+        },
+        "GcFree": true,
+        "CompileFree": true,
+        "ObjectsPerOp": null,
+        "Counters": [],
+        "CountersIdentical": true
+      }
+    ]
+  },
+  "Header": {
+    "Commit": "f48a3a7f",
+    "Date": "2026-10-24T03:27:31.1003047Z",
+    "Machine": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD, 24 logical processors, Microsoft Windows 10.0.26200, .NET 10.0.13",
+    "Mode": "not collected (--no-pmc)",
+    "Counters": "not collected (built without RanvierCounters)",
+    "Environment": "DOTNET_TieredCompilation=0 DOTNET_TieredPGO=0 DOTNET_ReadyToRun=0 DOTNET_gcServer=0",
+    "Versions": {
+      ".NET": "10.0.13",
+      "FSharp.Data.Adaptive": "1.2.27",
+      "R3": "1.3.1",
+      "Ranvier": "f48a3a7f"
+    },
+    "RanvierTrace": "true"
+  },
+  "Rows": [
+    {
+      "Scenario": "timed-capture-debounce",
+      "Engine": "Ranvier",
+      "Unit": "capture a changed input in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 124719.064,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "timed-admit-debounce",
+      "Engine": "Ranvier",
+      "Unit": "capture and admit in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 363188.224,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "timed-capture-first",
+      "Engine": "Ranvier",
+      "Unit": "capture a changed input in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 125231.064,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "timed-admit-first",
+      "Engine": "Ranvier",
+      "Unit": "capture and admit in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 233734.104,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "timed-capture-last",
+      "Engine": "Ranvier",
+      "Unit": "capture a changed input in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 124719.064,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "timed-admit-last",
+      "Engine": "Ranvier",
+      "Unit": "capture and admit in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 363188.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "timed-capture-both",
+      "Engine": "Ranvier",
+      "Unit": "capture a changed input in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 124719.064,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "timed-admit-both",
+      "Engine": "Ranvier",
+      "Unit": "capture and admit in 64 timed nodes",
+      "N": 1000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 363188.208,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "create",
+      "Engine": "Ranvier",
+      "Unit": "one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 37774055,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "create",
+      "Engine": "FSharp.Data.Adaptive",
+      "Unit": "one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 2413717,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "create",
+      "Engine": "R3",
+      "Unit": "one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 584160,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "update",
+      "Engine": "Ranvier",
+      "Unit": "write every 10th of 1000 rows",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 208058.08,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "update",
+      "Engine": "FSharp.Data.Adaptive",
+      "Unit": "write every 10th of 1000 rows",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 63200,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "update",
+      "Engine": "R3",
+      "Unit": "write every 10th of 1000 rows",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 0,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain",
+      "Engine": "Ranvier",
+      "Unit": "write the source of 4 memos, read the tail",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6569.1568,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain",
+      "Engine": "FSharp.Data.Adaptive",
+      "Unit": "write the source of 4 memos, read the tail",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 472,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain",
+      "Engine": "R3",
+      "Unit": "write the source of 4 memos, read the tail",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 0,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "cutoff",
+      "Engine": "Ranvier",
+      "Unit": "write an equal value to an observed source",
+      "N": 50000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 208.85808,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "cutoff",
+      "Engine": "FSharp.Data.Adaptive",
+      "Unit": "write an equal value to an observed source",
+      "N": 50000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 352,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "cutoff",
+      "Engine": "R3",
+      "Unit": "write an equal value to an observed source",
+      "N": 50000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 0,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "dispose",
+      "Engine": "Ranvier",
+      "Unit": "dispose one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 312112,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "dispose",
+      "Engine": "FSharp.Data.Adaptive",
+      "Unit": "dispose one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 0,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "dispose",
+      "Engine": "R3",
+      "Unit": "dispose one root of 1000 rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 0,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "create-on",
+      "Engine": "Ranvier",
+      "Unit": "one root of 1000 createEffectOn rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 36757938,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "update-on",
+      "Engine": "Ranvier",
+      "Unit": "write every 10th of 1000 createEffectOn rows",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 211258.08,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "dispose-on",
+      "Engine": "Ranvier",
+      "Unit": "dispose one root of 1000 createEffectOn rows",
+      "N": 8,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 312112,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "derive-effect",
+      "Engine": "Ranvier",
+      "Unit": "write a new value whose derived value is unchanged, Effect",
+      "N": 50000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 1870.86128,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "derive-on",
+      "Engine": "Ranvier",
+      "Unit": "write a new value whose derived value is unchanged, createEffectOn",
+      "N": 50000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 1902.86128,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-status",
+      "Engine": "Ranvier (createEffect)",
+      "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 212037.44,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-status",
+      "Engine": "Ranvier (createEffectOn)",
+      "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 211656.48,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-value",
+      "Engine": "Ranvier (createEffect)",
+      "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 214525.28,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-value",
+      "Engine": "Ranvier (createEffectOn)",
+      "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 217725.28,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-form",
+      "Engine": "Ranvier (createEffect)",
+      "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 251616.96,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "work-form",
+      "Engine": "Ranvier (createEffectOn)",
+      "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 238755.68,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "project-edit",
+      "Engine": "Ranvier",
+      "Unit": "change one row of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3312,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "project-reorder",
+      "Engine": "Ranvier",
+      "Unit": "reverse a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 117696,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-remove",
+      "Engine": "Ranvier (fresh items)",
+      "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 2062104.48,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-remove",
+      "Engine": "Ranvier (stable items)",
+      "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 40427.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-remove",
+      "Engine": "Ranvier (memo-free rows)",
+      "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 65080,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-swap",
+      "Engine": "Ranvier (fresh items)",
+      "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 2029933.28,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-swap",
+      "Engine": "Ranvier (stable items)",
+      "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 7296,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-swap",
+      "Engine": "Ranvier (memo-free rows)",
+      "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6480,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-insert",
+      "Engine": "Ranvier (fresh items)",
+      "Unit": "alternately prepend a row and restore of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 2062604.48,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-insert",
+      "Engine": "Ranvier (stable items)",
+      "Unit": "alternately prepend a row and restore of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 39743.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "keyed-insert",
+      "Engine": "Ranvier (memo-free rows)",
+      "Unit": "alternately prepend a row and restore of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 65084,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "server-render",
+      "Engine": "Ranvier",
+      "Unit": "render a 100-row keyed table as one request",
+      "N": 5,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3344592,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "project-chain",
+      "Engine": "Ranvier",
+      "Unit": "change one row of a 1000-row filter, sortBy, map chain",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 84112,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "app-table",
+      "Engine": "Ranvier",
+      "Unit": "alternate a filter query and a sort direction over 1000 rows",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 11401084.64,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "app-detail",
+      "Engine": "Ranvier",
+      "Unit": "move the selection over 1000 rows; the detail rebuilds 20 memo and effect pairs",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 873803.84,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "shape-diamond",
+      "Engine": "Ranvier",
+      "Unit": "write a source read by 100 memos joined by one",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 169460.8688,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": false
+    },
+    {
+      "Scenario": "shape-dynamic",
+      "Engine": "Ranvier",
+      "Unit": "alternate a branch flip and a write of every active source of 100 effects",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 182858.128,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "async-resolve",
+      "Engine": "Ranvier",
+      "Unit": "reload 10 suspense widgets of 10 sources, then settle each",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 2268441.6,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "async-recover",
+      "Engine": "Ranvier",
+      "Unit": "fail one source of one error-boundary widget, then settle a replacement",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 245427.44,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-1",
+      "Engine": "Ranvier (stream, batched)",
+      "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5173.488,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-1",
+      "Engine": "Ranvier (AsyncSource, batched)",
+      "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3750.768,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-1",
+      "Engine": "Ranvier (AsyncSource, unbatched)",
+      "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3510.768,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-16",
+      "Engine": "Ranvier (stream, batched)",
+      "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5173.488,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-16",
+      "Engine": "Ranvier (AsyncSource, batched)",
+      "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 12362.928,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-16",
+      "Engine": "Ranvier (AsyncSource, unbatched)",
+      "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 56171.568,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-256",
+      "Engine": "Ranvier (stream, batched)",
+      "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+      "N": 20,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 4601.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-256",
+      "Engine": "Ranvier (AsyncSource, batched)",
+      "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+      "N": 20,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 147537.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-burst-256",
+      "Engine": "Ranvier (AsyncSource, unbatched)",
+      "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+      "N": 20,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 1087489.2,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-restart",
+      "Engine": "Ranvier (stream)",
+      "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6165.488,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "stream-restart",
+      "Engine": "Ranvier (async memo, CancelPrevious)",
+      "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3875.008,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain-affinity",
+      "Engine": "Ranvier (Guarded)",
+      "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6569.1568,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain-affinity",
+      "Engine": "Ranvier (Unchecked)",
+      "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6569.1568,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "chain-affinity",
+      "Engine": "Ranvier (Serialised)",
+      "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+      "N": 5000,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 6569.1568,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "project-churn",
+      "Engine": "Ranvier (no reader)",
+      "Unit": "replace the last key of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 67560,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "project-churn",
+      "Engine": "Ranvier (key reader)",
+      "Unit": "replace the last key of a 1000-row projection",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 68648,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (CancelPrevious)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5401.616,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (KeepLatest)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5353.616,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (Queue)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 7185.616,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (FinishCurrent)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5737.616,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (Drop)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3995.008,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "flight",
+      "Engine": "Ranvier (DropWhilePending)",
+      "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3995.008,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "fail-recompute",
+      "Engine": "Ranvier (succeeding)",
+      "Unit": "re-run a memo and its one reader, then read the reader\u0027s failure origin",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 3462.768,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "fail-recompute",
+      "Engine": "Ranvier (failing)",
+      "Unit": "re-run a memo and its one reader, then read the reader\u0027s failure origin",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 5038.768,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "editable-edit",
+      "Engine": "Ranvier",
+      "Unit": "edit every 10th of 1000 editables",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 429715.68,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "editable-upstream",
+      "Engine": "Ranvier",
+      "Unit": "write the seed source of every 10th of 1000 editables",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 544915.68,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "mvu-dispatch",
+      "Engine": "Ranvier (signal per field)",
+      "Unit": "change one field of a 64-field model, one reader per field",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 1687.408,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "mvu-dispatch",
+      "Engine": "Ranvier (Mvu)",
+      "Unit": "change one field of a 64-field model, one reader per field",
+      "N": 500,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 104487.088,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    },
+    {
+      "Scenario": "control",
+      "Engine": "Control",
+      "Unit": "refill a 256-entry closure table, sum it, and sort a copy of its array",
+      "N": 50,
+      "Pmc": [],
+      "Intervals": [],
+      "BytesPerOp": 1048,
+      "ObjectsPerOp": null,
+      "Counters": [],
+      "GcFree": true
+    }
+  ],
+  "Runs": [
+    {
+      "Worker": {
+        "ProcessId": 99988,
+        "ThreadId": 90428,
+        "CountersCompiled": false,
+        "Cases": [
+          {
+            "Scenario": "timed-capture-debounce",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 0,
+                "Bytes": 124555392,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 1,
+                "Bytes": 249274456,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-debounce",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 2,
+                "Bytes": 363024560,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 3,
+                "Bytes": 726212784,
+                "Gen0Collections": 10,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-first",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 4,
+                "Bytes": 125067392,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 5,
+                "Bytes": 250298456,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-first",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 6,
+                "Bytes": 233503896,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 7,
+                "Bytes": 467238000,
+                "Gen0Collections": 3,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-last",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 8,
+                "Bytes": 124555392,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 9,
+                "Bytes": 249274456,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-last",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 10,
+                "Bytes": 363024560,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 11,
+                "Bytes": 726212760,
+                "Gen0Collections": 10,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-capture-both",
+            "Engine": "Ranvier",
+            "Unit": "capture a changed input in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 12,
+                "Bytes": 124562136,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 13,
+                "Bytes": 249281200,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "timed-admit-both",
+            "Engine": "Ranvier",
+            "Unit": "capture and admit in 64 timed nodes",
+            "Measurements": [
+              {
+                "Ops": 1000,
+                "Region": 14,
+                "Bytes": 363031304,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 2000,
+                "Region": 15,
+                "Bytes": 726219512,
+                "Gen0Collections": 10,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create",
+            "Engine": "Ranvier",
+            "Unit": "one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 16,
+                "Bytes": 302121664,
+                "Gen0Collections": 2,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 17,
+                "Bytes": 604314104,
+                "Gen0Collections": 22,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create",
+            "Engine": "FSharp.Data.Adaptive",
+            "Unit": "one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 18,
+                "Bytes": 19145896,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 19,
+                "Bytes": 38455632,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create",
+            "Engine": "R3",
+            "Unit": "one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 20,
+                "Bytes": 4673280,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 21,
+                "Bytes": 9346560,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update",
+            "Engine": "Ranvier",
+            "Unit": "write every 10th of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 22,
+                "Bytes": 9092360,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 23,
+                "Bytes": 19495264,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update",
+            "Engine": "FSharp.Data.Adaptive",
+            "Unit": "write every 10th of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 24,
+                "Bytes": 3160000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 25,
+                "Bytes": 6320000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update",
+            "Engine": "R3",
+            "Unit": "write every 10th of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 26,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 27,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain",
+            "Engine": "Ranvier",
+            "Unit": "write the source of 4 memos, read the tail",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 28,
+                "Bytes": 32843680,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 29,
+                "Bytes": 65689464,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain",
+            "Engine": "FSharp.Data.Adaptive",
+            "Unit": "write the source of 4 memos, read the tail",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 30,
+                "Bytes": 2360000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 31,
+                "Bytes": 4720000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain",
+            "Engine": "R3",
+            "Unit": "write the source of 4 memos, read the tail",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 32,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 33,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "cutoff",
+            "Engine": "Ranvier",
+            "Unit": "write an equal value to an observed source",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 34,
+                "Bytes": 10441888,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 35,
+                "Bytes": 20884792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "cutoff",
+            "Engine": "FSharp.Data.Adaptive",
+            "Unit": "write an equal value to an observed source",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 36,
+                "Bytes": 17600000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 37,
+                "Bytes": 35200000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "cutoff",
+            "Engine": "R3",
+            "Unit": "write an equal value to an observed source",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 38,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 39,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose",
+            "Engine": "Ranvier",
+            "Unit": "dispose one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 40,
+                "Bytes": 2496896,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 41,
+                "Bytes": 4993792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose",
+            "Engine": "FSharp.Data.Adaptive",
+            "Unit": "dispose one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 42,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 43,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose",
+            "Engine": "R3",
+            "Unit": "dispose one root of 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 44,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 45,
+                "Bytes": 0,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "create-on",
+            "Engine": "Ranvier",
+            "Unit": "one root of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 46,
+                "Bytes": 293991504,
+                "Gen0Collections": 2,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 47,
+                "Bytes": 588055008,
+                "Gen0Collections": 21,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "update-on",
+            "Engine": "Ranvier",
+            "Unit": "write every 10th of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 48,
+                "Bytes": 9252360,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 49,
+                "Bytes": 19815264,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "dispose-on",
+            "Engine": "Ranvier",
+            "Unit": "dispose one root of 1000 createEffectOn rows",
+            "Measurements": [
+              {
+                "Ops": 8,
+                "Region": 50,
+                "Bytes": 2496896,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 16,
+                "Region": 51,
+                "Bytes": 4993792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "derive-effect",
+            "Engine": "Ranvier",
+            "Unit": "write a new value whose derived value is unchanged, Effect",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 52,
+                "Bytes": 93542272,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 53,
+                "Bytes": 187085336,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "derive-on",
+            "Engine": "Ranvier",
+            "Unit": "write a new value whose derived value is unchanged, createEffectOn",
+            "Measurements": [
+              {
+                "Ops": 50000,
+                "Region": 54,
+                "Bytes": 95142272,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100000,
+                "Region": 55,
+                "Bytes": 190285336,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-status",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 56,
+                "Bytes": 9289200,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 57,
+                "Bytes": 19891072,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-status",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, 1 write in 10 changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 58,
+                "Bytes": 9272080,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 59,
+                "Bytes": 19854904,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-value",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 60,
+                "Bytes": 9407648,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 61,
+                "Bytes": 20133912,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-value",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write every 10th of 1000 rows; the act formats a label, every write changes it",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 62,
+                "Bytes": 9567648,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 63,
+                "Bytes": 20453912,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-form",
+            "Engine": "Ranvier (createEffect)",
+            "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 64,
+                "Bytes": 11925648,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 65,
+                "Bytes": 24506496,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "work-form",
+            "Engine": "Ranvier (createEffectOn)",
+            "Unit": "write one field of each of 125 8-field forms; validity feeds a signal and an effect",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 66,
+                "Bytes": 11282584,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 67,
+                "Bytes": 23220368,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "project-edit",
+            "Engine": "Ranvier",
+            "Unit": "change one row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 68,
+                "Bytes": 166312,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 69,
+                "Bytes": 331912,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "project-reorder",
+            "Engine": "Ranvier",
+            "Unit": "reverse a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 70,
+                "Bytes": 13790696,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 71,
+                "Bytes": 19675496,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 72,
+                "Bytes": 100621384,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 73,
+                "Bytes": 203726608,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 74,
+                "Bytes": 1963984,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 75,
+                "Bytes": 3985344,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-remove",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately remove and restore the middle row of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 76,
+                "Bytes": 3297720,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 77,
+                "Bytes": 6551720,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 78,
+                "Bytes": 99079368,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 79,
+                "Bytes": 200576032,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 80,
+                "Bytes": 365472,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 81,
+                "Bytes": 730272,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-swap",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately swap and restore the second and second-to-last rows of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 82,
+                "Bytes": 324568,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 83,
+                "Bytes": 648568,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (fresh items)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 84,
+                "Bytes": 100670432,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 85,
+                "Bytes": 203800656,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (stable items)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 86,
+                "Bytes": 1953640,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 87,
+                "Bytes": 3940800,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "keyed-insert",
+            "Engine": "Ranvier (memo-free rows)",
+            "Unit": "alternately prepend a row and restore of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 88,
+                "Bytes": 3321968,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 89,
+                "Bytes": 6576168,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "server-render",
+            "Engine": "Ranvier",
+            "Unit": "render a 100-row keyed table as one request",
+            "Measurements": [
+              {
+                "Ops": 5,
+                "Region": 90,
+                "Bytes": 16730920,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10,
+                "Region": 91,
+                "Bytes": 33453880,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "project-chain",
+            "Engine": "Ranvier",
+            "Unit": "change one row of a 1000-row filter, sortBy, map chain",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 92,
+                "Bytes": 9475272,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 93,
+                "Bytes": 13680872,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "app-table",
+            "Engine": "Ranvier",
+            "Unit": "alternate a filter query and a sort direction over 1000 rows",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 94,
+                "Bytes": 560424288,
+                "Gen0Collections": 14,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 95,
+                "Bytes": 1130478520,
+                "Gen0Collections": 45,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "app-detail",
+            "Engine": "Ranvier",
+            "Unit": "move the selection over 1000 rows; the detail rebuilds 20 memo and effect pairs",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 96,
+                "Bytes": 47297336,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 97,
+                "Bytes": 90987528,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "shape-diamond",
+            "Engine": "Ranvier",
+            "Unit": "write a source read by 100 memos joined by one",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 98,
+                "Bytes": 847230080,
+                "Gen0Collections": 16,
+                "NoGcRegion": false,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 99,
+                "Bytes": 1694534424,
+                "Gen0Collections": 48,
+                "NoGcRegion": false,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "shape-dynamic",
+            "Engine": "Ranvier",
+            "Unit": "alternate a branch flip and a write of every active source of 100 effects",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 100,
+                "Bytes": 91286048,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 101,
+                "Bytes": 182715112,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "async-resolve",
+            "Engine": "Ranvier",
+            "Unit": "reload 10 suspense widgets of 10 sources, then settle each",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 102,
+                "Bytes": 113344936,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 103,
+                "Bytes": 226767016,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "async-recover",
+            "Engine": "Ranvier",
+            "Unit": "fail one source of one error-boundary widget, then settle a replacement",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 104,
+                "Bytes": 63198008,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 105,
+                "Bytes": 185911728,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 106,
+                "Bytes": 2581792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 107,
+                "Bytes": 5168536,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 108,
+                "Bytes": 1870408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 109,
+                "Bytes": 3745792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-1",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 1 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 110,
+                "Bytes": 1750408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 111,
+                "Bytes": 3505792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 112,
+                "Bytes": 2581792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 113,
+                "Bytes": 5168536,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 114,
+                "Bytes": 6176536,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 115,
+                "Bytes": 12358000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-16",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 16 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 116,
+                "Bytes": 28080904,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 117,
+                "Bytes": 56166688,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (stream, batched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 118,
+                "Bytes": 86952,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 119,
+                "Bytes": 178976,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (AsyncSource, batched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 120,
+                "Bytes": 2945792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 121,
+                "Bytes": 5896536,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-burst-256",
+            "Engine": "Ranvier (AsyncSource, unbatched)",
+            "Unit": "deliver 256 items per round into a stream fold read by a memo and an effect",
+            "Measurements": [
+              {
+                "Ops": 20,
+                "Region": 122,
+                "Bytes": 21744904,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 40,
+                "Region": 123,
+                "Bytes": 43494688,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-restart",
+            "Engine": "Ranvier (stream)",
+            "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 124,
+                "Bytes": 3080528,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 125,
+                "Bytes": 6163272,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "stream-restart",
+            "Engine": "Ranvier (async memo, CancelPrevious)",
+            "Unit": "write a dependency of a stream, restarting it, then deliver one item; or of an async memo, restarting its flight",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 126,
+                "Bytes": 1929024,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 127,
+                "Bytes": 3866528,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain-affinity",
+            "Engine": "Ranvier (Guarded)",
+            "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 128,
+                "Bytes": 32843680,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 129,
+                "Bytes": 65689464,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain-affinity",
+            "Engine": "Ranvier (Unchecked)",
+            "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 130,
+                "Bytes": 32843680,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 131,
+                "Bytes": 65689464,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "chain-affinity",
+            "Engine": "Ranvier (Serialised)",
+            "Unit": "write the source of 4 memos, read the tail, per thread affinity",
+            "Measurements": [
+              {
+                "Ops": 5000,
+                "Region": 132,
+                "Bytes": 32843680,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 10000,
+                "Region": 133,
+                "Bytes": 65689464,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "project-churn",
+            "Engine": "Ranvier (no reader)",
+            "Unit": "replace the last key of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 134,
+                "Bytes": 3451552,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 135,
+                "Bytes": 6829552,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "project-churn",
+            "Engine": "Ranvier (key reader)",
+            "Unit": "replace the last key of a 1000-row projection",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 136,
+                "Bytes": 3505952,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 137,
+                "Bytes": 6938352,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (CancelPrevious)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 138,
+                "Bytes": 2688408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 139,
+                "Bytes": 5389216,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (KeepLatest)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 140,
+                "Bytes": 2664408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 141,
+                "Bytes": 5341216,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (Queue)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 142,
+                "Bytes": 3580408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 143,
+                "Bytes": 7173216,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (FinishCurrent)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 144,
+                "Bytes": 2856408,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 145,
+                "Bytes": 5725216,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (Drop)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 146,
+                "Bytes": 1990288,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 147,
+                "Bytes": 3987792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "flight",
+            "Engine": "Ranvier (DropWhilePending)",
+            "Unit": "write an async memo\u0027s trigger twice, then settle every flight the writes started",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 148,
+                "Bytes": 1990288,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 149,
+                "Bytes": 3987792,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "fail-recompute",
+            "Engine": "Ranvier (succeeding)",
+            "Unit": "re-run a memo and its one reader, then read the reader\u0027s failure origin",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 150,
+                "Bytes": 1730488,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 151,
+                "Bytes": 3461872,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "fail-recompute",
+            "Engine": "Ranvier (failing)",
+            "Unit": "re-run a memo and its one reader, then read the reader\u0027s failure origin",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 152,
+                "Bytes": 2518488,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 153,
+                "Bytes": 5037872,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "editable-edit",
+            "Engine": "Ranvier",
+            "Unit": "edit every 10th of 1000 editables",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 154,
+                "Bytes": 18864560,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 155,
+                "Bytes": 40350344,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "editable-upstream",
+            "Engine": "Ranvier",
+            "Unit": "write the seed source of every 10th of 1000 editables",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 156,
+                "Bytes": 24624560,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 157,
+                "Bytes": 51870344,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "mvu-dispatch",
+            "Engine": "Ranvier (signal per field)",
+            "Unit": "change one field of a 64-field model, one reader per field",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 158,
+                "Bytes": 761960,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 159,
+                "Bytes": 1605664,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "mvu-dispatch",
+            "Engine": "Ranvier (Mvu)",
+            "Unit": "change one field of a 64-field model, one reader per field",
+            "Measurements": [
+              {
+                "Ops": 500,
+                "Region": 160,
+                "Bytes": 52169456,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 1000,
+                "Region": 161,
+                "Bytes": 104413000,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          },
+          {
+            "Scenario": "control",
+            "Engine": "Control",
+            "Unit": "refill a 256-entry closure table, sum it, and sort a copy of its array",
+            "Measurements": [
+              {
+                "Ops": 50,
+                "Region": 162,
+                "Bytes": 74632,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              },
+              {
+                "Ops": 100,
+                "Region": 163,
+                "Bytes": 127032,
+                "Gen0Collections": 0,
+                "NoGcRegion": true,
+                "Counters": []
+              }
+            ]
+          }
+        ]
+      },
+      "Pmc": null,
+      "Counters": null
+    }
+  ],
+  "Sources": []
+}

@@ -11,7 +11,7 @@ proposed scope for each, and does not implement them.
 
 | # | Issue | Priority | Depends on | Kind | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#164](https://github.com/shayanhabibi/Ranvier/issues/164) perf(trace): traced/untraced performance and memory baselines | P0 foundation | — | implement | todo |
+| 1 | [#164](https://github.com/shayanhabibi/Ranvier/issues/164) perf(trace): traced/untraced performance and memory baselines | P0 foundation | — | implement | done |
 | 2 | [#167](https://github.com/shayanhabibi/Ranvier/issues/167) feat(graph): public awaitable graph dispatch | P0 | — | implement | todo |
 | 3 | [#165](https://github.com/shayanhabibi/Ranvier/issues/165) feat(trace): incremental event cursors and checkpointed truncation | P0 | #164 baseline | implement | todo |
 | 4 | [#166](https://github.com/shayanhabibi/Ranvier/issues/166) feat(trace): stable diagnostics and provenance contracts | P0 | #165 | implement | todo |
@@ -43,6 +43,7 @@ PR on the branch below it. Merge bottom-up.
 | Branch | Issue | PR | Base |
 | --- | --- | --- | --- |
 | integration/issues | — | https://github.com/shayanhabibi/Ranvier/pull/170 | master |
+| issue/164 | #164 | https://github.com/shayanhabibi/Ranvier/pull/172 | integration/issues |
 | issue/69 | #69 | https://github.com/shayanhabibi/Ranvier/pull/175 | integration/issues |
 | issue/70 | #70 | https://github.com/shayanhabibi/Ranvier/pull/174 | integration/issues |
 
@@ -50,6 +51,9 @@ PR on the branch below it. Merge bottom-up.
 
 Each iteration appends one line: date, issue, outcome, commit, next step.
 
+- 2026-10-24, #164: plan steps 1 to 13 done on `issue/164`; baseline at `f48a3a7` in `docs/.ai/benchmarks/tracing/f48a3a7/`, budget in `docs/content/benchmarks/tracing.md`. Gates passed: `build.fsx -- test` (unfiltered), the traced test stage (five test projects and `docs/maps/tests` with `-p:RanvierTrace=true`), `bench/Ranvier.Counters.Tests` (81), and `counters.ps1 -NoPmc` parity against `integration/issues` (`fdfaa4c`): identical bytes/op and library counters in 71 .NET and 51 Node.js Ranvier rows. Commit: the gate record on `issue/164`. Next: push `issue/164` and open its PR on `integration/issues`.
+- 2026-10-24 #164 in-progress — plan steps 1 to 13 done but the format gate fails on a build-script bug (fantomas command line over the Windows 32,767-character limit; glob misses fable_modules) — 785594e8 — next: fix Stage.format in build.fsx to batch files and exclude fable_modules, then rerun the gate
+- 2026-10-24 #164 done — format gate passes after batching the fantomas command line (cherry-pick of 88feefcd from #171) and excluding fable_modules — 44d33371 — next: #167
 - 2026-10-24 #69 research note written — docs/.ai/research/2026-10-24-issue-69.md — b6125ef5 — next: user decides scope
 - 2026-10-24 #70 research note written — docs/.ai/research/2026-10-24-issue-70.md — 92585c4e — next: user decides scope
 - 2026-10-24 #68 research note written — docs/.ai/research/2026-10-24-issue-68.md — c0e402fe — next: user decides scope
