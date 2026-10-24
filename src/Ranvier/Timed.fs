@@ -262,6 +262,11 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
         Tracer.RunEnd (graph, id, captureStatus)
         Tracer.TimedState (graph, id, clock, this)
 
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
+
     interface INode with
         member _.Id = id
         member _.Status = status ||| Staleness.ofFreshness freshness

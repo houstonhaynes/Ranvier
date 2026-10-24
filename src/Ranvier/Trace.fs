@@ -621,6 +621,9 @@ type internal TraceLog(locked: bool) =
     /// <summary>A copy of the recorded events, oldest first.</summary>
     member _.Events = sync (fun () -> events.ToArray ())
 
+    /// <summary>The seq of the last event recorded, 0 before the first.</summary>
+    member _.LastSeq = sync (fun () -> clock)
+
     /// <summary>The checkpoint's name and snapshot, both null before the first truncation.</summary>
     member _.Checkpoint: struct (string * obj) =
         sync (fun () -> struct (checkpointName, checkpointSnapshot))

@@ -37,6 +37,9 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Retention.fs | 2 | 2 | 2 | 2 | 2 | 2 | 18 | 0 |
 | Tracing.fs | 2 | 2 | 2 | 106 | 101 | 101 | 3 | 0 |
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
+| TraceContractTests.fs | 0 | 0 | 0 | 34 | 34 | 34 | 0 | 0 |
+| TraceJsonTests.fs | 0 | 0 | 0 | 8 | 8 | 8 | 9 | 0 |
+| TraceDumpTests.fs | 0 | 0 | 0 | 3 | 3 | 3 | 9 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
 | FanOut.fs | 8 | 8 | 8 | 8 | 8 | 8 | 0 | 0 |
@@ -58,7 +61,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | MapSemantics.fs | 42 | 42 | 42 | 42 | 42 | 42 | 0 | 1 |
 | Lenses.fs | 23 | 20 | 20 | 23 | 20 | 20 | 0 | 0 |
 | Combinators.fs | 242 | 242 | 242 | 242 | 242 | 242 | 3 | 0 |
-| Timed.fs | 31 | 31 | 31 | 39 | 39 | 39 | 0 | 0 |
+| Timed.fs | 31 | 31 | 31 | 40 | 40 | 40 | 0 | 0 |
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
@@ -81,7 +84,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1551 | 1530 | 1527 | 1716 | 1690 | 1687 | 125 | 1 |
+| **Total** | 1551 | 1530 | 1527 | 1762 | 1736 | 1733 | 143 | 1 |
 
 ## Tests.fs
 
@@ -682,6 +685,96 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - dumpText twice gives the same text (traced only)
 - dumpText inside an effect's run raises (traced only)
 - dumpText inside batch succeeds (traced only)
+
+</details>
+
+## TraceContractTests.fs
+
+<details><summary>34 passed in every build and delivery that runs them</summary>
+
+- a scalar payload encodes as Exact (traced only)
+- a fractional or non-finite float encodes as Float on every platform (traced only)
+- an integral float encodes by the platform's number representation (traced only)
+- a registered codec encodes as Encoded and decodes back (traced only)
+- the first codec that claims a value encodes it (traced only)
+- a value with no codec encodes as Lossy of its valueText (traced only)
+- strict codecs raise for a value with no codec (traced only)
+- decoding raises for an unknown codec, an unknown version and a lossy payload (traced only)
+- decoding Exact and Null gives the scalar and null (traced only)
+- a chain of Trace.named labels gives a Named ref (traced only)
+- two graphs built by the same program give equal refs (traced only)
+- an @k incarnation of a named path stays Named (traced only)
+- an unlabelled node gives a Named ref under Fable, which records no creation sites (traced only)
+- a labelled node under createRoot gives a Named ref (traced only)
+- two runs of the same program give equal refs (traced only)
+- a node absent from the snapshot has no ref (traced only)
+- lookup finds a live node by id and by path (traced only)
+- lookup reports a node disposed in the retained events with its Dispose seq (traced only)
+- lookup reports a node disposed before the checkpoint as Missing once the checkpoint releases it (traced only)
+- lookup reports a disposed node held by an unpruned checkpoint with seq 0 (traced only)
+- lookup reports a live node created before the checkpoint as Checkpointed (traced only)
+- lookup reports an unknown id or path as Missing (traced only)
+- lookupNode reports a node of another graph or an untraced node as Foreign (traced only)
+- state matches the snapshot node for node and edge for edge (traced only)
+- state carries the schema, the checkpoint and the first retained seq (traced only)
+- state encodes retained values through the codecs (traced only)
+- lastSeq is the last event's seq, and the checkpoint's once the checkpoint drops every event (traced only)
+- state gives a memo that moved to a null value as Null (traced only)
+- state gives a memo that moved to null before a checkpoint as Lossy of null's text (traced only)
+- state gives an async source that settled to null as Null, and as Lossy of null's text after a checkpoint (traced only)
+- state gives a projection that moved without a value as None (traced only)
+- state gives a value folded into the checkpoint as Lossy of its folded text (traced only)
+- strict state raises for a retained value with no codec (traced only)
+- runs project the history with encoded values (traced only)
+
+</details>
+
+## TraceJsonTests.fs
+
+| Excluded | Reason |
+| --- | --- |
+| a state document reads back to the state | the TraceJson readers are .NET only. |
+| a runs document reads back to its runs, and NaN to NaN | the TraceJson readers are .NET only. |
+| a why document reads back to the chain for every root case | the TraceJson readers are .NET only. |
+| a whyNot document reads back to the reason for every case | the TraceJson readers are .NET only. |
+| a waiting document reads back to the flights | the TraceJson readers are .NET only. |
+| a lookup document reads back to the lookup for every case | the TraceJson readers are .NET only. |
+| a live program's documents read back and write the same text | the TraceJson readers are .NET only. |
+| a reader raises FormatException for schema 0 and 4 | the TraceJson readers are .NET only. |
+| a reader raises FormatException for another kind, an unknown case and text that is not JSON | the TraceJson readers are .NET only. |
+
+<details><summary>8 passed in every build and delivery that runs them</summary>
+
+- a state document writes every field, node status and stability in id order (traced only)
+- a runs document writes every payload, root and run status case (traced only)
+- a why document writes its steps and every root case (traced only)
+- the why projection encodes step values through the codecs (traced only)
+- a whyNot document writes every reason case and an absent reason (traced only)
+- a waiting document writes every flight state case (traced only)
+- a lookup document writes every lookup case (traced only)
+- two runs of the same program write the same documents (traced only)
+
+</details>
+
+## TraceDumpTests.fs
+
+| Excluded | Reason |
+| --- | --- |
+| dumpText writes the committed schema 1 fixture byte for byte | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| dumpTextWith writes the committed schema 3 fixture byte for byte | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| the committed schema 1 and 3 fixtures parse to the program's events and payload forms | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| a schema 3 dump parses to the forms written | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| dumpTextWith writes numbers in the invariant culture | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| parseDumpWith decodes each payload through the codecs | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| schema 1 and 2 payloads read as Lossy text, and a null payload as Null | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| parseDumpWith keeps schema 1 payloads as their text, and a strict list raises for them | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| parseDump raises FormatException for schema 0 and 4 | TraceModel.parseDump is .NET only, and the fixtures are files. |
+
+<details><summary>3 passed in every build and delivery that runs them</summary>
+
+- dumpTextWith writes schema 3 with every payload form (traced only)
+- dumpTextWith writes the snapshot and event fields of dumpText (traced only)
+- strict dumpTextWith raises for a payload with no codec (traced only)
 
 </details>
 
@@ -1738,7 +1831,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Timed.fs
 
-<details><summary>39 passed in every build and delivery that runs them</summary>
+<details><summary>40 passed in every build and delivery that runs them</summary>
 
 - system timer rejects a negative wait
 - system timer can disarm and dispose an unarmed long wait
@@ -1776,6 +1869,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - leading suppression retains the published winning capture (traced only)
 - timing reports a timed node created before a checkpoint (traced only)
 - admission names the winning capture and reports the held window (traced only)
+- a timed node that publishes null holds null in the state, the snapshot and a checkpoint (traced only)
 - recorded timing distinguishes pending capture and failure from published state (traced only)
 - timing rejects another graph with colliding node identifiers (traced only)
 - manual-clock traces and schema roundtrip are deterministic (traced only)

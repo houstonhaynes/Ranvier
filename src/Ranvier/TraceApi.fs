@@ -71,6 +71,11 @@ module Trace =
     let events (graph: Graph) : TraceEvent[] =
         (logOf graph).Events
 
+    /// <summary>The seq of the last event recorded in <c>graph</c>'s log, 0 before the first.</summary>
+    /// <remarks>A checkpoint keeps it: with no event retained, it is the checkpoint's seq.</remarks>
+    let lastSeq (graph: Graph) : int =
+        (logOf graph).LastSeq
+
     /// <summary>A copy of the events in <c>graph</c>'s log with <c>Seq</c> greater than <c>seq</c>, oldest first.</summary>
     /// <remarks>
     /// A cursor is the seq of the last event read, 0 before the first. The read copies the returned events alone. A
@@ -335,6 +340,55 @@ module Trace =
     let resolve (graph: Graph) (path: string) : int option =
         TraceModel.resolve (snapshot graph) path
 
+    /// <summary>The node at <c>address</c> in <c>graph</c>'s checkpoint and retained events.</summary>
+    let lookup (graph: Graph) (address: TraceAddress) : TraceLookup =
+        let struct (checkpoint, events) = retained graph
+        TraceContract.lookup checkpoint.Snapshot events address
+
+    /// <summary>
+    /// The lookup of <c>node</c> by id in <c>graph</c>'s log, or <c>Foreign</c> when another graph created
+    /// <c>node</c> or it records no <c>NodeNew</c>.
+    /// </summary>
+    let lookupNode (graph: Graph) (node: INode) : TraceLookup =
+#if FABLE_COMPILER
+        let ours =
+            Platform.hasMember node "TraceGraph"
+            && obj.ReferenceEquals ((node :?> ITracedNode).TraceGraph, graph)
+#else
+        let ours =
+            match node with
+            | :? ITracedNode as traced -> obj.ReferenceEquals (traced.TraceGraph, graph)
+            | _ -> false
+#endif
+        if ours then
+            lookup graph (TraceAddress.ById node.Id)
+        else
+            TraceLookup.Foreign
+
+    /// <summary>
+    /// The state folded from <c>graph</c>'s checkpoint and retained events, with retained values encoded by
+    /// <c>codecs</c>.
+    /// </summary>
+    /// <remarks>Holds no live object: a value folded into the checkpoint is <c>Lossy</c>.</remarks>
+    /// <exception cref="T:Ranvier.TraceCodecException">
+    /// <c>codecs</c> is strict and no codec claims a retained value.
+    /// </exception>
+    let state (graph: Graph) (codecs: TraceCodecs) : TraceGraphState =
+        let struct (checkpoint, events) = retained graph
+        TraceContract.state codecs checkpoint events
+
+    /// <summary>The retained runs of <c>node</c> in <c>graph</c>'s log, with their values encoded by <c>codecs</c>.</summary>
+    /// <remarks>The runs of <c>history graph node</c>.</remarks>
+    /// <exception cref="T:Ranvier.TraceCodecException"><c>codecs</c> is strict and no codec claims a run's value.</exception>
+    let runs (graph: Graph) (codecs: TraceCodecs) (node: INode) : TraceRunState list =
+        TraceContract.runs codecs (history graph node)
+
+    /// <summary>The cause chain of <c>node</c>'s last run, with its step values encoded by <c>codecs</c>.</summary>
+    /// <remarks>The chain of <c>why graph node</c>.</remarks>
+    /// <exception cref="T:Ranvier.TraceCodecException"><c>codecs</c> is strict and no codec claims a step's value.</exception>
+    let whyWith (graph: Graph) (codecs: TraceCodecs) (node: INode) : TraceWhy =
+        TraceContract.why codecs (why graph node)
+
     /// <summary>
     /// <c>value</c> as text, with node ids shown as <c>graph</c>'s identity paths: a <c>Why</c>, a
     /// <c>WhyNotReason option</c>, a <c>TraceSnapshot</c>, a <c>TraceEvent[]</c> with repeated marks folded, a
@@ -452,6 +506,18 @@ module Trace =
         gate graph "Trace.dumpText"
         let struct (checkpoint, events) = retained graph
         TraceModel.dumpText "net" checkpoint.Name checkpoint.Snapshot events
+
+    /// <summary>
+    /// The schema 3 JSONL dump of <c>graph</c>'s checkpoint and retained events, with payloads encoded by
+    /// <c>codecs</c>.
+    /// </summary>
+    /// <remarks>The dump of <c>dumpText</c>, with each payload in the form of <c>TraceContract.dumpTextWith</c>.</remarks>
+    /// <exception cref="T:System.InvalidOperationException">As for <c>dumpText</c>.</exception>
+    /// <exception cref="T:Ranvier.TraceCodecException"><c>codecs</c> is strict and no codec claims a payload.</exception>
+    let dumpTextWith (graph: Graph) (codecs: TraceCodecs) : string =
+        gate graph "Trace.dumpTextWith"
+        let struct (checkpoint, events) = retained graph
+        TraceContract.dumpTextWith codecs "net" checkpoint.Name checkpoint.Snapshot events
 
 #if !FABLE_COMPILER
     /// <summary>Writes the JSONL dump of <c>graph</c>'s log to <c>path</c>, and returns the full path.</summary>

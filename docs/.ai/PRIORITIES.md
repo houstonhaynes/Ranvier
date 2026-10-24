@@ -14,7 +14,7 @@ proposed scope for each, and does not implement them.
 | 1 | [#164](https://github.com/shayanhabibi/Ranvier/issues/164) perf(trace): traced/untraced performance and memory baselines | P0 foundation | — | implement | done |
 | 2 | [#167](https://github.com/shayanhabibi/Ranvier/issues/167) feat(graph): public awaitable graph dispatch | P0 | — | implement | done |
 | 3 | [#165](https://github.com/shayanhabibi/Ranvier/issues/165) feat(trace): incremental event cursors and checkpointed truncation | P0 | #164 baseline | implement | done |
-| 4 | [#166](https://github.com/shayanhabibi/Ranvier/issues/166) feat(trace): stable diagnostics and provenance contracts | P0 | #165 | implement | todo |
+| 4 | [#166](https://github.com/shayanhabibi/Ranvier/issues/166) feat(trace): stable diagnostics and provenance contracts | P0 | #165 | implement | done |
 | 5 | [#168](https://github.com/shayanhabibi/Ranvier/issues/168) spike(mcp): agent-observable graph | P1 | #165, #166, #167 | implement | todo |
 | 6 | [#157](https://github.com/shayanhabibi/Ranvier/issues/157) perf(arms): restore the 5% Chromium target | — | quiet machine for timings | implement | todo |
 | 7 | [#69](https://github.com/shayanhabibi/Ranvier/issues/69) Myriad expansion for traced and untraced primitives | 1.0.0-rc | — | research | done |
@@ -48,6 +48,7 @@ PR on the branch below it. Merge bottom-up.
 | issue/69 | #69 | https://github.com/shayanhabibi/Ranvier/pull/175 | integration/issues |
 | issue/70 | #70 | https://github.com/shayanhabibi/Ranvier/pull/174 | integration/issues |
 | issue/165 | #165 | https://github.com/shayanhabibi/Ranvier/pull/178 | integration/issues |
+| issue/166 | #166 | https://github.com/shayanhabibi/Ranvier/pull/182 | integration/issues |
 
 ## Log
 
@@ -71,3 +72,6 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-24 #165 in-progress — the three major review findings fixed (collected signals released by weak tracking, escaped signals kept live, owner labels no longer leak dropped entries) and gates pass, not pushed — a302b435 — next: resolve the unresolved review findings, then push `issue/165` to update PR #178
 - 2026-10-24 #165 done — review-only iteration found no findings; gate passes (format, build, test, test-fable) — a302b435 — next: none, awaiting PR #178 review
 - 2026-10-24 #165 in-progress — the three major review findings fixed (collected signals released by weak tracking, escaped signals kept live, owner labels no longer leak dropped entries) and gates pass, not pushed — a302b435 — next: resolve the unresolved review findings, then push `issue/165` to update PR #178
+- 2026-10-24 #166 in-progress — plan steps 1 to 4 done and `TraceNodeRef.Graph` dropped; gate failed under `test-fable` traced inline on `Texts.fs` trace text case `run` (diagnostic text differs under Fable), not pushed — 24e74b0e — next: fix the Fable `run` trace text mismatch, then plan step 5 (TraceJson writers)
+- 2026-10-24 #166 in-progress — checkpoint null-value fold and Lossy schema 1/2 payloads fixed and gate passes, but review found three new majors (TraceJson readers raise InvalidOperationException for wrong-shape JSON, Timed null Moved unrecorded and stale after checkpoint, AsyncSource null Settle becomes None after checkpoint), not pushed — 8002a109 — next: fix the three review findings in TraceContract.fs and TraceModel.fs
+- 2026-10-24 #166 done — four review findings fixed (invariant payload numbers, Timed and settled null values) and offline trace reads documented, gates pass — ec7d8c00 — next: open the stacked PR into integration/issues

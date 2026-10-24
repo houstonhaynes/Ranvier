@@ -259,6 +259,11 @@ type internal ITimedTrace =
     /// <summary>The graph instance that owns this state.</summary>
     abstract TimingGraph: obj
 
+/// <summary>A node that records a <c>NodeNew</c> in its graph's log.</summary>
+type internal ITracedNode =
+    /// <summary>The graph instance that created the node.</summary>
+    abstract TraceGraph: obj
+
 /// <summary>How a run ended, in <c>RunEnd.Arg</c>.</summary>
 type RunStatus =
     | Ok = 0

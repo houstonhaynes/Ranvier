@@ -1,0 +1,1 @@
+{"schema":3,"kind":"why","seq":64,"body":{"node":3,"run":3,"steps":[{"seq":56,"kind":"RunStart","node":3,"other":4,"value":null},{"seq":51,"kind":"Mark","node":3,"other":2,"value":null},{"seq":50,"kind":"Write","node":2,"other":0,"value":{"case":"Encoded","codec":"point","version":2,"data":"0,5"}}],"root":{"case":"UserWrite","write":50}}}

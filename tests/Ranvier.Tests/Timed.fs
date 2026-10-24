@@ -692,6 +692,31 @@ let traceTests =
 
                 let snapshot = Trace.snapshot graph
                 Expect.equal snapshot.Nodes[(output :> INode).Id].Value (Some "2") "folded publication"
+            testCase "a timed node that publishes null holds null in the state, the snapshot and a checkpoint"
+            <| fun _ ->
+                use graph = new Graph ()
+                use _active = graph.Activate ()
+                let clock = ManualClock ()
+                let input = createSignal "a"
+
+                let output =
+                    debounceWith { Clock = clock; Comparer = None } (TimeSpan.FromMilliseconds 100.) (fun () -> input.Value) graph
+
+                use _effect = new Effect (graph, fun () -> output.Value |> ignore)
+                input.Value <- "b"
+                clock.AdvanceTo 150.
+                input.Value <- null
+                clock.AdvanceTo 300.
+                Expect.isNull output.Value "the published null"
+                let id = (output :> INode).Id
+                Expect.equal (Trace.state graph (TraceCodecs.ofList [])).Nodes[id].Value (Some TracePayload.Null) "the live null"
+                Expect.equal (Trace.snapshot graph).Nodes[id].Value (Some (TraceModel.valueText null)) "the snapshot holds the null"
+                Trace.checkpoint graph (Trace.lastSeq graph) "cut"
+
+                Expect.equal
+                    (Trace.state graph (TraceCodecs.ofList [])).Nodes[id].Value
+                    (Some (TracePayload.Lossy (TraceModel.valueText null)))
+                    "the folded null"
             testCase "recorded timing distinguishes pending capture and failure from published state"
             <| fun _ ->
                 use graph = new Graph ()
