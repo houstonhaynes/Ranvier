@@ -19,7 +19,7 @@ proposed scope for each, and does not implement them.
 | 6 | [#157](https://github.com/shayanhabibi/Ranvier/issues/157) perf(arms): restore the 5% Chromium target | — | quiet machine for timings | implement | todo |
 | 7 | [#69](https://github.com/shayanhabibi/Ranvier/issues/69) Myriad expansion for traced and untraced primitives | 1.0.0-rc | — | research | done |
 | 8 | [#65](https://github.com/shayanhabibi/Ranvier/issues/65) trace export sink for traced builds (research note done, PR #183) | 1.0.0-rc | #165, #166 | implement | todo |
-| 9 | [#66](https://github.com/shayanhabibi/Ranvier/issues/66) core MCP tooling | 1.0.0-rc | #168 | research | todo |
+| 9 | [#66](https://github.com/shayanhabibi/Ranvier/issues/66) core MCP tooling | 1.0.0-rc | #168 | research | done |
 | 10 | [#68](https://github.com/shayanhabibi/Ranvier/issues/68) persistent memory cache adapters | 1.0.0-rc | — | research | done |
 | 11 | [#70](https://github.com/shayanhabibi/Ranvier/issues/70) exploratory use cases in LLM stacks | — | — | research | done |
 | 12 | [#184](https://github.com/shayanhabibi/Ranvier/issues/184) input journal and replay for untraced and traced builds | milestone 3 | #166; snapshot criterion on #68's format | implement | todo |
@@ -52,6 +52,7 @@ PR on the branch below it. Merge bottom-up.
 | issue/165 | #165 | https://github.com/shayanhabibi/Ranvier/pull/178 | integration/issues |
 | issue/65 | #65 | https://github.com/shayanhabibi/Ranvier/pull/183 | integration/issues |
 | issue/166 | #166 | https://github.com/shayanhabibi/Ranvier/pull/182 | integration/issues |
+| issue/66 | #66 | https://github.com/shayanhabibi/Ranvier/pull/189 | integration/issues |
 
 ## Log
 
@@ -81,3 +82,4 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-24 #166 in-progress — plan steps 1 to 4 done and `TraceNodeRef.Graph` dropped; gate failed under `test-fable` traced inline on `Texts.fs` trace text case `run` (diagnostic text differs under Fable), not pushed — 24e74b0e — next: fix the Fable `run` trace text mismatch, then plan step 5 (TraceJson writers)
 - 2026-10-24 #166 in-progress — checkpoint null-value fold and Lossy schema 1/2 payloads fixed and gate passes, but review found three new majors (TraceJson readers raise InvalidOperationException for wrong-shape JSON, Timed null Moved unrecorded and stale after checkpoint, AsyncSource null Settle becomes None after checkpoint), not pushed — 8002a109 — next: fix the three review findings in TraceContract.fs and TraceModel.fs
 - 2026-10-24 #166 done — four review findings fixed (invariant payload numbers, Timed and settled null values) and offline trace reads documented, gates pass — ec7d8c00 — next: open the stacked PR into integration/issues
+- 2026-10-25 #66 research note written — docs/.ai/research/2026-10-25-issue-66.md — fced1b98 — next: user decides scope
