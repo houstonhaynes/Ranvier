@@ -18,7 +18,7 @@ proposed scope for each, and does not implement them.
 | 5 | [#168](https://github.com/shayanhabibi/Ranvier/issues/168) spike(mcp): agent-observable graph | P1 | #165, #166, #167 | implement | done |
 | 6 | [#157](https://github.com/shayanhabibi/Ranvier/issues/157) perf(arms): restore the 5% Chromium target | — | quiet machine for timings | implement | done |
 | 7 | [#69](https://github.com/shayanhabibi/Ranvier/issues/69) Myriad expansion for traced and untraced primitives | 1.0.0-rc | — | research | done |
-| 8 | [#65](https://github.com/shayanhabibi/Ranvier/issues/65) trace export sink for traced builds (research note done, PR #183) | 1.0.0-rc | #165, #166 | implement | todo |
+| 8 | [#65](https://github.com/shayanhabibi/Ranvier/issues/65) trace export sink for traced builds (research note done, PR #183) | 1.0.0-rc | #165, #166 | implement | done |
 | 9 | [#66](https://github.com/shayanhabibi/Ranvier/issues/66) core MCP tooling | 1.0.0-rc | #168 | research | done |
 | 10 | [#68](https://github.com/shayanhabibi/Ranvier/issues/68) persistent memory cache adapters | 1.0.0-rc | — | research | done |
 | 11 | [#70](https://github.com/shayanhabibi/Ranvier/issues/70) exploratory use cases in LLM stacks | — | — | research | done |
@@ -50,7 +50,7 @@ PR on the branch below it. Merge bottom-up.
 | issue/69 | #69 | https://github.com/shayanhabibi/Ranvier/pull/175 | integration/issues |
 | issue/70 | #70 | https://github.com/shayanhabibi/Ranvier/pull/174 | integration/issues |
 | issue/165 | #165 | https://github.com/shayanhabibi/Ranvier/pull/178 | integration/issues |
-| issue/65 | #65 | https://github.com/shayanhabibi/Ranvier/pull/183 | integration/issues |
+| issue/65 | #65 | https://github.com/shayanhabibi/Ranvier/pull/190 | integration/issues |
 | issue/166 | #166 | https://github.com/shayanhabibi/Ranvier/pull/182 | integration/issues |
 | issue/168 | #168 | https://github.com/shayanhabibi/Ranvier/pull/187 | integration/issues |
 | issue/66 | #66 | https://github.com/shayanhabibi/Ranvier/pull/189 | integration/issues |
@@ -81,6 +81,7 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-24 #166 in-progress — plan steps 1 to 4 done and `TraceNodeRef.Graph` dropped; gate failed under `test-fable` traced inline on `Texts.fs` trace text case `run` (diagnostic text differs under Fable), not pushed — 24e74b0e — next: fix the Fable `run` trace text mismatch, then plan step 5 (TraceJson writers)
 - 2026-10-24 #166 in-progress — checkpoint null-value fold and Lossy schema 1/2 payloads fixed and gate passes, but review found three new majors (TraceJson readers raise InvalidOperationException for wrong-shape JSON, Timed null Moved unrecorded and stale after checkpoint, AsyncSource null Settle becomes None after checkpoint), not pushed — 8002a109 — next: fix the three review findings in TraceContract.fs and TraceModel.fs
 - 2026-10-24 #166 done — four review findings fixed (invariant payload numbers, Timed and settled null values) and offline trace reads documented, gates pass — ec7d8c00 — next: open the stacked PR into integration/issues
+- 2026-10-24 #65 in-progress — gap lines, JSONL sink, Fable export tests, C# surface and docs landed and the gate passed; review found Wait-mode Dispose then Completion.Wait deadlocks on the graph thread (src/Ranvier/TraceExport.fs:594) — a4276db6 — next: fix the Wait-mode Dispose drain or document pumping and fix the examples, then commit the regenerated docs/.ai/fable-compat.md
 - 2026-10-24 #157 blocked — plan steps 7-10 landed (cells removed, heap +1.2 %, gate back to 1.05) — bdeb2149 — next: Step 11 paired Chromium timings on a quiet machine
 - 2026-10-24 #157 in-progress — Step 11 timings at 85-100 % load: create 1.003, switch 1.078, payload 1.073, clear 1.011, every interval straddles 1.05; Step 12 gates pass except chromium-gate (switch, payload medians); counters identical — 56cd26db — next: payload/switch medians above 1.05
 - 2026-10-24 #157 in-progress — review fixes: spec and plan no longer claim the 1.05 gate met; paired run against the hand-written shape: plugin output indistinguishable from it; pooled switch 1.052, payload 1.061 — 7c518347 — next: switch/payload medians above 1.05 (gate and CI fail; needs a faster shape than the spike or a user ruling)
@@ -102,4 +103,6 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-25 #168 in-progress — adapter and sample implemented, docs page documents the MCP host, exposure and adapter members, full gate passed (3,061 tests, traced Mcp 37, docs 223 pages); row stays in-progress by user ruling — f3de1589 — next: plan step 10, the comparative agent experiment, stays unmet acceptance work
 - 2026-10-25 #168 done — comparative evaluation recorded (20 runs in two rounds, all successful in one iteration; MCP costs more with no measurable benefit at this scale), accepted by the user — next: merge PR #187 once CI clears
 - 2026-10-25 #66 research note written — docs/.ai/research/2026-10-25-issue-66.md — fced1b98 — next: user decides scope
+- 2026-10-25 #65 in-progress — Wait-mode Dispose now queues the stream's end past the capacity on the graph thread (no pump needed), the last batch stops at Dispose's seq, and a checkpoint after an off-thread Dispose ends the gap there; full gate passes and fable-compat regenerated; verify-trace --no-counters: 9 checks fail, none from #65's diff (merge-base IL and surface diffs from the base branch, base lint lines, and Fickl samples broken by the script's own pack leaving src/Ranvier/obj/Release/{nuspec,fable}); counter comparison needs an elevated shell; PR #190 — 98afcf67 — next: merge PR #190
+- 2026-10-25 #65 done — trace export sink landed with the Wait-mode Dispose drain fixed, docs written and the full gate passing — b1fd5115 — next: merge PR #190
 - 2026-10-25 #157 done — Arms.Match helpers documented in docs/content/view/arms.md on top of the RAN021 suppression and the analyzer gate; rebased onto origin/integration/issues (c374cfca) — 04b79e74 — next: user confirms plan P8 and the CI scope on PR #181

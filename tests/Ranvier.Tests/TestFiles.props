@@ -27,6 +27,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)TraceContractTests.fs" Link="TraceContractTests.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)TraceJsonTests.fs" Link="TraceJsonTests.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)TraceDumpTests.fs" Link="TraceDumpTests.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)TraceExportStreams.fs" Link="TraceExportStreams.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Observers.fs" Link="Observers.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Api.fs" Link="Api.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)FanOut.fs" Link="FanOut.fs" />

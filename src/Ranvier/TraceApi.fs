@@ -427,26 +427,7 @@ module Trace =
             )
 
     let private gate (graph: Graph) (operation: string) =
-        if graph.Options.ThreadAffinity = Serialised then
-            graph.AssertOnGraphThread operation
-        elif not graph.IsOnGraphThread then
-            raise (
-                System.InvalidOperationException (
-                    operation
-                    + " ran off the graph's thread. Marshal it through Graph.Dispatch."
-                )
-            )
-
-        if Platform.isNull (box graph.CurrentComputation) then
-            Tracer.AbandonStale (logOf graph)
-
-        if (logOf graph).Busy then
-            raise (
-                System.InvalidOperationException (
-                    operation
-                    + " ran inside a flush, a discharge or a computation's run. Call it between flushes."
-                )
-            )
+        TraceGate.check graph operation
 
     /// <summary>
     /// Folds the events in <c>graph</c>'s log up to and including seq <c>seq</c> into the checkpoint named
@@ -472,7 +453,6 @@ module Trace =
 
         gate graph "Trace.checkpoint"
         let log = logOf graph
-        let prefix = log.EventsThrough seq
 
         if log.LabelFollows seq then
             raise (
@@ -488,13 +468,7 @@ module Trace =
                 )
             )
 
-        let released = log.Collected seq
-
-        let folded =
-            TraceModel.fold (checkpointOf graph).Snapshot prefix
-            |> TraceModel.pruneReleasing released
-
-        log.Truncate (seq, name, box folded, released)
+        TraceGate.truncate log seq name
 
     /// <summary>
     /// The JSONL dump of <c>graph</c>'s checkpoint and retained events: schema 2 with timed nodes, otherwise schema 1.
@@ -518,6 +492,26 @@ module Trace =
         gate graph "Trace.dumpTextWith"
         let struct (checkpoint, events) = retained graph
         TraceContract.dumpTextWith codecs "net" checkpoint.Name checkpoint.Snapshot events
+
+    /// <summary>
+    /// Starts exporting <c>graph</c>'s log to <c>sink</c>: the header of its checkpoint and its retained events now,
+    /// then the events of each flush when it ends.
+    /// </summary>
+    /// <remarks>
+    /// The <c>Header</c> text and the concatenated <c>Events</c> text equal <c>dumpTextWith graph policy.Codecs</c>
+    /// while no checkpoint is taken. A write that runs no flush is exported by the next flush or by
+    /// <c>TraceExport.Drain</c>. Dispose the export to end the stream.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentOutOfRangeException"><c>policy.Capacity</c> is less than 1.</exception>
+    /// <exception cref="T:System.InvalidOperationException">As for <c>dumpText</c>.</exception>
+    let export (graph: Graph) (sink: ITraceSink) (policy: SinkPolicy) : TraceExport =
+        if policy.Capacity < 1 then
+            raise (System.ArgumentOutOfRangeException (nameof policy, "A trace export's capacity is at least 1 event."))
+
+        gate graph "Trace.export"
+        let export = new TraceExport (graph, sink, policy)
+        export.Start ()
+        export
 
 #if !FABLE_COMPILER
     /// <summary>Writes the JSONL dump of <c>graph</c>'s log to <c>path</c>, and returns the full path.</summary>

@@ -39,7 +39,8 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | TraceModelTests.fs | 0 | 0 | 0 | 12 | 12 | 12 | 2 | 0 |
 | TraceContractTests.fs | 0 | 0 | 0 | 34 | 34 | 34 | 0 | 0 |
 | TraceJsonTests.fs | 0 | 0 | 0 | 8 | 8 | 8 | 9 | 0 |
-| TraceDumpTests.fs | 0 | 0 | 0 | 3 | 3 | 3 | 9 | 0 |
+| TraceDumpTests.fs | 0 | 0 | 0 | 4 | 4 | 4 | 10 | 0 |
+| TraceExportStreams.fs | 0 | 0 | 0 | 6 | 6 | 6 | 0 | 0 |
 | Observers.fs | 102 | 102 | 102 | 102 | 102 | 102 | 0 | 0 |
 | Api.fs | 7 | 7 | 7 | 7 | 7 | 7 | 2 | 0 |
 | FanOut.fs | 8 | 8 | 8 | 8 | 8 | 8 | 0 | 0 |
@@ -84,7 +85,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1551 | 1530 | 1527 | 1762 | 1736 | 1733 | 143 | 1 |
+| **Total** | 1551 | 1530 | 1527 | 1769 | 1743 | 1740 | 144 | 1 |
 
 ## Tests.fs
 
@@ -764,17 +765,32 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | dumpTextWith writes the committed schema 3 fixture byte for byte | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | the committed schema 1 and 3 fixtures parse to the program's events and payload forms | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | a schema 3 dump parses to the forms written | TraceModel.parseDump is .NET only, and the fixtures are files. |
+| a gap line parses into Gaps, and why across the gap ends in BeforeCheckpoint | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | dumpTextWith writes numbers in the invariant culture | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | parseDumpWith decodes each payload through the codecs | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | schema 1 and 2 payloads read as Lossy text, and a null payload as Null | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | parseDumpWith keeps schema 1 payloads as their text, and a strict list raises for them | TraceModel.parseDump is .NET only, and the fixtures are files. |
 | parseDump raises FormatException for schema 0 and 4 | TraceModel.parseDump is .NET only, and the fixtures are files. |
 
-<details><summary>3 passed in every build and delivery that runs them</summary>
+<details><summary>4 passed in every build and delivery that runs them</summary>
 
 - dumpTextWith writes schema 3 with every payload form (traced only)
 - dumpTextWith writes the snapshot and event fields of dumpText (traced only)
 - strict dumpTextWith raises for a payload with no codec (traced only)
+- dumpHeader and eventLines concatenate to dumpTextWith, with and without a checkpoint (traced only)
+
+</details>
+
+## TraceExportStreams.fs
+
+<details><summary>6 passed in every build and delivery that runs them</summary>
+
+- export writes the header first, then the retained events (traced only)
+- the events of a flush are exported when it ends (traced only)
+- Drain exports the events of a write that wakes no effect (traced only)
+- Wait loses no event behind a stalled sink, and the stream is the dumpTextWith text (traced only)
+- under Wait, the stream ends at Dispose when the queue is full and events follow it (traced only)
+- Drop with Enqueued bounds the log under a stalled sink, and one gap names the dropped seqs (traced only)
 
 </details>
 

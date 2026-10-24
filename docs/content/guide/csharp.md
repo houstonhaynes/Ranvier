@@ -733,6 +733,31 @@ Console.WriteLine($"{checkpoint.Name} at seq {checkpoint.Snapshot.Seq}");
 
 :::
 
+:::details Export the log to a sink
+
+`Export` streams the log to a sink after each flush, as schema 3 dump lines. The capacity bounds the
+events queued for the sink. A full queue waits under `TraceExportFull.Wait` and drops the batch, with a
+gap line, under `TraceExportFull.Drop`. `TraceExportCheckpoint.Enqueued` and `Acknowledged` checkpoint
+the exported events so the log stays bounded. `JsonlSink` writes a file and `MemorySink` holds the
+records in memory. Dispose the export to end the stream; `Completion` completes once the sink holds
+every record. On the graph's thread, `Dispose` queues the rest of the stream before it returns, so
+`Completion.Wait()` there needs no pump. `Export` raises `ArgumentOutOfRangeException` for a capacity
+below 1. See [Exporting the trace](tracing.md#exporting-the-trace).
+
+```csharp
+#if RANVIER_TRACE
+using var sink = Tracing.JsonlSink("session.jsonl");
+var export = Tracing.Export(
+    graph, sink, 1024, TraceExportFull.Drop, TraceExportCheckpoint.Enqueued, Tracing.Codecs());
+
+// ... run the program ...
+export.Dispose();
+export.Completion.Wait();
+#endif
+```
+
+:::
+
 The `…Document` methods return the schema 3 JSON documents of the
 [machine-readable diagnostics](tracing.md#machine-readable-diagnostics), for a tool that reads the
 graph without parsing rendered text. A codec claims a value by returning its data, and returns null for
