@@ -223,7 +223,9 @@ booleans and options of them. Without a `PropertySerialization` argument the pro
 **browser-only**: the server's `Reject` policy raises for it, and `Omit` leaves it out (see
 [Server rendering](../server/rendering.md#browser-only-parts)). `PropertyHtml.text`,
 `PropertyHtml.number`, `PropertyHtml.presence`, `PropertyHtml.optional` and `PropertyHtml.childText`
-give a custom property a server form.
+give a custom property a server form. `PropertyHtml.optional` omits the attribute for `None`; on .NET it
+also omits it for `Some null`, which Fable erases to `None`. The `OptionalAttribute` and
+`ReactiveAttribute` modifiers treat `Some null` the same way.
 
 ## How bindings re-run
 

@@ -141,6 +141,20 @@ A caller on another thread, such as a request handler or a tool host, awaits `gr
 The work runs in the graph's consistency domain, as `Dispatch` work does, and the task completes with its result
 or faults with its exception. An optional `CancellationToken` cancels the item while it waits in the inbox.
 Disposing the graph faults every item still waiting with `ObjectDisposedException`.
+
+```fsharp
+let increment (graph: Graph) (count: Signal<int>) (cancel: CancellationToken) : Task<int> =
+    task {
+        // The work runs on the graph's thread. Called from another thread, the await resumes on the thread pool.
+        let! next =
+            graph.DispatchAsync ((fun () ->
+                count.Value <- count.Value + 1
+                count.Value), cancel)
+
+        return next
+    }
+```
+
 The [sample](https://github.com/shayanhabibi/Ranvier/blob/master/samples/dispatch-async.fsx) runs the owner on a
 dedicated thread that drains its inbox when its dispatcher wakes it, and reads a memo, writes a signal and catches
 a failure from the thread pool. [Contracts](contracts.md#awaiting-dispatched-work) lists every case.

@@ -3113,6 +3113,11 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
     /// </summary>
     new(graph: Graph, initial: 'T) = Signal<'T>(graph, initial, graph.Options.Equality.Comparer<'T>())
 
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
+
     interface INode with
         member _.Id = id
         member _.Status = Status.None
@@ -3217,6 +3222,11 @@ type AsyncSource<'T>(graph: Graph) =
     let mutable status = Status.Pending ||| Status.Uninitialized
 
     do Tracer.AsyncSourceNew (graph, id, observers)
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id
@@ -3710,6 +3720,11 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
 
             scope
 
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
+
     interface INode with
         member _.Id = id
         member _.Status = status ||| Staleness.ofFreshness freshness
@@ -3969,6 +3984,11 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
         member this.Release() =
             link <- null
             this.Dispose ()
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id
@@ -4356,6 +4376,11 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
         member this.Release() =
             link <- null
             this.Dispose ()
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id
@@ -5067,6 +5092,11 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
 
             scope
 
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
+
     interface INode with
         member _.Id = id
         member _.Status = status ||| Staleness.ofFreshness freshness
@@ -5650,6 +5680,11 @@ type Boundary<'T>
                     scope.Dispose ()
 
             scope
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id

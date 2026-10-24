@@ -102,7 +102,7 @@ let cases () : (string * string * obj) list =
             }
         "run",
         "{ Run = 1\n  Start = 2\n  Status = Some Ok\n  Moved = true\n  Root = Created 3\n  Flush = 4\n  Value = None }",
-        box
+        box<TraceRun>
             {
                 Run = 1
                 Start = 2
@@ -174,11 +174,13 @@ let cases () : (string * string * obj) list =
         box
             {
                 Target = "net"
+                Schema = 1
                 Graph = 1
                 Checkpoint = null
                 SeqFrom = 2
                 Snapshot = snapshot
                 Events = [||]
+                Payloads = [||]
             }
         "timing",
         "{ Mode = \"debounce\"\n  CapturedStatus = "

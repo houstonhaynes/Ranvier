@@ -4,6 +4,25 @@ open System
 open System.Collections.Generic
 open System.Text
 
+/// <summary>A payload value of one of the four types every trace schema writes losslessly.</summary>
+[<RequireQualifiedAccess>]
+type TraceScalar =
+    | Int of int
+    | String of string
+    | Bool of bool
+    | Float of float
+
+/// <summary>A recorded value in a trace contract document or a schema 3 dump, marked as lossless or lossy.</summary>
+[<RequireQualifiedAccess>]
+type TracePayload =
+    | Null
+    /// <summary>An <c>int</c>, <c>string</c>, <c>bool</c> or <c>float</c>, held exactly.</summary>
+    | Exact of TraceScalar
+    /// <summary>The <c>data</c> written by version <c>version</c> of the codec named <c>codec</c>; lossless.</summary>
+    | Encoded of codec: string * version: int * data: string
+    /// <summary>The value's <c>TraceModel.valueText</c>: diagnostic text that will not decode to a value.</summary>
+    | Lossy of text: string
+
 /// <summary>Where a <c>Trace.why</c> chain ends.</summary>
 type WhyRoot =
     /// <summary>A write from outside every run: the <c>Write</c> seq.</summary>
@@ -270,7 +289,9 @@ type TraceSnapshotNode =
         Status: TraceNodeStatus
         /// <summary>
         /// The <c>valueText</c> of the latest value or exception recorded by a moving <c>Write</c>, a <c>Moved</c>, or
-        /// an async source's <c>Settle</c> or <c>Fail</c>.
+        /// an async source's <c>Settle</c> or <c>Fail</c>. A null written by a <c>Write</c> or settled by an async source,
+        /// or a <c>Moved</c> to null by a memo, async memo, boundary, lookup cell or timed node, gives
+        /// <c>valueText null</c>.
         /// </summary>
         Value: string option
     }
@@ -360,9 +381,14 @@ type TraceSnapshot =
             ]
 
 /// <summary>A parsed JSONL dump: its header, the snapshot at <c>SeqFrom</c> and the events after it.</summary>
-/// <remarks>Parsed event payloads are strings, or null.</remarks>
+/// <remarks>
+/// Parsed event payloads are strings, or null: in schema 3 the scalar's text for <c>Exact</c>, the data for
+/// <c>Encoded</c> and the text for <c>Lossy</c>.
+/// </remarks>
 type TraceDump =
     {
+        /// <summary>The dump schema: 1, 2 with timed nodes, or 3 with payload forms.</summary>
+        Schema: int
         Target: string
         /// <summary>The graph's root owner id.</summary>
         Graph: int
@@ -372,6 +398,12 @@ type TraceDump =
         SeqFrom: int
         Snapshot: TraceSnapshot
         Events: TraceEvent[]
+        /// <summary>
+        /// The form of each event's payload, at the event's index. Schema 3 gives the form written. Schemas 1 and 2
+        /// carry no type: null gives <c>Null</c>, and text gives <c>Lossy</c>. A <c>TimedState</c> event's payload is
+        /// its timing, and its form is <c>Null</c>.
+        /// </summary>
+        Payloads: TracePayload[]
     }
 
     /// <summary>The dump header, snapshot and events in F# record syntax.</summary>
@@ -1157,10 +1189,27 @@ module TraceModel =
                             Owners = s.Owners.Add (e.Node, { o with Disposed = true })
                         }
                 | None -> ()
-            | TraceEventKind.Write when e.Flag = 1 -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
+            | TraceEventKind.Write when e.Flag = 1 ->
+                updateNode e.Node (fun n ->
+                    { n with
+                        Value = Some (valueText e.Payload)
+                    })
             | TraceEventKind.Moved when not (Platform.isNull e.Payload) -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
+            | TraceEventKind.Moved ->
+                updateNode e.Node (fun n ->
+                    match n.Kind with
+                    | TraceNodeKind.Memo
+                    | TraceNodeKind.AsyncMemo
+                    | TraceNodeKind.Boundary
+                    | TraceNodeKind.LookupCell
+                    | TraceNodeKind.Timed -> { n with Value = Some (valueText null) }
+                    | _ -> n)
             | TraceEventKind.Settle
-            | TraceEventKind.Fail when e.Arg = 0 -> updateNode e.Node (fun n -> { n with Value = valueOf e.Payload })
+            | TraceEventKind.Fail when e.Arg = 0 ->
+                updateNode e.Node (fun n ->
+                    { n with
+                        Value = Some (valueText e.Payload)
+                    })
             | TraceEventKind.Mark when e.Arg = 2 ->
                 updateNode e.Node (fun n ->
                     if n.PendingMark = 0 then
@@ -2027,7 +2076,54 @@ module TraceModel =
         value.ToString ("R", Globalization.CultureInfo.InvariantCulture)
 #endif
 
-    let private eventJson (sb: StringBuilder) (e: TraceEvent) =
+    // A schema 3 payload form: null, or an object with its `form`.
+    let private payloadForm (sb: StringBuilder) (payload: TracePayload) =
+        let number (f: float) =
+            if Double.IsNaN f then "\"NaN\""
+            elif f = infinity then "\"Infinity\""
+            elif f = -infinity then "\"-Infinity\""
+            else jsonFloat f
+
+        match payload with
+        | TracePayload.Null -> sb.Append "null" |> ignore
+        | TracePayload.Exact scalar ->
+            sb.Append "{\"form\":\"exact\",\"type\":"
+            |> ignore
+
+            match scalar with
+            | TraceScalar.Int i ->
+                sb.Append("\"int\",\"value\":").Append(string i)
+                |> ignore
+            | TraceScalar.Bool b ->
+                sb.Append("\"bool\",\"value\":").Append(if b then "true" else "false")
+                |> ignore
+            | TraceScalar.Float f ->
+                sb.Append("\"float\",\"value\":").Append(number f)
+                |> ignore
+            | TraceScalar.String s ->
+                sb.Append "\"string\",\"value\":" |> ignore
+                jsonString sb s
+
+            sb.Append '}' |> ignore
+        | TracePayload.Encoded (codec, version, data) ->
+            sb.Append "{\"form\":\"encoded\",\"codec\":"
+            |> ignore
+
+            jsonString sb codec
+
+            sb.Append(",\"version\":").Append(string version).Append ",\"data\":"
+            |> ignore
+
+            jsonString sb data
+            sb.Append '}' |> ignore
+        | TracePayload.Lossy text ->
+            sb.Append "{\"form\":\"lossy\",\"text\":"
+            |> ignore
+
+            jsonString sb text
+            sb.Append '}' |> ignore
+
+    let private eventJson (sb: StringBuilder) (encode: (obj -> TracePayload) option) (e: TraceEvent) =
         sb
             .Append("{\"seq\":")
             .Append(e.Seq)
@@ -2070,18 +2166,23 @@ module TraceModel =
             sb.Append(jsonFloat timing.RemainingMilliseconds).Append(",\"capture\":").Append(timing.WinningCapture).Append('}')
             |> ignore
         else
-            jsonString sb (payloadText e.Payload)
+            match encode with
+            | Some encode -> payloadForm sb (encode e.Payload)
+            | None -> jsonString sb (payloadText e.Payload)
 
         sb.Append '}' |> ignore
 
     /// <summary>
-    /// The JSONL dump: a header, the snapshot holding <c>before</c>, then one line per event. Timed nodes select schema 2.
+    /// The JSONL dump of <c>dumpText</c>; with <c>encode</c>, in schema 3 with each payload written in the form
+    /// <c>encode</c> gives.
     /// </summary>
-    /// <remarks>
-    /// <c>before</c> is the state ahead of the first event; <c>checkpoint</c> names the file holding earlier events, or
-    /// is null. Lines end in <c>\n</c>. The same events and state give the same text.
-    /// </remarks>
-    let dumpText (target: string) (checkpoint: string) (before: TraceSnapshot) (events: TraceEvent[]) : string =
+    let internal dumpTextEncoded
+        (encode: (obj -> TracePayload) option)
+        (target: string)
+        (checkpoint: string)
+        (before: TraceSnapshot)
+        (events: TraceEvent[])
+        : string =
         let sb = StringBuilder ()
         let seqFrom = if events.Length = 0 then before.Seq + 1 else events[0].Seq
 
@@ -2092,7 +2193,9 @@ module TraceModel =
                 && e.Arg = int TraceNodeKind.Timed)
 
         let schema =
-            if
+            if encode.IsSome then
+                3
+            elif
                 timed
                 || (before.Nodes.Values
                     |> Seq.exists (fun n -> n.Kind = TraceNodeKind.Timed))
@@ -2130,13 +2233,93 @@ module TraceModel =
         sb.Append '\n' |> ignore
 
         for e in events do
-            eventJson sb e
+            eventJson sb encode e
             sb.Append '\n' |> ignore
 
         sb.ToString ()
 
+    /// <summary>
+    /// The JSONL dump: a header, the snapshot holding <c>before</c>, then one line per event. Timed nodes select schema 2.
+    /// </summary>
+    /// <remarks>
+    /// <c>before</c> is the state ahead of the first event; <c>checkpoint</c> names the file holding earlier events, or
+    /// is null. Lines end in <c>\n</c>. The same events and state give the same text.
+    /// </remarks>
+    let dumpText (target: string) (checkpoint: string) (before: TraceSnapshot) (events: TraceEvent[]) : string =
+        dumpTextEncoded None target checkpoint before events
+
 #if !FABLE_COMPILER
-    /// <summary>The header, snapshot and events of a JSONL dump in schema 1 or 2.</summary>
+    // The form of a schema 1 or 2 payload's text, which carries no type.
+    let private textForm (text: string) =
+        match text with
+        | null -> TracePayload.Null
+        | _ -> TracePayload.Lossy text
+
+    // A schema 3 payload form, and the text an event of schema 1 or 2 would hold for it.
+    let private readForm (e: Text.Json.JsonElement) =
+        let str (name: string) =
+            let p = e.GetProperty name
+
+            if p.ValueKind = Text.Json.JsonValueKind.Null then
+                null
+            else
+                p.GetString ()
+
+        if e.ValueKind = Text.Json.JsonValueKind.Null then
+            TracePayload.Null
+        else
+            match e.GetProperty("form").GetString() with
+            | "exact" ->
+                let value = e.GetProperty "value"
+
+                match e.GetProperty("type").GetString() with
+                | "int" -> TracePayload.Exact (TraceScalar.Int (value.GetInt32 ()))
+                | "bool" -> TracePayload.Exact (TraceScalar.Bool (value.GetBoolean ()))
+                | "string" -> TracePayload.Exact (TraceScalar.String (str "value"))
+                | "float" when value.ValueKind = Text.Json.JsonValueKind.String ->
+                    match value.GetString () with
+                    | "NaN" -> TracePayload.Exact (TraceScalar.Float nan)
+                    | "Infinity" -> TracePayload.Exact (TraceScalar.Float infinity)
+                    | "-Infinity" -> TracePayload.Exact (TraceScalar.Float -infinity)
+                    | other ->
+                        raise (
+                            FormatException (
+                                "A trace dump holds an unknown float: "
+                                + other
+                                + "."
+                            )
+                        )
+                | "float" -> TracePayload.Exact (TraceScalar.Float (value.GetDouble ()))
+                | other ->
+                    raise (
+                        FormatException (
+                            "A trace dump holds an unknown exact type: "
+                            + other
+                            + "."
+                        )
+                    )
+            | "encoded" -> TracePayload.Encoded (str "codec", e.GetProperty("version").GetInt32(), str "data")
+            | "lossy" -> TracePayload.Lossy (str "text")
+            | other ->
+                raise (
+                    FormatException (
+                        "A trace dump holds an unknown payload form: "
+                        + other
+                        + "."
+                    )
+                )
+
+    let private formText (payload: TracePayload) =
+        match payload with
+        | TracePayload.Null -> null
+        | TracePayload.Exact (TraceScalar.Int i) -> payloadText (box i)
+        | TracePayload.Exact (TraceScalar.Bool b) -> payloadText (box b)
+        | TracePayload.Exact (TraceScalar.Float f) -> payloadText (box f)
+        | TracePayload.Exact (TraceScalar.String s) -> s
+        | TracePayload.Encoded (_, _, data) -> data
+        | TracePayload.Lossy text -> text
+
+    /// <summary>The header, snapshot and events of a JSONL dump in schema 1, 2 or 3.</summary>
     /// <exception cref="T:System.FormatException">The text is not a supported trace dump.</exception>
     let parseDump (text: string) : TraceDump =
         let lines = text.Split ([| '\n' |], StringSplitOptions.RemoveEmptyEntries)
@@ -2149,8 +2332,14 @@ module TraceModel =
 
         let schema = h.GetProperty("schema").GetInt32()
 
-        if schema <> 1 && schema <> 2 then
-            raise (FormatException "The trace dump schema is unsupported.")
+        if schema < 1 || schema > 3 then
+            raise (
+                FormatException (
+                    "The trace dump schema "
+                    + string schema
+                    + " is unsupported."
+                )
+            )
 
         let str (e: Text.Json.JsonElement) (name: string) =
             let p = e.GetProperty name
@@ -2242,12 +2431,17 @@ module TraceModel =
                     |> Map.ofList
             }
 
-        let events =
+        let parsed =
             [|
                 for line in lines[2..] ->
                     use doc = Text.Json.JsonDocument.Parse line
                     let e = doc.RootElement
                     let kind = Enum.Parse<TraceEventKind>(str e "kind")
+
+                    let form =
+                        if kind = TraceEventKind.TimedState then TracePayload.Null
+                        elif schema = 3 then readForm (e.GetProperty "payload")
+                        else textForm (str e "payload")
 
                     let payload =
                         if kind = TraceEventKind.TimedState then
@@ -2267,6 +2461,8 @@ module TraceModel =
                                             WinningCapture = int' t "capture"
                                         }
                                 }
+                        elif schema = 3 then
+                            box (formText form)
                         else
                             box (str e "payload")
 
@@ -2279,15 +2475,18 @@ module TraceModel =
                         Flag = int' e "flag"
                         Cause = int' e "cause"
                         Payload = payload
-                    }
+                    },
+                    form
             |]
 
         {
+            Schema = schema
+            Payloads = Array.map snd parsed
             Target = str h "target"
             Graph = int' h "graph"
             Checkpoint = str h "checkpoint"
             SeqFrom = int' h "seqFrom"
             Snapshot = snapshot
-            Events = events
+            Events = Array.map fst parsed
         }
 #endif

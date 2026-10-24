@@ -31,13 +31,20 @@ Every node reports a `Status`, a flags enum that is separate from the node's dir
 
 | Flag | Meaning |
 | --- | --- |
-| `Status.None` | The node holds a settled value. |
+| `Status.None` | No flag is set: the node holds a settled value and has no pending re-run. |
 | `Status.Pending` | The node is waiting on a value that has not arrived. |
 | `Status.Error` | The node's last run failed. |
 | `Status.Uninitialized` | The node has not produced a value yet. |
+| `Status.Stale` | The graph has marked the computation out of date since its last run. |
 
 Pending and dirty are independent. A dirty node has an out-of-date value and recomputes on its next read. A
 pending node has already run and is waiting on a source. A node can be both.
+
+`Status.Stale` exposes the dirty state. Computation nodes report it (memos, effects, async memos, boundaries,
+projections, stream memos, timed values and bindings) from the moment the graph marks them until they re-run or
+confirm their value. Reading the flag runs nothing and records no dependency. A memo is checked against its sources
+when it is read, so it can report `None` after a source changes; an effect woken inside a batch reports `Stale`
+until the batch ends. Test a single flag with `HasFlag`, since `Status.None` excludes a stale node.
 
 Two mechanisms work together. Each one needs the other:
 

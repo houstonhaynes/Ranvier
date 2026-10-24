@@ -97,6 +97,13 @@ module internal Platform =
     let hasMember (value: obj) (name: string) : bool = jsNative
 
     /// <summary>
+    /// True when <c>value</c> is a number with an integral value in the 32-bit signed range. Stands in for an
+    /// <c>int</c> type test, which Fable compiles to the same <c>typeof</c> check as a <c>float</c> type test.
+    /// </summary>
+    [<Emit("(typeof $0 === 'number' && ($0 | 0) === $0)")>]
+    let isInt32 (value: obj) : bool = jsNative
+
+    /// <summary>
     /// Sets the <c>InnerException</c> of <c>error</c> to <c>inner</c>. Fable's exception types take no inner
     /// exception in their constructors.
     /// </summary>

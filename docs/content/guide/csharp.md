@@ -643,7 +643,20 @@ var saved = Async(token => repo.SaveAsync(draft.Value, token), FlightPolicy.Queu
 ```
 
 `graph.Dispatch(() => …)` marshals a write from another thread, as described in
-[Async and pending](threading.md).
+[Async and pending](threading.md). `graph.DispatchAsync(() => …)` does the same for work that returns a
+value, and returns a `Task<T>` that completes once the work has run on the graph's thread or faults with
+its exception. An optional `CancellationToken` cancels the item while it waits in the inbox:
+
+```csharp
+var total = await graph.DispatchAsync(() =>
+{
+    count.Value += 1;
+    return doubled.Value;
+}, cancellationToken);
+```
+
+[Contracts](../concepts/contracts.md#awaiting-dispatched-work) lists the threading, failure and
+disposal cases.
 
 ## Tracing
 
@@ -687,11 +700,56 @@ graph.Run(() =>
 | `Origin`, `Why`, `WhyDepth`, `WhyNot`, `History`, `WaitingOn` | the same queries, passed to `Trace.render` |
 | `Snapshot(graph)`, `Snapshot(graph, seq)` | `Trace.snapshot`, `Trace.snapshotAt`, rendered |
 | `Resolve`, `Reconcile`, `Events`, `DumpText`, `Dump` | `Trace.resolve`, `reconcile`, `events`, `dumpText`, `dump` |
+| `EventsSince(graph, seq)` | `Trace.eventsSince` |
+| `Checkpoint(graph, seq, name)`, `CheckpointOf(graph)` | `Trace.checkpoint`, `Trace.checkpointOf` |
+| `DumpText(graph, codecs)` | `Trace.dumpTextWith` |
+| `Codec`, `Codecs`, `StrictCodecs` | a `TraceCodec` record, `TraceCodecs.ofList`, `TraceCodecs.strict` |
+| `StateDocument`, `RunsDocument`, `WhyDocument` | `Trace.state`, `runs`, `whyWith`, written by `TraceJson` |
+| `WhyNotDocument`, `WaitingDocument`, `LookupDocument` | `Trace.whyNot`, `waitingOn`, `lookup`, written by `TraceJson` |
+| `LastSeq` | `Trace.lastSeq` |
 
 :::
 
+:::details Read the log incrementally and truncate it
+
+`EventsSince` returns the events after a cursor, the seq of the last event read. `Checkpoint` folds
+the events up to a seq into a named `TraceCheckpoint` and drops them from the log; call it between
+flushes. A cursor before the checkpoint's seq has expired: resync from `CheckpointOf(graph).Snapshot.Seq`.
+See [Incremental reads and checkpoints](tracing.md#incremental-reads-and-checkpoints).
+
+```csharp
+#if RANVIER_TRACE
+var cursor = 0;
+var fresh = Tracing.EventsSince(graph, cursor);
+if (fresh.Length > 0)
+{
+    cursor = fresh[^1].Seq;
+    Tracing.Checkpoint(graph, cursor, "session-1");
+}
+var checkpoint = Tracing.CheckpointOf(graph);
+Console.WriteLine($"{checkpoint.Name} at seq {checkpoint.Snapshot.Seq}");
+#endif
+```
+
+:::
+
+The `…Document` methods return the schema 3 JSON documents of the
+[machine-readable diagnostics](tracing.md#machine-readable-diagnostics), for a tool that reads the
+graph without parsing rendered text. A codec claims a value by returning its data, and returns null for
+a value of another shape:
+
+```csharp
+var point = Tracing.Codec(
+    "point", 1,
+    value => value is Point p ? $"{p.X},{p.Y}" : null,
+    data => { var xy = data.Split(','); return new Point(int.Parse(xy[0]), int.Parse(xy[1])); });
+
+var state = Tracing.StateDocument(graph, Tracing.Codecs(point));
+```
+
 Each per-node query accepts a node or its identity path, such as `"/changes"`. Use a path to reach a
-node without a handle, such as an `EffectOn`.
+node without a handle, such as an `EffectOn`. An unknown path raises `ArgumentException`, except in
+`LookupDocument`, whose body is then `Missing`; a node of another graph gives `Foreign` there.
 
 :::details Conditional labels
 `Tracing.Label` is `[Conditional("RANVIER_TRACE")]`. Its call is retained only when the calling

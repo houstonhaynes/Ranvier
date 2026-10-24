@@ -37,6 +37,11 @@ type internal RowWatch(graph: Graph, refresh: unit -> unit, touched: unit -> uni
             queued <- true
             graph.Schedule (this :> IScheduled)
 
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
+
     interface INode with
         member _.Id = id
         member _.Status = Status.None
@@ -87,6 +92,11 @@ type internal ProjectionBeacon(graph: Graph, host: IBeaconHost) =
     let observers = ObserverSet ()
     do Tracer.Bind (observers, graph, id)
     do Tracer.BeaconNew (graph, id)
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id
@@ -1190,6 +1200,11 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
                     ()
 
             this.RefreshSummary ()
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id
@@ -2605,6 +2620,11 @@ type internal LookupCell<'V>(graph: Graph, equal: IEqualityComparer<'V>, orphane
     let mutable value = Unchecked.defaultof<'V>
     let mutable failure: Failure = null
     let mutable pending = false
+
+#if RANVIER_TRACE
+    interface ITracedNode with
+        member _.TraceGraph = box graph
+#endif
 
     interface INode with
         member _.Id = id

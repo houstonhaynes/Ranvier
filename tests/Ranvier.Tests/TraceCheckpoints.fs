@@ -15,8 +15,8 @@ type Op =
     | Unwatch
 
 /// <summary>
-/// A graph of two signals, a lazy memo over both, a lazy host memo that creates a child memo in each run, and the nodes
-/// <c>Named</c> and <c>Watch</c> add.
+/// A graph of two signals, a lazy memo over both, a lazy host memo that creates a child memo in each run, a lazy memo
+/// that is null while the first signal is even, and the nodes <c>Named</c> and <c>Watch</c> add.
 /// </summary>
 type private Script(graph: Graph) =
     let a = graph.Run (fun () -> Trace.named "a" (fun () -> Signal (graph, 0)))
@@ -29,7 +29,10 @@ type private Script(graph: Graph) =
                 let child = Trace.named "child" (fun () -> createMemo (fun _ -> a.Value))
                 child.Value + b.Value))
 
-    let memos = ResizeArray<INode> [ m :> INode; host :> INode ]
+    let parity =
+        graph.Run (fun () -> createMemo (fun _ -> if a.Value % 2 = 0 then null else "odd"))
+
+    let memos = ResizeArray<INode> [ m :> INode; host :> INode; parity :> INode ]
     let roots = System.Collections.Generic.Queue<Owner>()
 
     member _.Memos = List.ofSeq memos
@@ -48,6 +51,7 @@ type private Script(graph: Graph) =
             | Read ->
                 m.Value |> ignore
                 host.Value |> ignore
+                parity.Value |> ignore
             | Named index ->
                 let index = abs index % 3
 
@@ -133,6 +137,119 @@ let private config =
     { FsCheckConfig.defaultConfig with
         maxTest = 200
     }
+
+/// <summary>
+/// An uncheckpointed graph and its twin checkpointed at a split from <c>split</c>, both running <c>before</c> and then
+/// <c>after</c>, with their scripts and the split.
+/// </summary>
+let private twins (before: Op list) (after: Op list) (split: int) =
+    let twin = new Graph ()
+    let g = new Graph ()
+    let twinScript = Script twin
+    let script = Script g
+
+    for op in before do
+        twinScript.Apply op
+        script.Apply op
+
+    let k = splitOf g split
+    Trace.checkpoint g k "cut"
+
+    for op in after do
+        twinScript.Apply op
+        script.Apply op
+
+    twin, g, twinScript, script, k
+
+/// <summary>
+/// Asserts that <c>g</c>, checkpointed at <c>k</c>, gives the contract values of its uncheckpointed twin, except that a
+/// value or cause at or before <c>k</c> is <c>Lossy</c> or <c>BeforeCheckpoint</c>.
+/// </summary>
+let private contractMatches (twin: Graph) (g: Graph) (twinMemos: INode list) (memos: INode list) (k: int) =
+    let codecs = TraceCodecs.ofList []
+    let state = Trace.state g codecs
+    let twinState = Trace.state twin codecs
+    let twinSnap = Trace.snapshot twin
+
+    let live (s: TraceGraphState) =
+        s.Nodes
+        |> Map.filter (fun _ n -> n.Status <> TraceNodeStatus.Disposed)
+
+    Expect.equal (Map.keys (live state) |> List.ofSeq) (Map.keys (live twinState) |> List.ofSeq) "the live nodes"
+    Expect.equal (state.Seq, state.Root, state.Checkpoint) (twinState.Seq, twinState.Root, Some "cut") "the read point"
+
+    for KeyValue (id, n) in live state do
+        let t = twinState.Nodes[id]
+        Expect.equal { n with Value = None } { t with Value = None } $"node {id}"
+
+        match n.Value with
+        | Some (TracePayload.Lossy text) ->
+            let twinText =
+                match t.Value with
+                | Some (TracePayload.Lossy text) -> Some text
+                | Some payload -> Some (TraceModel.valueText (TraceCodecs.decode codecs payload))
+                | None -> None
+
+            Expect.equal (Some text) twinText $"the folded value of node {id}"
+        | value -> Expect.equal value t.Value $"the value of node {id}"
+
+    let read = TraceJson.readState (TraceJson.state state)
+    Expect.equal (read.Seq, read.Body) (state.Seq, state) "the state document reads back to the state"
+
+    for node, twinNode in List.zip memos twinMemos do
+        let twinRuns =
+            Trace.runs twin codecs twinNode
+            |> List.filter (fun r -> r.Start > k)
+
+        let mutable moved = false
+
+        let expected =
+            twinRuns
+            |> List.map (fun r ->
+                moved <- moved || r.Moved
+
+                { r with
+                    Root =
+                        (cut k "cut" (Trace.whyAt twin twinNode r.Run)).Root
+                        |> Option.defaultValue (Unrecorded r.Start)
+                    Value = if moved then r.Value else None
+                })
+
+        let runs = Trace.runs g codecs node
+
+        Expect.equal
+            (runs |> List.map (fun r -> { r with Flush = 0 }))
+            (expected
+             |> List.map (fun r -> { r with Flush = 0 }))
+            $"the runs of node {node.Id}"
+
+        for r, t in List.zip runs expected do
+            Expect.isTrue (r.Flush = t.Flush || r.Flush = 0) $"run {r.Run} of node {node.Id} starts in its flush or one before the split"
+
+        for r in twinRuns do
+            Expect.equal
+                (TraceJson.why state.Seq (TraceContract.why codecs (Trace.whyAt g node r.Run)))
+                (TraceJson.why state.Seq (TraceContract.why codecs (cut k "cut" (Trace.whyAt twin twinNode r.Run))))
+                $"the why document of run {r.Run} of node {node.Id}"
+
+    for KeyValue (id, _) in twinSnap.Nodes do
+        let lookup = Trace.lookup g (TraceAddress.ById id)
+
+        match Trace.lookup twin (TraceAddress.ById id) with
+        | TraceLookup.Live r when twinState.Nodes[id].Created <= k ->
+            Expect.equal lookup (TraceLookup.Checkpointed r) $"node {id} lives in the checkpoint"
+        | TraceLookup.Live r ->
+            Expect.equal lookup (TraceLookup.Live r) $"node {id} lives after the split"
+            Expect.equal (Trace.lookup g (TraceAddress.ByPath r.Path)) lookup $"node {id} by path"
+        | TraceLookup.Disposed (r, seq) when seq > k -> Expect.equal lookup (TraceLookup.Disposed (r, seq)) $"node {id} is disposed after the split"
+        | TraceLookup.Disposed (r, _) ->
+            Expect.isTrue
+                (lookup = TraceLookup.Disposed (r, 0)
+                 || lookup = TraceLookup.Missing)
+                $"node {id} is disposed in or released by the checkpoint: {lookup}"
+        | other -> Expect.equal lookup other $"node {id}"
+
+    Expect.equal (Trace.lookup g (TraceAddress.ById (twinSnap.Nodes.Count + 100))) TraceLookup.Missing "an unknown id"
 
 [<Tests>]
 let tests =
@@ -222,5 +339,12 @@ let tests =
 
                     if windowAfter k (Trace.events twin) twinNode.Id then
                         Expect.equal (Trace.whyNot g node) (Trace.whyNot twin twinNode) $"whyNot of node {node.Id}"
+
+            testPropertyWithConfig config "a checkpointed graph's state, documents and lookups answer as its twin's"
+            <| fun (before: Op list) (after: Op list) (split: int) ->
+                let twin, g, twinScript, script, k = twins before after split
+                use _ = twin
+                use _ = g
+                contractMatches twin g twinScript.Memos script.Memos k
         ]
 #endif

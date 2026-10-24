@@ -127,6 +127,40 @@ compiled with the define; a script run in F# Interactive against a traced DLL ke
 
 :::
 
+## Node identity
+
+A node has three identities. Each holds for a different span:
+
+| Identity | Example | Stable across |
+| --- | --- | --- |
+| Runtime id | `TraceNodeRef.Node`, `4` | One graph instance. Every graph numbers its nodes from 1, so ids repeat across graphs and runs. |
+| Located path | `/Cart.fsx:11`, `/total/Cart.fsx:20` | Reruns of the same build with the same creation order. An edit that moves a creation site changes it. |
+| Named path | `/subtotal`, `/host/child@2` | Reruns, and edits that keep the labelled tree and its creation order. |
+
+A path is named when every segment is a label from `Trace.named` or `Trace.label`; one site segment
+makes it located. Two suffixes keep paths distinct, and both repeat when the program repeats its
+creation order:
+
+- `#n` tells apart siblings with the same segment: the second takes `#1`.
+- `@k` numbers the nodes created at one path, from 1, once there are two: a host memo that creates a
+  child in each run gives `/host/child@1`, then `/host/child@2`. An `@k` path keeps the stability of
+  its segments. A path given without `@k` finds the live holder, else the latest.
+
+Persist a named path, not an id. `Trace.lookup` finds a node by either:
+
+```fsharp
+match Trace.lookup graph (TraceAddress.ByPath "/subtotal") with
+| TraceLookup.Live node -> printfn $"{node.Path} is node {node.Node}, {node.Stability}"
+| TraceLookup.Disposed (node, seq) -> printfn $"{node.Path} was disposed at #{seq}"
+| TraceLookup.Checkpointed node -> printfn $"{node.Path} was created before the checkpoint"
+| TraceLookup.Missing -> printfn "no such node"
+| TraceLookup.Foreign -> ()
+```
+
+`Disposed` carries seq 0 when the checkpoint holds the dispose. `Missing` also covers a node the
+checkpoint has released. `Trace.lookupNode graph node` looks up a node handle, and gives `Foreign` for
+a node of another graph or an untraced one.
+
 ## Why did it run
 
 After `lines.Value <- [ { Sku = "tea"; Price = 4m; Qty = 2 } ]`, the banner prints `total 8`.
@@ -305,6 +339,9 @@ Trace.snapshot graph |> Trace.render graph |> printfn "%s"
   /banner Effect ok runs 2 <- /total
 ```
 
+`Trace.render` text is for people, and its layout may change. A tool reads the
+[machine-readable documents](#machine-readable-diagnostics) instead.
+
 A `map replay` fence draws a log like this one. The page runs the example and presses each button once; Play, Step and the scrubber move through its events.
 
 ```fsharp map replay code=collapsed
@@ -332,7 +369,8 @@ controls [
 then one object per event. `Trace.dump graph path` writes the same text to a file.
 
 Graphs without timed nodes retain schema 1. Debounce and throttle select schema 2; the .NET parser
-accepts both. `TimedState` events retain captured and published status, the window, remaining time,
+accepts both, and schema 3. `Trace.dumpTextWith graph codecs` writes schema 3, whose payloads carry
+their [form](#payloads-and-codecs). `TimedState` events retain captured and published status, the window, remaining time,
 and the winning capture. Their timestamp is relative to the first timed node using that clock.
 The graph assigns each clock a stable `timebase` number, so independent clock origins remain
 independent. OS timer handles and absolute clock origins are omitted.
@@ -380,8 +418,9 @@ let drain () =
 
 `Trace.checkpoint graph seq name` folds the events up to and including `seq` into a snapshot named
 `name`, then drops them from the log along with the values and exceptions they hold. It runs on the
-graph's thread between flushes, like a dump. `Trace.checkpointOf graph` returns the checkpoint's `Name`,
-null before the first, and its `Snapshot`, whose `Seq` is the last dropped seq.
+graph's thread between flushes, like a dump, and is allowed inside a `batch`. `Trace.checkpointOf graph`
+returns a `TraceCheckpoint` record: its `Name`, null before the first checkpoint, and its `Snapshot`, a
+`TraceSnapshot` whose `Seq` is the last dropped seq.
 
 ```fsharp
 let events = Trace.events graph
@@ -407,7 +446,169 @@ After a checkpoint:
 - A seq that falls between a `NodeNew` or `OwnerNew` and the `Label` recorded with it raises
   `ArgumentOutOfRangeException`; checkpoint at the label's seq instead.
 
+`TraceModel.prune snapshot` is the pruning a checkpoint applies, available on any `TraceSnapshot`. It keeps
+the live nodes and owners, the disposed ones a kept entry references as its owner, parent or host, their
+edges, and the sibling and incarnation counts of the paths that can recur. Use it to shrink a snapshot
+folded by your own analysis, such as `TraceModel.prune (Trace.snapshot graph)`.
+
 C# callers use `Tracing.EventsSince`, `Tracing.Checkpoint` and `Tracing.CheckpointOf`.
+
+## Machine-readable diagnostics
+
+A test, a debugger or an agent reads the graph through immutable contract values and their JSON
+documents. The values hold no live object: every recorded value is a `TracePayload`, and every node is
+a `TraceNodeRef` with its [identity](#node-identity).
+
+| Query | Value | Document |
+| --- | --- | --- |
+| `Trace.state graph codecs` | `TraceGraphState`: nodes, owners, sources and observers | `TraceJson.state state` |
+| `Trace.runs graph codecs node` | `TraceRunState list`, oldest first | `TraceJson.runs seq runs` |
+| `Trace.whyWith graph codecs node` | `TraceWhy`: the last run's cause chain | `TraceJson.why seq why` |
+| `Trace.whyNot graph node` | `WhyNotReason option` | `TraceJson.whyNot seq reason` |
+| `Trace.waitingOn graph node` | `TraceWaiting` | `TraceJson.waiting seq waiting` |
+| `Trace.lookup graph address` | `TraceLookup` | `TraceJson.lookup seq lookup` |
+
+```fsharp
+let codecs = TraceCodecs.ofList []
+let seq = Trace.lastSeq graph
+let state = TraceJson.state (Trace.state graph codecs)
+let runs = TraceJson.runs seq (Trace.runs graph codecs total)
+```
+
+Each document wraps its body in an envelope with the schema, the kind and the read point, the seq of
+the last event read. `Trace.lastSeq graph` gives it; the state document takes it from `state.Seq`:
+
+```text
+{"schema":3,"kind":"lookup","seq":64,"body":{"case":"Checkpointed","node":{"node":1,"path":"/x","stability":{"case":"Named"},"label":"x"}}}
+```
+
+Union cases are `{"case":"Name", ...fields}`, options are `null`, and maps are arrays of `[key,value]`
+pairs in key order, so the same program writes the same text. On .NET, `TraceJson.readState`,
+`readRuns`, `readWhy`, `readWhyNot`, `readWaiting` and `readLookup` read a document back to a
+`TraceDocument` of its schema, kind, seq and body.
+
+The state folds the checkpoint and the retained events, as `Trace.snapshot` does. After a
+checkpoint, a value folded into it is `Lossy`, a cause before it ends at `BeforeCheckpoint`, and a run
+before it is absent from `runs`.
+
+`TraceRunState`, `TraceWhy` and `TraceWhyStep` repeat the labels of `TraceRun`, `Why` and `WhyStep`,
+and require qualified access. An unqualified `TraceRun` or `Why` record literal keeps its type; a
+literal of a contract record names it in its first label, as `{ TraceRunState.Run = 1; ... }`.
+
+### Payloads and codecs
+
+A payload takes one of four forms, written in documents as cases and in schema 3 dumps as a `form`:
+
+| Form | Holds | Lossless |
+| --- | --- | --- |
+| `Null` | null, or an F# `None` | yes |
+| `Exact` | an `int`, `string`, `bool` or `float` | yes |
+| `Encoded` | the data an application codec wrote, with the codec's name and version | yes |
+| `Lossy` | diagnostic text, such as `{ X = 1; Y = 2 }` | no |
+
+A codec claims the values of one shape:
+
+```fsharp
+type Point = { X: int; Y: int }
+
+let point: TraceCodec =
+    {
+        Name = "point"
+        Version = 1
+        Encode =
+            fun value ->
+                match value with
+                | :? Point as p -> Some $"{p.X},{p.Y}"
+                | _ -> None
+        Decode =
+            fun data ->
+                let xy = data.Split ','
+                box { X = int xy[0]; Y = int xy[1] }
+    }
+
+let codecs = TraceCodecs.ofList [ point ]
+```
+
+The first codec whose `Encode` returns `Some` encodes the value. A value claimed by none of them is
+`Lossy`; under `TraceCodecs.strict codecs` it raises `TraceCodecException` instead.
+`TraceCodecs.decode` returns an `Encoded` payload's value, and raises for a codec name or version the
+list lacks. Under Fable, a number with an integral value in the 32-bit range is `Int`, so `2.0` is
+`Int 2` there and `Float 2.0` on .NET.
+
+`Lossy` also marks a value whose log entry is ambiguous. A lookup cell records a null value and a
+suspension alike, so its null state value is `Lossy "null"`. A memo, async memo, boundary or timed
+node that moved to null, and an async source settled to null, hold `Null`; a projection records no
+value, and holds `None`. A checkpoint holds a null value as the text of null, so after the
+checkpoint drops its `Moved` or `Settle`, the state value is `Lossy "null"`.
+
+`Trace.dumpTextWith graph codecs` writes the log in schema 3, with each payload in its form, and
+`TraceContract.parseDumpWith codecs text` decodes one back. `TraceModel.parseDump` reads schemas 1 to
+3; a schema 1 or 2 payload carries no type, so `TraceDump.Payloads` gives its text as `Lossy` and a
+null payload as `Null`. `parseDumpWith` keeps a schema 1 or 2 payload as its text, and a strict list
+raises for it.
+
+:::details Read a dump without its graph
+
+`TraceContract` computes the contract values from a snapshot and the events after it. Use it to read a
+dump file without its graph, with the dump's snapshot as the checkpoint:
+
+```fsharp
+let dump = TraceContract.parseDumpWith codecs (System.IO.File.ReadAllText "cart.jsonl")
+let checkpoint: TraceCheckpoint = { Name = dump.Checkpoint; Snapshot = dump.Snapshot }
+let state = TraceContract.state codecs checkpoint dump.Events
+
+// The Created root with the NodeNew seq held by the dump's snapshot.
+let createdRoot (id: int) (root: WhyRoot) =
+    match root with
+    | WhyRoot.Created 0 ->
+        match dump.Snapshot.Nodes.TryFind id with
+        | Some n -> WhyRoot.Created n.Created
+        | None -> root
+    | _ -> root
+
+let runs =
+    match TraceContract.lookup dump.Snapshot dump.Events (TraceAddress.ByPath "/subtotal") with
+    | TraceLookup.Live node
+    | TraceLookup.Checkpointed node
+    | TraceLookup.Disposed (node, _) ->
+        let history = TraceModel.history dump.Events dump.Checkpoint node.Node
+        let runs = history.Runs |> List.map (fun r -> { r with Root = createdRoot node.Node r.Root })
+        TraceContract.runs codecs { history with Runs = runs }
+    | TraceLookup.Missing
+    | TraceLookup.Foreign -> []
+```
+
+Two values read this way differ from the graph's:
+
+- A `Lossy` payload decodes to its text, and the text encodes as `Exact (String text)`. A value that
+  `Trace.state` reports as `Lossy "{ X = 1; Y = 2 }"`, and every payload of a schema 1 or 2 dump, is
+  `Exact (String ...)` in `state` and `runs`. `dump.Payloads[i]` holds the form of `dump.Events[i]`,
+  `Lossy` included.
+- `TraceModel.history` and `TraceModel.why` end a first run at `Created 0` when its `NodeNew` is folded
+  into the checkpoint. `createdRoot` above replaces that root with the snapshot node's `Created` seq,
+  the root `Trace.runs` and `Trace.why` report.
+
+`TraceContract.why codecs why` encodes a `TraceModel.why` chain the same way; map its `Root` with
+`Option.map (createdRoot why.Node)` first. `TraceContract.nodeRef snapshot id` gives the `TraceNodeRef` of a node in a
+snapshot, or `None`.
+`TraceContract.dumpTextWith` writes a schema 3 dump from a snapshot and events.
+The `TraceContract` functions are pure and run on any thread.
+
+:::
+
+### Schema versions
+
+- One schema number covers dumps and documents. Documents and `dumpTextWith` write schema 3;
+  `dumpText` keeps writing schema 1, or 2 with timed nodes, byte for byte.
+- A reader accepts schemas 1 to 3 and raises `FormatException` for any other, for another document
+  kind, and for an unknown case.
+- A change that removes or renames a field, changes its meaning, or adds a field a reader must
+  understand raises the schema number.
+- Committed fixtures in `tests/Ranvier.Tests/fixtures/trace` pin each schema and each document kind;
+  `dotnet fsi tools/trace-fixtures.fsx` rewrites them after a deliberate change.
+
+C# callers use `Tracing.StateDocument`, `RunsDocument`, `WhyDocument`, `WhyNotDocument`,
+`WaitingDocument`, `LookupDocument` and the codec builders in [C# tracing](csharp.md#tracing).
 
 ## Limits
 
