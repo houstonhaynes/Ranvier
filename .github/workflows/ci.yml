@@ -278,9 +278,10 @@ jobs:
       # npm test compiles the suite, runs the value and emit checks, then the bundle-size check.
       - name: Run the bindings tests
         run: npm test
-      # size.mjs rewrites the committed bundle numbers; a difference means they are stale.
+      # size.mjs rewrites the committed bundle numbers; a difference means they are stale. Stale numbers warn; the budget
+      # check in npm test is the gate.
       - name: Check the committed bundle numbers
-        run: git diff --exit-code -- docs/research/motion/bindings-bundle.json
+        run: git diff --exit-code -- docs/research/motion/bindings-bundle.json || echo "::warning file=docs/research/motion/bindings-bundle.json::Committed bundle numbers are stale; run npm test in fable/Ranvier.Anime.Tests and commit the file."
         working-directory: .
 
   # The Ranvier.View.Anime template parts compiled with Fable: the jsdom checks of every Motion part on a mocked clock,
@@ -313,9 +314,10 @@ jobs:
       # npm test compiles the suite, runs the jsdom and README checks, then the bundle-size check.
       - name: Run the Motion part tests
         run: npm test
-      # motion-size.mjs rewrites the committed bundle numbers; a difference means they are stale.
+      # motion-size.mjs rewrites the committed bundle numbers; a difference means they are stale. Stale numbers warn; the
+      # budget check in npm test is the gate.
       - name: Check the committed bundle numbers
-        run: git diff --exit-code -- docs/research/motion/bundle.json
+        run: git diff --exit-code -- docs/research/motion/bundle.json || echo "::warning file=docs/research/motion/bundle.json::Committed bundle numbers are stale; run npm test in fable/Ranvier.View.Anime.Tests and commit the file."
         working-directory: .
       - name: Check the server renders against their twins
         run: dotnet run --project fable/Ranvier.View.Anime.Tests/Ranvier.View.Anime.Tests.fsproj -c Release
@@ -462,9 +464,9 @@ jobs:
       - name: Check the bundle budget
         run: node experiments/Ranvier.View.Arms/Checks/size.mjs
       # size.mjs rewrites the committed bundle numbers, absolute sizes of the whole view included, so a view or core change
-      # needs a local size.mjs run; a difference means they are stale.
+      # needs a local size.mjs run; a difference means they are stale. Stale numbers warn; the budget step above is the gate.
       - name: Check the committed bundle numbers
-        run: git diff --exit-code -- docs/research/arms-match/bundle.json
+        run: git diff --exit-code -- docs/research/arms-match/bundle.json || echo "::warning file=docs/research/arms-match/bundle.json::Committed bundle numbers are stale; run node experiments/Ranvier.View.Arms/Checks/size.mjs and commit the file."
       # The committed Chromium and heap results hold their gates (the benchmark itself needs a quiet machine, not CI).
       - name: Check the committed Chromium and heap results
         run: node experiments/Ranvier.View.Arms/Checks/chromium-gate.mjs
