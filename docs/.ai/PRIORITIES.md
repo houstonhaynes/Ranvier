@@ -34,6 +34,15 @@ Statuses: `todo`, `in-progress` (an iteration left work; see the log), `done` (m
 - #157 needs paired Chromium timings on a quiet machine. The loop implements and runs the
   correctness gates, and marks it `blocked` on the timing run.
 
+## Stack
+
+All iterations run in the `Ranvier-integration` worktree. Each issue gets an `issue/<n>` branch cut
+from the tip of the stack; an iteration whose gate passes pushes the branch and opens or updates a
+PR on the branch below it. Merge bottom-up.
+
+| Branch | Issue | PR | Base |
+| --- | --- | --- | --- |
+
 ## Log
 
 Each iteration appends one line: date, issue, outcome, commit, next step.
