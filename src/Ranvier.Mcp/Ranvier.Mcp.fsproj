@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Tailcalls>false</Tailcalls>
+        <RootNamespace>Ranvier.Mcp</RootNamespace>
+        <AssemblyName>Ranvier.Mcp</AssemblyName>
+        <!-- A spike (#168): not packed until the adapter contract settles. -->
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <WarnOn>$(WarnOn);3390</WarnOn>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="AssemblyInfo.fs" />
+        <Compile Include="GraphHost.fs" />
+        <Compile Include="Exposure.fs" />
+        <Compile Include="McpAdapter.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Ranvier/Ranvier.fsproj" />
+        <ProjectReference Include="../Ranvier.Elmish/Ranvier.Elmish.fsproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+        <AssemblyMetadata Include="RanvierTrace" Value="true" />
+    </ItemGroup>
+</Project>

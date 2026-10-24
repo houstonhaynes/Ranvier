@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <IsPackable>false</IsPackable>
+        <GenerateProgramFile>false</GenerateProgramFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Scaffold.fs" />
+        <Compile Include="GraphHostTests.fs" />
+        <Compile Include="ExposureTests.fs" />
+        <Compile Include="McpSession.fs" />
+        <Compile Include="McpReadTests.fs" />
+        <Compile Include="McpDispatchTests.fs" />
+        <Compile Include="McpTraceTests.fs" />
+        <Compile Include="SampleTests.fs" />
+        <Compile Include="Main.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Expecto" Version="11.0.0-alpha8" />
+        <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Ranvier.Mcp\Ranvier.Mcp.fsproj" />
+        <ProjectReference Include="..\..\examples\Ranvier.Mcp.Sample\Ranvier.Mcp.Sample.fsproj" />
+    </ItemGroup>
+
+</Project>
