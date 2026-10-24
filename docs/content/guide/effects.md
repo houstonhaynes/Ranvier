@@ -88,6 +88,20 @@ Construct `new Effect (graph, body)` to inspect its `Status`, `Runs` or `Error`,
 individually.
 :::
 
+`createEffectNode body` creates the same effect as `createEffect` on the active graph, owned by the
+enclosing scope, and returns it as an `INode`. Use it when code that creates effects through the
+ambient graph needs to read an effect's `Status`, for example to tell whether its last run is
+pending, failed or [stale](pending.md):
+
+```fsharp
+let price = createSignal 2
+let effect = createEffectNode (fun () -> printfn "price = %d" price.Value)
+
+batch (fun () ->
+    price.Value <- 5
+    effect.Status.HasFlag Status.Stale) // true: the effect re-runs when the batch ends
+```
+
 ::::details Test your understanding
 
 How many times does this effect run? Does the write after disposal run it again?

@@ -643,7 +643,20 @@ var saved = Async(token => repo.SaveAsync(draft.Value, token), FlightPolicy.Queu
 ```
 
 `graph.Dispatch(() => …)` marshals a write from another thread, as described in
-[Async and pending](threading.md).
+[Async and pending](threading.md). `graph.DispatchAsync(() => …)` does the same for work that returns a
+value, and returns a `Task<T>` that completes once the work has run on the graph's thread or faults with
+its exception. An optional `CancellationToken` cancels the item while it waits in the inbox:
+
+```csharp
+var total = await graph.DispatchAsync(() =>
+{
+    count.Value += 1;
+    return doubled.Value;
+}, cancellationToken);
+```
+
+[Contracts](../concepts/contracts.md#awaiting-dispatched-work) lists the threading, failure and
+disposal cases.
 
 ## Tracing
 
@@ -687,6 +700,31 @@ graph.Run(() =>
 | `Origin`, `Why`, `WhyDepth`, `WhyNot`, `History`, `WaitingOn` | the same queries, passed to `Trace.render` |
 | `Snapshot(graph)`, `Snapshot(graph, seq)` | `Trace.snapshot`, `Trace.snapshotAt`, rendered |
 | `Resolve`, `Reconcile`, `Events`, `DumpText`, `Dump` | `Trace.resolve`, `reconcile`, `events`, `dumpText`, `dump` |
+| `EventsSince(graph, seq)` | `Trace.eventsSince` |
+| `Checkpoint(graph, seq, name)`, `CheckpointOf(graph)` | `Trace.checkpoint`, `Trace.checkpointOf` |
+
+:::
+
+:::details Read the log incrementally and truncate it
+
+`EventsSince` returns the events after a cursor, the seq of the last event read. `Checkpoint` folds
+the events up to a seq into a named `TraceCheckpoint` and drops them from the log; call it between
+flushes. A cursor before the checkpoint's seq has expired: resync from `CheckpointOf(graph).Snapshot.Seq`.
+See [Incremental reads and checkpoints](tracing.md#incremental-reads-and-checkpoints).
+
+```csharp
+#if RANVIER_TRACE
+var cursor = 0;
+var fresh = Tracing.EventsSince(graph, cursor);
+if (fresh.Length > 0)
+{
+    cursor = fresh[^1].Seq;
+    Tracing.Checkpoint(graph, cursor, "session-1");
+}
+var checkpoint = Tracing.CheckpointOf(graph);
+Console.WriteLine($"{checkpoint.Name} at seq {checkpoint.Snapshot.Seq}");
+#endif
+```
 
 :::
 

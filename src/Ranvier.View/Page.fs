@@ -7,6 +7,7 @@ open Ranvier.View.Template
 /// <summary>The JSON state element used to transfer a page's initial props to its client.</summary>
 type StateCodec<'props> =
     {
+        /// <summary>The <c>id</c> of the state element; the server writes it and the client reads it by this id.</summary>
         Id: string
         /// <summary>Encodes valid JSON; document rendering escapes script-sensitive characters.</summary>
         Encode: 'props -> string

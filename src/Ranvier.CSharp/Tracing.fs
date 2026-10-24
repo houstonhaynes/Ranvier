@@ -76,7 +76,7 @@ type Tracing =
     /// <c>OwnerNew</c> whose <c>Label</c> follows it.
     /// </exception>
     /// <exception cref="T:System.InvalidOperationException">
-    /// Called off the graph's thread, or while a flush, a discharge or a run is in progress.
+    /// Called off the graph's thread, or while a flush, a discharge or a run is in progress. A batch is allowed.
     /// </exception>
     static member Checkpoint(graph: Graph, seq: int, name: string) : unit =
         Trace.checkpoint graph seq name

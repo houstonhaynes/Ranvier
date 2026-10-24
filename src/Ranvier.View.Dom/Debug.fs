@@ -9,6 +9,7 @@ open Ranvier
 open Ranvier.View
 open Ranvier.View.Template
 
+/// <summary>Bounds and sections of a dump; <c>DumpOptions.defaults</c> holds the values <c>Debug.dump</c> uses.</summary>
 type DumpOptions =
     {
         /// <summary>Rows shown per list; the rest are one line with the elided keys' range.</summary>
@@ -17,6 +18,7 @@ type DumpOptions =
         MaxText: int
         /// <summary>Items shown of a collection value.</summary>
         MaxItems: int
+        /// <summary>Nesting levels of a formatted value before the rest is cut.</summary>
         MaxDepth: int
         /// <summary>Total characters of the text; the remainder is replaced by a count of omitted lines.</summary>
         MaxChars: int
@@ -41,58 +43,90 @@ module DumpOptions =
             NodeIds = false
         }
 
-/// <summary>A mounted view as data; the text and JSON forms are renderings of it.</summary>
+/// <summary>One node of a dump: a DOM node, a component instance or a view region, with its children.</summary>
 [<NoEquality; NoComparison>]
 type DumpNode =
+    /// <summary>An element with its attributes, the form properties that differ from them, and its children.</summary>
     | Element of tag: string * attributes: (string * string) array * properties: (string * string) array * children: DumpNode array
+    /// <summary>A text node; <c>bound</c> is true when a binding writes it.</summary>
     | Text of value: string * bound: bool
+    /// <summary>A component instance and the nodes it renders.</summary>
     | Instance of InstanceDump * children: DumpNode array
+    /// <summary>A keyed list region: its rows by key, the rows cut by <c>MaxRows</c>, and whether the region is stale.</summary>
     | List of path: string * rows: (string * DumpNode array) array * elided: Elided option * stale: bool
+    /// <summary>The selected arm of a branch region: its key, its definition label and whether the selection is stale.</summary>
     | Arm of path: string * key: string * definition: string * children: DumpNode array * stale: bool
+    /// <summary>A boundary region and its state.</summary>
     | Boundary of path: string * state: BoundaryDump * children: DumpNode array
+    /// <summary>A hole region.</summary>
     | Hole of path: string * children: DumpNode array
+    /// <summary>A node still in the DOM while it departs.</summary>
     | Leaving of DumpNode
+    /// <summary>A list row still in the DOM while it departs, with its key.</summary>
     | LeavingRow of key: string * node: DumpNode
+    /// <summary>A line that stands for <c>lines</c> omitted lines.</summary>
     | Truncated of lines: int
 
+/// <summary>A component instance in a dump.</summary>
 and InstanceDump =
     {
+        /// <summary>The instance's type name, or <c>unit</c>.</summary>
         Name: string
+        /// <summary>The instance path, the prefix of the paths <c>Debug.nodeAt</c> accepts.</summary>
         Path: string
+        /// <summary>The structural hash of the instance's template definition; empty without one.</summary>
         Hash: string
+        /// <summary>The instance's fields; empty when <c>Values</c> is false.</summary>
         Fields: FieldDump array
     }
 
+/// <summary>One field of a component instance.</summary>
 and FieldDump =
     {
         Name: string
+        /// <summary><c>signal</c>, <c>memo</c> or <c>asyncmemo</c> for a core node; otherwise the value's type name.</summary>
         Kind: string
+        /// <summary>The value as the dump shows it: formatted and bounded, or the node's status for a node with no value to show.</summary>
         Value: string
+        /// <summary><c>pending</c>, <c>error</c> or <c>uninitialised</c> for a core node with that status; otherwise empty.</summary>
         Status: string
+        /// <summary>The core node's id; empty for a plain value.</summary>
         Node: string
     }
 
+/// <summary>The state of a boundary region.</summary>
 and BoundaryDump =
     {
+        /// <summary><c>ready</c>, <c>pending</c> or <c>failed</c>.</summary>
         State: string
+        /// <summary>The count of pending waits registered inside the boundary; 0 unless pending.</summary>
         Waiting: int
+        /// <summary><c>revealed</c> for a pending boundary that shows its content, the failure message, or empty.</summary>
         Reason: string
     }
 
+/// <summary>The rows of a list cut by <c>MaxRows</c>.</summary>
 and Elided =
     {
         Count: int
+        /// <summary>The key of the first cut row.</summary>
         FirstKey: string
+        /// <summary>The key of the last cut row.</summary>
         LastKey: string
     }
 
+/// <summary>A mounted view, or a DOM subtree, as data; the text and JSON forms are renderings of it.</summary>
 [<NoEquality; NoComparison>]
 type Dump =
     {
+        /// <summary>The mount header: prefix, phase, commit mode and failure count; empty for <c>captureNode</c>.</summary>
         Mount: string
         Root: DumpNode array
+        /// <summary>The document title and managed head entries, as key and text; empty when <c>Head</c> is false.</summary>
         Head: (string * string) array
+        /// <summary>The options the dump was captured with; <c>Debug.text</c> renders with them.</summary>
         Options: DumpOptions
+        /// <summary>Trace paths by node id; filled only in a traced build with <c>NodeIds</c> set.</summary>
         TracePaths: Map<string, string>
     }
 

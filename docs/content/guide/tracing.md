@@ -380,8 +380,9 @@ let drain () =
 
 `Trace.checkpoint graph seq name` folds the events up to and including `seq` into a snapshot named
 `name`, then drops them from the log along with the values and exceptions they hold. It runs on the
-graph's thread between flushes, like a dump. `Trace.checkpointOf graph` returns the checkpoint's `Name`,
-null before the first, and its `Snapshot`, whose `Seq` is the last dropped seq.
+graph's thread between flushes, like a dump, and is allowed inside a `batch`. `Trace.checkpointOf graph`
+returns a `TraceCheckpoint` record: its `Name`, null before the first checkpoint, and its `Snapshot`, a
+`TraceSnapshot` whose `Seq` is the last dropped seq.
 
 ```fsharp
 let events = Trace.events graph
@@ -406,6 +407,11 @@ After a checkpoint:
   naming the checkpoint's seq. Resync with `Trace.eventsSince graph (Trace.checkpointOf graph).Snapshot.Seq`.
 - A seq that falls between a `NodeNew` or `OwnerNew` and the `Label` recorded with it raises
   `ArgumentOutOfRangeException`; checkpoint at the label's seq instead.
+
+`TraceModel.prune snapshot` is the pruning a checkpoint applies, available on any `TraceSnapshot`. It keeps
+the live nodes and owners, the disposed ones a kept entry references as its owner, parent or host, their
+edges, and the sibling and incarnation counts of the paths that can recur. Use it to shrink a snapshot
+folded by your own analysis, such as `TraceModel.prune (Trace.snapshot graph)`.
 
 C# callers use `Tracing.EventsSince`, `Tracing.Checkpoint` and `Tracing.CheckpointOf`.
 
