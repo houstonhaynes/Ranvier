@@ -259,17 +259,16 @@ let theme =
         )
     )
 
-/// Live Partas.Solid components on the pages (the landing page's animated state mark and the signal maps), compiled
+/// Live Partas.Solid components on the pages (the landing page's animated state mark), compiled
 /// against the Partas.Solid 3 build committed under feed/. The generated project inherits
 /// docs/nuget.config, whose partas-local source serves it.
 let private solidExamples (options: SolidExamplesOptions) =
     options
     |> SolidExamples.partasVersion "3.0.0-local.e08ad85"
     |> SolidExamples.npm "animejs" "4.5.0"
-    |> SolidExamples.project "maps/Ranvier.Docs.Maps.fsproj"
+    |> SolidExamples.project "../src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
     |> SolidExamples.property "RanvierTrace" "true"
     |> SolidExamples.targetFramework "net10.0"
-    |> SolidExamples.transform "map" Maps.transform
 
 /// The og card of each section, keyed by the path segment that names it, with the card's alt text.
 let private ogCards =
@@ -379,8 +378,9 @@ let site =
     )
     |> LightningCss.register
     |> Esbuild.register
-    |> Maps.register
+    |> Maps.components
     |> Nuglify.minifyHtml
+    |> Maps.hydrate
     |> Versions.register versions
     |> Theme.register theme
     |> Site.collection (Theme.docs theme "content")

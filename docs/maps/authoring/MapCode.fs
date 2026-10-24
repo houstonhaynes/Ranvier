@@ -3,12 +3,12 @@ namespace Ranvier.Docs.Maps.Authoring
 open System.Net
 open System.Text.RegularExpressions
 
-/// <summary>Native code disclosures for the HTML cards emitted by the Solid map transform.</summary>
+/// <summary>Native code disclosures for the HTML cards of map fences.</summary>
 [<RequireQualifiedAccess>]
 module MapCode =
     let private card =
         Regex (
-            "(?<start><div class=\"partas-solid-card partas-solid-card--map\">\\s*)(?<code>(?:<figure\\b[^>]*>(?:(?!</figure>).)*</figure>|<nacara-tabs\\b[^>]*>(?:(?!</nacara-tabs>).)*</nacara-tabs>)\\s*)(?<mount><div (?<attributes>[^>]*class=\"partas-solid\"[^>]*)>)",
+            "(?<start><div class=\"rv-map-card\">\\s*)(?<code>(?:<figure\\b[^>]*>(?:(?!</figure>).)*</figure>|<nacara-tabs\\b[^>]*>(?:(?!</nacara-tabs>).)*</nacara-tabs>)\\s*)(?<mount><div (?<attributes>[^>]*class=\"rv-map-host[^\"]*\"[^>]*)>)",
             RegexOptions.Singleline ||| RegexOptions.Compiled
         )
 
@@ -21,7 +21,7 @@ module MapCode =
             None
 
     /// <summary>Wraps registered map cells' code in a disclosure, preserving the highlighted markup and map mount.</summary>
-    /// <remarks>Accepts the Solid plugin's rendered HTML before HTML minification; repeated calls preserve existing disclosures.</remarks>
+    /// <remarks>Accepts rendered HTML before HTML minification; repeated calls preserve existing disclosures.</remarks>
     let rewrite (lookup: string -> string -> MapFlags option) (html: string) =
         card.Replace (
             html,
@@ -30,7 +30,7 @@ module MapCode =
                 let attributes = matched.Groups["attributes"].Value
 
                 let options =
-                    match attribute "data-partas-page" attributes, attribute "data-partas-cell" attributes with
+                    match attribute "data-ranvier-map-page" attributes, attribute "data-ranvier-map-cell" attributes with
                     | Some page, Some cell -> lookup page cell
                     | _ -> None
 

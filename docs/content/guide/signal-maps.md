@@ -204,7 +204,7 @@ a callback or by a custom helper, use `Trace.named "name" (fun () -> …)` expli
 | `groups=` | How collections draw: `expand` (default), a box with a row per key, or `collapse`, one node. |
 | `code=` | The code disclosure's initial state: `open` (default) or `collapsed`. The map stays visible in either state. |
 | `code-max-height=` | Optional positive length in `px`, `rem`, `em` or `vh`, such as `code-max-height=24rem`. Taller code scrolls; omitted means unrestricted height. |
-| `id=`, `show=` | As on `solid` fences. |
+| `id=`, `show=` | The cell's id on the page, and whether the page shows the code, the map or both. |
 
 :::
 
@@ -223,11 +223,11 @@ let graph = new Graph ()
 let active = graph.Activate ()
 ```
 
-`docs/literate.fsx` loads the traced engine, map controls, browser dependencies and `SignalMap`.
-Build its dependencies once before opening the script in Rider or another F# editor:
+`docs/literate.fsx` references the traced engine, Ranvier.View, the map controls and `SignalMap`.
+Build them once before opening the script in Rider or another F# editor:
 
 ```shell
-dotnet build docs/maps/model/Ranvier.Docs.MapModel.fsproj -c Debug -p:RanvierTrace=true
+dotnet build docs/maps/Ranvier.Docs.Maps.fsproj -c Debug -p:RanvierTrace=true
 ```
 
 The normal docs build also prepares these dependencies. Rebuild them after changing the engine or map
@@ -258,7 +258,8 @@ annotation ends the block. Keep each map self-contained: browser compilation run
 graph, independently of hidden setup and other examples in the script.
 
 The docs build type-checks the script and runs its map expectations under Fable and Node.js.
-FSI can execute the graph and control code on .NET; calling `SignalMap` to render the DOM requires a browser.
+FSI can execute the graph and control code on .NET. `SignalMap` returns a `Component<unit>`: `Server.render` draws
+its empty map on .NET, and its scenario runs once the map is mounted in a browser.
 See [Aggregates](aggregates.fsx) for a working literate map. Code placed inside a prose comment receives
 the comment's editor treatment, so use an ordinary F# block for IntelliSense.
 
@@ -466,13 +467,15 @@ controls [
 
 :::details Build a SignalMap component directly
 
-`SignalMap` is an ordinary component. A `solid` fence can call it with any scenario: here the names
-come from `Trace.named` rather than from the `map` fence's labels. `SignalMap` takes the scenario, the graph's flight
-policy, the code bindings, whether to show the timeline and how to draw collections.
+`SignalMap` returns an ordinary Ranvier.View `Component<unit>`. A `ranvier` fence renders any such component; here
+it renders a map of a hand-written scenario, whose names come from `Trace.named` rather than from the `map` fence's
+labels. `SignalMap` takes the scenario, the graph's flight policy, the code bindings, whether to show the timeline and
+how to draw collections. The fence's `render=` names the component value; the page renders it on the server and the
+browser hydrates it.
 
 `SignalMapWithSpeed speed` accepts those same arguments after an initial speed multiplier.
 
-```fsharp solid render=Thermo.Thermometer
+```fsharp ranvier render=Thermo.Thermometer
 module Thermo =
     open Ranvier
     open Ranvier.Docs.Maps
@@ -489,7 +492,7 @@ module Thermo =
             button "Cooler" (fun () -> celsius.Value <- celsius.Value - 5.0)
         ]
 
-    let Thermometer () = SignalMap (Live scenario) FlightPolicy.CancelPrevious [||] false Grouping.Expand
+    let Thermometer = SignalMap (Live scenario) FlightPolicy.CancelPrevious [||] false Grouping.Expand
 ```
 
 :::
@@ -503,7 +506,6 @@ from the [home page's cart](../index.md#watch-the-graph-think). Try adding a mem
 ```fsharp live
 open Ranvier
 open Ranvier.Docs.Maps
-open Ranvier.Docs.Maps.SignalMapComponent
 
 let scenario (graph: Graph) =
     use _ = graph.Activate ()
@@ -528,11 +530,15 @@ let scenario (graph: Graph) =
     ]
 
 let map = SignalMap (Live scenario) FlightPolicy.CancelPrevious [||] true Grouping.Expand
-Browser.Dom.document.body.appendChild (unbox map) |> ignore
+
+// The mount and its graph live as long as the editor's output.
+let mounted = MapMount.body map
 ```
 
 An editable map spells out what a `map` fence adds when the site is built: `Trace.named` names each node, and
-the last two lines build the map and put it on the page. The compiler loads the first time you press **Run**,
+the last lines build the map component and mount it on a graph of its own. `MapMount.body` calls
+`Mounting.mount`; the handle it returns disposes the mount and its graph, and the snippet keeps it for as long as the
+editor's output lives. The site's own maps are rendered on the server and hydrated instead. The compiler loads the first time you press **Run**,
 which takes a few seconds.
 
 ## Limits

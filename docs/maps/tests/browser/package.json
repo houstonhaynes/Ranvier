@@ -1,0 +1,11 @@
+{
+  "name": "ranvier-docs-map-browser-tests",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=26.0.0" },
+  "scripts": {
+    "serve": "node serve.mjs",
+    "test": "playwright test"
+  },
+  "devDependencies": { "@playwright/test": "1.64.1" }
+}

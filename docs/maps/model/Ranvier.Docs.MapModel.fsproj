@@ -12,6 +12,7 @@
         <Compile Include="Replay.fs" />
         <Compile Include="MapModel.fs" />
         <Compile Include="Layout.fs" />
+        <Compile Include="SceneView.fs" />
     </ItemGroup>
 
     <ItemGroup>

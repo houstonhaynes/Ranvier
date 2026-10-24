@@ -6,17 +6,25 @@
         <LangVersion>latest</LangVersion>
         <IsPackable>false</IsPackable>
         <GenerateProgramFile>false</GenerateProgramFile>
+        <!-- The Playwright suite under browser/ has its own npm project. -->
+        <DefaultItemExcludes>$(DefaultItemExcludes);browser/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>
         <Compile Include="ModelTests.fs" />
         <Compile Include="AuthoringTests.fs" />
         <Compile Include="ControlTests.fs" />
+        <Compile Include="SceneViewTests.fs" />
+        <Compile Include="PageTests.fs" />
+        <Compile Include="ControlBarTests.fs" />
+        <Compile Include="WorkspaceTests.fs" />
         <Compile Include="Main.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Expecto" Version="11.0.0-alpha8" />
+        <!-- The esbuild the docs build uses, for the workspace test. -->
+        <PackageReference Include="Nacara.Plugin.Assets.Esbuild" Version="1.0.0-beta.1" />
         <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     </ItemGroup>
@@ -24,6 +32,9 @@
     <ItemGroup>
         <ProjectReference Include="..\model\Ranvier.Docs.MapModel.fsproj" />
         <ProjectReference Include="..\authoring\Ranvier.Docs.MapAuthoring.fsproj" />
+        <ProjectReference Include="..\Ranvier.Docs.Maps.fsproj" />
+        <ProjectReference Include="..\..\..\experiments\Ranvier.View.Twin\Ranvier.View.Twin.fsproj" />
+        <ProjectReference Include="..\..\..\experiments\Ranvier.View.Testing\Ranvier.View.Testing.fsproj" />
     </ItemGroup>
 
 </Project>

@@ -1,14 +1,14 @@
 /* Signal maps (docs/maps/SignalMap.fs). Layer nacara.maps, after nacara.landing.
    A map card holds the example's code and the live map beneath it, in one frame. */
 
-.partas-solid-card--map {
+.rv-map-card {
   margin: 1.75rem 0; display: grid; grid-template-columns: minmax(0, 1fr);
   border: 1px solid var(--nacara-border); border-radius: var(--nacara-radius);
   background: var(--rv-code-bg); box-shadow: var(--nacara-shadow-floating); overflow: hidden; }
-.partas-solid-card--map > .nacara-code,
-.partas-solid-card--map > nacara-tabs { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
-.partas-solid-card--map > .partas-solid { border-top: 1px solid var(--nacara-border); }
-.partas-solid-card--map > .rv-map-code {
+.rv-map-card > .nacara-code,
+.rv-map-card > nacara-tabs { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+.rv-map-card > .rv-map-host { border-top: 1px solid var(--nacara-border); }
+.rv-map-card > .rv-map-code {
   margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
 .rv-map-code > summary {
   padding: .625rem 1rem; color: var(--rv-text); font-weight: 500; cursor: pointer; }
@@ -80,16 +80,16 @@
 .rv-map-node.is-flight .rv-map-node__flight { opacity: 1; animation: rv-map-spin 2.4s linear infinite; }
 .rv-map-node.is-failed .rv-map-node__shape { stroke: var(--rv-error); fill: color-mix(in oklab, var(--rv-error) 14%, var(--rv-raised)); }
 .rv-map-node.is-failed .rv-map-node__value { fill: var(--rv-error); }
-.rv-map-node.is-flash .rv-map-node__shape { fill: color-mix(in oklab, var(--rv-contour) 45%, var(--rv-raised)); }
-.rv-map-node.is-dropped .rv-map-node__flight { animation: rv-map-drop .7s ease-out; }
-.rv-map-node.is-settled .rv-map-node__shape { animation: rv-map-glow .8s ease-out; }
-.rv-map-node.is-failing .rv-map-node__shape { animation: rv-map-shake .4s ease-in-out 2; }
+.rv-map-node__cue.is-flash .rv-map-node__shape { fill: color-mix(in oklab, var(--rv-contour) 45%, var(--rv-raised)); }
+.rv-map-node__cue.is-dropped .rv-map-node__flight { animation: rv-map-drop .7s ease-out; }
+.rv-map-node__cue.is-settled .rv-map-node__shape { animation: rv-map-glow .8s ease-out; }
+.rv-map-node__cue.is-failing .rv-map-node__shape { animation: rv-map-shake .4s ease-in-out 2; }
 .rv-map-node__value.is-swap { animation: rv-map-swap .6s ease-out; }
 
 .rv-map-node.is-flight .rv-map-node__flight { animation-duration: calc(2.4s / var(--rv-map-speed, 1)); }
-.rv-map-node.is-dropped .rv-map-node__flight { animation-duration: calc(.7s / var(--rv-map-speed, 1)); }
-.rv-map-node.is-settled .rv-map-node__shape { animation-duration: calc(.8s / var(--rv-map-speed, 1)); }
-.rv-map-node.is-failing .rv-map-node__shape { animation-duration: calc(.4s / var(--rv-map-speed, 1)); }
+.rv-map-node__cue.is-dropped .rv-map-node__flight { animation-duration: calc(.7s / var(--rv-map-speed, 1)); }
+.rv-map-node__cue.is-settled .rv-map-node__shape { animation-duration: calc(.8s / var(--rv-map-speed, 1)); }
+.rv-map-node__cue.is-failing .rv-map-node__shape { animation-duration: calc(.4s / var(--rv-map-speed, 1)); }
 .rv-map-node__value.is-swap { animation-duration: calc(.6s / var(--rv-map-speed, 1)); }
 
 @keyframes rv-map-spin { to { transform: rotate(360deg); } }
@@ -166,9 +166,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rv-map-node.is-flight .rv-map-node__flight,
-  .rv-map-node.is-dropped .rv-map-node__flight,
-  .rv-map-node.is-settled .rv-map-node__shape,
-  .rv-map-node.is-failing .rv-map-node__shape,
+  .rv-map-node__cue.is-dropped .rv-map-node__flight,
+  .rv-map-node__cue.is-settled .rv-map-node__shape,
+  .rv-map-node__cue.is-failing .rv-map-node__shape,
   .rv-map-node__value.is-swap { animation: none; }
   .rv-map-node__shape, .nacara-code__line.rv-map-line--run { transition: none; }
 }
@@ -179,3 +179,8 @@
 .rv-map-node--row .rv-map-node__name { font-size: 10.5px; }
 .rv-map-node--member .rv-map-node__name,
 .rv-map-node--member .rv-map-node__value { display: none; }
+
+/* A cell whose page failed to build shows its diagnostics in place of the map. */
+.rv-map-failed { padding: 1rem 1.25rem; border-top: 1px solid var(--nacara-border); color: var(--rv-error); }
+.rv-map-failed__title { margin: 0 0 .5rem; font-weight: 600; }
+.rv-map-failed__text { margin: 0; white-space: pre-wrap; font-size: .8125rem; color: var(--nacara-text); }
