@@ -22,7 +22,8 @@ export const committed = [
   at("docs/research/arms-match/arms-match-da6d32e6-3.json"),
   at("docs/research/arms-match/arms-match-da6d32e6-4.json"),
   at("docs/research/arms-match/arms-match-da6d32e6-5.json"),
-  ...[1, 2, 3, 4, 5, 6].map(n => at(`docs/research/arms-match/arms-match-22d86d44-${n}.json`))
+  ...[1, 2, 3, 4, 5, 6].map(n => at(`docs/research/arms-match/arms-match-22d86d44-${n}.json`)),
+  ...[1, 2, 3, 4, 5, 6].map(n => at(`docs/research/arms-match/arms-match-2dc2835b-${n}.json`))
 ];
 
 /** The hashed sources whose recorded hash in the run differs from the tree's. */
