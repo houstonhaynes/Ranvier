@@ -35,3 +35,8 @@ Duplicates replaced on 2026-10-14: the keyed region reconciler (formerly `KeyedR
 core memo with an owner per arm, and the renderer `Scope` tree by `MountLifetime` over core owners
 (`Lifetime.fs`). The benchmark baseline `BindingBaselineMounting.fs` keeps a frozen copy of the old
 code. Under review: the queued commit `Queue` (`Scheduling.fs`).
+
+Accepted exception, 2026-10-25 (#157, plan Decision P8): under Fable, an `Arms.Match` site that passes a
+view to a helper over the concrete instance type keeps a `WeakMap` from the site tag and instance to the
+helper's mounts (`Site.spliceHeld`, `Site.heldValues`), because the core has no owner-scoped lookup from
+which a lambda could find its arm. An owner-scoped lookup in the core would replace it.

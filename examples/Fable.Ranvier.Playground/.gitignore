@@ -17,6 +17,7 @@ node_modules/
 test-results/
 playwright-report/
 generated-keyed-dist/
+generated-keyed-pooled/
 generated-keyed-heap/
 generated-keyed-identity/
 generated-keyed-passes/

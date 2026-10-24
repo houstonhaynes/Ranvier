@@ -5,22 +5,18 @@ Measurements of the `Arms.Match` implementation ([spec](../superpowers/specs/202
 
 **Summary.** The plugin is found through a project reference and the `.targets`. On .NET a site lowers in about
 1.1-1.4 ms once the process is warm; the first five-target site of a process costs 125-146 ms, 9-12 ms after
-`Arms.Prepare ()` and about 7 ms with ReadyToRun as well. Under Fable the first `Arms.Match` site costs 374 B gzip over
-its twin (budget 400 B) and each further site 10 B (budget 60 B). The retained heap per row is within 10 % of
-`ranvier-sugar` after create and about 13 % above it after a switch. In Chromium every arm operation holds this
-release's gate, a paired median of at most 1.12 against the sugared twin (create 1.049, switch 1.075, payload 1.096,
-clear 1.041); the payload-direct follow-up measured 1.007-1.031 in a spike.
-
-The user explicitly accepted the 1.12 allowance for this release on 2026-10-22, requiring the cost to remain visible
-and a tracked follow-up. Measured overhead is +4.9 % create, +7.5 % switch, +9.6 % payload and +4.1 % clear.
-The latest switch and payload medians miss the original 1.05 gate; a passing release check does not erase that
-shortfall. The payload-direct follow-up targets the original gate. Merge also awaits the requested primitive
-instruction-count comparison. The performance work is tracked in [issue #157](https://github.com/shayanhabibi/Ranvier/issues/157).
-
-These Chromium medians are the recorded pre-#151 measurements, with their original source hashes and tool versions
-in `arms-match.json`; they were not remeasured during finalization. Integrating #151 updates Vite from 8.3.3 to 8.3.4
-and the Anime size checks' Rolldown from 1.2.12 to 1.2.14. Regenerated bundle records use the new locked tool versions.
-The committed-results timing check continues to validate historical evidence; it does not measure the new bundle.
+`Arms.Prepare ()` and about 7 ms with ReadyToRun as well. Under Fable, `Arms.Match` lowers to the payload-direct shape
+([#157](https://github.com/shayanhabibi/Ranvier/issues/157)): one `armOf` definition per target over the arm's values
+thunk, and no cells. The first site costs 189 B gzip over its twin (budget 400 B) and each further site 8 B (budget
+60 B). The retained heap per row is 1.2 % above `ranvier-sugar` after create and after a switch, at 1,000 and 10,000
+rows. The Chromium gate is a paired median against the sugared twin of at most 1.05 on create and clear, 1.04 on
+switch and 1.07 on payload, under the user's concession of 2026-10-24 ("Chromium"); the cells release ran under a 1.12
+allowance (plan Ruling 38, superseded), and its committed timings miss 1.05 on switch (1.075) and payload (1.096).
+Pooled over the six committed runs of #157 whose source hashes match the tree and which built their own bundle, at
+38-96 % load, the payload-direct shape's paired medians are create 1.006, switch 1.015, payload 1.042 and clear 0.991;
+the gate judges these pooled medians and passes, with the pooled switch interval (0.997-1.048) straddling 1.04 and the
+pooled payload interval (1.009-1.089) straddling 1.07. In a paired
+run against the hand-written shape, the plugin's output is indistinguishable from it on every operation.
 
 ## Plugin discovery
 
@@ -28,7 +24,8 @@ From `experiments/Ranvier.View.Arms/Checks/Discovery`, an app with a project ref
 import of `Ranvier.View.Arms.targets`:
 
 - **Discovery through a project reference and the `.targets`:** the plugin lowers the app's `Arms.Match` call; the
-  emitted `Main.js` holds the `armsValues_L…` prologues.
+  emitted `Main.js` held the `armsValues_L…` prologues of the cells release, and holds the site's `armsTag_L…` tag and
+  `armsRead_L…` readers of the payload-direct shape.
 - **`FABLE_COMPILER` during project cracking:** set; the `.targets` reference is conditional, and a .NET build carries
   no plugin assembly.
 - **netstandard2.0 plugin in Fable 5.18 and Fickl 0.3.0:** loads (Fable.AST 5.0.0 compile reference, FSharp.Core 10.1.203).
@@ -137,24 +134,28 @@ emitted sites.
 ## Bundle
 
 `experiments/Ranvier.View.Arms/Checks/size.mjs` compiles the Playground's DomTests in Release with no defines into
-`generated-size-tests`, then bundles each entry with Vite 8.3.3 (minified), gzip level 9 and Brotli quality 11; the
+`generated-size-tests`, then bundles each entry with Vite 8.3.4 (minified), gzip level 9 and Brotli quality 11; the
 numbers are in [`arms-match/bundle.json`](arms-match/bundle.json).
 
 | Entry | raw | gzip | Brotli |
 |---|---|---|---|
-| explicit loader | 206,791 | 60,147 | 52,825 |
-| Arms.Match loader | 207,533 | 60,518 | 53,136 |
-| two explicit sites | 207,634 | 60,337 | 52,937 |
-| two Arms.Match sites | 208,378 | 60,720 | 53,306 |
+| explicit loader | 206,936 | 60,178 | 52,828 |
+| Arms.Match loader | 207,413 | 60,367 | 52,995 |
+| two explicit sites | 207,778 | 60,355 | 52,968 |
+| two Arms.Match sites | 208,279 | 60,552 | 53,165 |
 
-The first site costs 374 B gzip over its twin (budget 400 B) and the second 10 B (budget 60 B), after the view's
-graduation to `src/Ranvier.View` (#155). The method is a
-whole-bundle gzip difference, so it resolves about ±20 B: a build with `RANVIER_VIEW_COUNTERS` moves the first figure by
-19 B and the second by 25 B without touching `Ranvier.View.Arms`. An entry that calls no `Arms.Match` holds no
-`Ranvier.View.Arms` module, the `Arms.Match` entry holds no quotation code and no curry helper, and `Arms.Prepare ()`
-in the entry adds no bytes.
+With the payload-direct lowering the first site costs 189 B gzip over its twin (budget 400 B) and the second 8 B
+(budget 60 B), measured after the rebase onto `integration/issues` (183 B and 1 B before it, within the method's
+resolution). The method is a whole-bundle gzip difference, so it resolves about ±20 B: a build with
+`RANVIER_VIEW_COUNTERS` moves the first figure by 19 B and the second by 25 B without touching `Ranvier.View.Arms`. An
+entry that calls no `Arms.Match` holds no `Ranvier.View.Arms` module; the `Arms.Match` entry holds no quotation code,
+no curry helper, no cells module and no `WeakMap`, and the Fable output of `Ranvier.View.Arms` holds no `Cells` module.
+`Arms.Prepare ()` in the entry adds no bytes.
 
-How the first-site cost came down from 771 B:
+The 189 B are the definitions array and its selection, the AM006 guard (`Site.values`, a tag at element 1 of each
+values array) with its Release text, and the splice adapter. The cells release cost 374 B.
+
+How the first-site cost moved:
 
 | Change | First site, gzip |
 |---|---|
@@ -165,21 +166,136 @@ How the first-site cost came down from 771 B:
 | live entries linked through the entries; the withdrawn entry reused by the next arm of its target; one withdrawal per entry (for the switch); the short text without the URL scheme | 394 |
 | after #155; entries seeded with their mount-time values and refreshed on withdrawal (final review I1); withdrawn entries kept in the chain and rebound in place | 371 |
 | after #151 updates the locked bundler; unchanged Arms sources and size budgets | 374 |
-
-The remaining cost is the cells' code: entry registration, rebinding and withdrawal, the read over live and withdrawn
-entries with graph tags, and the site's arm table. Dropping graph tags under Fable would save about 36 B and let a
-reader under one graph read another graph's arm.
+| payload-direct lowering (#157): one `armOf` per target, the selector's array, the AM006 tag guard, the splice adapter; the Fable cells removed | 183 |
 
 ## Chromium
 
-`keyed-rows.mjs --modes=ranvier-sugar,ranvier-arms-match --ops=armsCreate1k,armsSwitch1k,armsPayload1k,armsClear1k
---processes=3 --rounds=15 --pairs=ranvier-arms-match:ranvier-sugar`, under the benchmark and browser locks, at `2667e8e5`
-(Fickl 0.3.0, Fable 5.22.0; source hashes in the JSON); results in `arms-match/arms-match.json`. The run started after
-three load readings below 20 % (25, 8, 3, 3 %); the load read 53 % right after the smoke build and 97 % at the end, and
-the third process ran under other work (its sugar switch median is 10.97 ms against 7.38-7.57 ms in the other two).
+The gate (spec, Testing 11) is a paired median of at most the operation's budget, the 95 % interval reported:
+`node experiments/Ranvier.View.Arms/Checks/chromium-gate.mjs` pools the committed runs whose recorded source hashes
+match the tree. The
+budgets are create 1.05, switch 1.04, payload 1.07 and clear 1.05; the cells release ran under a 1.12 allowance (plan
+Ruling 38), which the payload-direct lowering supersedes.
 
-The gate for this release (spec, Testing 11; plan Ruling 38) is a paired median of at most 1.12 per operation, the
-95 % interval reported; `node experiments/Ranvier.View.Arms/Checks/chromium-gate.mjs` checks the committed results.
+**Concession (user ruling, 2026-10-24).** The payload-direct lowering targeted 1.05 on every operation. Create and
+clear keep it. Switch takes 1.04 and payload 1.07 (plan `2026-10-24-issue-157.md`, Decision P9), fixed and not
+refitted when a run joins the pool, because the plugin's output is
+indistinguishable from the hand-written shape the spike measured ("Against the hand-written shape"). Pooling
+concatenates each run's per-pair ratios and applies the bootstrap of `keyed-rows.mjs`;
+`experiments/Ranvier.View.Arms/Checks/pooled-interval.mjs` prints the result, `chromium-gate.mjs` judges each
+operation by the pooled median, and `pooled-interval.test.mjs` checks the fixed budgets and the pooled medians against
+them. The pool is every committed run whose recorded hashes match every source `run-sources.mjs` lists, up to line
+endings: the benchmark, the core and view sources both modes compile, and the Fable plugin project with each file it
+compiles. A change to any of them takes every run out of the pool, and the gate fails until runs are recorded on the
+new sources. A pooled run builds its own bundle (`--build`) into `generated-keyed-pooled/<label>` under a lock per
+checkout, and records `built` and the served bundle's `bundleHash`; `keyed-rows.mjs` refuses the write when the bundle
+changed during the run. CI runs the gate only for a change to the lowering, its benchmark, its runs or the workflow
+(`changes.cjs`, `armsRuns`). The six runs at `22d86d44` are the pool; each is the Step 11 command with `--build` under
+`gate-lock.ps1 bench`, two at a time, and all six record the same `bundleHash`. CPU load before / after in parentheses:
+
+| Run (CPU load, %) | create | switch | payload | clear |
+|---|---|---|---|---|
+| `arms-match-22d86d44-1` (38, 83, 96 / 54, 43, 72) | 0.957 (0.902-1.010) | 0.975 (0.950-1.027) | 1.040 (0.979-1.121) | 1.000 (0.864-1.116) |
+| `arms-match-22d86d44-2` (43, 84, 96 / 96, 93, 79) | 1.087 (1.005-1.121) | 1.015 (0.948-1.141) | 1.074 (1.009-1.146) | 0.985 (0.853-1.010) |
+| `arms-match-22d86d44-3` (44, 57, 79 / 73, 85, 64) | 0.999 (0.923-1.050) | 1.050 (0.967-1.100) | 1.149 (1.028-1.263) | 0.964 (0.890-1.059) |
+| `arms-match-22d86d44-4` (52, 59, 68 / 57, 82, 76) | 1.024 (0.989-1.057) | 1.003 (0.951-1.048) | 0.994 (0.946-1.084) | 0.955 (0.869-1.030) |
+| `arms-match-22d86d44-5` (71, 88, 59 / 66, 71, 63) | 1.002 (0.952-1.053) | 1.018 (0.981-1.077) | 1.013 (0.939-1.128) | 1.035 (0.893-1.156) |
+| `arms-match-22d86d44-6` (65, 64, 59 / 81, 68, 68) | 0.977 (0.917-1.041) | 1.051 (0.997-1.101) | 1.017 (0.929-1.144) | 1.015 (0.922-1.107) |
+| pooled, 270 pairs | 1.006 (0.986-1.025) | 1.015 (0.997-1.048) | 1.042 (1.009-1.089) | 0.991 (0.946-1.030) |
+| budget | 1.05 | 1.04 | 1.07 | 1.05 |
+
+Every pooled median is within its budget. The create and clear pooled intervals lie below their budgets; the pooled
+switch interval straddles 1.04 and the pooled payload interval straddles 1.07. The runs' switch medians spread from
+0.975 to 1.051 and their payload medians from 0.994 to 1.149.
+
+**The `da6d32e6` runs, out of the pool.** The five runs at `da6d32e6`, on the branch rebased onto `integration/issues`
+at `aae54f2e`, stay committed as history. They predate the `--build` requirement: only the first built its bundle,
+the other four served the shared output, which a concurrent run could rebuild, so a source match cannot show which lowering
+they measured. Their hashes differ from the tree in `keyed-rows.mjs`.
+
+| Run (CPU load, %) | create | switch | payload | clear |
+|---|---|---|---|---|
+| `arms-match-da6d32e6-1` (62, 25, 59 / 47, 79, 56) | 1.022 (0.999-1.045) | 1.048 (1.018-1.101) | 1.050 (0.953-1.134) | 1.088 (0.921-1.164) |
+| `arms-match-da6d32e6-2` (59, 37, 55 / 58, 66, 79) | 0.977 (0.957-0.995) | 1.027 (1.008-1.058) | 1.025 (0.972-1.211) | 1.000 (0.874-1.240) |
+| `arms-match-da6d32e6-3` (60, 69, 65 / 65, 68, 59) | 1.019 (0.982-1.036) | 0.995 (0.951-1.027) | 1.006 (0.890-1.110) | 0.985 (0.878-1.107) |
+| `arms-match-da6d32e6-4` (68, 60, 71 / 83, 68, 60) | 1.006 (0.995-1.025) | 0.983 (0.955-1.011) | 0.904 (0.870-1.087) | 1.026 (0.956-1.114) |
+| `arms-match-da6d32e6-5` (51, 66, 68 / 69, 54, 76) | 0.983 (0.951-1.024) | 1.015 (0.965-1.061) | 0.995 (0.925-1.057) | 0.996 (0.875-1.162) |
+| pooled, 225 pairs | 1.000 (0.993-1.016) | 1.015 (1.004-1.030) | 1.009 (0.974-1.053) | 1.003 (0.963-1.074) |
+
+**Earlier runs, out of the pool.** The runs below stay committed as history. Their recorded hashes differ from the
+tree in `src/Ranvier/Core.fs` and `src/Ranvier/Projections.fs`, which both modes compile, in
+`benchmarks/frameworks/keyed-rows.mjs`, and they record no hash for the plugin project, `Shape.fs` or `Plugin.fs`;
+`8ee10018`, `299ab276` and `fccc740c` also differ in `Site.fs` and `Lower.fs`.
+
+| Run (CPU load) | create | switch | payload | clear |
+|---|---|---|---|---|
+| `8ee10018`, probe (96-100 %) | 1.002 (0.977-1.030) | 1.014 (0.967-1.038) | 1.065 (0.985-1.168) | 1.016 (0.897-1.108) |
+| `299ab276`, Step 11 (85-100 %) | 1.003 (0.969-1.063) | 1.078 (1.026-1.137) | 1.073 (0.930-1.222) | 1.011 (0.910-1.146) |
+| `fccc740c`, shape run (97-100 %) | 1.041 (0.969-1.068) | 0.993 (0.903-1.066) | 1.042 (0.906-1.193) | 1.014 (0.968-1.095) |
+| `dc8b3d5b`, refresh (35-68 %) | 1.013 (0.989-1.039) | 1.009 (0.990-1.027) | 1.000 (0.899-1.055) | 0.942 (0.843-1.111) |
+| `5369d6a0`, rebased onto `0967cc02` (70-97 %) | 0.992 (0.958-1.045) | 1.022 (0.945-1.066) | 1.040 (0.948-1.108) | 1.119 (0.991-1.175) |
+| `4d00179e`, rebased onto `0967cc02` (56-99 %) | 1.004 (0.962-1.055) | 0.969 (0.917-1.035) | 0.971 (0.943-1.053) | 0.996 (0.906-1.093) |
+
+**The `4d00179e` run.** `arms-match.json` is the Step 11 command with `--build` through
+`gate-lock.ps1 bench` at `4d00179e`, CPU load 56, 79 and 88 % before the build and 62, 66 and 99 % after the run,
+source hashes matching the tree of `4d00179e` (`Lower.fs` `9c7c6613…`, `Site.fs` `644adbf6…`, `Core.fs` `f2023ae6…`);
+`keyed-rows.mjs` writes a run into `docs/research/arms-match/` only from committed sources unchanged during the run. Every median of the run is
+within its budget; its switch and payload intervals lie below theirs, and its create and clear intervals straddle 1.05.
+
+| Operation | ranvier-sugar median (process medians), ms | ranvier-arms-match median (process medians), ms | paired median ratio | 95 % interval | arms slower in |
+|---|---|---|---|---|---|
+| armsCreate1k | 16.85 (19.17, 16.76, 16.47) | 17.09 (19.11, 15.66, 17.08) | 1.004 | 0.962-1.055 | 24/45 |
+| armsSwitch1k | 9.88 (9.88, 9.56, 10.81) | 9.63 (9.54, 9.00, 10.95) | 0.969 | 0.917-1.035 | 20/45 |
+| armsPayload1k | 1.97 (2.21, 1.88, 1.97) | 1.88 (2.00, 1.75, 1.82) | 0.971 | 0.943-1.053 | 20/45 |
+| armsClear1k | 4.73 (4.47, 4.40, 5.84) | 4.74 (3.98, 3.91, 6.22) | 0.996 | 0.906-1.093 | 22/45 |
+
+**Payload-direct shape.** `keyed-rows.mjs --bundle --modes=ranvier-sugar,ranvier-arms-match
+--ops=armsCreate1k,armsSwitch1k,armsPayload1k,armsClear1k --processes=3 --rounds=15
+--pairs=ranvier-arms-match:ranvier-sugar` under `gate-lock.ps1 bench`, at `299ab276` (clean apart from the untracked
+probe below), Node v26.7.0, Chromium 156.0.8078.4, Fickl 0.5.3, Fable 5.23.0, Solid 2.0.0-rc.14; results and source
+hashes in `arms-match/arms-match-299ab276.json` (`Lower.fs` `51311ec0…`, `Site.fs` `5ce539ae…`). The machine is shared with up to three lanes, and its
+load is the baseline (plan `2026-10-24-issue-157.md`, Decision P7): CPU load read 96, 85 and 91 % before the run and 87,
+90 and 100 % after it. Each ratio pairs samples of the same process and round.
+
+| Operation | ranvier-sugar median (process medians), ms | ranvier-arms-match median (process medians), ms | paired median ratio | 95 % interval | arms slower in |
+|---|---|---|---|---|---|
+| armsCreate1k | 17.78 (16.20, 19.56, 17.95) | 18.52 (16.84, 19.93, 17.24) | 1.003 | 0.969-1.063, straddles | 23/45 |
+| armsSwitch1k | 9.56 (10.00, 9.86, 8.93) | 10.52 (10.41, 10.62, 10.22) | 1.078 | 1.026-1.137, straddles | 31/45 |
+| armsPayload1k | 1.69 (1.41, 2.17, 1.76) | 1.91 (1.32, 2.36, 1.91) | 1.073 | 0.930-1.222, straddles | 27/45 |
+| armsClear1k | 4.29 (3.38, 4.38, 4.55) | 4.42 (3.76, 4.42, 4.77) | 1.011 | 0.910-1.146, straddles | 23/45 |
+
+Every interval straddles 1.05: none clearly meets the budget and none clearly misses it. The medians of create and
+clear are within it; those of switch and payload are above it, so the uniform 1.05 gate of that time failed on them.
+An earlier probe of the same sources at `8ee10018`, under 96-100 % load (`docs/.ai/benchmarks/arms-157-noisy-probe.json`,
+superseded by this run), measured create 1.002 (0.977-1.030),
+switch 1.014 (0.967-1.038), payload 1.065 (0.985-1.168) and clear 1.016 (0.897-1.108): its switch interval lies below
+1.05 and its payload interval straddles it. Across the two runs only payload's median stays above 1.05; at this load the
+paired interval is too wide to separate a 5 % budget from no difference.
+
+**Against the hand-written shape.** A second run of the same sources (source hashes equal to `arms-match-299ab276.json`'s) at
+`fccc740c` adds the spike's hand-written payload-direct fixture, `ranvier-sugar-array`, to the same processes and
+rounds: `keyed-rows.mjs --build --modes=ranvier-sugar,ranvier-arms-match,ranvier-sugar-array
+--ops=armsCreate1k,armsSwitch1k,armsPayload1k,armsClear1k --processes=3 --rounds=15
+--pairs=ranvier-arms-match:ranvier-sugar,ranvier-sugar-array:ranvier-sugar,ranvier-arms-match:ranvier-sugar-array`
+under `gate-lock.ps1 bench`, CPU load 100 % before and 97 % after (one reading each). Results in
+`arms-match/arms-match-shape.json`; `arms-match.json` remains the gate input.
+
+| Operation | arms-match : sugar (95 %) | sugar-array : sugar (95 %) | arms-match : sugar-array (95 %) |
+|---|---|---|---|
+| armsCreate1k | 1.041 (0.969-1.068) | 0.964 (0.917-1.021) | 1.028 (0.975-1.041) |
+| armsSwitch1k | 0.993 (0.903-1.066) | 0.989 (0.896-1.115) | 0.955 (0.862-1.060) |
+| armsPayload1k | 1.042 (0.906-1.193) | 1.075 (0.905-1.198) | 1.026 (0.924-1.152) |
+| armsClear1k | 1.014 (0.968-1.095) | 1.009 (0.919-1.207) | 0.989 (0.852-1.074) |
+
+Every arms-match : sugar-array interval contains 1: on this machine the plugin's output is indistinguishable from the
+hand-written shape the spike measured, which itself reads 1.075 on payload in this run. Pooling the arms-match : sugar
+pairs of both runs (90 per operation, the same bootstrap) gives create 1.016 (0.981-1.059), switch 1.052
+(0.993-1.091), payload 1.061 (0.945-1.170) and clear 1.012 (0.950-1.088). The pooled switch and payload medians stay
+above 1.05; this finding is the reason for the concession above.
+
+**Cells release (history).** At `2667e8e5`, before #151 updated the locked bundler (Fickl 0.3.0, Fable 5.22.0; source
+hashes in the JSON). The run started after three load readings below 20 % (25, 8, 3, 3 %); the load read 53 % right after the smoke build and 97 % at the
+end, and the third process ran under other work (its sugar switch median is 10.97 ms against 7.38-7.57 ms in the other
+two).
 
 | Operation | ranvier-sugar median (process medians), ms | ranvier-arms-match median (process medians), ms | paired median ratio | 95 % interval | arms slower in |
 |---|---|---|---|---|---|
@@ -188,28 +304,32 @@ The gate for this release (spec, Testing 11; plan Ruling 38) is a paired median 
 | armsPayload1k | 1.10 (1.08, 0.88, 2.20) | 1.16 (1.12, 1.01, 2.32) | 1.096 | 1.060-1.144 | 31/45 |
 | armsClear1k | 2.40 (2.32, 1.96, 4.90) | 2.38 (2.38, 1.74, 5.28) | 1.041 | 0.978-1.130 | 26/45 |
 
-Every operation holds the 1.12 gate. The quiet spike run below (load 7 % and 3 %) agrees: create 1.063, switch 1.106,
+Switch and payload miss 1.05. The quiet spike run below (load 7 % and 3 %) agrees: create 1.063, switch 1.106,
 payload 1.075 and clear 1.059. Earlier runs, all under 31-77 % load: before the entry reuse (`945dd4ca`) switch
 1.144 (1.111-1.176) and payload 1.112; after it, switch 1.122 (1.103-1.145) and payload 1.126 (1.071-1.201).
 
-The remaining cost is per remount and per read: the selector's two arrays per selection and the arm's
+The cells release's cost is per remount and per read: the selector's two arrays per selection and the arm's
 `(instance, values)` props; each reader's `values` lookup (a `WeakMap` lookup, the graph tag and the chain); each
-arm's entry registration and cleanup. The payload-direct lowering (spec, Phased implementation 8) removes them.
+arm's entry registration and cleanup. The payload-direct lowering replaces them with one array per selection and a
+read of the arm's own values thunk; the spike of that shape measured create 1.019, switch 1.031, payload 1.007 and
+clear 1.026.
 
 ## Heap
 
 `keyed-heap.mjs --modes=ranvier-sugar,ranvier-arms-match --fixture=arms --counts=1000,10000`, after create and, with
-`--after=switch`, after one switch of every row; results in `arms-match/arms-match-heap.json` and
-`arms-match/arms-match-heap-switch.json`.
+`--after=switch`, after one switch of every row; two processes, under the exclusive gate lock, at `28c69104` with the
+payload-direct lowering (CPU load 32 % before, 16 % after; `28c69104` predates the rebase onto `0967cc02`); results in `arms-match/arms-match-heap.json` and
+`arms-match/arms-match-heap-switch.json`. `chromium-gate.mjs` checks the after-create figure against 10 % and prints the
+after-switch figure.
 
 | Rows | ranvier-sugar bytes per row | ranvier-arms-match after create | Δ | ranvier-arms-match after a switch | Δ |
 |---|---|---|---|---|---|
-| 1,000 | 3,511 | 3,839 | +328 (+9.3 %) | 3,959 | +448 (+12.8 %) |
-| 10,000 | 3,528 | 3,869 | +341 (+9.7 %) | 3,989 | +461 (+13.1 %) |
+| 1,000 | 3,511 | 3,553 | +42 (+1.2 %) | 3,553 | +42 (+1.2 %) |
+| 10,000 | 3,528 | 3,570 | +42 (+1.2 %) | 3,570 | +42 (+1.2 %) |
 
-After create the gate holds: both counts stay within 10 % of `ranvier-sugar`. After a switch each row keeps its
-withdrawn entry with its last values in the target's chain, where the next arm of the target rebinds it; the entry
-releases the disposed arm's props. The sugared twin keeps nothing after a switch.
+Both processes agree to the byte. A switched row retains its new arm only, as the twin does; the spike's array shape
+measured +38 B after a switch. The cells release retained 3,839 and 3,869 B per row after create (+9.3 % and +9.7 %)
+and 3,959 and 3,989 after a switch (+12.8 % and +13.1 %): each row's withdrawn entry with its last values.
 
 ## Payload-direct spike
 

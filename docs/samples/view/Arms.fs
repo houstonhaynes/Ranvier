@@ -82,6 +82,21 @@ let private folderView =
         }
     )
 
+let private labelled (label: 'inst -> string) : TemplateView<'inst> =
+    b (Attrs.className "label") { label }
+
+let private loaderLabel =
+    Component.template (fun _ (state: Signal<Load>) -> state) (
+        div () {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Loaded text -> labelled (fun _ -> text)
+                | _ -> span () { "Other" }
+            )
+        }
+    )
+
 let idleExplicit =
     Component.define (fun _ (_: unit -> unit) -> ()) (fun t -> t.span [||] [| t.text "Not started" |])
 

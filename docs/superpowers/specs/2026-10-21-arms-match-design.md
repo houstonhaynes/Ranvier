@@ -27,8 +27,12 @@ Required by `.claude/rules/view-uses-core.md`.
 - `Graph.TryCurrent` (`src/Ranvier/Core.fs:1741`): a reader picks the payload readers registered under its own graph,
   so concurrent server renders (one request graph each, `Server.fs:136`, `Server.fs:217`) stay apart.
 
-**View-owned state (new):** one table per site, `Cells`: a `WeakMap` under Fable, a `ConditionalWeakTable` on .NET,
-from an instance to the entries of that instance's mounted arms, per target. It is a lookup, not a selection cache: the
+**View-owned state (new):** under Fable, the site's definitions array, one `armOf` per target, built once per evaluation
+of the call: a template table, holding no lookup state (Phased implementation 8). A site that passes a view to a helper
+over the concrete instance type also holds the `Cells` lookup below, as a `WeakMap` from the site's tag and the instance to
+that helper's mounts per target (`Site.spliceHeld`, plan Decision P8, an exception to `.claude/rules/view-uses-core.md` accepted by the user on 2026-10-25); other sites carry none of it in their bundle. On
+.NET, one table per site, `Cells`, a
+`ConditionalWeakTable` from an instance to the entries of that instance's mounted arms, per target. It is a lookup, not a selection cache: the
 payload itself stays in the arm memo; an entry holds the arm's props accessor, which the region already hands the arm
 (`CaseArms.fs:61-64`), its graph and its last values, seeded at mount (plan Rulings 28, 32 and 37). The core cannot hold it because a reader receives only the
 instance (`TemplateView<'inst>` readers are `'inst -> 'v`), and the core has no owner-scoped lookup from which a reader
@@ -88,6 +92,12 @@ its rows and updates them.
 4. **One lowering contract, two producers.** Both produce `select : 'u -> int * obj array` (target index and bound
    values) and `bodies : TemplateView<'inst> array` (one per target, built once), consumed by one runtime function,
    `Site.create` (the probe's `Lowered.site`, `CaseArms.fs:56-69`). *Parity rests on one runtime path.*
+   **Amended by #157** (plan `2026-10-24-issue-157.md`, Decision P1): two runtime shapes behind one parity contract.
+   Under Fable the plugin emits a selector returning `[target, site tag, bound values..., matched value, instance]` and
+   bodies over the arm's values thunk, consumed by `Site.direct`; on .NET the quotation path, `Site.create` and the
+   cells stay. Parity is observable output: server HTML and structural hashes on both targets (`ArmsServerChecks.fs`,
+   `arms-server.test.mjs`), Strict hydration of .NET HTML by the Fable client (`arms-hydration.test.mjs`), and the
+   diagnostic texts and ranges.
 5. **The key is the match target.** Each target owns one arm definition; the same target keeps its arm and replaces its
    bound values, another target remounts. A guard, literal or nested pattern that routes to another target remounts.
 6. **Readers read their own arm's payload.** A pattern variable inside a lambda over the instance type becomes a read
@@ -441,7 +451,7 @@ through `Mounting.mountWith`.
 
 | Check | Budget |
 |---|---|
-| `Arms.Match` entry vs its explicit `armOf` + `matchWith` twin | ≤ 400 B gzip (measured 374 B after #151's bundler update, previously 371 B: the AM006 code and anchor text, cells with per-target entries and graph tags inlined into `Arms.Match`; the method resolves about ±20 B) |
+| `Arms.Match` entry vs its explicit `armOf` + `matchWith` twin | ≤ 400 B gzip (measured 189 B with the payload-direct lowering of #157: the definitions array, the selector, the AM006 guard and its Release text, and the splice adapter; 374 B with the cells; the method resolves about ±20 B) |
 | Each further site in the same bundle, against its twin | ≤ 60 B gzip per site |
 | An app that references `Ranvier.View.Arms` and calls no `Arms.Match`, vs the same app without the reference | 0 B (byte-identical bundle) |
 | The Playground `sugar-size.mjs` explicit entry before and after this work | 0 B |
@@ -503,13 +513,49 @@ Each item names its suite; the research's unprobed items are marked **(new)**.
     written as `Arms.Match`; run `keyed-rows.mjs --modes=ranvier-sugar,ranvier-arms-match
     --ops=armsCreate1k,armsSwitch1k,armsPayload1k,armsClear1k --processes=3 --rounds=15 --pairs=ranvier-arms-match:ranvier-sugar` under `bench.lock`
     (`mkdir C:/Users/shaya/.claude/jobs/7fee9ca9/tmp/bench.lock` before, `rmdir` after) and the browser lock. Gate, per
-    operation: the paired ratio (each `ranvier-arms-match` sample over the `ranvier-sugar` sample of the same process and round, `--pairs=ranvier-arms-match:ranvier-sugar`) has a median of at most 1.12 for this release (the payload-direct follow-on, Phased implementation 8, targets 1.05); its 95 % bootstrap interval is reported. `Checks/chromium-gate.mjs` checks the committed results. Runs record the CPU load in `notes`.
-    The user explicitly accepted the 1.12 allowance for this release on 2026-10-22, requiring the cost to remain
-    visible and a tracked follow-up (plan Ruling 38). The original 1.05 gate remains unmet by the latest switch
-    (+7.5 %) and payload (+9.6 %) medians; [follow-up #157](https://github.com/shayanhabibi/Ranvier/issues/157)
-    targets that original gate.
-12. **Heap profile (new)**: `keyed-heap.mjs` with the new mode at 1,000 and 10,000 rows; retained bytes per row within
-    10 % of `ranvier-sugar` plus the cells entries (one `WeakMap` entry and one list per row instance).
+    operation: the paired ratio (each `ranvier-arms-match` sample over the `ranvier-sugar` sample of the same process and round, `--pairs=ranvier-arms-match:ranvier-sugar`) pooled over the committed runs of the benchmark whose recorded source hashes match the tree (`Checks/pooled-interval.mjs`), has a median of at most the operation's budget; its pooled 95 % bootstrap interval is reported as below, above or straddling the budget. `Checks/chromium-gate.mjs` checks the committed results. Every committed run with matching sources stays in the pool. Runs record the CPU load in `notes`, source hashes and tool versions.
+    The budgets are create 1.05, switch 1.04, payload 1.07 and clear 1.05. The first release shipped under a 1.12
+    allowance the user accepted on 2026-10-22 (plan Ruling 38, superseded); the payload-direct lowering
+    ([#157](https://github.com/shayanhabibi/Ranvier/issues/157), Phased implementation 8) targeted 1.05 on every
+    operation. **Concession (user ruling, 2026-10-24; plan `2026-10-24-issue-157.md`, Decision P9):** create and clear
+    keep 1.05; switch takes 1.04 and payload 1.07, because the plugin's output is indistinguishable from the hand-written
+    payload-direct shape (`arms-match-shape.json`). The budgets are fixed and are not refitted when a run joins the pool;
+    an operation whose pooled interval straddles its budget passes when its pooled median is within it. Paired medians and intervals per run, at the CPU load recorded in each:
+
+    | Run (CPU load before / after, %) | create | switch | payload | clear |
+    |---|---|---|---|---|
+    | `arms-match-22d86d44-1` (38, 83, 96 / 54, 43, 72) | 0.957 (0.902-1.010) | 0.975 (0.950-1.027) | 1.040 (0.979-1.121) | 1.000 (0.864-1.116) |
+    | `arms-match-22d86d44-2` (43, 84, 96 / 96, 93, 79) | 1.087 (1.005-1.121) | 1.015 (0.948-1.141) | 1.074 (1.009-1.146) | 0.985 (0.853-1.010) |
+    | `arms-match-22d86d44-3` (44, 57, 79 / 73, 85, 64) | 0.999 (0.923-1.050) | 1.050 (0.967-1.100) | 1.149 (1.028-1.263) | 0.964 (0.890-1.059) |
+    | `arms-match-22d86d44-4` (52, 59, 68 / 57, 82, 76) | 1.024 (0.989-1.057) | 1.003 (0.951-1.048) | 0.994 (0.946-1.084) | 0.955 (0.869-1.030) |
+    | `arms-match-22d86d44-5` (71, 88, 59 / 66, 71, 63) | 1.002 (0.952-1.053) | 1.018 (0.981-1.077) | 1.013 (0.939-1.128) | 1.035 (0.893-1.156) |
+    | `arms-match-22d86d44-6` (65, 64, 59 / 81, 68, 68) | 0.977 (0.917-1.041) | 1.051 (0.997-1.101) | 1.017 (0.929-1.144) | 1.015 (0.922-1.107) |
+    | pooled, 270 pairs | 1.006 (0.986-1.025) | 1.015 (0.997-1.048) | 1.042 (1.009-1.089) | 0.991 (0.946-1.030) |
+
+    Every pooled median is within its budget. The create and clear pooled intervals lie below their budgets; the pooled
+    switch interval (0.997-1.048) straddles 1.04 and the pooled payload interval (1.009-1.089) straddles 1.07. The runs'
+    switch medians spread from 0.975 to 1.051 and their payload medians from 0.994 to 1.149.
+    `Checks/pooled-interval.mjs` prints the pool, each pooled run, and the sources that keep each other run out;
+    `pooled-interval.test.mjs` checks the fixed budgets, the pooled medians against them, and the pool against the
+    source rule; `keyed-rows.mjs` writes a run into `docs/research/arms-match/` only from committed sources unchanged
+    during the run, and only with `--build`: the run builds its own bundle into `generated-keyed-pooled/<label>` under a
+    lock per checkout, records `built` and the served bundle's `bundleHash`, and refuses the write when the bundle
+    changed during the run. The hashed sources (`benchmarks/frameworks/run-sources.mjs`) are the benchmark, the core and view
+    sources both modes compile, and the Fable plugin project with each file it compiles; a run matches when it records
+    each with the tree's hash, up to line endings. The six pooled runs were recorded at `22d86d44`, two at a time under
+    `gate-lock.ps1 bench`; each built its own bundle, and all six record the same `bundleHash`. The five runs at
+    `da6d32e6` stay committed and out of the pool: they predate the `--build` requirement, four of them served a bundle
+    they did not build, and their hashes differ from the tree in `keyed-rows.mjs`. The earlier runs `8ee10018` (`docs/.ai/benchmarks/arms-157-noisy-probe.json`),
+    `299ab276`, `fccc740c` (`arms-match-shape.json`), `dc8b3d5b`, `5369d6a0` and `4d00179e` (`arms-match.json`) stay
+    committed and out of the pool: their hashes differ from the tree in `src/Ranvier/Core.fs`, `src/Ranvier/Projections.fs`
+    and `keyed-rows.mjs`, and they record none for the plugin project, `Shape.fs` or `Plugin.fs`; the first three also
+    differ in `Site.fs` and `Lower.fs`. A change to any hashed source takes every run out of the pool, and the gate
+    fails until runs are recorded on the new sources. CI runs the gate only for a change to the lowering, its
+    benchmark, its runs or the workflow (`.github/scripts/changes.cjs`, `armsRuns`); a core, view or Playground
+    lock-file change alone skips it.
+12. **Heap profile (new)**: `keyed-heap.mjs --fixture=arms` with the new mode at 1,000 and 10,000 rows; retained bytes
+    per row after create within 10 % of `ranvier-sugar`, and the heap after one switch of every row (`--after=switch`)
+    reported at both counts. `Checks/chromium-gate.mjs` checks the first and prints the second.
 13. **Docs samples**: the `arms.md` samples compile in `docs/samples/view` (.NET, quotation path) and their quoted HTML
     is checked, as the Playground CI job runs today.
 14. **Trim annotation**: the `TrimCallSite` publish reports IL2026 naming `Arms.Match`.
@@ -573,7 +619,8 @@ Each phase lands with its tests green and is reviewable alone.
    11-12); the trim check; the CI `arms` job.
 6. **Docs.** `arms.md` section, reference table, troubleshooting entries, samples, research note.
 7. **Analyzer** (separate spec): AM001-AM005 under FSharp.Analyzers.SDK.
-8. **Payload-direct lowering (planned follow-up).** Each target becomes an `armOf` definition whose instance is the
+8. **Payload-direct lowering (implemented, #157; plan `2026-10-24-issue-157.md`; Chromium gate met under the
+   per-operation budgets of the 2026-10-24 ruling).** Each target becomes an `armOf` definition whose instance is the
    arm's values thunk, the site selects with one array `[target, pattern variables..., matched value, instance]`, and
    the plugin rewrites every instance lambda to read `p ()[k]`; under Fable the cells, `enter`, withdrawal and graph
    tags go, and a held reader reads its own row's props, as the twin does. A helper view of the instance type is
@@ -582,4 +629,13 @@ Each phase lands with its tests green and is reviewable alone.
    create 1.019, switch 1.031, payload 1.007 and clear 1.026 (paired medians), the heap after a switch at +1.1 % (today
    +12.8 %), and its loader at 31 B gzip (today 371 B). The final review estimates 1-1.5 weeks for Fable with the .NET
    quotation and cells path kept, about 3 weeks with .NET parity; the AM006 guard (15-25 B) and splice adapters
-   (30-50 B) remain to be measured. The Chromium gate then returns to a median of 1.05.
+   (30-50 B) remain to be measured. The lowering targeted the original median of 1.05.
+   Measured on the shipped lowering: the first site 189 B gzip over its twin and each later site 8 B (`bundle.json`),
+   the Fable output holding no cells module; the heap at +1.2 % over the twin after create and after a switch, at both
+   row counts. The Step 11 paired medians on the shared machine were create 1.003, switch 1.078, payload 1.073 and
+   clear 1.011, every 95 % interval straddling 1.05. A paired run against the spike's hand-written shape finds the
+   plugin's output indistinguishable from it (research note, "Chromium"). Under the user's ruling of 2026-10-24 the
+   Chromium budgets are per operation (Testing 11): create and clear 1.05, switch 1.04 and payload 1.07, fixed, judged by
+   the pooled paired median over the six runs whose sources match the tree and which built their own bundle: create
+   1.006, switch 1.015, payload 1.042 and clear 0.991, and `chromium-gate.mjs` passes; the pooled switch interval
+   (0.997-1.048) straddles 1.04 and the pooled payload interval (1.009-1.089) straddles 1.07.

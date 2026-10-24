@@ -82,7 +82,8 @@ If your environment doesn't have it, ask your USER for permission to set it up.
 - **Release-only compiler errors.** The REPL compiles like Debug. An `inline` CE member that
   applies a function-typed alias compiles in Debug and fails in Release with `FS1118`.
 - **The whole suite, and the final gate.** Run them through the build CLI. A filtered run is never
-  an acceptance check.
+  an acceptance check. The gate includes the analyzers as CI runs them:
+  `dotnet fsi build.fsx -- analyze --group <library|view|examples> --build`, one run per group.
 
 On a small solution an incremental `dotnet build` takes seconds, not minutes; the REPL saves the
 most on experiments that would otherwise need a rebuild per attempt.

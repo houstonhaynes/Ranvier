@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { docsOnly, armsAffected, range } = require('./changes.cjs');
+const { docsOnly, armsAffected, armsRunsAffected, classify, range } = require('./changes.cjs');
 const a = 'a'.repeat(40), b = 'b'.repeat(40), z = '0'.repeat(40);
 
 test('documentation paths alone are docs only', () => {
@@ -23,6 +23,24 @@ test('the Arms.Match job runs for the view, core, Playground and toolchain, and 
   }
   for (const p of [['src/Ranvier.Wire/Codec.fs'], ['examples/Ranvier.Motion/src/Kanban.fs'], ['tools/Ranvier.Analyzers/Rules.fs'], ['build.fsx']]) {
     assert.equal(armsAffected(p), false, JSON.stringify(p));
+  }
+});
+test('a committed Arms.Match run runs the Arms.Match job, which holds its budget gate', () => {
+  for (const p of [['docs/research/arms-match/arms-match.json'], ['docs/research/arms-match/arms-match-5369d6a0.json'], ['docs/.ai/benchmarks/arms-157-noisy-probe.json'], ['docs/research/arms-match/bundle.json', 'docs/content/view/arms.md']]) {
+    assert.deepEqual(classify(p), { docs: false, arms: true, armsRuns: true }, JSON.stringify(p));
+  }
+  assert.deepEqual(classify(['docs/research/2026-10-21-arms-match.md']), { docs: true, arms: false, armsRuns: false });
+});
+test('the committed Chromium runs are checked for the Arms.Match lowering, its benchmark, its runs and an unknown diff', () => {
+  for (const p of [['experiments/Ranvier.View.Arms/Cells.fs'], ['experiments/Ranvier.View.Arms.FablePlugin/Lower.fs'], ['experiments/Ranvier.View.Arms/Checks/chromium-gate.mjs'],
+    ['examples/Fable.Ranvier.Playground/benchmarks/frameworks/keyed-rows.mjs'], ['examples/Fable.Ranvier.Playground/tests/KeyedRowsArmsMatchPerf.fs'],
+    ['docs/research/arms-match/arms-match-da6d32e6-1.json'], ['docs/.ai/benchmarks/arms-157-noisy-probe.json'], ['.github/workflows/ci.yml'], [], undefined]) {
+    assert.equal(armsRunsAffected(p), true, JSON.stringify(p));
+  }
+});
+test('a core, view or Playground lock-file change runs the Arms.Match job without checking the committed Chromium runs', () => {
+  for (const p of [['src/Ranvier/Core.fs'], ['src/Ranvier.View.Dom/Mounting.fs'], ['examples/Fable.Ranvier.Playground/package-lock.json'], ['examples/Fable.Ranvier.Playground/tests/ArmsChecks.fs'], ['.config/dotnet-tools.json']]) {
+    assert.deepEqual(classify(p), { docs: false, arms: true, armsRuns: false }, JSON.stringify(p));
   }
 });
 test('ranges need two commits; new branches and manual runs have none', () => {
@@ -50,8 +68,8 @@ test('a master push is classified by its diff against the parent', () => {
     const root = commit('src/Core.fs');
     const docs = commit('docs/guide.md');
     const code = commit('src/Core.fs');
-    assert.equal(classify(root, docs), 'docs=true\narms=false');
-    assert.equal(classify(docs, code), 'docs=false\narms=false');
+    assert.equal(classify(root, docs), 'docs=true\narms=false\narmsRuns=false');
+    assert.equal(classify(docs, code), 'docs=false\narms=false\narmsRuns=false');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
