@@ -146,6 +146,40 @@ let tests =
                     "the unregistered record raises"
             }
 
+            test "dumpHeader and eventLines concatenate to dumpTextWith, with and without a checkpoint" {
+                let encode = Some (TraceCodecs.encode codecs)
+
+                let parts (g: Graph) =
+                    let checkpoint = Trace.checkpointOf g
+                    let events = Trace.events g
+
+                    TraceModel.dumpHeader encode "net" checkpoint.Name checkpoint.Snapshot events
+                    + TraceModel.eventLines encode events
+
+                let whole, expected = dumpOf (fun g -> parts g, Trace.dumpTextWith g codecs)
+                Expect.equal whole expected "without a checkpoint"
+
+                let cut, expectedCut =
+                    dumpOf (fun g ->
+                        let write =
+                            Trace.events g
+                            |> Array.find (fun e -> e.Kind = TraceEventKind.Write)
+
+                        Trace.checkpoint g write.Seq "cut"
+                        parts g, Trace.dumpTextWith g codecs)
+
+                Expect.stringContains cut "\"checkpoint\":\"cut\"" "the header names the checkpoint"
+                Expect.equal cut expectedCut "after a checkpoint"
+
+                let header =
+                    dumpOf (fun g ->
+                        let checkpoint = Trace.checkpointOf g
+                        let events = Trace.events g
+                        TraceModel.dumpHeader encode "net" checkpoint.Name checkpoint.Snapshot events[..0])
+
+                Expect.isTrue (expected.StartsWith header) "a prefix holding the first event gives the same header"
+            }
+
 #if !FABLE_COMPILER
             // .NET only: TraceModel.parseDump is .NET only, and the fixtures are files.
             test "dumpText writes the committed schema 1 fixture byte for byte" { matchesFixture "dump-text-schema-1.jsonl" (dumpOf Trace.dumpText) }
@@ -161,6 +195,7 @@ let tests =
                 for name, schema in [ "dump-text-schema-1.jsonl", 1; "dump-text-schema-3.jsonl", 3 ] do
                     let dump = TraceModel.parseDump (System.IO.File.ReadAllText (fixture name))
                     Expect.equal dump.Schema schema name
+                    Expect.equal dump.Gaps [] "a fixture holds no gap"
                     Expect.equal (dump.Events |> Array.map _.Seq) (events |> Array.map _.Seq) "the events"
 
                     if schema = 3 then
@@ -180,6 +215,40 @@ let tests =
                 Expect.equal dump.Schema 3 "the schema"
                 Expect.equal dump.Payloads forms "the payload forms"
                 Expect.equal (dump.Events |> Array.map _.Seq) (events |> Array.map _.Seq) "the events"
+            }
+
+            test "a gap line parses into Gaps, and why across the gap ends in BeforeCheckpoint" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal 0
+                createEffect (fun () -> s.Value |> ignore)
+                s.Value <- 1
+
+                let start =
+                    Trace.events g
+                    |> Array.findBack (fun e -> e.Kind = TraceEventKind.RunStart && e.Cause <> 0)
+
+                let cut = start.Cause
+
+                let gapLine =
+                    (TraceExportRecord.text (TraceExportRecord.Gap (cut, cut))).TrimEnd '\n'
+
+                let text =
+                    (Trace.dumpTextWith g codecs).Split '\n'
+                    |> Array.map (fun line ->
+                        if line.StartsWith ("{\"seq\":" + string cut + ",") then
+                            gapLine
+                        else
+                            line)
+                    |> String.concat "\n"
+
+                for dump in [ TraceModel.parseDump text; TraceContract.parseDumpWith codecs text ] do
+                    Expect.equal dump.Gaps [ cut, cut ] "the gap"
+                    Expect.isFalse (dump.Events |> Array.exists (fun e -> e.Seq = cut)) "the gap holds no event"
+                    Expect.equal dump.Payloads.Length dump.Events.Length "a form per event"
+
+                    let why = TraceModel.why dump.Events dump.Checkpoint start.Node start.Arg
+                    Expect.equal why.Root (Some (BeforeCheckpoint null)) "a cause inside the gap"
             }
 
             test "dumpTextWith writes numbers in the invariant culture" {

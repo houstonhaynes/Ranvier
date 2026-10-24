@@ -37,6 +37,24 @@ let private sameHtml (options: Server.Options) () =
 
         equal (case.Fixture, case.State, twin) (case.Fixture, case.State, site)
 
+/// <summary>
+/// The hand-lowered array loader has the Arms.Match loader's and the twin's structural hash, and their server HTML in
+/// every loader state.
+/// </summary>
+let private arrayShapeMatches (options: Server.Options) () =
+    for case in arrayShape do
+        let matched =
+            all
+            |> List.find (fun other ->
+                other.Fixture = case.Fixture
+                && other.State = case.State)
+
+        let array, _ = case.Render options
+        let site, twin = matched.Render options
+        let hash = structuralHash case.Site
+
+        equal (case.State, structuralHash matched.Site, structuralHash matched.Twin, site, twin) (case.State, hash, hash, array, array)
+
 /// <summary>A failwithf case body raises its message at the region read; another case renders.</summary>
 let private failwithfRaisesAtRead () =
     let render state =
@@ -65,6 +83,8 @@ let cases: (string * (unit -> unit)) array =
         "Arms.Match fixtures share their twins' layouts and hashes", sameLayouts
         "Arms.Match fixtures render their twins' server HTML under Reject", sameHtml Server.Options.defaults
         "Arms.Match fixtures render their twins' server HTML under Omit", sameHtml omit
+        "the hand-lowered array loader shares the loader's and the twin's hash and HTML under Reject", arrayShapeMatches Server.Options.defaults
+        "the hand-lowered array loader shares the loader's and the twin's hash and HTML under Omit", arrayShapeMatches omit
         "an incomplete Arms.Match raises for its unmatched case", (fun () -> equal true (incompleteRaises ()))
         "a failwithf case body raises its message at the region read", failwithfRaisesAtRead
         "a case body's raising let raises when the site is built", letThrowRaisesAtBuild

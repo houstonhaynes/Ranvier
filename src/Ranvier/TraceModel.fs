@@ -31,7 +31,10 @@ type WhyRoot =
     | Created of nodeNew: int
     /// <summary>A run with no dirty mark, started by a reader's pull: the reader's node id.</summary>
     | Pulled of reader: int
-    /// <summary>A cause older than the events in the log: the checkpoint file that holds it, or null.</summary>
+    /// <summary>
+    /// A cause older than the events in the log, or inside a gap of an exported stream: the checkpoint file that holds
+    /// it, or null.
+    /// </summary>
     | BeforeCheckpoint of file: string
     /// <summary>A run or mark whose cause the log does not record: the seq of the last step.</summary>
     | Unrecorded of last: int
@@ -404,6 +407,11 @@ type TraceDump =
         /// its timing, and its form is <c>Null</c>.
         /// </summary>
         Payloads: TracePayload[]
+        /// <summary>
+        /// The inclusive seq ranges of the stream's gap lines, in stream order. The events of a gap's range are absent
+        /// from <c>Events</c>.
+        /// </summary>
+        Gaps: (int * int) list
     }
 
     /// <summary>The dump header, snapshot and events in F# record syntax.</summary>
@@ -662,7 +670,7 @@ module TraceModel =
                         else
                             match find events cause with
                             | ValueSome c -> walk c
-                            | ValueNone when events.Length > 0 && cause < events[0].Seq -> Some (BeforeCheckpoint checkpoint)
+                            | ValueNone when cause < e.Seq -> Some (BeforeCheckpoint checkpoint)
                             | ValueNone -> Some (Unrecorded e.Seq)
 
                     match e.Kind with
@@ -2173,10 +2181,14 @@ module TraceModel =
         sb.Append '}' |> ignore
 
     /// <summary>
-    /// The JSONL dump of <c>dumpText</c>; with <c>encode</c>, in schema 3 with each payload written in the form
-    /// <c>encode</c> gives.
+    /// The header line and snapshot line of the dump of <c>before</c> and <c>events</c>, each ending in <c>\n</c>.
     /// </summary>
-    let internal dumpTextEncoded
+    /// <remarks>
+    /// The header and the lines of <c>eventLines</c> concatenate to <c>dumpTextEncoded</c>. <c>events</c> sets the
+    /// header's <c>seqFrom</c> and <c>graph</c>, and its schema without <c>encode</c>: a prefix holding the first
+    /// event, and the <c>GraphNew</c> event when <c>before</c> has no root, gives the same header.
+    /// </remarks>
+    let internal dumpHeader
         (encode: (obj -> TracePayload) option)
         (target: string)
         (checkpoint: string)
@@ -2231,12 +2243,31 @@ module TraceModel =
 
         snapshotJson sb before
         sb.Append '\n' |> ignore
+        sb.ToString ()
+
+    /// <summary>One dump line per event, each ending in <c>\n</c>, with payloads written as for <c>dumpHeader</c>.</summary>
+    let internal eventLines (encode: (obj -> TracePayload) option) (events: TraceEvent[]) : string =
+        let sb = StringBuilder ()
 
         for e in events do
             eventJson sb encode e
             sb.Append '\n' |> ignore
 
         sb.ToString ()
+
+    /// <summary>
+    /// The JSONL dump of <c>dumpText</c>; with <c>encode</c>, in schema 3 with each payload written in the form
+    /// <c>encode</c> gives.
+    /// </summary>
+    let internal dumpTextEncoded
+        (encode: (obj -> TracePayload) option)
+        (target: string)
+        (checkpoint: string)
+        (before: TraceSnapshot)
+        (events: TraceEvent[])
+        : string =
+        dumpHeader encode target checkpoint before events
+        + eventLines encode events
 
     /// <summary>
     /// The JSONL dump: a header, the snapshot holding <c>before</c>, then one line per event. Timed nodes select schema 2.
@@ -2319,7 +2350,10 @@ module TraceModel =
         | TracePayload.Encoded (_, _, data) -> data
         | TracePayload.Lossy text -> text
 
-    /// <summary>The header, snapshot and events of a JSONL dump in schema 1, 2 or 3.</summary>
+    /// <summary>
+    /// The header, snapshot, events and gaps of a JSONL dump in schema 1, 2 or 3. A gap line is
+    /// <c>{"gap":{"from":F,"to":T}}</c>.
+    /// </summary>
     /// <exception cref="T:System.FormatException">The text is not a supported trace dump.</exception>
     let parseDump (text: string) : TraceDump =
         let lines = text.Split ([| '\n' |], StringSplitOptions.RemoveEmptyEntries)
@@ -2431,9 +2465,21 @@ module TraceModel =
                     |> Map.ofList
             }
 
+        let isGap (line: string) =
+            line.StartsWith "{\"gap\":"
+
+        let gaps =
+            [
+                for line in lines[2..] do
+                    if isGap line then
+                        use doc = Text.Json.JsonDocument.Parse line
+                        let g = doc.RootElement.GetProperty "gap"
+                        int' g "from", int' g "to"
+            ]
+
         let parsed =
             [|
-                for line in lines[2..] ->
+                for line in lines[2..] |> Array.filter (isGap >> not) ->
                     use doc = Text.Json.JsonDocument.Parse line
                     let e = doc.RootElement
                     let kind = Enum.Parse<TraceEventKind>(str e "kind")
@@ -2488,5 +2534,6 @@ module TraceModel =
             SeqFrom = int' h "seqFrom"
             Snapshot = snapshot
             Events = Array.map fst parsed
+            Gaps = gaps
         }
 #endif

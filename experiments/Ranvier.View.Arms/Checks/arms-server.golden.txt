@@ -53,15 +53,57 @@ forms|big|ceae8987|<!--[r--><div><!--[a:15178f24--><i>big</i><!--]--></div><!--]
 forms|zero|ceae8987|<!--[r--><div><!--[a:867a2172--><pre>x!</pre><!--]--></div><!--]-->
 forms|three|ceae8987|<!--[r--><div><!--[a:867a2172--><pre>y</pre><!--]--></div><!--]-->
 forms|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+functions|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+functions|Loading 0|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+functions|Loading 40|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+functions|Loaded done 3|ceae8987|<!--[r--><div><!--[a:7f75a908--><b title="title done3">done3</b><!--]--></div><!--]-->
+functions|Loaded none 0|ceae8987|<!--[r--><div><!--[a:7f75a908--><b title="title none0">none0</b><!--]--></div><!--]-->
+functions|Loaded big 120|ceae8987|<!--[r--><div><!--[a:7f75a908--><b title="title big120">big120</b><!--]--></div><!--]-->
 helper|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
 helper|Loading 0|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
 helper|Loading 40|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
 helper|Loaded done 3|ceae8987|<!--[r--><div><!--[a:5f86489d--><b class="label">done</b><!--]--></div><!--]-->
 helper|Loaded none 0|ceae8987|<!--[r--><div><!--[a:5f86489d--><b class="label">none</b><!--]--></div><!--]-->
 helper|Loaded big 120|ceae8987|<!--[r--><div><!--[a:5f86489d--><b class="label">big</b><!--]--></div><!--]-->
+spliced|Idle|ceae8987|<!--[r--><div><!--[a:85e1c4d2--><i class="badge">none</i><!--]--></div><!--]-->
+spliced|Loading 0|ceae8987|<!--[r--><div><!--[a:85e1c4d2--><i class="badge">none</i><!--]--></div><!--]-->
+spliced|Loading 40|ceae8987|<!--[r--><div><!--[a:85e1c4d2--><i class="badge">none</i><!--]--></div><!--]-->
+spliced|Loaded done 3|ceae8987|<!--[r--><div><!--[a:3fe0c829--><span><b class="label">done</b><i class="badge">3</i></span><!--]--></div><!--]-->
+spliced|Loaded none 0|ceae8987|<!--[r--><div><!--[a:3fe0c829--><span><b class="label">none</b><i class="badge">0</i></span><!--]--></div><!--]-->
+spliced|Loaded big 120|ceae8987|<!--[r--><div><!--[a:3fe0c829--><span><b class="label">big</b><i class="badge">120</i></span><!--]--></div><!--]-->
+locals|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+locals|Loading 0|ceae8987|<!--[r--><div><!--[a:867a2172--><pre>0-</pre><!--]--></div><!--]-->
+locals|Loading 40|ceae8987|<!--[r--><div><!--[a:867a2172--><pre>40-</pre><!--]--></div><!--]-->
+locals|Loaded done 3|ceae8987|<!--[r--><div><!--[a:8255ee02--><pre>donedone3<!--!-->donedone3?</pre><!--]--></div><!--]-->
+locals|Loaded none 0|ceae8987|<!--[r--><div><!--[a:02ddc88c--><span>nonenone0<!--!-->nonenone0!</span><!--]--></div><!--]-->
+locals|Loaded big 120|ceae8987|<!--[r--><div><!--[a:8255ee02--><pre>bigbig120<!--!-->bigbig120?</pre><!--]--></div><!--]-->
+locals|Loaded one 1|ceae8987|<!--[r--><div><!--[a:867a2172--><pre>oneone1,one1</pre><!--]--></div><!--]-->
+statused|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+statused|Loading 0|ceae8987|<!--[r--><div><!--[a:96947741--><b class="status">0-<!--!-->-</b><!--]--></div><!--]-->
+statused|Loading 40|ceae8987|<!--[r--><div><!--[a:96947741--><b class="status">40-<!--!-->-</b><!--]--></div><!--]-->
+statused|Loaded done 3|ceae8987|<!--[r--><div><!--[a:2376419a--><span><b class="status">done<!--!-->done3</b></span><!--]--></div><!--]-->
+statused|Loaded none 0|ceae8987|<!--[r--><div><!--[a:2376419a--><span><b class="status">none<!--!-->none0</b></span><!--]--></div><!--]-->
+statused|Loaded big 120|ceae8987|<!--[r--><div><!--[a:2376419a--><span><b class="status">big<!--!-->big120</b></span><!--]--></div><!--]-->
+carded|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+carded|Loading 0|ceae8987|<!--[r--><div><!--[a:921a1e81--><section><b class="card"><pre>0</pre></b></section><!--]--></div><!--]-->
+carded|Loading 40|ceae8987|<!--[r--><div><!--[a:921a1e81--><section><b class="card"><pre>40</pre></b></section><!--]--></div><!--]-->
+carded|Loaded done 3|ceae8987|<!--[r--><div><!--[a:daa5d5a4--><b class="card"><span>donedone3</span></b><!--]--></div><!--]-->
+carded|Loaded none 0|ceae8987|<!--[r--><div><!--[a:da67b944--><b class="card"><span>nonenone0<!--!-->nonenone0!<i>none</i><i>none</i></span></b><!--]--></div><!--]-->
+carded|Loaded big 120|ceae8987|<!--[r--><div><!--[a:daa5d5a4--><b class="card"><span>bigbig120</span></b><!--]--></div><!--]-->
+rowed|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+rowed|Loading 0|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+rowed|Loading 40|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+rowed|Loaded done 3|ceae8987|<!--[r--><div><!--[a:b3f18cda--><section><span>donea</span><span>doneb</span></section><!--]--></div><!--]-->
+rowed|Loaded none 0|ceae8987|<!--[r--><div><!--[a:b3f18cda--><section><span>nonea</span><span>noneb</span></section><!--]--></div><!--]-->
+rowed|Loaded big 120|ceae8987|<!--[r--><div><!--[a:b3f18cda--><section><span>biga</span><span>bigb</span></section><!--]--></div><!--]-->
 nested|Loaded open|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:867a2172--><pre>t</pre><!--]--></section><!--]--></div><!--]-->
 nested|Loaded closed|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:bce67bf0--><span>closed</span><!--]--></section><!--]--></div><!--]-->
 nested|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
+deep|Loaded 1 open|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:7a0b543b--><article><!--[a:a825adf2--><pre>t<!--!--> <!--!-->t1<!--!--> <!--!-->t1</pre><!--]--></article><!--]--></section><!--]--></div><!--]-->
+deep|Loaded 2 open|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:7a0b543b--><article><!--[a:a825adf2--><pre>u<!--!--> <!--!-->u2<!--!--> <!--!-->u2</pre><!--]--></article><!--]--></section><!--]--></div><!--]-->
+deep|Loaded 1 closed|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:7a0b543b--><article><!--[a:bce67bf0--><span>closed</span><!--]--></article><!--]--></section><!--]--></div><!--]-->
+deep|Loaded 0|ceae8987|<!--[r--><div><!--[a:2975b6a7--><section><!--[a:152611e6--><span>zero</span><!--]--></section><!--]--></div><!--]-->
+deep|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
 editor|Loaded|ceae8987|<!--[r--><div><!--[a:960f8b0a--><button>draft</button><!--]--></div><!--]-->
 editor|Idle|ceae8987|<!--[r--><div><!--[a:fddcd338--><span>Other</span><!--]--></div><!--]-->
 values|ratio|ceae8987|<!--[r--><div><!--[a:7f75a908--><b>1.5</b><!--]--></div><!--]-->

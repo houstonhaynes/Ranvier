@@ -123,6 +123,22 @@ let tests =
                 Expect.exists dump.Events (fun e -> e.Kind = TraceEventKind.TimedState) "a timed state event"
             }
 
+            test "dumpHeader and eventLines concatenate to dumpTextWith for a timed node" {
+                let encode = Some (TraceCodecs.encode codecs)
+
+                let whole, expected =
+                    timedOf (fun g ->
+                        let checkpoint = Trace.checkpointOf g
+                        let events = Trace.events g
+
+                        TraceModel.dumpHeader encode "net" checkpoint.Name checkpoint.Snapshot events
+                        + TraceModel.eventLines encode events,
+                        Trace.dumpTextWith g codecs)
+
+                Expect.stringContains expected "\"remaining\":" "a timed state line"
+                Expect.equal whole expected "the concatenation"
+            }
+
             test "each contract document writes its committed fixture byte for byte" {
                 for name, text, _ in documentsOf () do
                     matchesFixture name text

@@ -12,7 +12,7 @@
     "dev:test": "vite --host 127.0.0.1 --port 5178 --strictPort",
     "build": "npm run compile && vite build",
     "test:dom": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS && node --test tests/dom.test.mjs tests/scheduled.test.mjs tests/lifetime.test.mjs tests/representation.test.mjs tests/component.test.mjs tests/binding.test.mjs tests/mounting-investigation.test.mjs tests/integration.test.mjs tests/server.test.mjs tests/sugar-server.test.mjs tests/sugar-emit.test.mjs tests/sugar-release.test.mjs tests/elmish-nested.test.mjs tests/sugar-rows.test.mjs benchmarks/frameworks/gates.test.mjs tests/conformance.test.mjs tests/conformance-diff.test.mjs tests/conformance-host.test.mjs tests/restructured.test.mjs",
-    "test:arms": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS && node --test tests/arms-server.test.mjs tests/arms.test.mjs tests/arms-hydration.test.mjs && node tests/sugar-counters-build.mjs && node --test tests/arms-counters.test.mjs",
+    "test:arms": "npm run compile:tests -- --define RANVIER_VIEW_COUNTERS && node --test tests/arms-server.test.mjs tests/arms.test.mjs tests/arms-hydration.test.mjs benchmarks/frameworks/run-sources.test.mjs && node tests/sugar-counters-build.mjs && node --test tests/arms-counters.test.mjs",
     "test:sugar-counters": "node tests/sugar-counters-build.mjs && node --test tests/sugar-counters.test.mjs",
     "test:sugar-debug": "npm run compile:tests && node tests/arms-fresh.mjs generated-tests-debug Debug && node --test tests/sugar-debug.test.mjs tests/arms-debug.test.mjs",
     "test:browser": "npm run compile:tests && npm run compile && playwright test",

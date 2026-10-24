@@ -117,3 +117,38 @@ let failing =
                 | _ -> span () { "Other" }
             )
         })
+
+let private badge: TemplateView<Signal<Load>> =
+    i () { fun (state: Signal<Load>) -> string state.Value }
+
+/// <summary>A helper view value spliced inside a case body and as a whole case body.</summary>
+let spliced =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, _) ->
+                    span () {
+                        fun _ -> text
+                        badge
+                    }
+                | _ -> badge
+            )
+        })
+
+/// <summary>A function over the instance bound in a case body, applied inside a reader to the reader's instance.</summary>
+let locals =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, _) ->
+                    let label (s: Signal<Load>) = text + string s.Value
+                    pre () { fun (s: Signal<Load>) -> label s }
+                | _ -> span () { "Other" }
+            )
+        })

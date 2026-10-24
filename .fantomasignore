@@ -7,3 +7,5 @@ docs/samples/
 experiments/Ranvier.View.Arms.FablePlugin/Tests/Fixtures/
 experiments/Ranvier.View.Arms.FablePlugin/Tests/NoTargets/
 experiments/Ranvier.View.Twin/Generated/
+# The docs build and the maps tests write generated, gitignored output there.
+docs/.nacara/

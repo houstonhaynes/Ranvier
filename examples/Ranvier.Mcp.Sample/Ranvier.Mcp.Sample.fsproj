@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Tailcalls>false</Tailcalls>
+        <IsPackable>false</IsPackable>
+        <RootNamespace>Ranvier.Mcp.Sample</RootNamespace>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="Cart.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../src/Ranvier.Mcp/Ranvier.Mcp.fsproj" />
+    </ItemGroup>
+</Project>

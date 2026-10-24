@@ -49,6 +49,27 @@ public class TracingTests
     }
 
     [Fact]
+    public void ExportStreamsTheDumpTextToAMemorySink()
+    {
+        var graph = new Graph();
+        using var active = graph.Activate();
+        var count = Signal(1);
+        var codecs = Tracing.Codecs();
+        var sink = Tracing.MemorySink();
+        var export = Tracing.Export(graph, sink, 64, TraceExportFull.Wait, TraceExportCheckpoint.Never, codecs);
+
+        count.Value = 2;
+        count.Value = 3;
+        var expected = Tracing.DumpText(graph, codecs);
+        export.Dispose();
+
+        Assert.True(export.Completion.IsCompletedSuccessfully);
+        Assert.Equal(expected, sink.Text);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Tracing.Export(graph, sink, 0, TraceExportFull.Drop, TraceExportCheckpoint.Enqueued, codecs));
+    }
+
+    [Fact]
     public void OriginNamesTheLabelAndTheCallersFile()
     {
         var graph = new Graph();

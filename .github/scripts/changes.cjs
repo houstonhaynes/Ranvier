@@ -1,7 +1,8 @@
 // Paths whose changes affect no build, test or measurement. The package READMEs of Ranvier.View and Ranvier.View.Anime and the analyzer rule pages are the exceptions: CheckDocs compiles the Ranvier.View README's samples, readme.test.mjs matches the Ranvier.View.Anime README's samples against its fixtures, and the analyzer suite compiles each rule page's examples. Formatting still checks the F# sources under docs/.
 // docs/maps holds the signal map model and its tests; docs/samples/server-backends holds compiled server examples.
+// docs/research/arms-match and docs/.ai/benchmarks/arms-* hold the committed Arms.Match runs that the Arms.Match job gates.
 const docsPatterns = [
-  /^docs\/(?!maps\/|content\/analyzers\/|samples\/server-backends\/)/,
+  /^docs\/(?!maps\/|content\/analyzers\/|samples\/server-backends\/|research\/arms-match\/|\.ai\/benchmarks\/arms-)/,
   /^brand\//,
   /^\.claude\//,
   /^(?!src\/Ranvier\.View(\.Anime)?\/README\.md$|docs\/content\/analyzers\/).*\.md$/i,
@@ -16,11 +17,13 @@ function docsOnly(paths) {
 }
 
 // Paths the Arms.Match job builds or measures: the view and core sources it compiles, the Playground's tests and
-// benchmark scripts, the toolchain pins and the workflow.
+// benchmark scripts, the committed runs its budget gate reads, the toolchain pins and the workflow.
 const armsPatterns = [
   /^experiments\/Ranvier\.View/,
   /^src\/Ranvier(\.View[^/]*)?\//,
   /^examples\/Fable\.Ranvier\.Playground\//,
+  /^docs\/research\/arms-match\//,
+  /^docs\/\.ai\/benchmarks\/arms-/,
   /^\.config\/dotnet-tools\.json$/,
   /^global\.json$/,
   /^Directory\.(Build|Packages)\.(props|targets)$/,
@@ -31,6 +34,32 @@ const armsPatterns = [
 function armsAffected(paths) {
   const files = (paths ?? []).map(p => p.trim()).filter(Boolean);
   return files.length === 0 || files.some(file => armsPatterns.some(pattern => pattern.test(file)));
+}
+
+// Paths that own the committed Chromium runs of Arms.Match: the lowering and its plugin, the gate scripts, the keyed-rows
+// benchmark and its Arms.Match fixture, the runs themselves and the workflow. A change to the core, the view or the
+// Playground's lock file also changes a hashed source, and its runs are recorded with the next change to these paths.
+const armsRunsPatterns = [
+  /^experiments\/Ranvier\.View\.Arms/,
+  /^examples\/Fable\.Ranvier\.Playground\/benchmarks\/frameworks\//,
+  /^examples\/Fable\.Ranvier\.Playground\/tests\/KeyedRows[^/]*Perf\.fs$/,
+  /^docs\/research\/arms-match\//,
+  /^docs\/\.ai\/benchmarks\/arms-/,
+  /^\.github\/(workflows\/ci\.yml|scripts\/changes\.cjs)$/,
+];
+
+// True when a path touches what the committed Chromium runs measure; an empty or missing list is true.
+function armsRunsAffected(paths) {
+  const files = (paths ?? []).map(p => p.trim()).filter(Boolean);
+  return files.length === 0 || files.some(file => armsRunsPatterns.some(pattern => pattern.test(file)));
+}
+
+// The job outputs for a diff: docs is true when every path is documentation, arms when the Arms.Match job runs, and
+// armsRuns when that job checks the committed Chromium runs against their budgets.
+function classify(paths) {
+  const docs = docsOnly(paths);
+  const arms = !docs && armsAffected(paths);
+  return { docs, arms, armsRuns: arms && armsRunsAffected(paths) };
 }
 
 const zero = /^0{40}$/;
@@ -44,22 +73,22 @@ function range({ eventName, before, after, base, head }) {
   return null;
 }
 
-module.exports = { docsOnly, armsAffected, range };
+module.exports = { docsOnly, armsAffected, armsRunsAffected, classify, range };
 
 if (require.main === module) {
-  // node changes.cjs <event> <from> <to>: prints docs=true|false and arms=true|false for $GITHUB_OUTPUT.
+  // node changes.cjs <event> <from> <to>: prints docs, arms and armsRuns, each true or false, for $GITHUB_OUTPUT.
   const { execFileSync } = require('node:child_process');
   const [eventName, from, to] = process.argv.slice(2);
   const r = range(eventName === 'pull_request' ? { eventName, base: from, head: to } : { eventName, before: from, after: to });
-  let docs = false, arms = true;
+  let docs = false, arms = true, armsRuns = true;
   if (r) {
     const base = eventName === 'pull_request'
       ? execFileSync('git', ['merge-base', r.from, r.to], { encoding: 'utf8' }).trim()
       : r.from;
     const paths = execFileSync('git', ['diff', '--name-only', '--no-renames', base, r.to], { encoding: 'utf8' }).split('\n');
-    docs = docsOnly(paths);
-    arms = !docs && armsAffected(paths);
+    ({ docs, arms, armsRuns } = classify(paths));
   }
   console.log(`docs=${docs}`);
   console.log(`arms=${arms}`);
+  console.log(`armsRuns=${armsRuns}`);
 }

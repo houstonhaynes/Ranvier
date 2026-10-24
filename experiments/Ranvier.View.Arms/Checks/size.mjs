@@ -7,9 +7,11 @@
 // - quotation: the unminified Arms.Match entry holds no quotation code;
 // - helpers: the unminified Arms.Match entry, from its first Ranvier.View.Arms module to its end (the entry module), holds
 //   no curry, uncurry or partialApply.
+// - cells: the Fable output holds no Ranvier.View.Arms Cells module, and the unminified Arms.Match entry holds none and no
+//   WeakMap (payload-direct sites hold no lookup state).
 // Exits 1 on a breach. Writes docs/research/arms-match/bundle.json.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { gzipSync, brotliCompressSync, constants } from "node:zlib";
 
 const here = new URL("./", import.meta.url);
@@ -51,6 +53,7 @@ const quotation = /quotation/i.test(matchUnminified);
 // The entry module carries no region of its own: the bundle ends with it, after the Ranvier.View.Arms regions.
 const firstArms = matchUnminified.search(/\/\/#region [^\n]*Ranvier\.View\.Arms\//);
 if (firstArms < 0) throw Error("The unminified Arms.Match entry holds no Ranvier.View.Arms region");
+const cells = { compiledModule: existsSync(new URL(`${generated}/experiments/Ranvier.View.Arms/Cells.js`, playground)), cellsModule: /\/\/#region [^\n]*Ranvier\.View\.Arms\/[^\n]*Cells\.js/.test(matchUnminified), weakMap: /\bWeakMap\b/.test(matchUnminified.slice(firstArms)) };
 const helpers = { count: (matchUnminified.slice(firstArms).match(/\b(curry\d*|uncurry\d*|partialApply)\b/g) ?? []).length };
 
 const result = {
@@ -60,9 +63,10 @@ const result = {
   perSite: { deltaGzip: perSite, budgetGzip: 60, withinBudget: perSite <= 60 },
   plain: { matchEntryHoldsArmsModule: armsModule.test(matchUnminified), plainHoldsArmsModule: plainHoldsArms, withinBudget: armsModule.test(matchUnminified) && !plainHoldsArms },
   quotation: { present: quotation, withinBudget: !quotation },
-  helpers: { ...helpers, withinBudget: helpers.count === 0 }
+  helpers: { ...helpers, withinBudget: helpers.count === 0 },
+  cells: { ...cells, withinBudget: !cells.compiledModule && !cells.cellsModule && !cells.weakMap }
 };
 mkdirSync(new URL("./", output), { recursive: true });
 writeFileSync(output, JSON.stringify(result, null, 2) + "\n");
 console.log(JSON.stringify(result, null, 2));
-if (["one", "perSite", "plain", "quotation", "helpers"].some(key => !result[key].withinBudget)) process.exitCode = 1;
+if (["one", "perSite", "plain", "quotation", "helpers", "cells"].some(key => !result[key].withinBudget)) process.exitCode = 1;

@@ -59,11 +59,33 @@ let private twiceShown queued () =
     equal "e x5" (textOf third "pre")
     c.Dispose ()
 
-/// <summary>A reader with no arm for its instance raises AM006: the full text in Debug, the short text in Release.</summary>
+// Rows whose item type is the instance type: the row reader is rewritten as a reader of the site and receives the row
+// item (spec Risk 3).
+let private itemRows =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Loaded (text, _) ->
+                    ul () {
+                        // The row item is the instance: the fixture covers a reader that receives the row item.
+                        // fsharpanalyzer: ignore-line-next RAN021
+                        forEachFixed id (fun (state: Signal<Load>) -> [| state |]) (li () { fun (_: Signal<Load>) -> text })
+                    }
+                | _ -> span () { "Other" }
+            )
+        })
+
+/// <summary>A reader that receives a value other than its arm's values raises AM006: the full text in Debug, the short text in Release.</summary>
 let private noArm () =
     let message =
         try
-            Cells.values (Cells.create ()) (obj ()) 0
+            use graph = new Graph ()
+            let state = graph.Run (fun () -> Api.createSignal (Loaded ("a", 1)))
+
+            Server.render Server.Options.defaults itemRows state
             |> ignore
 
             ""
@@ -134,7 +156,13 @@ let private traces queued () =
             tupledTwin, tupled
             wholeTwin, whole
             formsTwin, forms
+            functionsTwin, functions
             helperTwin, helper
+            splicedTwin, spliced
+            localsTwin, locals
+            statusedTwin, statused
+            cardedTwin, carded
+            rowedTwin, rowed
         ] do
         pair queued initial (Component.render twin) (Component.render site) loadWrites
 
@@ -162,6 +190,29 @@ let private valueTraces queued () =
         ]
 
     pair queued make (Component.render valuesTwin) (Component.render values) steps
+
+/// <summary>Three nested sites over one instance follow writes to each site's source as their twin does.</summary>
+let private deepTrace queued () =
+    let make (graph: Graph) =
+        graph.Run (fun () ->
+            ({
+                State = Api.createSignal (Loaded ("t", 1))
+                Mode = Api.createSignal 1
+                Open = Api.createSignal true
+            }
+            : Deck))
+
+    pair queued make (Component.render deepTwin) (Component.render deep) (fun deck ->
+        [
+            Write (fun () -> deck.State.Value <- Loaded ("u", 2))
+            Write (fun () -> deck.Mode.Value <- 2)
+            Write (fun () -> deck.Open.Value <- false)
+            Write (fun () -> deck.Open.Value <- true)
+            Write (fun () -> deck.Mode.Value <- 0)
+            Write (fun () -> deck.Mode.Value <- 3)
+            Write (fun () -> deck.State.Value <- Idle)
+            Write (fun () -> deck.State.Value <- Loaded ("v", 1))
+        ])
 
 let private editorState (graph: Graph) =
     graph.Run (fun () ->
@@ -383,6 +434,25 @@ let private hydratesLine (fixture: string) (state: string) (served: string) () =
     equal [ "adopted=true"; "insertions=[]" ] [ twin.Head; List.last twin ]
     equal twin site
 
+/// <summary>
+/// The hand-lowered array loader hydrates a loader golden line's .NET server HTML under Strict and leaves the markup the
+/// Arms.Match loader and its twin leave.
+/// </summary>
+let private arrayHydratesLine (state: string) (served: string) () =
+    let case =
+        arrayShape
+        |> List.find (fun case -> case.State = state)
+
+    let matched =
+        all
+        |> List.find (fun other -> other.Fixture = "loader" && other.State = state)
+
+    let array, _ = case.Run (strictRunner served)
+    let site, twin = matched.Run (strictRunner served)
+
+    equal [ "adopted=true"; "insertions=[]" ] [ array.Head; List.last array ]
+    equal (twin, twin) (site, array)
+
 let private loadFixtures =
     [
         "loader", loader, loaderTwin
@@ -391,7 +461,13 @@ let private loadFixtures =
         "rowsTuple", rowsTuple, rowsTupleTwin
         "tupled", tupled, tupledTwin
         "whole", whole, wholeTwin
+        "functions", functions, functionsTwin
         "helper", helper, helperTwin
+        "spliced", spliced, splicedTwin
+        "locals", locals, localsTwin
+        "statused", statused, statusedTwin
+        "carded", carded, cardedTwin
+        "rowed", rowed, rowedTwin
     ]
 
 let private laterWrites = [ Loaded ("later", 4); Loading 5; Loaded ("again", 1) ]
@@ -496,6 +572,12 @@ let hydrations (lines: (string * string * string) array) =
                         sprintf "%s %s hydrates its .NET server HTML under Strict like its twin" fixture state, hydratesLine fixture state served
                 |]
                 [|
+                    for fixture, state, served in lines do
+                        if fixture = "loader" then
+                            sprintf "the hand-lowered array loader hydrates loader %s under Strict like Arms.Match" state,
+                            arrayHydratesLine state served
+                |]
+                [|
                     for name, site, twin in loadFixtures do
                         let served = servedOf name
                         sprintf "%s hydrates Loaded done 3 under Strict and updates like its twin" name, hydratesThenWrites site twin served
@@ -533,11 +615,41 @@ let private held =
             )
         })
 
+/// <summary>A helper over the concrete instance type whose root is the view built in a case body.</summary>
+let private framed (content: TemplateView<Signal<Load>>) : TemplateView<Signal<Load>> = content
+
+/// <summary>The site of <c>held</c> with its Loaded body passed to the concrete helper <c>framed</c>.</summary>
+let private heldFramed =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Loaded (text, count) ->
+                    framed (
+                        pre (
+                            Hooks.exit (
+                                Func<_, _, _, _>(fun (_: Signal<Load>) (_: HTMLPreElement) finish ->
+                                    exitReads.Add (text, count)
+                                    finishes.Add finish
+                                    ignore)
+                            )
+                        ) {
+                            fun _ -> text
+                            " x"
+                            fun _ -> string count
+                        }
+                    )
+                | _ -> span () { "Other" }
+            )
+        })
+
 /// <summary>
 /// The exit of an outgoing arm, run after the arm's cleanup, reads its own case's values, also while another arm of the
 /// same target is live (Testing 9).
 /// </summary>
-let private heldExit queued () =
+let private heldExit (held: Component<Signal<Load>>) queued () =
     finishes.Clear ()
     exitReads.Clear ()
     use graph = new Graph ()
@@ -559,6 +671,116 @@ let private heldExit queued () =
 
     mounted.Flush ()
     equal (null, "Other") (textOf target "pre", textOf target "span")
+    mounted.Dispose ()
+
+/// <summary>One site per keyed row whose Loaded body holds its root on exit until <c>finish</c> runs.</summary>
+let private heldRows =
+    Component.template
+        (fun _ (rows: Signal<Row array>) -> rows)
+        (ul () {
+            forEachFixed
+                (fun (row: Row) -> row.Id)
+                (fun (rows: Signal<Row array>) -> rows.Value)
+                (li () {
+                    Arms.Match (
+                        (fun (row: Row) -> row.State.Value),
+                        function
+                        | Loaded (text, count) ->
+                            pre (
+                                Hooks.exit (
+                                    Func<_, _, _, _>(fun (_: Row) (_: HTMLPreElement) finish ->
+                                        exitReads.Add (text, count)
+                                        finishes.Add finish
+                                        ignore)
+                                )
+                            ) {
+                                fun _ -> text
+                                " x"
+                                fun _ -> string count
+                            }
+                        | _ -> span () { "Other" }
+                    )
+                })
+        })
+
+/// <summary>A helper over the concrete row type whose root is the view built in a case body.</summary>
+let private rowFramed (content: TemplateView<Row>) : TemplateView<Row> = content
+
+/// <summary>The rows of <c>heldRows</c> with each Loaded body passed to the concrete helper <c>rowFramed</c>.</summary>
+let private heldRowsFramed =
+    Component.template
+        (fun _ (rows: Signal<Row array>) -> rows)
+        (ul () {
+            forEachFixed
+                (fun (row: Row) -> row.Id)
+                (fun (rows: Signal<Row array>) -> rows.Value)
+                (li () {
+                    Arms.Match (
+                        (fun (row: Row) -> row.State.Value),
+                        function
+                        | Loaded (text, count) ->
+                            rowFramed (
+                                pre (
+                                    Hooks.exit (
+                                        Func<_, _, _, _>(fun (_: Row) (_: HTMLPreElement) finish ->
+                                            exitReads.Add (text, count)
+                                            finishes.Add finish
+                                            ignore)
+                                    )
+                                ) {
+                                    fun _ -> text
+                                    " x"
+                                    fun _ -> string count
+                                }
+                            )
+                        | _ -> span () { "Other" }
+                    )
+                })
+        })
+
+/// <summary>
+/// A held arm of a keyed row reads its own row's values while another row's payload changes and its own row remounts the
+/// same target (Testing 9).
+/// </summary>
+let private heldRowReadsOwnRow (heldRows: Component<Signal<Row array>>) queued () =
+    finishes.Clear ()
+    exitReads.Clear ()
+    use graph = new Graph ()
+
+    let rows =
+        graph.Run (fun () ->
+            Api.createSignal
+                [|
+                    for id, text in [ 1, "a"; 2, "b" ] ->
+                        {
+                            Id = id
+                            State = Api.createSignal (Loaded (text, id))
+                        }
+                |])
+
+    let target = host ()
+
+    let mounted =
+        mountTemplate queued graph strict target (Component.render heldRows rows)
+
+    mounted.Flush ()
+    equal [| "a x1"; "b x2" |] (textsOf target "pre")
+    write graph [ mounted ] (fun () -> rows.Value[0].State.Value <- Idle)
+    equal ([ "a", 1 ], [| "a x1"; "b x2" |], [| "Other" |]) (List.ofSeq exitReads, textsOf target "pre", textsOf target "span")
+    write graph [ mounted ] (fun () -> rows.Value[1].State.Value <- Loaded ("c", 3))
+    equal [| "a x1"; "c x3" |] (textsOf target "pre")
+    write graph [ mounted ] (fun () -> rows.Value[0].State.Value <- Loaded ("d", 4))
+    equal [| "a x1"; "c x3"; "d x4" |] (Array.sort (textsOf target "pre"))
+    write graph [ mounted ] (fun () -> rows.Value[1].State.Value <- Idle)
+    equal ([ "a", 1; "c", 3 ], [| "a x1"; "c x3"; "d x4" |]) (List.ofSeq exitReads, Array.sort (textsOf target "pre"))
+    let pending = List.ofSeq finishes
+    finishes.Clear ()
+
+    for finish in pending do
+        finish ()
+
+    mounted.Flush ()
+    equal [| "d x4"; "Other" |] (rowTexts target)
     mounted.Dispose ()
 
 [<Emit("$0.querySelectorAll($1).length")>]
@@ -675,6 +897,31 @@ let private exitOnly =
             )
         })
 
+/// <summary>The site of <c>exitOnly</c> with its Loaded body passed to the concrete helper <c>framed</c>.</summary>
+let private exitOnlyFramed =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Loaded (text, count) ->
+                    framed (
+                        pre (
+                            Hooks.exit (
+                                Func<_, _, _, _>(fun (_: Signal<Load>) (_: HTMLPreElement) finish ->
+                                    exitOnlyReads.Add (sprintf "%s %d" text count)
+                                    finish ()
+                                    ignore)
+                            )
+                        ) {
+                            "held"
+                        }
+                    )
+                | _ -> span () { "Other" }
+            )
+        })
+
 let private exitOnlyLoaded =
     armOf (
         pre (
@@ -724,6 +971,7 @@ let private exitOnlyReadsOwnCase queued () =
     let twin = exitReadsOf queued exitOnlyTwin
     equal [ "b 2"; "c 3" ] twin
     equal twin (exitReadsOf queued exitOnly)
+    equal twin (exitReadsOf queued exitOnlyFramed)
 
 let private handlerClicks = ResizeArray<string>()
 let private handlerHolds = ResizeArray<unit -> unit>()
@@ -750,6 +998,31 @@ let private handlerOnly =
                     ) {
                         "go"
                     }
+                | _ -> span () { "Other" }
+            )
+        })
+
+/// <summary>The site of <c>handlerOnly</c> with its Loaded body passed to the concrete helper <c>framed</c>.</summary>
+let private handlerOnlyFramed =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                (fun (state: Signal<Load>) -> state.Value),
+                function
+                | Loaded (text, count) ->
+                    framed (
+                        button (
+                            Events.onClick (fun (_: Signal<Load>) _ -> handlerClicks.Add (sprintf "%s %d" text count)),
+                            Hooks.exit (
+                                Func<_, _, _, _>(fun (_: Signal<Load>) (_: HTMLButtonElement) finish ->
+                                    handlerHolds.Add finish
+                                    ignore)
+                            )
+                        ) {
+                            "go"
+                        }
+                    )
                 | _ -> span () { "Other" }
             )
         })
@@ -813,6 +1086,7 @@ let private handlerOnlyReadsOwnCase queued () =
     let twin = clicksOf queued handlerTwin
     equal [ []; [ "b 2" ]; [] ] twin
     equal twin (clicksOf queued handlerOnly)
+    equal twin (clicksOf queued handlerOnlyFramed)
 
 let cases: (string * (unit -> unit)) array =
     strictCases (
@@ -821,15 +1095,21 @@ let cases: (string * (unit -> unit)) array =
                 templated "one site shown twice for one instance reads live values through either disposal" twiceShown
                 templated "an arm hidden and shown again follows later writes" remountAfterHide
                 templated "Arms.Prepare returns under Fable" prepares
-                [| "a reader with no arm for its instance raises AM006", noArm |]
+                [|
+                    "a row reader over the instance type that receives its row item raises AM006", noArm
+                |]
                 templated "each Load fixture's nine-step trace equals its twin's" traces
                 templated "value-type payload fields equal their twin" valueTraces
+                templated "three nested sites' trace equals its twin's" deepTrace
                 templated "an event handler reads its arm's payload at event time" eventsReadLatest
                 templated "an event handler's trace equals its twin's" editorTrace
                 templated "rows fed by the items reader keep their elements across payload updates" rowsKeep
                 templated "one site per keyed row follows its own row through a reorder" siteInRows
                 templated "a batch that leaves a target and returns to it shows the last payload" switchBackInOneBatch
-                templated "an outgoing arm's exit reads its own case's values after the arm's cleanup" heldExit
+                templated "an outgoing arm's exit reads its own case's values after the arm's cleanup" (heldExit held)
+                templated "an outgoing arm's exit inside a concrete helper reads its own case's values after the arm's cleanup" (heldExit heldFramed)
+                templated "a held arm of a keyed row reads its own row's values" (heldRowReadsOwnRow heldRows)
+                templated "a held arm of a keyed row inside a concrete helper reads its own row's values" (heldRowReadsOwnRow heldRowsFramed)
                 templated "a source read inside a boundary pends, settles and fails as its twin does" pendingSource
                 templated "an arm read only by its exit reads its own case's latest values" exitOnlyReadsOwnCase
                 templated "an arm read only by a click handler reads its own case's values through a remount" handlerOnlyReadsOwnCase

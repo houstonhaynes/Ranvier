@@ -181,6 +181,7 @@ let cases () : (string * string * obj) list =
                 Snapshot = snapshot
                 Events = [||]
                 Payloads = [||]
+                Gaps = []
             }
         "timing",
         "{ Mode = \"debounce\"\n  CapturedStatus = "

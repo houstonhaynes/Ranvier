@@ -287,4 +287,36 @@ type Tracing =
     /// <exception cref="T:System.ArgumentException"><c>path</c> is unknown to <c>graph</c>'s log.</exception>
     static member WaitingDocument(graph: Graph, path: string) : string =
         Tracing.WaitingDocument (graph, Tracing.At (graph, path))
+
+    /// <summary>
+    /// Starts exporting <c>graph</c>'s log to <c>sink</c>: the header of its checkpoint and its retained events now,
+    /// then the events of each flush when it ends, as schema 3 dump lines.
+    /// </summary>
+    /// <remarks>
+    /// <c>capacity</c> bounds the events queued for the sink. A full queue waits under <c>TraceExportFull.Wait</c>, and
+    /// under <c>TraceExportFull.Drop</c> drops the batch and records its seqs in a gap line. <c>checkpoint</c> sets
+    /// when the export checkpoints the log at the exported events. Dispose the export to end the stream.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentOutOfRangeException"><c>capacity</c> is less than 1.</exception>
+    /// <exception cref="T:System.InvalidOperationException">As for <c>DumpText</c>.</exception>
+    static member Export
+        (graph: Graph, sink: ITraceSink, capacity: int, full: TraceExportFull, checkpoint: TraceExportCheckpoint, codecs: TraceCodecs)
+        : TraceExport =
+        Trace.export
+            graph
+            sink
+            {
+                Capacity = capacity
+                Full = full
+                Checkpoint = checkpoint
+                Codecs = codecs
+            }
+
+    /// <summary>An empty <c>MemoryTraceSink</c> named <c>memory</c>.</summary>
+    static member MemorySink() : MemoryTraceSink =
+        TraceSinks.memory ()
+
+    /// <summary>A <c>JsonlTraceSink</c> writing the file at <c>path</c>, created or truncated.</summary>
+    static member JsonlSink(path: string) : JsonlTraceSink =
+        TraceSinks.jsonl path
 #endif

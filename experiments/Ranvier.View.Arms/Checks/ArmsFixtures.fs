@@ -26,6 +26,13 @@ type Panel =
         Open: Signal<bool>
     }
 
+type Deck =
+    {
+        State: Signal<Load>
+        Mode: Signal<int>
+        Open: Signal<bool>
+    }
+
 type Editor =
     {
         State: Signal<Load>
@@ -158,6 +165,41 @@ let loaderTwin =
                 | Idle -> arm idleArm ()
                 | Loading percent -> arm loadingArm percent
                 | Loaded (text, count) -> arm loadedArm (text, count))
+        })
+
+// The payload-direct shape of loader, written by hand: one armOf per target over the values thunk of
+// [target, pattern variables..., matched value, instance], selected by element 0.
+let private loaderArrayArms: Component<unit -> obj array> array =
+    [|
+        armOf (span () { "Not started" })
+        armOf (
+            progress (
+                Attrs.attribute ("max", "100"),
+                Attrs.attribute ("value", fun (values: unit -> obj array) -> Some (string (unbox<int> (values ()).[1])))
+            ) {
+                }
+        )
+        armOf (
+            pre () {
+                fun (values: unit -> obj array) -> unbox<string> (values ()).[1]
+                " x"
+                fun (values: unit -> obj array) -> string (unbox<int> (values ()).[2])
+            }
+        )
+    |]
+
+let loaderArray =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div (Attrs.className "loader") {
+            matchWith id (fun (instance: Signal<Load>) ->
+                let values =
+                    match read instance with
+                    | Idle as value -> [| box 0; box value; box instance |]
+                    | Loading percent as value -> [| box 1; box percent; box value; box instance |]
+                    | Loaded (text, count) as value -> [| box 2; box text; box count; box value; box instance |]
+
+                arm loaderArrayArms[unbox<int> values[0]] values)
         })
 
 // Or-pattern, literal nested pattern, guard.
@@ -511,6 +553,46 @@ let formsTwin =
                 | _ -> arm otherArm ())
         })
 
+// Function values over the instance, bound outside the site, as a text reader and an attribute reader.
+let private nameOf (state: Signal<Load>) =
+    match state.Value with
+    | Loaded (text, count) -> text + string count
+    | _ -> "-"
+
+let private titleOf (state: Signal<Load>) =
+    Some ("title " + nameOf state)
+
+let functions =
+    let text: Signal<Load> -> string = nameOf
+    let title: Signal<Load> -> string option = titleOf
+
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded _ -> b (Attrs.attribute ("title", title)) { text }
+                | _ -> span () { "Other" }
+            )
+        })
+
+let private functionsArm =
+    armOf (
+        b (Attrs.attribute ("title", fun (payload: unit -> Signal<Load>) -> titleOf (payload ()))) {
+            fun (payload: unit -> Signal<Load>) -> nameOf (payload ())
+        }
+    )
+
+let functionsTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith (fun (state: Signal<Load>) -> state.Value, state) (function
+                | Loaded _, state -> arm functionsArm state
+                | _ -> arm otherArm ())
+        })
+
 // A helper view of the enclosing instance type that takes a reader (Review Focus 3).
 let private labelled (label: 'inst -> string) : TemplateView<'inst> =
     b (Attrs.className "label") { label }
@@ -536,6 +618,312 @@ let helperTwin =
         (div () {
             matchWith read (function
                 | Loaded (text, _) -> arm labelledArm text
+                | _ -> arm otherArm ())
+        })
+
+// A helper view value of the enclosing instance type, spliced beside the generic helper and as a whole case body.
+let private badge: TemplateView<Signal<Load>> =
+    i (Attrs.className "badge") {
+        fun (state: Signal<Load>) ->
+            match state.Value with
+            | Loaded (_, count) -> string count
+            | _ -> "none"
+    }
+
+let spliced =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, _) ->
+                    span () {
+                        labelled (fun _ -> text)
+                        badge
+                    }
+                | _ -> badge
+            )
+        })
+
+let private badgeAdapter =
+    Component.define (fun _ (state: Signal<Load>) -> state) (fun _ -> badge)
+
+let private splicedArm =
+    armOf (
+        span () {
+            labelled (fun (payload: unit -> string * Signal<Load>) -> fst (payload ()))
+            render badgeAdapter (fun (payload: unit -> string * Signal<Load>) -> snd (payload ()))
+        }
+    )
+
+let private badgeArm =
+    armOf (render badgeAdapter (fun (payload: unit -> Signal<Load>) -> payload ()))
+
+let splicedTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith (fun (state: Signal<Load>) -> state.Value, state) (function
+                | Loaded (text, _), state -> arm splicedArm (text, state)
+                | _, state -> arm badgeArm state)
+        })
+
+// Functions over the instance bound in case bodies: applied inside a reader once and twice, passed as a reader, and
+// passed to List.map inside a reader.
+let locals =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loading percent ->
+                    let label (s: Signal<Load>) =
+                        string percent + nameOf s
+
+                    pre () { fun (s: Signal<Load>) -> label s }
+                | Loaded (text, 0) ->
+                    let label = fun (s: Signal<Load>) -> text + nameOf s
+
+                    span () {
+                        label
+                        fun (s: Signal<Load>) -> label s + "!"
+                    }
+                | Loaded (text, 1) ->
+                    let key (s: Signal<Load>) = nameOf s
+                    pre () { fun (s: Signal<Load>) -> text + String.concat "," (List.map key [ s; s ]) }
+                | Loaded (text, _) ->
+                    let label (s: Signal<Load>) =
+                        text + nameOf s
+
+                    pre () {
+                        fun (s: Signal<Load>) -> label s
+                        fun (s: Signal<Load>) -> label s + "?"
+                    }
+                | Idle -> span () { "Other" }
+            )
+        })
+
+// Each twin reader reads its payload once, as the site's reader reads its values once.
+let private labelOf (payload: unit -> string * Signal<Load>) =
+    let text, state = payload ()
+    text + nameOf state
+
+let private localsLoadingArm =
+    armOf (
+        pre () {
+            fun (payload: unit -> int * Signal<Load>) ->
+                let percent, state = payload ()
+                string percent + nameOf state
+        }
+    )
+
+let private localsZeroArm =
+    armOf (
+        span () {
+            labelOf
+            fun (payload: unit -> string * Signal<Load>) -> labelOf payload + "!"
+        }
+    )
+
+let private localsOneArm =
+    armOf (
+        pre () {
+            fun (payload: unit -> string * Signal<Load>) ->
+                let text, state = payload ()
+                text + nameOf state + "," + nameOf state
+        }
+    )
+
+let private localsLoadedArm =
+    armOf (
+        pre () {
+            labelOf
+            fun (payload: unit -> string * Signal<Load>) -> labelOf payload + "?"
+        }
+    )
+
+let localsTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith (fun (state: Signal<Load>) -> state.Value, state) (function
+                | Loading percent, state -> arm localsLoadingArm (percent, state)
+                | Loaded (text, 0), state -> arm localsZeroArm (text, state)
+                | Loaded (text, 1), state -> arm localsOneArm (text, state)
+                | Loaded (text, _), state -> arm localsLoadedArm (text, state)
+                | Idle, _ -> arm otherArm ())
+        })
+
+// A helper view over the concrete instance type that reads the instance and takes a reader.
+let private status (label: Signal<Load> -> string) : TemplateView<Signal<Load>> =
+    b (Attrs.className "status") {
+        label
+        fun (s: Signal<Load>) -> nameOf s
+    }
+
+let statused =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, _) -> span () { status (fun _ -> text) }
+                | Loading percent -> status (fun (s: Signal<Load>) -> string percent + nameOf s)
+                | Idle -> span () { "Other" }
+            )
+        })
+
+// The twin of status over the arm's payload thunk and the instance. The label reads the payload, which keeps the arm's
+// values after the instance moves to another case.
+let private statusOf (label: (unit -> 'payload) -> string) =
+    Component.define (fun _ (current: (unit -> 'payload) * Signal<Load>) -> current) (fun _ ->
+        b (Attrs.className "status") {
+            fun (payload: unit -> 'payload, _: Signal<Load>) -> label payload
+            fun (_: unit -> 'payload, state: Signal<Load>) -> nameOf state
+        })
+
+let private loadedStatus =
+    statusOf (fun (payload: unit -> string * Signal<Load>) -> fst (payload ()))
+
+let private loadingStatus =
+    statusOf (fun (payload: unit -> int * Signal<Load>) ->
+        let percent, state = payload ()
+        string percent + nameOf state)
+
+let private statusedLoadedArm =
+    armOf (span () { render loadedStatus (fun (payload: unit -> string * Signal<Load>) -> payload, snd (payload ())) })
+
+let private statusedLoadingArm =
+    armOf (render loadingStatus (fun (payload: unit -> int * Signal<Load>) -> payload, snd (payload ())))
+
+let statusedTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith (fun (state: Signal<Load>) -> state.Value, state) (function
+                | Loaded (text, _), state -> arm statusedLoadedArm (text, state)
+                | Loading percent, state -> arm statusedLoadingArm (percent, state)
+                | Idle, _ -> arm otherArm ())
+        })
+
+// A helper view over the concrete instance type that takes a view built in the case body, as the whole body and inside
+// it; the view reads a function and a view bound in the body.
+let private card (content: TemplateView<Signal<Load>>) : TemplateView<Signal<Load>> =
+    b (Attrs.className "card") { content }
+
+let carded =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, 0) ->
+                    let label (s: Signal<Load>) =
+                        text + nameOf s
+
+                    let note = i () { fun (_: Signal<Load>) -> text }
+
+                    card (
+                        span () {
+                            label
+                            fun (s: Signal<Load>) -> label s + "!"
+                            note
+                            note
+                        }
+                    )
+                | Loaded (text, _) -> card (span () { fun (s: Signal<Load>) -> text + nameOf s })
+                | Loading percent -> section () { card (pre () { fun _ -> string percent }) }
+                | Idle -> span () { "Other" }
+            )
+        })
+
+// The twin of card over the arm's payload thunk and the instance. Its readers read the payload, which keeps the arm's
+// values after the instance moves to another case.
+let private cardOf (content: TemplateView<(unit -> 'payload) * Signal<Load>>) =
+    Component.define (fun _ (current: (unit -> 'payload) * Signal<Load>) -> current) (fun _ -> b (Attrs.className "card") { content })
+
+let private loadedCard =
+    cardOf (span () { fun (payload: unit -> string * Signal<Load>, state: Signal<Load>) -> fst (payload ()) + nameOf state })
+
+// The site passes a view bound in the body to the helper through an adapter child over its values thunk.
+let private noteAdapter =
+    Component.define (fun _ (current: (unit -> string * Signal<Load>) * Signal<Load>) -> current) (fun _ ->
+        i () { fun (payload: unit -> string * Signal<Load>, _: Signal<Load>) -> fst (payload ()) })
+
+let private zeroCard =
+    cardOf (
+        span () {
+            fun (payload: unit -> string * Signal<Load>, state: Signal<Load>) -> fst (payload ()) + nameOf state
+            fun (payload: unit -> string * Signal<Load>, state: Signal<Load>) -> fst (payload ()) + nameOf state + "!"
+            render noteAdapter id
+            render noteAdapter id
+        }
+    )
+
+let private loadingCard =
+    cardOf (pre () { fun (payload: unit -> int * Signal<Load>, _: Signal<Load>) -> string (fst (payload ())) })
+
+let private cardedLoadedArm =
+    armOf (render loadedCard (fun (payload: unit -> string * Signal<Load>) -> payload, snd (payload ())))
+
+let private cardedZeroArm =
+    armOf (render zeroCard (fun (payload: unit -> string * Signal<Load>) -> payload, snd (payload ())))
+
+let private cardedLoadingArm =
+    armOf (section () { render loadingCard (fun (payload: unit -> int * Signal<Load>) -> payload, snd (payload ())) })
+
+let cardedTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith (fun (state: Signal<Load>) -> state.Value, state) (function
+                | Loaded (text, 0), state -> arm cardedZeroArm (text, state)
+                | Loaded (text, _), state -> arm cardedLoadedArm (text, state)
+                | Loading percent, state -> arm cardedLoadingArm (percent, state)
+                | Idle, _ -> arm otherArm ())
+        })
+
+// A function bound in a case body that returns a view reading a pattern variable, called twice.
+let rowed =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            Arms.Match (
+                read,
+                function
+                | Loaded (text, _) ->
+                    let row (x: string) =
+                        span () { fun (_: Signal<Load>) -> text + x }
+
+                    section () {
+                        row "a"
+                        row "b"
+                    }
+                | _ -> span () { "Other" }
+            )
+        })
+
+let private rowedRow (x: string) =
+    span () { fun (payload: unit -> string) -> payload () + x }
+
+let private rowedArm =
+    armOf (
+        section () {
+            rowedRow "a"
+            rowedRow "b"
+        }
+    )
+
+let rowedTwin =
+    Component.template
+        (fun _ (state: Signal<Load>) -> state)
+        (div () {
+            matchWith read (function
+                | Loaded (text, _) -> arm rowedArm text
                 | _ -> arm otherArm ())
         })
 
@@ -577,6 +965,104 @@ let nestedTwin =
         (div () {
             matchWith (fun (panel: Panel) -> panel.State.Value, panel) (function
                 | Loaded (t, _), panel -> arm openArm (t, panel)
+                | _ -> arm otherArm ())
+        })
+
+// Three sites over one instance: the innermost readers read the outermost pattern variable alone, beside the middle
+// site's pattern variable, and beside the instance.
+let deep =
+    Component.template
+        (fun _ (deck: Deck) -> deck)
+        (div () {
+            Arms.Match (
+                (fun (deck: Deck) -> deck.State.Value),
+                function
+                | Loaded (t, _) ->
+                    section () {
+                        Arms.Match (
+                            (fun (deck: Deck) -> deck.Mode.Value),
+                            function
+                            | 0 -> span () { "zero" }
+                            | m ->
+                                article () {
+                                    Arms.Match (
+                                        (fun (deck: Deck) -> deck.Open.Value),
+                                        function
+                                        | true ->
+                                            pre () {
+                                                fun _ -> t
+                                                " "
+                                                fun _ -> t + string m
+                                                " "
+                                                fun (deck: Deck) -> t + string deck.Mode.Value
+                                            }
+                                        | false -> span () { "closed" }
+                                    )
+                                }
+                        )
+                    }
+                | _ -> span () { "Other" }
+            )
+        })
+
+// The deep twin's arms read the enclosing arms' payloads through their accessors, as the site's readers do.
+type private DeepLoaded = unit -> string * Deck
+type private DeepMode = unit -> int * DeepLoaded
+
+let private deepOpenArm =
+    armOf (
+        pre () {
+            fun (mode: unit -> DeepMode) ->
+                let _, loaded = mode () ()
+                fst (loaded ())
+
+            " "
+
+            fun (mode: unit -> DeepMode) ->
+                let _, loaded = mode () ()
+                let t = fst (loaded ())
+                let m, _ = mode () ()
+                t + string m
+
+            " "
+
+            fun (mode: unit -> DeepMode) ->
+                let _, loaded = mode () ()
+                let t, deck = loaded ()
+                t + string deck.Mode.Value
+        }
+    )
+
+let private deepModeArm =
+    armOf (
+        article () {
+            matchWith
+                (fun (mode: DeepMode) ->
+                    let _, loaded = mode ()
+                    (snd (loaded ())).Open.Value, mode)
+                (function
+                 | true, mode -> arm deepOpenArm mode
+                 | false, _ -> arm closedArm ())
+        }
+    )
+
+let private zeroArm = armOf (span () { "zero" })
+
+let private deepLoadedArm =
+    armOf (
+        section () {
+            matchWith (fun (loaded: DeepLoaded) -> (snd (loaded ())).Mode.Value, loaded) (function
+                | 0, _ -> arm zeroArm ()
+                | m, loaded -> arm deepModeArm (m, loaded))
+        }
+    )
+
+let deepTwin =
+    Component.template
+        (fun _ (deck: Deck) -> deck)
+        (div () {
+            matchWith (fun (deck: Deck) -> deck.State.Value, deck) (function
+                | Loaded (t, _), deck -> arm deepLoadedArm (t, deck)
                 | _ -> arm otherArm ())
         })
 
@@ -747,6 +1233,26 @@ let private panels =
             : Panel)
     ]
 
+let private decks =
+    [
+        for label, state, mode, isOpen in
+            [
+                "Loaded 1 open", Loaded ("t", 1), 1, true
+                "Loaded 2 open", Loaded ("u", 1), 2, true
+                "Loaded 1 closed", Loaded ("t", 1), 1, false
+                "Loaded 0", Loaded ("t", 1), 0, true
+                "Idle", Idle, 1, true
+            ] ->
+            label,
+            (fun () ->
+                {
+                    State = Api.createSignal state
+                    Mode = Api.createSignal mode
+                    Open = Api.createSignal isOpen
+                }
+                : Deck)
+    ]
+
 let private editors =
     [
         "Loaded",
@@ -834,8 +1340,15 @@ let all: Case list =
                         "three", Loaded ("y", 3)
                         "Idle", Idle
                     ])
+            cases "functions" functions functionsTwin (signals loadStates)
             cases "helper" helper helperTwin (signals loadStates)
+            cases "spliced" spliced splicedTwin (signals loadStates)
+            cases "locals" locals localsTwin (signals (loadStates @ [ "Loaded one 1", Loaded ("one", 1) ]))
+            cases "statused" statused statusedTwin (signals loadStates)
+            cases "carded" carded cardedTwin (signals loadStates)
+            cases "rowed" rowed rowedTwin (signals loadStates)
             cases "nested" nested nestedTwin panels
+            cases "deep" deep deepTwin decks
             cases "editor" editor editorTwin editors
             cases
                 "values"
@@ -854,6 +1367,9 @@ let all: Case list =
                     ])
             cases "incomplete" incomplete incompleteTwin (signals [ "Idle", Idle; "Loading 40", Loading 40 ])
         ]
+
+/// <summary>The loader states with the hand-lowered array loader as the site and the Arms.Match loader as the twin.</summary>
+let arrayShape: Case list = cases "loader" loaderArray loader (signals loadStates)
 
 /// <summary>Whether the incomplete site raises for its unmatched case.</summary>
 let incompleteRaises () =

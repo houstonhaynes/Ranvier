@@ -4,36 +4,36 @@
     "explicitOne": {
       "raw": 206936,
       "gzip": 60178,
-      "brotli": 52828
+      "brotli": 52850
     },
     "matchOne": {
-      "raw": 207678,
-      "gzip": 60555,
-      "brotli": 53177
+      "raw": 207413,
+      "gzip": 60367,
+      "brotli": 52975
     },
     "explicitTwo": {
       "raw": 207778,
       "gzip": 60355,
-      "brotli": 52968
+      "brotli": 53004
     },
     "matchTwo": {
-      "raw": 208523,
-      "gzip": 60735,
-      "brotli": 53333
+      "raw": 208279,
+      "gzip": 60552,
+      "brotli": 53177
     },
     "plain": {
       "raw": 204972,
-      "gzip": 59622,
-      "brotli": 52346
+      "gzip": 59623,
+      "brotli": 52366
     }
   },
   "one": {
-    "deltaGzip": 377,
+    "deltaGzip": 189,
     "budgetGzip": 400,
     "withinBudget": true
   },
   "perSite": {
-    "deltaGzip": 3,
+    "deltaGzip": 8,
     "budgetGzip": 60,
     "withinBudget": true
   },
@@ -48,6 +48,12 @@
   },
   "helpers": {
     "count": 0,
+    "withinBudget": true
+  },
+  "cells": {
+    "compiledModule": false,
+    "cellsModule": false,
+    "weakMap": false,
     "withinBudget": true
   }
 }

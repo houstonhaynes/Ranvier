@@ -95,6 +95,9 @@ if code = 0 then
              && normalise (File.ReadAllText emitted) = normalise (File.ReadAllText expected))
             ("diff " + emitted + " " + expected)
 
+    let parsed, parseLog = exec "node" [ "--check"; emitted ]
+    check "the emitted sites parse as JavaScript" (parsed = 0) parseLog
+
     // Each prologue maps back to the line of the reader it opens (spec, IDE experience).
     let mapped, mapLog = exec "node" [ Path.Combine (here, "sourcemap.mjs"); emitted ]
 

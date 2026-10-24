@@ -283,7 +283,9 @@ let tests =
                 Expect.isTrue (collected weak) "the checkpoint releases the payload"
             }
 
-            test "a checkpoint releases the storage of the events it drops" {
+            // Sequenced: the memory reading is process-wide.
+            testSequenced
+            <| test "a checkpoint releases the storage of the events it drops" {
                 use g = new Graph ()
                 let signal = g.Run (fun () -> Signal (g, 0))
 

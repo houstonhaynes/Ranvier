@@ -188,8 +188,9 @@ Read it from the bottom: a write to `lines` marked `subtotal`; the banner's chec
 which pulled `subtotal`; each value moved, so the banner ran. `#n` is the event's position in the
 log, and `= value` is the value a write, move or settle recorded, as one line of at most 60 characters:
 its `ToString` text on .NET, its `%A` text under Fable. The chain ends at a root: a user
-write, the node's creation, a pull by a reader, an async source's settle, or a cause older than the
-log (`unrecorded after #n`).
+write, the node's creation, a pull by a reader, an async source's settle, a cause older than the
+retained events (`before the checkpoint`), or a step whose cause the log does not record
+(`unrecorded after #n`).
 
 :::details Earlier runs and shorter cause chains
 
@@ -453,6 +454,82 @@ folded by your own analysis, such as `TraceModel.prune (Trace.snapshot graph)`.
 
 C# callers use `Tracing.EventsSince`, `Tracing.Checkpoint` and `Tracing.CheckpointOf`.
 
+## Exporting the trace
+
+`Trace.export graph sink policy` streams the log to a sink while the graph runs. The export writes a
+header of the current checkpoint and the retained events at once, then, at the end of each flush on the
+graph's thread, the events recorded since. `TraceExport.Drain ()` exports a write that ran no flush; it
+runs on the graph's thread between flushes, like a dump. `Trace.export` has the same thread rule, and
+raises `ArgumentOutOfRangeException` when `policy.Capacity` is less than 1.
+Dispose the export to end the stream; its `Completion` task completes once the sink holds every record,
+and faults with the sink's error or a strict codec's `TraceCodecException`. The graph keeps running
+after a fault. Called on the graph's thread, `Dispose` queues the rest of the stream before it returns,
+so `Completion.Wait ()` there settles without the graph's thread. Called off it, `Completion` settles
+once the graph runs the end `Dispose` dispatches.
+
+```fsharp
+let sink = TraceSinks.jsonl "session.jsonl"
+
+let export =
+    Trace.export
+        graph
+        sink
+        {
+            Capacity = 1024
+            Full = TraceExportFull.Drop
+            Checkpoint = TraceExportCheckpoint.Enqueued
+            Codecs = TraceCodecs.ofList []
+        }
+
+// ... run the program ...
+export.Dispose ()
+export.Completion.Wait ()
+(sink :> System.IDisposable).Dispose ()
+```
+
+The stream is a schema 3 dump, encoded by `policy.Codecs`: the `Header` record holds the header and
+snapshot lines, and each `Events` record holds the lines of one batch. With no checkpoint taken during
+the export, the stream's text equals `Trace.dumpTextWith graph policy.Codecs`.
+
+`Capacity` bounds the events the export queues for the sink. `Full` sets what a full queue does:
+
+- `TraceExportFull.Wait` keeps the batch in the log and exports it once the sink frees room. The stream
+  loses no event, and the log holds the backlog. The stream's end is queued past `Capacity`.
+- `TraceExportFull.Drop` drops the batch and records its seqs in a gap. Consecutive drops share one gap,
+  written as the line `{"gap":{"from":F,"to":T}}` once the queue has room or the stream ends.
+  `TraceExport.Dropped` counts the dropped events.
+
+`Checkpoint` sets when the export [checkpoints](#incremental-reads-and-checkpoints) the log under the
+sink's name, so the log stays bounded:
+
+- `TraceExportCheckpoint.Never` leaves the log to the caller.
+- `TraceExportCheckpoint.Enqueued` checkpoints at the events queued or dropped. Under `Drop` the log
+  stays bounded behind a stalled sink.
+- `TraceExportCheckpoint.Acknowledged` checkpoints at the events the sink has completed.
+
+A checkpoint runs between flushes, once `Capacity` exported events lie past the previous one, and at
+the stream's end. The log retains fewer than `Capacity` exported events. A checkpoint taken elsewhere
+past the events the export has read becomes a gap in the stream.
+
+`TraceModel.parseDump` and `TraceContract.parseDumpWith` read an exported stream. Its gap lines go to
+`TraceDump.Gaps` as inclusive `(from, to)` ranges in stream order, absent from `Events`. A dump with no
+gap lines parses to an empty `Gaps`. Code that constructs a `TraceDump` record itself sets `Gaps` too.
+`TraceModel.why` over the parsed events ends a chain at `BeforeCheckpoint` for any missing cause older
+than the event, including one inside a gap.
+
+Two reference sinks implement `ITraceSink`:
+
+- `TraceSinks.memory ()` holds the records in memory, on .NET and Fable. `Records` lists them, `Text`
+  concatenates their lines, and `Stall` and `Release` hold back and complete the writes, for tests.
+- `TraceSinks.jsonl path` writes each record's lines to a file, on .NET, creating or truncating it. A
+  write completes once its text is flushed. The sink's name, and so its checkpoints' name, is its
+  `Path`. Dispose the sink after the export's `Completion` to close the file.
+
+A sink of your own implements `Name` and `Write`, which returns a task that completes once the sink
+holds the record. The export writes one record at a time, in stream order.
+
+C# callers use `Tracing.Export`, `Tracing.MemorySink` and `Tracing.JsonlSink`.
+
 ## Machine-readable diagnostics
 
 A test, a debugger or an agent reads the graph through immutable contract values and their JSON
@@ -620,11 +697,13 @@ Ship against the untraced `Ranvier` package.
 :::details Platform, lifetime and query limits
 
 - **Fable records and text dumps.** A Fable build records the log that [signal maps](signal-maps.md)
-  draw and exposes `Trace.dumpText`; file-writing `Trace.dump` and `TraceModel.parseDump` are absent.
+  draw and exposes `Trace.dumpText` and `Trace.export` with the memory sink; file-writing `Trace.dump`,
+  `TraceSinks.jsonl` and `TraceModel.parseDump` are absent.
 - **Development builds only.** A traced build is slower and allocates per event. Ship against the
   untraced `Ranvier` package.
 - **The log retains events.** Events stay in memory until a [checkpoint](#incremental-reads-and-checkpoints)
-  drops them, up to the implementation's sequence limit. Nothing drops events automatically.
+  drops them, up to the implementation's sequence limit. Only an [export](#exporting-the-trace) with
+  `Enqueued` or `Acknowledged` checkpoints drops events automatically.
 - **A checkpoint retains the live graph and its recurring paths.** The checkpoint's snapshot holds the
   live nodes and owners. Beneath a live node it also holds a sibling and an incarnation count per
   distinct child path, for the node's lifetime: a host whose runs create children under ever-new labels

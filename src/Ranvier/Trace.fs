@@ -26,6 +26,11 @@ type internal ITracedEdges =
     /// <summary>The observer ids, or the source ids in slot order.</summary>
     abstract Ids: int[]
 
+/// <summary>A consumer of a graph's log that runs after each flush, outside it, on the graph's thread.</summary>
+type internal ITraceFlushed =
+    /// <summary>Runs after a flush. Raises no exception.</summary>
+    abstract Flushed: unit -> unit
+
 /// <summary>A graph's append-only event log, with the graph's clock, owner-id counter and walk state.</summary>
 /// <remarks>
 /// Holds ids, payloads and the bound edge sets (weakly on .NET). A log built with <c>locked</c> records every event of
@@ -37,6 +42,7 @@ type internal TraceLog(locked: bool) =
     let events = ResizeArray<TraceEvent>()
     let mutable clock = 0
     let mutable owners = 0
+    let mutable flushed: ITraceFlushed[] = [||]
 
     // Node id to the owner id recorded by its `NodeNew`.
     let nodeOwners = Dictionary<int, int>()
@@ -751,7 +757,27 @@ type internal TraceLog(locked: bool) =
     /// <exception cref="T:System.ArgumentOutOfRangeException">
     /// <c>seq</c> is negative, past the last seq, or before the seq preceding the first retained event.
     /// </exception>
-    member _.EventsSince(seq: int) : TraceEvent[] =
+    member this.EventsSince(seq: int) : TraceEvent[] =
+        this.EventsAfter (seq, Int32.MaxValue)
+
+    /// <summary>The consumers that run after each flush, registered on the graph's thread.</summary>
+    member _.Flushed = flushed
+
+    /// <summary>Registers <c>consumer</c> to run after each flush.</summary>
+    member _.AddFlushed(consumer: ITraceFlushed) =
+        flushed <- Array.append flushed [| consumer |]
+
+    /// <summary>Removes <c>consumer</c> from the consumers that run after each flush.</summary>
+    member _.RemoveFlushed(consumer: ITraceFlushed) =
+        flushed <-
+            flushed
+            |> Array.filter (fun c -> not (obj.ReferenceEquals (c, consumer)))
+
+    /// <summary>
+    /// A copy of at most <c>limit</c> retained events with <c>Seq</c> greater than <c>seq</c>, oldest first.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">As for <c>EventsSince</c>.</exception>
+    member _.EventsAfter(seq: int, limit: int) : TraceEvent[] =
         sync (fun () ->
             let floor = clock - events.Count
 
@@ -770,10 +796,11 @@ type internal TraceLog(locked: bool) =
                 )
 
             let index = seq - floor
+            let count = min limit (events.Count - index)
 #if FABLE_COMPILER
-            events.GetRange(index, events.Count - index).ToArray()
+            events.GetRange(index, count).ToArray()
 #else
-            let suffix = Array.zeroCreate (events.Count - index)
+            let suffix = Array.zeroCreate count
             events.CopyTo (index, suffix, 0, suffix.Length)
             suffix
 #endif
@@ -1807,6 +1834,18 @@ type internal Tracer =
 
         log.Append (TraceEventKind.FlushEnd, 0, 0, number, 0, 0, null)
         |> ignore
+#else
+        ()
+#endif
+
+    /// <summary>Runs the consumers registered on <c>graph</c>'s log once a flush has recorded <c>FlushEnd</c>.</summary>
+    [<Conditional("RANVIER_TRACE")>]
+    static member Flushed(graph: obj) =
+#if RANVIER_TRACE
+        let consumers = (Tracer.LogOf graph).Flushed
+
+        for consumer in consumers do
+            consumer.Flushed ()
 #else
         ()
 #endif
