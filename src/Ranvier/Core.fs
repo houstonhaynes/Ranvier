@@ -2394,7 +2394,8 @@ type Graph(options: GraphOptions) =
         || untrackedInBody
 
     /// <summary>The graph's journal recorder, or null when the graph has no journal.</summary>
-    member internal _.Journal = journal
+    /// <remarks>Inline, so a guarded hook reads the field directly under Fable instead of calling a getter.</remarks>
+    member inline internal _.Journal = journal
 
     /// <summary>
     /// Records <c>value</c> arriving at the node <c>nodeId</c> as a <c>kind</c> entry, unless a computation, flush,
@@ -2662,22 +2663,29 @@ type Graph(options: GraphOptions) =
         if this.IsOnGraphThread then
             work ()
         else
-            // The work goes into the graph's inbox; the dispatcher receives
-            // only the drain. ImmediateDispatcher drains on this thread: under
-            // Unchecked the work runs here, and under Guarded the pump raises
-            // and the work stays queued.
-            let attributed =
-                if Platform.isNull journal then
-                    null
-                else
-                    JournalAmbient.current ()
+            this.PostQueued work
+#endif
 
-            if Platform.isNull attributed then
-                inbox.Enqueue work
+#if !FABLE_COMPILER
+    // Out of line, so Post stays small enough to inline into its callers.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.PostQueued(work: unit -> unit) =
+        // The work goes into the graph's inbox; the dispatcher receives
+        // only the drain. ImmediateDispatcher drains on this thread: under
+        // Unchecked the work runs here, and under Guarded the pump raises
+        // and the work stays queued.
+        let attributed =
+            if Platform.isNull journal then
+                null
             else
-                inbox.Enqueue (fun () -> journal.RunAttributed (attributed, work))
+                JournalAmbient.current ()
 
-            dispatcher.Post (Action this.PumpFromDispatcher)
+        if Platform.isNull attributed then
+            inbox.Enqueue work
+        else
+            inbox.Enqueue (fun () -> journal.RunAttributed (attributed, work))
+
+        dispatcher.Post (Action this.PumpFromDispatcher)
 #endif
 
     /// <summary>
@@ -3621,9 +3629,8 @@ type Graph(options: GraphOptions) =
         current <- Unchecked.defaultof<IComputation>
         currentOwner <- Unchecked.defaultof<Owner>
         untrackedHost <- host
-        let journaled = not (Platform.isNull journal)
 
-        if journaled then
+        if not (Platform.isNull journal) then
             journal.EnterDerived ()
 
         try
@@ -3634,13 +3641,16 @@ type Graph(options: GraphOptions) =
             untrackedHost <- previousHost
             untrackedInBody <- previousInBody
 
-            if journaled then
+            if not (Platform.isNull journal) then
                 journal.LeaveDerived ()
 
     /// <summary>
     /// Applies <c>f</c> to <c>arg</c> with tracking suppressed and the scope rule of <c>host</c> applied to every node
     /// created by <c>f</c>.
     /// </summary>
+    /// <remarks>
+    /// The caller marks the journal's derived section: <c>EffectOn</c>'s action does so on its journaled path.
+    /// </remarks>
     member internal _.RunUntrackedHostedWith(host: IScopeHost, f: 'A -> unit, arg: 'A) =
         let previous = current
         let previousOwner = currentOwner
@@ -3653,10 +3663,6 @@ type Graph(options: GraphOptions) =
         current <- Unchecked.defaultof<IComputation>
         currentOwner <- Unchecked.defaultof<Owner>
         untrackedHost <- host
-        let journaled = not (Platform.isNull journal)
-
-        if journaled then
-            journal.EnterDerived ()
 
         try
             f arg
@@ -3665,9 +3671,6 @@ type Graph(options: GraphOptions) =
             currentOwner <- previousOwner
             untrackedHost <- previousHost
             untrackedInBody <- previousInBody
-
-            if journaled then
-                journal.LeaveDerived ()
 
 /// <summary>
 /// A settable source.
@@ -3731,9 +3734,12 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
             graph.Entered (
                 "A signal write",
                 fun () ->
+                    // Written with && so that Fable emits a short-circuit, not a ternary, on the unjournaled path.
                     if
-                        Platform.isNull graph.Journal
-                        || this.RecordWrite v
+                        not (
+                            not (Platform.isNull graph.Journal)
+                            && not (this.RecordWrite v)
+                        )
                     then
                         if not (equal.Equals (value, v)) then
                             value <- v
@@ -3846,11 +3852,13 @@ type AsyncSource<'T>(graph: Graph) =
     /// Marshalled through <c>Dispatch</c>, because this is the one entry point that
     /// is genuinely called from off-thread: it is what a completing <c>Task</c> runs.
     /// </remarks>
-    member _.Settle(v: 'T) =
+    member this.Settle(v: 'T) =
         graph.Post (fun () ->
             if
-                Platform.isNull graph.Journal
-                || graph.RecordInput (JournalEntryKind.Settle, id, box v)
+                not (
+                    not (Platform.isNull graph.Journal)
+                    && not (this.RecordSettle v)
+                )
             then
                 value <- v
                 status <- Status.None
@@ -3871,8 +3879,10 @@ type AsyncSource<'T>(graph: Graph) =
 
         graph.Post (fun () ->
             if
-                Platform.isNull graph.Journal
-                || graph.RecordInput (JournalEntryKind.Fail, id, reason)
+                not (
+                    not (Platform.isNull graph.Journal)
+                    && not (this.RecordFail reason)
+                )
             then
                 failure <- Failure (reason, (this :> INode))
                 status <- Status.Error
@@ -3882,6 +3892,15 @@ type AsyncSource<'T>(graph: Graph) =
                 Tracer.Notified observers
 
                 graph.RequestFlush ())
+
+    // Out of line, so the settle and fail closures stay at one field load and a null check when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private _.RecordSettle(v: 'T) : bool =
+        graph.RecordInput (JournalEntryKind.Settle, id, box v)
+
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private _.RecordFail(reason: exn) : bool =
+        graph.RecordInput (JournalEntryKind.Fail, id, reason)
 
     /// <summary>
     /// Transparent, tracked read. Links the edge, then suspends if pending.
@@ -4708,12 +4727,10 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
 
         try
             try
-                let recorder = graph.Journal
-
-                if Platform.isNull recorder then
+                if Platform.isNull graph.Journal then
                     graph.RunHosted (this :> IComputation, body)
                 else
-                    recorder.RunWork (fun () -> graph.RunHosted (this :> IComputation, body))
+                    this.RunBodyJournaled ()
             finally
                 if disposed then
                     sources.Clear (this :> IComputation)
@@ -4736,6 +4753,11 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
             status <- Status.Error
 
         Tracer.RunEnd (graph, id, status)
+
+    // Out of line, so RunBody allocates no closure and, under Fable, no closure context when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.RunBodyJournaled() =
+        graph.Journal.RunWork (fun () -> graph.RunHosted (this :> IComputation, body))
 
     /// <summary>
     /// Detaches from every source and discharges the run scope. Idempotent.
@@ -4942,12 +4964,10 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
 
             try
                 try
-                    let recorder = graph.Journal
-
-                    if Platform.isNull recorder then
+                    if Platform.isNull graph.Journal then
                         graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
                     else
-                        recorder.RunWork (fun () -> graph.RunUntrackedHostedWith (this :> IScopeHost, act, v))
+                        this.ActJournaled v
                 finally
                     acting <- false
             with
@@ -4955,6 +4975,19 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
             | ex ->
                 error <- ex
                 status <- Status.Error
+
+    // Out of line, so Act allocates no closure and, under Fable, no closure context when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.ActJournaled(v: 'T) =
+        let recorder = graph.Journal
+
+        recorder.RunWork (fun () ->
+            recorder.EnterDerived ()
+
+            try
+                graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
+            finally
+                recorder.LeaveDerived ())
 
     /// <summary>Detaches from the sources and disposes the action's scope. Idempotent.</summary>
     member this.Dispose() =
