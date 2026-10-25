@@ -64,6 +64,16 @@ type TwinHost private (document: TwinDocument, clock: TwinClock) =
         member _.OverrideCurrentTarget(event, read) =
             (Events.eventOf event).CurrentTargetOverride <- read
 
+    interface Native.IExpandoHost with
+        member _.ExpandoSlots(target, create) =
+            match target with
+            | :? NodeProxy as proxy ->
+                if create && isNull proxy.Expandos then
+                    proxy.Expandos <- Native.ExpandoSlots ()
+
+                ValueSome proxy.Expandos
+            | _ -> ValueNone
+
     interface EventSpec.IEventSource with
         member _.Create spec =
             Events.proxyOf (Events.create spec) :?> Fable.Core.TS.Dom.Event

@@ -115,6 +115,25 @@ let tests =
                 Expect.equal (Native.expando<bool> a "$$ranvierWidget") true "set"
                 Expect.isNull (Native.expando<obj> b "$$ranvierWidget") "another object"
 
+            testCase "a twin node's expandos live on its bridged object"
+            <| fun () ->
+                let host = TwinHost.Create ()
+                use _ = host.Document
+                let a = (host.Document.CreateElement "a").Native
+                let b = (host.Document.CreateElement "b").Native
+                Native.setExpando a "$$ranvier" [| box 1 |]
+                Native.setExpando a "$$ranvierScope" "scope"
+                Native.setExpando a "$$ranvier" [| box 2 |]
+                Expect.equal (Native.expando<obj array> a "$$ranvier") [| box 2 |] "the first property, overwritten"
+                Expect.equal (Native.expando<string> a "$$ranvierScope") "scope" "a second property"
+                Expect.isNotNull (a :?> NodeProxy).Expandos "held by the bridged object"
+                Expect.isNull (Native.expando<obj> b "$$ranvier") "another node"
+                Expect.isNull (b :?> NodeProxy).Expandos "a node without properties has no slots"
+                Expect.isFalse (Native.expando<bool> b "$$ranvierWidget") "an unset value reads as its default"
+                let plain = obj ()
+                Native.setExpando plain "$$ranvierWidget" true
+                Expect.isTrue (Native.expando<bool> plain "$$ranvierWidget") "an object outside the twin"
+
             testCase "jsString writes values as Fable's erased primitives"
             <| fun () ->
                 Expect.equal (Native.jsString (box (Some "x"))) "x" "Some is erased"

@@ -23,6 +23,45 @@ type IHost =
     /// <summary>Makes <c>currentTarget</c> of <c>event</c> read <c>read ()</c> until the dispatch ends.</summary>
     abstract OverrideCurrentTarget: event: obj * read: (unit -> obj) -> unit
 
+/// <summary>The view's per-object properties of one host object: the first property in two fields, the rest in a dictionary.</summary>
+[<Sealed; AllowNullLiteral>]
+type ExpandoSlots() =
+    let mutable firstName: string = null
+    let mutable firstValue: obj = null
+    let mutable rest: System.Collections.Generic.Dictionary<string, obj> = null
+
+    /// <summary>The property <c>name</c>, or null when it is unset.</summary>
+    member _.Get(name: string) : obj =
+        if firstName = name then
+            firstValue
+        elif isNull rest then
+            null
+        else
+            match rest.TryGetValue name with
+            | true, value -> value
+            | false, _ -> null
+
+    member _.Set(name: string, value: obj) =
+        if isNull firstName || firstName = name then
+            firstName <- name
+            firstValue <- value
+        else
+            if isNull rest then
+                rest <- System.Collections.Generic.Dictionary<string, obj>()
+
+            rest[name] <- value
+
+/// <summary>
+/// A host that keeps the view's per-object properties on its own objects. The properties of any other object live in a
+/// weak table keyed by the object.
+/// </summary>
+type IExpandoHost =
+    /// <summary>
+    /// The slots of <c>target</c>, null while it has none, or <c>ValueNone</c> for an object of another owner. With
+    /// <c>create</c>, a host object without slots is given empty slots.
+    /// </summary>
+    abstract ExpandoSlots: target: obj * create: bool -> ExpandoSlots voption
+
 [<Sealed; AbstractClass>]
 type private HostSlot =
     [<System.ThreadStatic; DefaultValue>]
@@ -500,14 +539,8 @@ let allocate (length: int) : obj array =
 
 // Expandos: the per-object properties Fable writes as JavaScript properties.
 
-#if FABLE_COMPILER
-[<Emit("$0[$1]")>]
-let expando<'T> (target: obj) (name: string) : 'T = jsNative
-
-[<Emit("$0[$1] = $2")>]
-let setExpando (target: obj) (name: string) (value: 'T) : unit = jsNative
-#else
-let expando<'T> (target: obj) (name: string) : 'T =
+#if !FABLE_COMPILER
+let private weakExpando<'T> (target: obj) (name: string) : 'T =
     let mutable slots = null
 
     if expandos.TryGetValue (target, &slots) then
@@ -517,11 +550,41 @@ let expando<'T> (target: obj) (name: string) : 'T =
     else
         Unchecked.defaultof<'T>
 
-let setExpando (target: obj) (name: string) (value: 'T) : unit =
+let private setWeakExpando (target: obj) (name: string) (value: 'T) : unit =
     let slots =
         expandos.GetValue (target, fun _ -> System.Collections.Generic.Dictionary<string, obj>())
 
     slots[name] <- box value
+#endif
+
+#if FABLE_COMPILER
+[<Emit("$0[$1]")>]
+let expando<'T> (target: obj) (name: string) : 'T = jsNative
+
+[<Emit("$0[$1] = $2")>]
+let setExpando (target: obj) (name: string) (value: 'T) : unit = jsNative
+#else
+let expando<'T> (target: obj) (name: string) : 'T =
+    match HostSlot.Current with
+    | :? IExpandoHost as owner ->
+        match owner.ExpandoSlots (target, false) with
+        | ValueSome slots ->
+            if isNull slots then
+                Unchecked.defaultof<'T>
+            else
+                match slots.Get name with
+                | null -> Unchecked.defaultof<'T>
+                | value -> unbox<'T> value
+        | ValueNone -> weakExpando target name
+    | _ -> weakExpando target name
+
+let setExpando (target: obj) (name: string) (value: 'T) : unit =
+    match HostSlot.Current with
+    | :? IExpandoHost as owner ->
+        match owner.ExpandoSlots (target, true) with
+        | ValueSome slots -> slots.Set (name, box value)
+        | ValueNone -> setWeakExpando target name value
+    | _ -> setWeakExpando target name value
 #endif
 
 #if !FABLE_COMPILER

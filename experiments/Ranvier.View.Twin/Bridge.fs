@@ -83,6 +83,9 @@ type NodeProxy() =
     inherit DispatchProxy()
     member val Node: TwinNode = null with get, set
 
+    /// <summary>The view's properties of the node, or null while it has none.</summary>
+    member val internal Expandos: Ranvier.View.Native.ExpandoSlots = null with get, set
+
     override this.Invoke(targetMethod: MethodInfo, args: obj array) : obj =
         BridgeCore.invoke this.Node targetMethod args
 
