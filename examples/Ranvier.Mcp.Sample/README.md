@@ -20,8 +20,7 @@ This is the sample of the #168 spike. `Ranvier.Mcp` is not packed yet.
 | node | `subtotal`, `discount`, `total` | targets of the traced provenance tools |
 
 Each value is a resource, `ranvier://state/<name>`, and `ranvier://state` holds them all at one version. The
-tools are `snapshot`, `dispatch`, `wait_version` and, in a traced build only, `trace_state`, `trace_lookup`,
-`why`, `why_not` and `waiting_on`. The adapter contract is in
+tools are `snapshot`, `dispatch`, `wait_version` and, in a traced build only, `explain`, `graph` and `node`. The adapter contract is in
 [docs/content/guide/mcp.md](../../docs/content/guide/mcp.md).
 
 The expectation the cart must meet: after any sequence of messages, `total` equals the sum of
@@ -73,14 +72,16 @@ Register the sample as a second stdio server next to `sagefs` in the client's `.
     "ranvier-cart": {
       "type": "stdio",
       "command": "dotnet",
-      "args": ["examples/Ranvier.Mcp.Sample/bin/Debug/net10.0/Ranvier.Mcp.Sample.dll"],
+      "args": ["fsi", "--quiet", "tools/mcp-supervise.fsx", "examples/Ranvier.Mcp.Sample/bin/Debug/net10.0/Ranvier.Mcp.Sample.dll"],
       "env": {}
     }
   }
 }
 ```
 
-Build the sample before the client starts the server; the Debug path above is the traced build. Add
+Build the sample before the client starts the server; the Debug path above is the traced build. The supervisor serves
+a copy of the build, so `dotnet build` and `dotnet test` work while the server runs, and the next tool call serves the
+new build with the dispatched messages replayed. Add
 `"--defect"` to `args` to serve the defective cart.
 
 The two servers own different things:
