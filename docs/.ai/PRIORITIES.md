@@ -26,7 +26,7 @@ proposed scope for each, and does not implement them.
 | 13 | [#185](https://github.com/shayanhabibi/Ranvier/issues/185) store adapters for the input journal and persisted state | — | #184, #68 | implement | blocked |
 | 14 | [#193](https://github.com/shayanhabibi/Ranvier/issues/193) trace identity paths name the application's line | 1.0.0-rc | #166 | implement | done |
 | 15 | [#210](https://github.com/shayanhabibi/Ranvier/issues/210) keyed persisted inputs over an IStateStore (Ranvier.Persistence) | 1.0.0-rc | #68 research, #184 | implement | done |
-| 16 | [#197](https://github.com/shayanhabibi/Ranvier/issues/197) journal snapshot plus tail restore over #68's stored-state format | — | #184, #210 | implement | in-progress |
+| 16 | [#197](https://github.com/shayanhabibi/Ranvier/issues/197) journal snapshot plus tail restore over #68's stored-state format | — | #184, #210 | implement | done |
 
 Statuses: `todo`, `in-progress` (an iteration left work; see the log), `done` (merged into
 `integration/issues`), `blocked` (the log names what it needs from the user).
@@ -143,3 +143,4 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-25 #210 in-progress — Persist.rows/document/collection, Persist.track, the journal position record and LocalStorageStateStore landed with the partial-save and stale-position fixes, gate passes (3,248 .NET tests, test-fable green) — 2541f208 — next: plan step 12, persisted signal in tests/Ranvier.AotSmoke with NativeAOT publish
 - 2026-10-25 #210 done — persisted inputs ship in Ranvier.Persistence with AOT smoke, counter bench rows and the persistence guide, both review findings fixed and the full gate green (3,281 tests) — 3bbd1b0c — next: CI arm64 perf gate on PR #214 confirms instruction counts
 - 2026-10-25 #197 in-progress — Persist.replay restores a snapshot and replays the journal tail, the setup-work finding is fixed with Journal.setupWorksOf and the full gate passes (3,278 .NET tests, test-fable green) — 66ae3808 — next: merge origin/integration/issues if it moved, then open the stacked PR
+- 2026-10-26 #197 done — review-only iteration found no findings and the full gate passes, including test-fable (untraced inline 1703/1725, traced inline 1919/1946) — 5b99fcb8 — next: none; PR #218 ready for review
