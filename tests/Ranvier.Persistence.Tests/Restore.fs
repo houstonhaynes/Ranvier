@@ -320,6 +320,56 @@ let private replayTests (mode: ReplayMode) =
                 Expect.equal (inputs journal |> List.map _.Origin) [ JournalOrigin.External ] "the input is recorded as external"
             }
 
+            testCaseAsync "an input of work started before the position raises when the restored graph re-runs setup work"
+            <| async {
+                // An effect over a starts a work for each positive value; the test produces the last one's input.
+                let run (produce: bool) (graph: Graph) (a: Signal<int>, b: Signal<int>) =
+                    let mutable pending = None
+
+                    createEffectOn (fun () -> a.Value) (fun value ->
+                        if value > 0 then
+                            pending <- Some (Journal.work graph))
+
+                    a.Value <- 1
+
+                    if produce then
+                        Journal.produce pending.Value (fun () -> b.Value <- b.Peek + 1)
+
+                let prefix = MemoryStateStore ()
+                let! _ = recorded prefix (run false)
+                let! entries = recorded (MemoryStateStore ()) (run true)
+
+                match inputs entries |> List.map _.Origin with
+                | [ JournalOrigin.External; JournalOrigin.Produced (1, _, 0) ] -> ()
+                | origins -> failtestf "expected an input of work started after entry 1, got %A" origins
+
+                let! session = load prefix signalKeys
+
+                let! error, b =
+                    inGraph session (MemoryJournal "app") (fun graph ->
+                        let a, b = signals session
+
+                        createEffectOn (fun () -> a.Value) (fun value ->
+                            if value > 0 then
+                                Journal.work graph |> ignore)
+
+                        let error =
+                            try
+                                Persist.replay mode session graph entries
+                                None
+                            with error ->
+                                Some error
+
+                        error, b.Peek)
+
+                match error with
+                | Some (:? JournalReplayException as error) -> Expect.stringContains error.Reason "setup work" "the reason names setup work"
+                | Some other -> failtestf "expected a JournalReplayException, got: %s" other.Message
+                | None -> failtest "the replay applied an input the restored graph's setup work re-produces"
+
+                Expect.equal b 0 "no entry applied"
+            }
+
             testCaseAsync "an input of setup work after the position raises before any entry applies"
             <| async {
                 let setupRun (more: bool) (graph: Graph) (a: Signal<int>, b: Signal<int>) =

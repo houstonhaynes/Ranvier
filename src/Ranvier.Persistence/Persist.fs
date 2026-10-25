@@ -922,15 +922,24 @@ module Persist =
     /// refers to that journal.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <c>entries</c> is the journal of the graph that saved the snapshot. The restored graph equals the uninterrupted
     /// run when each of its keyed inputs is persisted under its journal key.
+    /// </para>
+    /// <para>
+    /// Work running at the snapshot can start again as setup work of <c>graph</c>, such as work an effect over
+    /// persisted state starts, and the re-run work produces its input again. The replay raises on an input of work
+    /// started at or before the position when <c>graph</c> started setup work other than an effect's run. On .NET, an
+    /// input from a continuation of an effect's body that <c>graph</c> re-runs is applied twice.
+    /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentException">
     /// The session has a stored position and <c>entries</c> holds no entry other than a <c>Flush</c> at it.
     /// </exception>
     /// <exception cref="T:Ranvier.JournalReplayException">
-    /// An entry after the position is an input of setup work, which the restored graph re-runs; or
-    /// <c>Journal.replay</c> raises on an entry. The replay then applies no entry for the first reason.
+    /// An entry after the position is an input of setup work, which the restored graph re-runs; an entry after the
+    /// position is an input of work started at or before it, and <c>graph</c> started setup work other than an effect's
+    /// run; or <c>Journal.replay</c> raises on an entry. The replay then applies no entry for the first two reasons.
     /// </exception>
     let replay (mode: ReplayMode) (session: PersistSession) (graph: Graph) (entries: JournalEntry seq) : unit =
         match session.Position with
@@ -973,6 +982,37 @@ module Persist =
                         )
                     )
                 | _ -> ()
+
+            let setupWorks =
+                Journal.setupWorksOf graph
+                |> Array.filter (fun work ->
+                    work = "work"
+                    || work.StartsWith ("work \"", StringComparison.Ordinal))
+
+            if setupWorks.Length > 0 then
+                match
+                    tail
+                    |> Array.tryFind (fun entry ->
+                        match entry.Origin with
+                        | JournalOrigin.Produced (started, _, _) ->
+                            started <= position
+                            && entry.Kind <> JournalEntryKind.Flush
+                        | _ -> false)
+                with
+                | Some entry ->
+                    raise (
+                        JournalReplayException (
+                            entry.Seq,
+                            entry.Key,
+                            entry.PayloadType,
+                            "the entry is an input of work started at or before the snapshot's position "
+                            + string position
+                            + ", and the restored graph started setup work ["
+                            + String.Join (", ", setupWorks)
+                            + "], which can produce it again; a restore applies such an input on a graph whose setup work is effects alone"
+                        )
+                    )
+                | None -> ()
 
             tail
             |> Array.map (fun entry ->

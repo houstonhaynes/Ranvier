@@ -265,6 +265,9 @@ Journal entry 0 (unkeyed, setup) cannot be replayed: the journal recorded 1 setu
 begin with the recorded setup work
 ```
 
+`Journal.setupWorksOf graph` lists a graph's setup work descriptions in start order, such as
+`[| "effect"; "work \"initial\"" |]`.
+
 A setup work is told apart from another by its kind and its name. Unnamed works of one kind, such as
 two effects or two `Journal.work` calls without `Journal.name`, have equal descriptions, and a
 target whose setup work holds the description of a producing setup work at a later position also
@@ -370,8 +373,7 @@ Persist.replay ReplayMode.Diagnostic restored target journal.Entries
   replays every entry. The entries must hold the input at the position; otherwise it raises
   `ArgumentException`.
 - An input of work started at or before the position is applied as an `External` entry in both
-  modes, since the restored graph does not re-run that work. Work started after the position
-  re-runs and is matched as in any replay.
+  modes. Work started after the position re-runs and is matched as in any replay.
 - The restored graph's journal records the replayed entries from its own next `Seq`, so a position
   saved after a restore refers to the restored graph's journal.
 
@@ -386,6 +388,12 @@ The v1 limits:
   built, as it does on any reload. An input of setup work recorded after the position cannot be
   applied once, so `Persist.replay` raises `JournalReplayException` on it before applying any
   entry.
+- Work running at the snapshot can start again as setup work of the restored graph, such as work
+  an effect over persisted state starts, and the re-run work produces its input again. When the
+  tail holds an input of work started at or before the position and the restored graph started
+  setup work other than an effect's run (`Journal.work`, an `Mvu` command), `Persist.replay`
+  raises `JournalReplayException` on that input before applying any entry. On .NET, an input from
+  a continuation of an effect's body that the restored graph re-runs is applied twice.
 - Two sessions busted to a new buster over one store can clear each other's saves: see
   [Busting the store](persistence.md#busting-the-store). A snapshot holds what the store held at
   the copy.
