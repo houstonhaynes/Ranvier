@@ -750,7 +750,7 @@ Ship against the untraced `Ranvier` package.
 The repository provides `tools/verify-trace.fsx` to check trace changes:
 
 - The untraced Release IL references no trace type and equals the IL of the merge base, method by
-  method. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
+  method, with closure line numbers and the checkout's path ignored. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
   `Trace.label` and the timed-value members in `docs/.ai/debounce-throttle-api-additions.txt`.
 - A sample using `Trace.named` or `Trace.label` compiles to the same IL as the sample without it.
 - A lint checks the hook sites and `#if RANVIER_TRACE` blocks in the engine sources.
@@ -760,6 +760,11 @@ The repository provides `tools/verify-trace.fsx` to check trace changes:
   library's own counters, and the edges folded from the log equal the live graph.
 - With elevated rights, the counter bench shows equal allocations and instruction counts between
   the merge base and the change.
+
+The merge base is taken with the branch the change targets: the base branch of the current branch's
+open pull request, or `master` when there is none. `--base <ref>` names another, for example
+`dotnet fsi tools/verify-trace.fsx --base origin/integration/issues`. The base is built in a
+temporary git worktree, and the pack step writes its intermediate files outside the repository.
 
 CI also runs the test suite traced, and publishes the NativeAOT smoke application traced and untraced.
 

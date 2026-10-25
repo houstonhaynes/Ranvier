@@ -5,7 +5,10 @@
 //   dotnet fsi tools/verify-trace.fsx --lint       the source lint only
 //   dotnet fsi tools/verify-trace.fsx --no-counters --no-fable
 //   dotnet fsi tools/verify-trace.fsx --baseline   rewrite docs/.ai/public-api-baseline.txt from the merge-base
+//   dotnet fsi tools/verify-trace.fsx --base origin/integration/issues
 //
+// The merge-base is that of HEAD and the base branch: --base <ref>, else the base branch of the current branch's open
+// PR (gh pr view), else master. A branch name resolves to its origin/ remote-tracking branch when one exists.
 // The counter comparison runs counters.ps1 at the merge-base and at HEAD, and needs an elevated shell.
 // Exit code 0 when every check that ran passed, 1 otherwise.
 
@@ -20,7 +23,15 @@ open System.Reflection.PortableExecutable
 open System.Text.Json
 open System.Text.RegularExpressions
 
-let args = fsi.CommandLineArgs |> Array.skip 1 |> Set.ofArray
+let argv = fsi.CommandLineArgs |> Array.skip 1
+let args = Set.ofArray argv
+
+let baseArgument =
+    match Array.tryFindIndex ((=) "--base") argv with
+    | Some i when i + 1 < argv.Length -> Some argv[i + 1]
+    | Some _ -> failwith "--base needs a git ref"
+    | None -> None
+
 let lintOnly = args.Contains "--lint"
 
 let runCounters =
@@ -107,6 +118,49 @@ let runChecked dir env file arguments =
 
 let git arguments =
     (runChecked root [] "git" arguments).Trim()
+
+/// <summary>
+/// The ref HEAD is compared against, and where it came from: <c>--base</c>, else the base branch of the current
+/// branch's open PR, else <c>master</c>. A PR base or <c>master</c> resolves to <c>origin/&lt;name&gt;</c> when that
+/// remote-tracking branch exists.
+/// </summary>
+let baseRef: Lazy<string * string> =
+    lazy
+        match baseArgument with
+        | Some r -> r, "--base"
+        | None ->
+            let prBase =
+                try
+                    match run root [] "gh" [ "pr"; "view"; "--json"; "baseRefName"; "--jq"; ".baseRefName" ] with
+                    | 0, out when out.Trim () <> "" -> Some (out.Trim ())
+                    | _ -> None
+                with _ ->
+                    None
+
+            let name, source =
+                match prBase with
+                | Some b -> b, "the open PR's base branch"
+                | None -> "master", "no open PR"
+
+            let tracking = "origin/" + name
+
+            match run root [] "git" [ "rev-parse"; "--verify"; "--quiet"; tracking + "^{commit}" ] with
+            | 0, _ -> tracking, source
+            | _ -> name, source
+
+/// <summary>The merge-base of HEAD and <c>baseRef</c>.</summary>
+let mergeBase: Lazy<string> = lazy (git [ "merge-base"; "HEAD"; fst baseRef.Value ])
+
+/// <summary>Runs <c>f</c> on a detached worktree of the merge-base at <c>tree</c>, and removes the worktree.</summary>
+let withMergeBaseTree (tree: string) (f: unit -> 'T) : 'T =
+    git [ "worktree"; "add"; "--detach"; tree; mergeBase.Value ]
+    |> ignore
+
+    try
+        f ()
+    finally
+        run root [] "git" [ "worktree"; "remove"; "--force"; tree ]
+        |> ignore
 
 // ---------------------------------------------------------------------------------------------------------------
 // Metadata
@@ -468,6 +522,17 @@ let stripComment (line: string) =
     let i = line.IndexOf "//"
     if i >= 0 then line.Substring (0, i) else line
 
+/// <summary>The count of <c>(</c> less the count of <c>)</c>.</summary>
+let parenDepth (code: string) =
+    code
+    |> Seq.sumBy (fun c ->
+        if c = '(' then 1
+        elif c = ')' then -1
+        else 0)
+
+/// <summary>A line that continues the expression above it: it opens with a pipe, composition or member access.</summary>
+let continuation = Regex @"^\s*(\|>|<\||>>|<<|\.)"
+
 let hookShape =
     Regex @"^\s*(do\s+)?Tracer\.[A-Z]\w*\s*(\(.*\)|[a-z_]\w*(\s+[a-z_]\w*)*)\s*$"
 
@@ -530,17 +595,24 @@ let lintEngine () : string list * Set<string * string> =
     for file in engineFiles do
         let lines = File.ReadAllLines (Path.Combine (src, file))
         let mutable enclosing = "<none>"
+        let mutable typeIndent = 0
         let mutable i = 0
 
         while i < lines.Length do
             let line = lines[i]
             let header = typeHeader.Match line
+            let indent = line.Length - line.TrimStart().Length
 
+            // `and` continues a recursive type group only at the indent of its `type`; deeper, it binds a function or
+            // a property setter.
             if
                 header.Success
                 && not (line.TrimStart().StartsWith "//")
+                && (header.Groups[1].Value = "type"
+                    || indent = typeIndent)
             then
                 enclosing <- header.Groups[5].Value
+                typeIndent <- indent
 
             if line.Trim () = "#if RANVIER_TRACE" then
                 blocks.Add (file, enclosing)
@@ -575,17 +647,44 @@ let lintEngine () : string list * Set<string * string> =
                         then
                             violations.Add $"%s{file}:%d{n}: a #if RANVIER_TRACE block holds a statement: %s{l.Trim ()}"
             else
-                let code = stripComment line
+                let first = i
+                let mutable code = stripComment line
 
                 if code.Contains "Tracer" then
+                    // A hook wrapped over several lines is one statement: its argument lines up to the closing
+                    // parenthesis, and each following line that continues the expression. An argument line is
+                    // indented past the hook, or opens with the closing parenthesis.
+                    let inside (next: string) =
+                        next.TrimStart().StartsWith ")"
+                        || next.Length - next.TrimStart().Length > indent
+
+                    while parenDepth code > 0
+                          && i + 1 < lines.Length
+                          && inside lines[i + 1] do
+                        i <- i + 1
+
+                        code <-
+                            code.TrimEnd ()
+                            + " "
+                            + (stripComment lines[i]).Trim()
+
+                    while i + 1 < lines.Length
+                          && continuation.IsMatch (stripComment lines[i + 1]) do
+                        i <- i + 1
+
+                        code <-
+                            code.TrimEnd ()
+                            + " "
+                            + (stripComment lines[i]).Trim()
+
                     if not (hookShape.IsMatch code) then
-                        violations.Add $"%s{file}:%d{i + 1}: Tracer outside a single-statement hook: %s{code.Trim ()}"
+                        violations.Add $"%s{file}:%d{first + 1}: Tracer outside a single-statement hook: %s{code.Trim ()}"
                     else
                         let hook = code.Substring (code.IndexOf "Tracer.")
 
                         for r in forbiddenInArgs do
                             if r.IsMatch hook then
-                                violations.Add $"%s{file}:%d{i + 1}: a forbidden hook argument (%O{r}): %s{code.Trim ()}"
+                                violations.Add $"%s{file}:%d{first + 1}: a forbidden hook argument (%O{r}): %s{code.Trim ()}"
 
             i <- i + 1
 
@@ -607,6 +706,7 @@ let lintTraceFiles () : string list =
         |> List.filter (fun r -> string r <> @"\bnew\s")
 
     let runStatus = Regex @"\bRunStatus\.Error\b|^\s*\|\s*Error\s*=\s*\d+\s*$"
+    let stringLiteral = Regex @"""(\\.|[^""\\])*"""
 
     [
         for file in [ "Trace.fs"; "TraceEvents.fs" ] do
@@ -629,11 +729,13 @@ let lintTraceFiles () : string list =
                 if formatting.IsMatch code then
                     yield $"%s{file}:%d{n + 1}: formatting outside TraceModel and TraceApi: %s{trimmed}"
 
-                // Strips `RunStatus` cases, so `RunStatus.Error` passes the `Error` rule.
+                // Strips `RunStatus` cases, so `RunStatus.Error` passes the `Error` rule, and string literals for
+                // every rule but `%A`, so a case's name written as text passes too.
                 let body = runStatus.Replace (code, "")
+                let unquoted = stringLiteral.Replace (body, "\"\"")
 
                 for r in forbidden do
-                    if r.IsMatch body then
+                    if r.IsMatch (if string r = "%A" then body else unquoted) then
                         yield $"%s{file}:%d{n + 1}: forbidden in a Tracer body (%O{r}): %s{trimmed}"
 
                 if file = "Trace.fs" then
@@ -923,15 +1025,30 @@ let ilGate () =
 /// Per method of <c>dll</c>, its instructions with closure line numbers removed, keyed by the method with its closure
 /// line numbers removed. Methods sharing a key are merged in metadata order.
 /// </summary>
-let methodBodies (dll: string) : Map<string, string list> =
+/// <remarks>
+/// <c>tree</c> is the checkout the DLL was built from. String operands that embed it, such as the source path of a
+/// <c>MatchFailureException</c>, read <c>&lt;tree&gt;</c> in its place, so builds of one source from two checkouts
+/// compare equal.
+/// </remarks>
+let methodBodies (tree: string) (dll: string) : Map<string, string list> =
     use a = new Assembly (dll)
+
+    let checkout = Path.GetFullPath(tree).TrimEnd('\\', '/')
+
+    let relative (operand: string) =
+        operand
+            .Replace(checkout, "<tree>", StringComparison.OrdinalIgnoreCase)
+            .Replace(checkout.Replace ('\\', '/'), "<tree>", StringComparison.OrdinalIgnoreCase)
 
     a.Instructions ()
     |> List.groupBy (fun (caller, _, _) -> closureLine.Replace (caller, "@"))
     |> List.map (fun (caller, body) ->
         caller,
         body
-        |> List.map (fun (_, o, operand) -> o.Name + " " + closureLine.Replace (operand, "@")))
+        |> List.map (fun (_, o, operand) ->
+            o.Name
+            + " "
+            + closureLine.Replace (relative operand, "@")))
     |> Map.ofList
 
 /// <summary>
@@ -939,25 +1056,18 @@ let methodBodies (dll: string) : Map<string, string list> =
 /// HEAD lacks.
 /// </summary>
 let mergeBaseIlGate () =
-    let mergeBase = git [ "merge-base"; "HEAD"; "master" ]
     let baseTree = Path.Combine (work, "il-base")
     let out = Path.Combine (work, "il-base-out")
 
-    git [ "worktree"; "add"; "--detach"; baseTree; mergeBase ]
-    |> ignore
-
-    try
+    withMergeBaseTree baseTree (fun () ->
         runChecked baseTree [] "dotnet" [ "build"; "src/Ranvier"; "-c"; "Release"; "-f"; "net10.0"; "-o"; out ]
-        |> ignore
-    finally
-        run root [] "git" [ "worktree"; "remove"; "--force"; baseTree ]
-        |> ignore
+        |> ignore)
 
-    let baseBodies = methodBodies (Path.Combine (out, "Ranvier.dll"))
-    let headBodies = methodBodies (Path.Combine (work, "untraced", "Ranvier.dll"))
+    let baseBodies = methodBodies baseTree (Path.Combine (out, "Ranvier.dll"))
+    let headBodies = methodBodies root (Path.Combine (work, "untraced", "Ranvier.dll"))
 
     check
-        $"gate 1: untraced IL equals merge-base %s{mergeBase.Substring (0, 7)} method by method"
+        $"gate 1: untraced IL equals merge-base %s{mergeBase.Value.Substring (0, 7)} method by method"
         [
             for KeyValue (m, body) in baseBodies do
                 match headBodies.TryFind m with
@@ -967,10 +1077,32 @@ let mergeBaseIlGate () =
         ]
         $" (%d{baseBodies.Count} methods)"
 
+/// <summary>
+/// The <c>NuspecOutputPath</c> argument of a pack: the nuspec and the standalone Fable project go under
+/// <c>work</c>, so the project's <c>obj</c> holds no pack output for a later Fickl compile to read.
+/// </summary>
+let packIntermediates (name: string) =
+    "-p:NuspecOutputPath="
+    + Path.Combine (work, name)
+    + string Path.DirectorySeparatorChar
+
 let packGate () =
     let out = Path.Combine (work, "pack")
 
-    runChecked root [] "dotnet" [ "pack"; "src/Ranvier"; "-c"; "Release"; "-p:RanvierTrace=false"; "-o"; out ]
+    runChecked
+        root
+        []
+        "dotnet"
+        [
+            "pack"
+            "src/Ranvier"
+            "-c"
+            "Release"
+            "-p:RanvierTrace=false"
+            packIntermediates "pack-obj"
+            "-o"
+            out
+        ]
     |> ignore
 
     let nupkg =
@@ -1056,6 +1188,7 @@ let packGate () =
                 "src/Ranvier"
                 "-c"
                 "Debug"
+                packIntermediates "pack-debug-obj"
                 "-o"
                 Path.Combine (work, "pack-debug")
             ]
@@ -1280,8 +1413,8 @@ let timedHookGate () =
         ]
     |> ignore
 
-    let feature = methodBodies (Path.Combine (work, "untraced", "Ranvier.dll"))
-    let without = methodBodies (Path.Combine (out, "Ranvier.dll"))
+    let feature = methodBodies root (Path.Combine (work, "untraced", "Ranvier.dll"))
+    let without = methodBodies dir (Path.Combine (out, "Ranvier.dll"))
 
     check
         "gate 1: timed hooks erase to hook-free feature IL"
@@ -1386,13 +1519,9 @@ let countersGate () =
                 "processor counters need an elevated shell; run again as administrator or pass --no-counters"
             ]
     else
-        let mergeBase = git [ "merge-base"; "HEAD"; "master" ]
         let baseTree = Path.Combine (work, "base")
 
-        git [ "worktree"; "add"; "--detach"; baseTree; mergeBase ]
-        |> ignore
-
-        try
+        withMergeBaseTree baseTree (fun () ->
             let report (tree: string) (out: string) =
                 runChecked tree [] "pwsh" [ "-NoProfile"; "-File"; Path.Combine (tree, "counters.ps1"); "-Out"; out ]
                 |> ignore
@@ -1405,7 +1534,7 @@ let countersGate () =
             let headRows, headTrace = report root (Path.Combine (work, "counters-head"))
 
             check
-                $"gate 1: counters, merge-base %s{mergeBase.Substring (0, 7)} vs HEAD"
+                $"gate 1: counters, merge-base %s{mergeBase.Value.Substring (0, 7)} vs HEAD"
                 [
                     if headTrace <> "false" then
                         yield $"the HEAD report header has RanvierTrace=%s{headTrace}"
@@ -1413,10 +1542,7 @@ let countersGate () =
                         yield $"the merge-base report header has RanvierTrace=%s{baseTrace}"
                     yield! compareCounters baseRows headRows
                 ]
-                $" (%d{headRows.Count} Ranvier rows; merge-base header RanvierTrace=%s{baseTrace})"
-        finally
-            run root [] "git" [ "worktree"; "remove"; "--force"; baseTree ]
-            |> ignore
+                $" (%d{headRows.Count} Ranvier rows; merge-base header RanvierTrace=%s{baseTrace})")
 
 // ---------------------------------------------------------------------------------------------------------------
 
@@ -1434,21 +1560,18 @@ let step (name: string) (f: unit -> unit) =
 
 Directory.CreateDirectory work |> ignore
 
+let describeBase () =
+    let r, source = baseRef.Value
+    printfn $"verify-trace: base %s{r} (%s{source}), merge-base %s{mergeBase.Value.Substring (0, 7)}"
+
 if args.Contains "--baseline" then
-    let mergeBase = git [ "merge-base"; "HEAD"; "master" ]
+    describeBase ()
     let baseTree = Path.Combine (work, "base")
-
-    git [ "worktree"; "add"; "--detach"; baseTree; mergeBase ]
-    |> ignore
-
     let out = Path.Combine (work, "baseline")
 
-    try
+    withMergeBaseTree baseTree (fun () ->
         runChecked baseTree [] "dotnet" [ "build"; "src/Ranvier"; "-c"; "Release"; "-f"; "net10.0"; "-o"; out ]
-        |> ignore
-    finally
-        run root [] "git" [ "worktree"; "remove"; "--force"; baseTree ]
-        |> ignore
+        |> ignore)
 
     let surface = publicSurface (Path.Combine (out, "Ranvier.dll"))
     File.WriteAllText (baselineFile, String.Join ("\r\n", surface) + "\r\n")
@@ -1460,6 +1583,7 @@ printfn $"verify-trace: %s{root}"
 step "lint" lint
 
 if not lintOnly then
+    describeBase ()
     step "gate 1: IL scan" ilGate
     step "gate 1: IL against the merge-base" mergeBaseIlGate
     step "gate 1: timed hook erasure" timedHookGate
