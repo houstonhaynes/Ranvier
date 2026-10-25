@@ -725,6 +725,23 @@ let tests =
                 Expect.isNone (Journal.replaying g2) "after the replay"
             }
 
+            test "Journal.setupWorksOf lists the works started before the first entry" {
+                let _, g = journaled ()
+                let a = Signal (g, 0) |> Journal.key "a" intCodec
+                Expect.isEmpty (Journal.setupWorksOf g) "no work started"
+
+                g.Run (fun () -> createEffect (fun () -> a.Value |> ignore))
+                Journal.work g |> Journal.name "initial"
+                Expect.equal (Journal.setupWorksOf g) [| "effect"; "work \"initial\"" |] "the works in start order"
+
+                a.Value <- 1
+                Journal.work g |> ignore
+                Expect.equal (Journal.setupWorksOf g) [| "effect"; "work \"initial\"" |] "fixed at the first entry"
+
+                use plain = new Graph ()
+                Expect.isEmpty (Journal.setupWorksOf plain) "a graph with no journal"
+            }
+
             test "replay requires a graph with a journal" {
                 let g = new Graph (GraphOptions.Default)
                 Expect.throwsT<System.InvalidOperationException> (fun () -> Journal.replay ReplayMode.Diagnostic g []) "no journal"

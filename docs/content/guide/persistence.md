@@ -198,8 +198,32 @@ use graph = new Graph (GraphOptions.Default.WithJournal (session.Journal journal
 // after a reload: session.Position is the Seq the stored records include
 ```
 
-`session.Position` is the stored position, or `None`. Replaying the journal's tail after it is
-[#197](https://github.com/shayanhabibi/Ranvier/issues/197).
+`session.Position` is the stored position, or `None`. `Persist.replay mode session graph entries`
+replays the journal entries after it on a graph restored from the session, in diagnostic or
+re-enactment mode: see [Restore](journal.md#restore). A position refers to the journal of the graph
+that saved it; after a restore, the restored graph's journal numbers the replayed entries afresh.
+
+An async source persists with `Persist.sourceKey` and `Persist.source`. Its record holds the
+settled value, or the failure's message, which restores as a `PersistedFailure`; a pending source
+has no record. A restore covers every keyed input only when each is persisted under its journal
+key.
+
+```fsharp
+let results = Persist.sourceKey "results" (PersistCodec.ofJournal resultsCodec)
+let! session = Persist.loadAsync store [ results ]
+let source = Journal.keySource "results" resultsCodec (Persist.source session results)
+```
+
+- `Persist.sourceKey key codec` raises `ArgumentException` on an empty key or one beginning with
+  `$ranvier/`. The record's version is the codec's, and the codec's migrations apply to the stored
+  value.
+- `Persist.source session key` makes the source in the current graph and owner: settled with the
+  restored value, failed with the restored failure, or pending when the key has no record. The
+  restored status is published inside `Journal.derived`, so it records no journal entry.
+- After each flush that changes the source's status, the new status is saved to the store; a
+  return to pending deletes the record.
+- Register the source with `Journal.keySource` under the same key, so the journal records its later
+  settles and failures and a restore can replay them.
 
 ## What is not stored
 

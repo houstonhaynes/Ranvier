@@ -378,6 +378,24 @@ module Journal =
             works.Add (record.Substring start)
             works.ToArray ()
 
+    /// <summary>
+    /// The descriptions of the works <c>graph</c> started before its first journal entry, in start order: an effect's
+    /// run is <c>effect</c>, other work is <c>work</c>, each followed by its quoted name when it has one. Before the first
+    /// entry it lists the works started so far. Empty for a graph with no journal.
+    /// </summary>
+    /// <example>
+    /// <code lang="fsharp">
+    /// Journal.setupWorksOf graph // [| "effect"; "work \"initial\"" |]
+    /// </code>
+    /// </example>
+    let setupWorksOf (graph: Graph) : string array =
+        let recorder = graph.Journal
+
+        if Platform.isNull recorder then
+            [||]
+        else
+            setupWorks recorder.SetupRecord
+
     /// <summary>True when <c>recorded</c> from <c>start</c> is a subsequence of <c>found</c> from <c>from</c>.</summary>
     let private embeds (recorded: string array) (start: int) (found: string array) (from: int) =
         let mutable next = start

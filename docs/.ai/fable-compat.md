@@ -66,7 +66,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Streams.fs | 26 | 26 | 26 | 26 | 26 | 26 | 1 | 0 |
 | PreviousValues.fs | 12 | 12 | 12 | 12 | 12 | 12 | 15 | 0 |
 | Texts.fs | 5 | 5 | 5 | 43 | 43 | 43 | 1 | 0 |
-| Journal.fs | 85 | 84 | 84 | 88 | 87 | 87 | 3 | 0 |
+| Journal.fs | 86 | 85 | 85 | 89 | 88 | 88 | 3 | 0 |
 | FailureOrigins.fs | 16 | 16 | 16 | 16 | 16 | 16 | 2 | 0 |
 | NullChecks.fs | 3 | 3 | 3 | 3 | 3 | 3 | 0 | 0 |
 | Editables.fs | 17 | 17 | 17 | 17 | 17 | 17 | 1 | 0 |
@@ -94,7 +94,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Persistence/Position.fs | 8 | 8 | 8 | 8 | 8 | 8 | 0 | 0 |
 | Persistence/LocalStorage.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1724 | 1702 | 1699 | 1945 | 1918 | 1915 | 147 | 1 |
+| **Total** | 1725 | 1703 | 1700 | 1946 | 1919 | 1916 | 147 | 1 |
 
 ## Tests.fs
 
@@ -2042,7 +2042,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | an external dispatch drained under an effect run's execution context records an External entry | Fable has no async context to carry the work into a continuation. |
 | a %O{mode} replay into a target that created an effect before its effect-only setup raises | Fable has no async context to carry the effect's work into its continuation. |
 
-<details><summary>87 passed in every build and delivery that runs them</summary>
+<details><summary>88 passed in every build and delivery that runs them</summary>
 
 - GraphOptions.Default has no journal
 - WithJournal sets the journal
@@ -2069,6 +2069,7 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - replay of writes, settles and failures into a fresh graph gives equal values
 - re-enactment applies an external settle once
 - Journal.replaying returns the mode while the replay runs
+- Journal.setupWorksOf lists the works started before the first entry
 - replay requires a graph with a journal
 - re-enactment re-runs the async work, and a changed async result flows through the replay
 - the entry unions print their case names

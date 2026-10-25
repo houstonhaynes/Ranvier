@@ -145,6 +145,45 @@ type PersistKey<'T> internal (key: string, codec: PersistCodec<'T>) =
         member _.Key = key
         member _.Loader = loader
 
+/// <summary>
+/// A persisted async source's store key and value codec. <c>Persist.sourceKey</c> declares one.
+/// </summary>
+/// <remarks>
+/// The record's payload holds two frames: <c>ready</c> and the codec's payload, or <c>failed</c> and the failure's
+/// message. The record's version is the codec's, and the codec's migrations apply to the value frame.
+/// </remarks>
+[<Sealed>]
+type PersistSourceKey<'T> internal (key: string, codec: PersistCodec<'T>) =
+    let loader =
+        PersistLoader (
+            (fun _ -> Result.Ok []),
+            fun _ record _ ->
+                let restored =
+                    if record.Version > codec.Codec.Version then
+                        Result.Error (NewerVersion (record.Version, codec.Codec.Version))
+                    else
+                        match PersistFrames.decode record.Payload with
+                        | Result.Error message -> Result.Error (DecodeFailed message)
+                        | Result.Ok [ "ready"; payload ] ->
+                            PersistCodec.restore codec { record with Payload = payload }
+                            |> Result.map (fun value -> box (Reading<'T>.Ready value))
+                        | Result.Ok [ "failed"; message ] -> Result.Ok (box (Reading<'T>.Failed(PersistedFailure message)))
+                        | Result.Ok _ -> Result.Error (DecodeFailed "a source record holds the frames ready and a value, or failed and a message")
+
+                restored
+                |> Result.mapError (fun failure -> key, failure)
+        )
+
+    /// <summary>The store key.</summary>
+    member _.Key = key
+
+    /// <summary>The codec of the settled value.</summary>
+    member _.Codec = codec
+
+    interface IPersistKey with
+        member _.Key = key
+        member _.Loader = loader
+
 /// <summary>The records a persisted collection is stored as.</summary>
 type internal RowLayout<'K> =
     /// <summary>A record per row under <c>key/keyText rowKey</c>, and the row key texts in order under <c>key</c>.</summary>
@@ -674,6 +713,73 @@ module Persist =
         session.Claim key.Key
         persistReads session key (key.Codec.Codec.Encode restored) read
 
+    /// <summary>Declares a persisted async source stored under <c>key</c>, its settled values encoded by <c>codec</c>.</summary>
+    /// <exception cref="T:System.ArgumentException">The key is empty or begins with <c>$ranvier/</c>.</exception>
+    let sourceKey (key: string) (codec: PersistCodec<'T>) : PersistSourceKey<'T> =
+        checkKey key
+        PersistSourceKey (key, codec)
+
+    /// <summary>
+    /// An async source made in the current graph and owner, settled with the last value a persisted source of the
+    /// session published under <c>key</c>, else its restored value, or failed with the failure; with neither it starts
+    /// pending. A restored failure is a <c>PersistedFailure</c> carrying the stored message. The restored status is
+    /// published inside <c>Journal.derived</c>, so it records no journal entry, and every reader of the source sees it.
+    /// After each flush that changes the source's status, the status is saved to the session's store; a return to
+    /// pending deletes the record.
+    /// </summary>
+    /// <remarks>Register the source with <c>Journal.keySource</c> under <c>key</c> to journal its later settles.</remarks>
+    /// <exception cref="T:System.InvalidOperationException">
+    /// The key was not passed to the load, a live persisted input already holds it, or the session serves another graph.
+    /// </exception>
+    let source (session: PersistSession) (key: PersistSourceKey<'T>) : AsyncSource<'T> =
+        let restored: Reading<'T> =
+            match session.TryRestored key.Key with
+            | Some value -> unbox value
+            | None -> Reading.Pending
+
+        let graph = Graph.Current
+        session.Attach graph
+        session.Claim key.Key
+        let source = createAsyncSource<'T>()
+
+        Journal.derived graph (fun () ->
+            match restored with
+            | Reading.Ready value -> source.Settle value
+            | Reading.Failed error -> source.Fail error
+            | Reading.Pending -> ())
+
+        let encode (reading: Reading<'T>) =
+            match reading with
+            | Reading.Ready value -> Some (PersistFrames.encode [ "ready"; key.Codec.Codec.Encode value ])
+            | Reading.Failed error -> Some (PersistFrames.encode [ "failed"; error.Message ])
+            | Reading.Pending -> None
+
+        let mutable marked = encode restored
+
+        let mark (reading: Reading<'T>) =
+            let payload = encode reading
+
+            if payload <> marked then
+                marked <- payload
+
+                match payload with
+                | Some payload ->
+                    session.Mark
+                        {
+                            Key = key.Key
+                            Version = key.Codec.Codec.Version
+                            Payload = payload
+                            ETag = None
+                        }
+                | None -> session.MarkDeleted key.Key
+
+                session.Remember (key.Key, box reading)
+
+        createEffectOn (fun () -> source.TryValue) mark
+        // Marks a status published in the batch that disposes the owner.
+        onCleanup (fun () -> mark (untrack (fun () -> source.TryValue)))
+        source
+
 
     /// <summary>
     /// A keyed collection holding the last rows a persisted collection of the session wrote to <c>key</c>, else its
@@ -808,3 +914,113 @@ module Persist =
         // Marks an edit made in the batch that disposes the owner; it runs before the collection's own cleanup.
         onCleanup (fun () -> untrack (fun () -> apply (reader.Read ())))
         rows
+
+    /// <summary>
+    /// Replays on <c>graph</c>, restored from <c>session</c>, the entries of <c>entries</c> recorded after the
+    /// session's stored position, with <c>Journal.replay mode</c>; with no stored position, every entry. An input of
+    /// work started at or before the position is applied as an <c>External</c> entry in both modes. The replayed
+    /// entries are recorded on <c>graph</c>'s journal from its own next <c>Seq</c>, and a position saved afterwards
+    /// refers to that journal.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>entries</c> is the journal of the graph that saved the snapshot. The restored graph equals the uninterrupted
+    /// run when each of its keyed inputs is persisted under its journal key.
+    /// </para>
+    /// <para>
+    /// Work running at the snapshot can start again as setup work of <c>graph</c>, such as work an effect over
+    /// persisted state starts, and the re-run work produces its input again. The replay raises on an input of work
+    /// started at or before the position when <c>graph</c> started setup work other than an effect's run. On .NET, an
+    /// input from a continuation of an effect's body that <c>graph</c> re-runs is applied twice.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// The session has a stored position and <c>entries</c> holds no entry other than a <c>Flush</c> at it.
+    /// </exception>
+    /// <exception cref="T:Ranvier.JournalReplayException">
+    /// An entry after the position is an input of setup work, which the restored graph re-runs; an entry after the
+    /// position is an input of work started at or before it, and <c>graph</c> started setup work other than an effect's
+    /// run; or <c>Journal.replay</c> raises on an entry. The replay then applies no entry for the first two reasons.
+    /// </exception>
+    let replay (mode: ReplayMode) (session: PersistSession) (graph: Graph) (entries: JournalEntry seq) : unit =
+        match session.Position with
+        | None -> Journal.replay mode graph entries
+        | Some position ->
+            let sorted =
+                entries
+                |> Seq.sortBy (fun entry -> entry.Seq)
+                |> Array.ofSeq
+
+            if
+                not (
+                    sorted
+                    |> Array.exists (fun entry ->
+                        entry.Seq = position
+                        && entry.Kind <> JournalEntryKind.Flush)
+                )
+            then
+                invalidArg
+                    (nameof entries)
+                    ("The entries hold no input at the snapshot's position "
+                     + string position
+                     + "; pass the journal of the graph that saved the snapshot.")
+
+            let tail =
+                sorted
+                |> Array.filter (fun entry -> entry.Seq > position)
+
+            for entry in tail do
+                match entry.Origin with
+                | JournalOrigin.Produced (0, _, _) when entry.Kind <> JournalEntryKind.Flush ->
+                    raise (
+                        JournalReplayException (
+                            entry.Seq,
+                            entry.Key,
+                            entry.PayloadType,
+                            "the entries after the snapshot's position "
+                            + string position
+                            + " hold an input of setup work; a restore replays the inputs of work started after the position"
+                        )
+                    )
+                | _ -> ()
+
+            let setupWorks =
+                Journal.setupWorksOf graph
+                |> Array.filter (fun work ->
+                    work = "work"
+                    || work.StartsWith ("work \"", StringComparison.Ordinal))
+
+            if setupWorks.Length > 0 then
+                match
+                    tail
+                    |> Array.tryFind (fun entry ->
+                        match entry.Origin with
+                        | JournalOrigin.Produced (started, _, _) ->
+                            started <= position
+                            && entry.Kind <> JournalEntryKind.Flush
+                        | _ -> false)
+                with
+                | Some entry ->
+                    raise (
+                        JournalReplayException (
+                            entry.Seq,
+                            entry.Key,
+                            entry.PayloadType,
+                            "the entry is an input of work started at or before the snapshot's position "
+                            + string position
+                            + ", and the restored graph started setup work ["
+                            + String.Join (", ", setupWorks)
+                            + "], which can produce it again; a restore applies such an input on a graph whose setup work is effects alone"
+                        )
+                    )
+                | None -> ()
+
+            tail
+            |> Array.map (fun entry ->
+                match entry.Origin with
+                | JournalOrigin.Produced (started, _, _) when started <= position ->
+                    { entry with
+                        Origin = JournalOrigin.External
+                    }
+                | _ -> entry)
+            |> Journal.replay mode graph
