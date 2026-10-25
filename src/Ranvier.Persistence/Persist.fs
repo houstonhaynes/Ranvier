@@ -335,8 +335,8 @@ module Persist =
     /// <summary>
     /// A signal holding <c>Persist.restore session key fallback</c>, made in the current graph and owner, so a signal
     /// re-created for the key starts from its last written value.
-    /// After each flush that changes it, its value is saved to the session's store; the changes of one flush save in
-    /// one <c>SaveMany</c>.
+    /// After each flush that changes it, its value is saved to the session's store, also when the flush disposes its
+    /// owner; the changes of one flush save in one <c>SaveMany</c>.
     /// </summary>
     /// <exception cref="T:System.InvalidOperationException">
     /// The key was not passed to the load, a live persisted input already holds it, or the session serves another graph.
@@ -346,15 +346,16 @@ module Persist =
         session.Attach Graph.Current
         session.Claim key.Key
         let signal = createSignal initial
-        let mutable baseline = Some initial
+        let mutable marked = key.Codec.Codec.Encode initial
 
-        createEffectOn (fun () -> signal.Value) (fun value ->
+        let mark (value: 'T) =
             let record = PersistCodec.encode key.Codec key.Key value
 
-            match baseline with
-            | Some initial when key.Codec.Codec.Encode initial = record.Payload -> baseline <- None
-            | _ ->
-                baseline <- None
-                session.Mark (record, box value))
+            if record.Payload <> marked then
+                marked <- record.Payload
+                session.Mark (record, box value)
 
+        createEffectOn (fun () -> signal.Value) mark
+        // Marks a write made in the batch that disposes the owner.
+        onCleanup (fun () -> mark (untrack (fun () -> signal.Value)))
         signal

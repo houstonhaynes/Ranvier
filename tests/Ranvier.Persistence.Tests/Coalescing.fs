@@ -249,6 +249,38 @@ let tests =
                 Expect.equal (savedPayloads store |> List.skip before) [ [ "a", "5" ] ] "re-creating the signal saves nothing"
             }
 
+            testCaseAsync "a write in the batch that disposes its signal's owner is saved and restored"
+            <| async {
+                let store = RecordingStore ()
+
+                do!
+                    (store :> IStateStore).SaveMany [ record "a" 1 "41" ]
+                    |> Async.AwaitTask
+
+                let! session = sessionOver store
+                let before = store.Saves.Length
+
+                do
+                    use graph = new Graph ()
+                    use _active = graph.Activate ()
+
+                    let mount () =
+                        createRoot (fun owner -> owner, Persist.signal session keys[0] 0)
+
+                    let first, signal = mount ()
+
+                    batch (fun () ->
+                        signal.Value <- 5
+                        first.Dispose ())
+
+                    let second, signal = mount ()
+                    Expect.equal signal.Value 5 "the re-created signal reads the write"
+                    second.Dispose ()
+
+                do! session.FlushAsync () |> Async.AwaitTask
+                Expect.equal (savedPayloads store |> List.skip before) [ [ "a", "5" ] ] "the write saves once"
+            }
+
             testCaseAsync "a session serves one graph"
             <| async {
                 let! session = sessionOver (RecordingStore ())
