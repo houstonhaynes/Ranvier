@@ -80,6 +80,13 @@ type PersistLoadException(key: string, failure: PersistFailure) =
     /// <summary>Why the record cannot be restored.</summary>
     member _.Failure = failure
 
+/// <summary>
+/// The failure of a restored async source: the stored failure's <c>Message</c>, as a replay's
+/// <c>JournalReplayedFailure</c> carries a recorded one.
+/// </summary>
+type PersistedFailure(message: string) =
+    inherit Exception(message)
+
 /// <summary>The options of a load.</summary>
 type PersistOptions =
     {
