@@ -357,6 +357,166 @@ let private replayTests (mode: ReplayMode) =
             }
         ]
 
+/// <summary>An input to the restored application.</summary>
+type RestoreOp =
+    | WriteA of int
+    | WriteB of int
+    | WriteBoth of int * int
+    | Settle of int
+    | Fail of int
+    | Flush
+
+/// <summary>The keyed inputs and memos of the application a restore rebuilds.</summary>
+type private App =
+    {
+        A: Signal<int>
+        B: Signal<int>
+        Status: AsyncSource<int>
+        Sum: Memo<int>
+        Scaled: Memo<int>
+    }
+
+let private appKeys: IPersistKey list = [ aKey; bKey; status ]
+
+/// <summary>The application, its every keyed input persisted and registered on the journal under its store key.</summary>
+let private build (session: PersistSession) =
+    let a, b = signals session
+
+    let source = Journal.keySource "status" (intCodec 1) (Persist.source session status)
+
+    {
+        A = a
+        B = b
+        Status = source
+        Sum = createMemo (fun _ -> a.Value + b.Value)
+        Scaled = createMemo (fun _ -> source.Value * 10 + a.Value)
+    }
+
+let private perform (app: App) (op: RestoreOp) =
+    match op with
+    | WriteA value -> app.A.Value <- value
+    | WriteB value -> app.B.Value <- value
+    | WriteBoth (a, b) ->
+        batch (fun () ->
+            app.A.Value <- a
+            app.B.Value <- b)
+    | Settle value -> app.Status.Settle value
+    | Fail code -> app.Status.Fail (exn ("failure " + string code))
+    | Flush -> flush ()
+
+/// <summary>The reading as text, with a failure as its message.</summary>
+let private outcome (reading: Reading<int>) =
+    match reading with
+    | Reading.Ready value -> "ready " + string value
+    | Reading.Pending -> "pending"
+    | Reading.Failed error -> "failed " + error.Message
+
+/// <summary>The values of every keyed input and every memo of the application.</summary>
+let private stateOf (app: App) =
+    [
+        "a " + string app.A.Peek
+        "b " + string app.B.Peek
+        "status " + outcome app.Status.TryValue
+        "sum " + outcome app.Sum.TryValue
+        "scaled " + outcome app.Scaled.TryValue
+    ]
+
+/// <summary>Runs <c>ops</c> on the application over <c>store</c>; returns its final state and its journal.</summary>
+let private runApp (store: IStateStore) (ops: RestoreOp list) =
+    async {
+        let journal = MemoryJournal "app"
+        let! session = load store appKeys
+
+        let! final =
+            inGraph session journal (fun _ ->
+                let app = build session
+                List.iter (perform app) ops
+                stateOf app)
+
+        return final, journal.Entries
+    }
+
+/// <summary>
+/// Expects the application restored from the snapshot taken after the first <c>cut</c> ops, with the uninterrupted
+/// run's journal replayed by <c>Persist.replay mode</c>, to hold the uninterrupted run's final state.
+/// </summary>
+let restoreMatches (mode: ReplayMode) (ops: RestoreOp list) (cut: int) =
+    async {
+        let snapshot = MemoryStateStore ()
+        let! _ = runApp snapshot (List.truncate cut ops)
+        let! expected, entries = runApp (MemoryStateStore ()) ops
+        let! session = load snapshot appKeys
+
+        let! actual =
+            inGraph session (MemoryJournal "app") (fun graph ->
+                let app = build session
+                Persist.replay mode session graph entries
+                stateOf app)
+
+        Expect.equal
+            actual
+            expected
+            ("restored after "
+             + string cut
+             + " of "
+             + string ops
+             + " in "
+             + string mode)
+    }
+
+/// <summary>
+/// <c>count</c> op lists of up to 12 ops, each with a cut point, from a Park-Miller generator seeded with <c>seed</c>.
+/// </summary>
+let seededCases (seed: int) (count: int) =
+    let mutable state = float (max 1 seed)
+
+    let next (bound: int) =
+        state <- (state * 48271.0) % 2147483647.0
+        int (state % float bound)
+
+    [
+        for _ in 1..count do
+            let ops =
+                [
+                    for _ in 1 .. next 13 do
+                        match next 6 with
+                        | 0 -> WriteA (next 4)
+                        | 1 -> WriteB (next 4)
+                        | 2 -> WriteBoth (next 4, next 4)
+                        | 3 -> Settle (next 4)
+                        | 4 -> Fail (next 3)
+                        | _ -> Flush
+                ]
+
+            ops, next (ops.Length + 1)
+    ]
+
+let private propertyTests =
+    testList
+        "restore property"
+        [
+            for mode in [ ReplayMode.Diagnostic; ReplayMode.Reenact ] do
+                testCaseAsync (
+                    "seeded op lists restore to the uninterrupted run under "
+                    + string mode
+                )
+                <| async {
+                    for ops, cut in seededCases 197 80 do
+                        do! restoreMatches mode ops cut
+                }
+#if !FABLE_COMPILER
+                testPropertyWithConfig
+                    { FsCheckConfig.defaultConfig with
+                        maxTest = 200
+                    }
+                    ("op lists restore to the uninterrupted run under "
+                     + string mode)
+                    (fun (ops: RestoreOp list) (cut: int) ->
+                        restoreMatches mode ops (abs (cut % (ops.Length + 1)))
+                        |> Async.RunSynchronously)
+#endif
+        ]
+
 [<Tests>]
 let tests =
     testList
@@ -364,4 +524,5 @@ let tests =
         [
             sourceTests
             testList "Persist.replay" [ replayTests ReplayMode.Diagnostic; replayTests ReplayMode.Reenact ]
+            propertyTests
         ]
