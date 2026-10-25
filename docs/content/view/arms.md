@@ -197,20 +197,21 @@ publish warns at each call.
 **Cost in the browser.** In Chromium a site runs within a few percent of the same view written with `matchWith`. The
 figures are paired median ratios over the `matchWith` twin, each sample paired with the twin's sample of the same
 process and round, at 1,000 rows. The gate pools the committed runs whose recorded source hashes match the measured
-sources and that built the bundle they measured: six runs of 45 pairs, on a shared machine at 38-96 % CPU load:
+sources and that built the bundle they measured: twelve runs of 45 pairs, on a shared machine at 12-96 % CPU load.
+The measured sources are the Arms.Match lowering, the keyed-rows benchmark and its fixtures; a change to the core or
+the view libraries leaves the pool unchanged:
 
 | Operation | pooled median (95 % interval) | budget |
 |---|---|---|
-| Create | 1.006 (0.986-1.025) | 1.05 |
-| Switch every row to another arm | 1.015 (0.997-1.048) | 1.04 |
-| Update every row's payload | 1.042 (1.009-1.089) | 1.07 |
-| Clear | 0.991 (0.946-1.030) | 1.05 |
+| Create | 1.006 (0.993-1.018) | 1.05 |
+| Switch every row to another arm | 1.011 (0.999-1.022) | 1.04 |
+| Update every row's payload | 1.033 (1.010-1.060) | 1.07 |
+| Clear | 0.991 (0.957-1.020) | 1.05 |
 
 The budgets are fixed. The target was 1.05 on every operation; the switch budget of 1.04 and the payload budget of
 1.07 are a concession, as the lowered code is indistinguishable in these timings from the same shape written by hand.
-An operation passes when its pooled median is within budget. The pooled switch interval, 0.997-1.048, straddles its
-1.04 budget, and the pooled payload interval, 1.009-1.089, straddles its 1.07 budget; the create and clear intervals
-lie below theirs. Each run's median varies more than the pool:
+An operation passes when its pooled median is within budget. Every pooled interval lies below its budget. Each run's
+median varies more than the pool:
 
 | Run | Create | Switch | Payload | Clear |
 |---|---|---|---|---|
@@ -220,14 +221,20 @@ lie below theirs. Each run's median varies more than the pool:
 | 22d86d44, 4 | 1.024 | 1.003 | 0.994 | 0.955 |
 | 22d86d44, 5 | 1.002 | 1.018 | 1.013 | 1.035 |
 | 22d86d44, 6 | 0.977 | 1.051 | 1.017 | 1.015 |
+| 2dc2835b, 1 | 1.009 | 1.005 | 1.094 | 0.970 |
+| 2dc2835b, 2 | 0.983 | 1.016 | 1.024 | 1.004 |
+| 2dc2835b, 3 | 1.014 | 0.975 | 0.955 | 1.119 |
+| 2dc2835b, 4 | 0.992 | 1.012 | 1.033 | 0.983 |
+| 2dc2835b, 5 | 0.993 | 1.014 | 0.970 | 0.863 |
+| 2dc2835b, 6 | 1.046 | 0.998 | 1.048 | 1.040 |
 
 The five runs at da6d32e6 stay in the repository and out of the pool: four of them served a bundle they did not build,
 and the benchmark script has changed since. The earlier runs 8ee10018, 299ab276, fccc740c, dc8b3d5b, 5369d6a0 and
-4d00179e also stay out. Each was measured on a `src/Ranvier/Core.fs` and `src/Ranvier/Projections.fs` that both modes
-compile and that have changed since, and on an earlier benchmark script; 8ee10018, 299ab276 and fccc740c also on an
-earlier lowering.
-A later change to a hashed source takes every run out of the pool, and the gate fails until runs are recorded on the
-new sources; CI runs the gate only for a change to the lowering, its benchmark or its runs. The retained heap is 1.2 % above the twin's per row, after create and after a switch. The runs, their
+4d00179e also stay out. Each was measured on an earlier benchmark script and an earlier Fable plugin; 8ee10018,
+299ab276 and fccc740c also on an earlier `Site.fs` and `Lower.fs`.
+A later change to the lowering, the benchmark or its fixtures takes every run out of the pool, and the gate fails until
+runs are recorded on the new sources; CI runs the gate only for a change to the lowering, its benchmark or its runs. A
+core change that slows Arms.Match shows in the gate once the lowering changes or a run is recorded. The retained heap is 1.2 % above the twin's per row, after create and after a switch. The runs, their
 load readings and the gate are in the
 [research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-arms-match.md#chromium).
 

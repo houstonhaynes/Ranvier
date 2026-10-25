@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { committed, outOfDate, pairsOf, interval, pooled, runs } from "./pooled-interval.mjs";
+import { hashedSources, lineEndingHashes } from "../../../examples/Fable.Ranvier.Playground/benchmarks/frameworks/run-sources.mjs";
 import { budgets, judge } from "./chromium-gate.mjs";
 
 const operations = ["armsCreate1k", "armsSwitch1k", "armsPayload1k", "armsClear1k"];
@@ -50,12 +51,28 @@ test("the pool is the committed runs whose recorded sources match the tree", () 
   for (const run of committed) assert.equal(runs.includes(run), outOfDate(run).length === 0, run.path);
 });
 
+const treeHashes = () => Object.fromEntries(hashedSources.map(path =>
+  [path, lineEndingHashes(readFileSync(new URL(`../../../examples/Fable.Ranvier.Playground/${path}`, import.meta.url)))[0]]));
+const runOf = sourceHashes => ({ path: "synthetic.json", read: () => ({ sourceHashes }) });
+
+test("a run whose recorded hashes differ from the tree only in src/Ranvier/Core.fs stays in the pool", () => {
+  assert.deepEqual(outOfDate(runOf({ ...treeHashes(), "../../src/Ranvier/Core.fs": "0" })), []);
+});
+
+test("a run whose recorded hash of experiments/Ranvier.View.Arms/Site.fs differs from the tree leaves the pool", () => {
+  assert.deepEqual(outOfDate(runOf({ ...treeHashes(), "../../experiments/Ranvier.View.Arms/Site.fs": "0" })), ["../../experiments/Ranvier.View.Arms/Site.fs"]);
+});
+
+test("the runs at 22d86d44, which differ from the tree only in src/Ranvier/Core.fs, are in the pool", () => {
+  for (const n of [1, 2, 3, 4, 5, 6]) assert.ok(runs.some(r => r.path === `docs/research/arms-match/arms-match-22d86d44-${n}.json`), String(n));
+});
+
 test("the runs recorded before the rebase onto aae54f2e are out of the pool", () => {
   for (const path of ["docs/.ai/benchmarks/arms-157-noisy-probe.json", "docs/research/arms-match/arms-match-299ab276.json", "docs/research/arms-match/arms-match-shape.json",
     "docs/research/arms-match/arms-match-dc8b3d5b.json", "docs/research/arms-match/arms-match-5369d6a0.json", "docs/research/arms-match/arms-match.json"]) {
     const run = committed.find(r => r.path === path);
     assert.ok(run, path);
-    assert.ok(outOfDate(run).includes("../../src/Ranvier/Core.fs"), path);
+    assert.ok(outOfDate(run).includes("../../experiments/Ranvier.View.Arms.FablePlugin/Plugin.fs"), path);
     assert.ok(!runs.includes(run), path);
   }
 });

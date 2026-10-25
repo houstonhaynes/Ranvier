@@ -32,6 +32,20 @@ test("a run matches the tree when it records every hashed source with the source
   assert.deepEqual(mismatchedSources({ ...recorded, [hashedSources[0]]: "0" }, read), [hashedSources[0]]);
 });
 
+test("the lowering, the keyed-rows benchmark and its fixtures are hashed; the core, the view libraries and the lock file are not", () => {
+  for (const path of ["benchmarks/frameworks/keyed-rows.mjs", "tests/KeyedRowsArmsMatchPerf.fs", "../../experiments/Ranvier.View.Arms/Site.fs", `${plugin}Lower.fs`])
+    assert.ok(hashedSources.includes(path), path);
+  for (const path of hashedSources)
+    assert.match(path, /^(benchmarks\/frameworks\/|tests\/KeyedRows[^/]*Perf\.fs$|\.\.\/\.\.\/experiments\/Ranvier\.View\.Arms)/, path);
+});
+
+test("a run that differs from the tree only in a core source matches the tree", () => {
+  const read = path => Buffer.from(`source of ${path}\n`);
+  const recorded = Object.fromEntries(hashedSources.map(path => [path, lineEndingHashes(read(path))[0]]));
+  assert.deepEqual(mismatchedSources({ ...recorded, "../../src/Ranvier/Core.fs": "0" }, read), []);
+  assert.deepEqual(mismatchedSources({ ...recorded, "../../experiments/Ranvier.View.Arms/Site.fs": "0" }, read), ["../../experiments/Ranvier.View.Arms/Site.fs"]);
+});
+
 test("sources unchanged through the run and committed are current", () => {
   assert.deepEqual(staleSources({ before: { a: "1", b: "2" }, after: { a: "1", b: "2" }, uncommitted: [] }), []);
 });

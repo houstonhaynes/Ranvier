@@ -184,13 +184,16 @@ concatenates each run's per-pair ratios and applies the bootstrap of `keyed-rows
 `experiments/Ranvier.View.Arms/Checks/pooled-interval.mjs` prints the result, `chromium-gate.mjs` judges each
 operation by the pooled median, and `pooled-interval.test.mjs` checks the fixed budgets and the pooled medians against
 them. The pool is every committed run whose recorded hashes match every source `run-sources.mjs` lists, up to line
-endings: the benchmark, the core and view sources both modes compile, and the Fable plugin project with each file it
-compiles. A change to any of them takes every run out of the pool, and the gate fails until runs are recorded on the
-new sources. A pooled run builds its own bundle (`--build`) into `generated-keyed-pooled/<label>` under a lock per
+endings: the Arms.Match lowering (`experiments/Ranvier.View.Arms` and the Fable plugin project with each file it
+compiles), the keyed-rows benchmark with its page and build config, and the keyed-rows fixtures. The core, the view
+libraries and the Playground lock file are not hashed (user decision, 2026-10-25); a run is compared on the listed
+paths alone. A change to any listed path takes every run out of the pool, and the gate fails until runs are recorded
+on the new sources. A pooled run builds its own bundle (`--build`) into `generated-keyed-pooled/<label>` under a lock per
 checkout, and records `built` and the served bundle's `bundleHash`; `keyed-rows.mjs` refuses the write when the bundle
 changed during the run. CI runs the gate only for a change to the lowering, its benchmark, its runs or the workflow
-(`changes.cjs`, `armsRuns`). The six runs at `22d86d44` are the pool; each is the Step 11 command with `--build` under
-`gate-lock.ps1 bench`, two at a time, and all six record the same `bundleHash`. CPU load before / after in parentheses:
+(`changes.cjs`, `armsRuns`). The six runs at `22d86d44` and the six at `2dc2835b` are the pool; each is the Step 11
+command with `--build` under `gate-lock.ps1 bench`, two at a time, and the six runs at each commit record the same
+`bundleHash`. CPU load before / after in parentheses:
 
 | Run (CPU load, %) | create | switch | payload | clear |
 |---|---|---|---|---|
@@ -200,12 +203,17 @@ changed during the run. CI runs the gate only for a change to the lowering, its 
 | `arms-match-22d86d44-4` (52, 59, 68 / 57, 82, 76) | 1.024 (0.989-1.057) | 1.003 (0.951-1.048) | 0.994 (0.946-1.084) | 0.955 (0.869-1.030) |
 | `arms-match-22d86d44-5` (71, 88, 59 / 66, 71, 63) | 1.002 (0.952-1.053) | 1.018 (0.981-1.077) | 1.013 (0.939-1.128) | 1.035 (0.893-1.156) |
 | `arms-match-22d86d44-6` (65, 64, 59 / 81, 68, 68) | 0.977 (0.917-1.041) | 1.051 (0.997-1.101) | 1.017 (0.929-1.144) | 1.015 (0.922-1.107) |
-| pooled, 270 pairs | 1.006 (0.986-1.025) | 1.015 (0.997-1.048) | 1.042 (1.009-1.089) | 0.991 (0.946-1.030) |
+| `arms-match-2dc2835b-1` (54, 48, 38 / 45, 51, 65) | 1.009 (0.979-1.036) | 1.005 (0.969-1.026) | 1.094 (0.979-1.158) | 0.970 (0.880-1.064) |
+| `arms-match-2dc2835b-2` (54, 48, 37 / 77, 26, 44) | 0.983 (0.962-1.004) | 1.016 (0.991-1.047) | 1.024 (0.967-1.088) | 1.004 (0.891-1.133) |
+| `arms-match-2dc2835b-3` (57, 20, 34 / 46, 46, 62) | 1.014 (0.971-1.057) | 0.975 (0.937-1.041) | 0.955 (0.895-1.090) | 1.119 (0.931-1.192) |
+| `arms-match-2dc2835b-4` (48, 32, 58 / 42, 35, 29) | 0.992 (0.975-1.018) | 1.012 (0.981-1.041) | 1.033 (0.972-1.095) | 0.983 (0.902-1.096) |
+| `arms-match-2dc2835b-5` (33, 46, 23 / 35, 54, 38) | 0.993 (0.975-1.043) | 1.014 (0.977-1.049) | 0.970 (0.892-1.011) | 0.863 (0.797-1.132) |
+| `arms-match-2dc2835b-6` (40, 51, 63 / 18, 12, 28) | 1.046 (1.022-1.058) | 0.998 (0.965-1.014) | 1.048 (0.987-1.096) | 1.040 (0.913-1.141) |
+| pooled, 540 pairs | 1.006 (0.993-1.018) | 1.011 (0.999-1.022) | 1.033 (1.010-1.060) | 0.991 (0.957-1.020) |
 | budget | 1.05 | 1.04 | 1.07 | 1.05 |
 
-Every pooled median is within its budget. The create and clear pooled intervals lie below their budgets; the pooled
-switch interval straddles 1.04 and the pooled payload interval straddles 1.07. The runs' switch medians spread from
-0.975 to 1.051 and their payload medians from 0.994 to 1.149.
+Every pooled median is within its budget, and every pooled interval lies below it. The runs' switch medians spread
+from 0.975 to 1.051 and their payload medians from 0.955 to 1.149.
 
 **The `da6d32e6` runs, out of the pool.** The five runs at `da6d32e6`, on the branch rebased onto `integration/issues`
 at `aae54f2e`, stay committed as history. They predate the `--build` requirement: only the first built its bundle,
