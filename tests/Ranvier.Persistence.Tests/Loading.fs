@@ -68,7 +68,11 @@ let tests =
                         }
                     )
 
+#if !FABLE_COMPILER
+                // Fable raises invalidArg as a plain Error.
                 Expect.isTrue (error :? ArgumentException) "a duplicate key is an argument error"
+#endif
+                Expect.stringContains error.Message "declared more than once" "the error says why"
                 Expect.stringContains error.Message "\"count\"" "the error names the key"
             }
 

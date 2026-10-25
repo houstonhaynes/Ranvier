@@ -55,7 +55,12 @@ let expectLoadFailure (key: string) (failure: PersistFailure) (load: Async<Persi
             Expect.equal error.Key key "the failure names the key"
             Expect.equal error.Failure failure "the failure reason"
             Expect.stringContains error.Message ("\"" + key + "\"") "the message names the key"
-        | other -> failtestf "expected a PersistLoadException, got %s: %s" (other.GetType().Name) other.Message
+        | other ->
+#if FABLE_COMPILER
+            failtestf "expected a PersistLoadException, got: %s" other.Message
+#else
+            failtestf "expected a PersistLoadException, got %s: %s" (other.GetType().Name) other.Message
+#endif
     }
 
 /// <summary>A store over <c>inner</c> that records the records of each <c>SaveMany</c> call, in call order.</summary>
