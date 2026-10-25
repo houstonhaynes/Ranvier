@@ -135,6 +135,36 @@ let tests =
                 Expect.equal values (9, 0) "the undeclared stale record is discarded"
             }
 
+            testCaseAsync "two sessions loaded against a stale buster keep each other's saves"
+            <| async {
+                let store =
+                    storeWith [ record "$ranvier/buster" 1 "v1"; record "a" 1 "1"; record "b" 1 "2" ]
+
+                let! first =
+                    Persist.loadWith (withBuster (Some "v2")) store declared
+                    |> Async.AwaitTask
+
+                let! second =
+                    Persist.loadWith (withBuster (Some "v2")) store declared
+                    |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default.WithDispatcher (ImmediateDispatcher ()))
+                    use _active = graph.Activate ()
+                    (Persist.signal first a 0).Value <- 5
+
+                do! first.FlushAsync () |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default.WithDispatcher (ImmediateDispatcher ()))
+                    use _active = graph.Activate ()
+                    (Persist.signal second b 0).Value <- 7
+
+                do! second.FlushAsync () |> Async.AwaitTask
+                let! values = restored (withBuster (Some "v2")) store
+                Expect.equal values (5, 7) "the second session's bust keeps the first session's save"
+            }
+
             testCaseAsync "a buster set on a store saved without one keeps the old records discarded on the next load"
             <| async {
                 let store = storeWith [ record "a" 1 "1"; record "b" 1 "2" ]

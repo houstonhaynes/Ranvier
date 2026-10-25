@@ -20,6 +20,10 @@ module internal PersistTask =
     [<Emit("$0.then($1)")>]
     let map (work: Task<'T>) (f: 'T -> 'U) : Task<'U> = jsNative
 
+    /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a fault of <c>work</c> faults it.</summary>
+    [<Emit("$0.then($1)")>]
+    let bind (work: Task<'T>) (next: 'T -> Task) : Task = jsNative
+
     /// <summary>The task <c>next</c> returns, started once <c>tail</c> has completed in any state.</summary>
     [<Emit("$0.then($1, $1)")>]
     let after (tail: Task) (next: unit -> Task) : Task = jsNative
@@ -41,6 +45,14 @@ module internal PersistTask =
             let! value = work.ConfigureAwait false
             return f value
         }
+
+    /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a fault of <c>work</c> faults it.</summary>
+    let bind (work: Task<'T>) (next: 'T -> Task) : Task =
+        task {
+            let! value = work.ConfigureAwait false
+            do! (next value).ConfigureAwait false
+        }
+        :> Task
 
     /// <summary>The task <c>next</c> returns, started once <c>tail</c> has completed in any state.</summary>
     let after (tail: Task) (next: unit -> Task) : Task =
