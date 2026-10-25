@@ -1,0 +1,6 @@
+<Project>
+    <!-- The persistence suite, in compile order. Ranvier.Persistence.Tests and fable/Ranvier.Tests.Fable both compile it. -->
+    <ItemGroup>
+        <Compile Include="$(MSBuildThisFileDirectory)Scaffold.fs" Link="Scaffold.fs" />
+    </ItemGroup>
+</Project>

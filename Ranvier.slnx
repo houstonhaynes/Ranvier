@@ -61,6 +61,7 @@
     <Project Path="src/Ranvier.CSharp/Ranvier.CSharp.fsproj" />
     <Project Path="src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
     <Project Path="src/Ranvier.Query/Ranvier.Query.fsproj" />
+    <Project Path="src/Ranvier.Persistence/Ranvier.Persistence.fsproj" />
     <Project Path="src/Ranvier.Wire/Ranvier.Wire.fsproj" />
     <Project Path="src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
     <Project Path="src/Ranvier.View/Ranvier.View.fsproj" />
@@ -72,6 +73,7 @@
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />
     <Project Path="tests/Ranvier.View.Twin.Tests/Ranvier.View.Twin.Tests.fsproj" />
     <Project Path="tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj" />
+    <Project Path="tests/Ranvier.Persistence.Tests/Ranvier.Persistence.Tests.fsproj" />
     <Project Path="tests/Ranvier.CSharp.Tests/Ranvier.CSharp.Tests.csproj" />
     <Project Path="tests/Ranvier.Mcp.Tests/Ranvier.Mcp.Tests.fsproj" />
     <Project Path="fable/Ranvier.Tests.Fable/Ranvier.Tests.Fable.fsproj" />
