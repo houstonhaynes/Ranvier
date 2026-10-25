@@ -262,7 +262,15 @@ let private observerState (node: INode) =
         ||| System.Reflection.BindingFlags.NonPublic
 
     let observers = node.GetType().GetField("observers", flags).GetValue node
-    node.Id, node.Status, unbox<int>(observers.GetType().GetProperty("Count", flags).GetValue observers)
+
+    // A signal creates its observer set on its first observer.
+    let count =
+        if isNull observers then
+            0
+        else
+            unbox<int>(observers.GetType().GetProperty("Count", flags).GetValue observers)
+
+    node.Id, node.Status, count
 #endif
 
 let private record (name: string) (graph: Graph) (target: HTMLElement) =

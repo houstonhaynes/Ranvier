@@ -3687,8 +3687,13 @@ type Graph(options: GraphOptions) =
 /// </summary>
 type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T>) =
     let id = graph.NextId ()
+#if RANVIER_TRACE
     let observers = ObserverSet ()
     do Tracer.Bind (observers, graph, id)
+#else
+    /// <summary>The signal's readers; null until the first reader arrives.</summary>
+    let mutable observers: ObserverSet = Unchecked.defaultof<_>
+#endif
     let mutable value = initial
 
 #if RANVIER_COUNTERS
@@ -3715,12 +3720,22 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
         member _.Status = Status.None
 
     interface ISource with
+        // The null checks sit in the members rather than a shared helper, which the JIT leaves as a call.
         member _.AddObserver(c, slot) =
+#if !RANVIER_TRACE
+            if Platform.isNull (box observers) then
+                observers <- ObserverSet ()
+#endif
             observers.Add (c, slot)
 
         member _.TryAddObserver(c, slot) =
+#if !RANVIER_TRACE
+            if Platform.isNull (box observers) then
+                observers <- ObserverSet ()
+#endif
             observers.TryAdd (c, slot)
 
+        // A handle comes from an add, so the set exists.
         member _.RemoveObserverAt(c, handle) =
             observers.RemoveAt (c, handle)
 
@@ -3755,7 +3770,9 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
                             value <- v
                             Tracer.Write (observers, true, box v)
 
-                            observers.NotifyDirty ()
+                            if not (Platform.isNull (box observers)) then
+                                observers.NotifyDirty ()
+
                             Tracer.Notified observers
 
                             graph.RequestFlush ()
@@ -3774,7 +3791,10 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
                 if not (equal.Equals (value, v)) then
                     value <- v
                     Tracer.Write (observers, true, box v)
-                    observers.NotifyDirtyExcept running
+
+                    if not (Platform.isNull (box observers)) then
+                        observers.NotifyDirtyExcept running
+
                     Tracer.Notified observers
                     graph.RequestFlush ()
                 else
@@ -3788,7 +3808,8 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
 
     /// <summary>Marks every reader for a check, leaving the value unchanged.</summary>
     member internal _.NotifyCheck() =
-        observers.NotifyCheck ()
+        if not (Platform.isNull (box observers)) then
+            observers.NotifyCheck ()
 
     /// <summary>
     /// Non-throwing, tracked read.
@@ -3808,7 +3829,11 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
     /// How many computations currently read this signal. Exposed for tests
     /// that need to assert an edge was dropped, or not duplicated.
     /// </summary>
-    member internal _.ObserverCount = observers.Count
+    member internal _.ObserverCount =
+        if Platform.isNull (box observers) then
+            0
+        else
+            observers.Count
 
 /// <summary>
 /// A source whose value arrives later.
