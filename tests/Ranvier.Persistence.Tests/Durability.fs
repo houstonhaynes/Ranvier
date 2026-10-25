@@ -46,14 +46,6 @@ let private storeWith (records: StoredRecord list) =
     (store :> IStateStore).SaveMany records |> ignore
     store :> IStateStore
 
-let private failed (message: string) : Task =
-#if FABLE_COMPILER
-    Fable.Core.JS.Constructors.Promise.reject (exn message)
-    |> unbox<Task>
-#else
-    Task.FromException (InvalidOperationException message)
-#endif
-
 /// <summary>
 /// A memory store whose <c>SaveMany</c> calls fault with the messages of <c>faults</c>, and whose <c>DeleteMany</c>
 /// and <c>Clear</c> calls fault with the messages of <c>deleteFaults</c>, in call order.

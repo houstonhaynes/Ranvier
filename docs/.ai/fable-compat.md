@@ -91,10 +91,10 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | Persistence/Coalescing.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
 | Persistence/Durability.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
 | Persistence/Collections.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
-| Persistence/Position.fs | 5 | 5 | 5 | 5 | 5 | 5 | 0 | 0 |
+| Persistence/Position.fs | 7 | 7 | 7 | 7 | 7 | 7 | 0 | 0 |
 | Persistence/LocalStorage.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1721 | 1699 | 1696 | 1942 | 1915 | 1912 | 147 | 1 |
+| **Total** | 1723 | 1701 | 1698 | 1944 | 1917 | 1914 | 147 | 1 |
 
 ## Tests.fs
 
@@ -2793,13 +2793,15 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 
 ## Persistence/Position.fs
 
-<details><summary>5 passed in every build and delivery that runs them</summary>
+<details><summary>7 passed in every build and delivery that runs them</summary>
 
 - a save records the position of the last journal entry in the same SaveMany
 - a load exposes the saved position
 - inputs journaled after the last save are not included in the position
 - the wrapper forwards every entry to the inner journal
 - a session without a journal saves no position
+- a save that faults part way leaves no position ahead of the records
+- a save without a journal deletes an earlier session's position
 
 </details>
 

@@ -1,6 +1,7 @@
 module Ranvier.Persistence.Tests.Support
 
 open System
+open System.Threading.Tasks
 open Expecto
 open Ranvier
 open Ranvier.Persistence
@@ -33,6 +34,15 @@ let rec private innermost (error: exn) =
     match error with
     | :? AggregateException as aggregate when not (isNull aggregate.InnerException) -> innermost aggregate.InnerException
     | _ -> error
+#endif
+
+/// <summary>A task faulted with <c>message</c>.</summary>
+let failed (message: string) : Task =
+#if FABLE_COMPILER
+    Fable.Core.JS.Constructors.Promise.reject (exn message)
+    |> unbox<Task>
+#else
+    Task.FromException (InvalidOperationException message)
 #endif
 
 /// <summary>The exception the work raises, unwrapped from task aggregation; fails the test when it completes.</summary>

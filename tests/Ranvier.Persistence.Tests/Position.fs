@@ -35,6 +35,35 @@ let private journaled (store: IStateStore) (journal: MemoryJournal) (write: Sign
         return session
     }
 
+/// <summary>
+/// A memory store whose <c>SaveMany</c> writes its records one at a time, in list order, and faults on the record at
+/// index <c>faultAt</c> of the first call.
+/// </summary>
+type private PartialStore(faultAt: int) =
+    let inner = MemoryStateStore () :> IStateStore
+    let mutable faulted = false
+
+    interface IStateStore with
+        member _.LoadMany keys =
+            inner.LoadMany keys
+
+        member _.SaveMany records =
+            if faulted then
+                inner.SaveMany records
+            else
+                faulted <- true
+
+                inner.SaveMany (List.truncate faultAt records)
+                |> ignore
+
+                failed "disk full"
+
+        member _.DeleteMany keys =
+            inner.DeleteMany keys
+
+        member _.Clear() =
+            inner.Clear ()
+
 [<Tests>]
 let tests =
     testList
@@ -142,5 +171,58 @@ let tests =
                     |> Async.AwaitTask
 
                 Expect.equal reloaded.Position None "no position"
+            }
+
+            testCaseAsync "a save that faults part way leaves no position ahead of the records"
+            <| async {
+                let store = PartialStore 1 :> IStateStore
+                let journal = MemoryJournal "app"
+
+                let! session =
+                    Persist.loadAsync store declared
+                    |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default.WithJournal (session.Journal journal))
+                    use _active = graph.Activate ()
+
+                    batch (fun () ->
+                        (Persist.signal session a 0).Value <- 1
+                        (Persist.signal session b 0).Value <- 2)
+
+                let! error = failureOf (session.FlushAsync () |> Async.AwaitTask)
+                Expect.equal error.Message "disk full" "the save faults on its second record"
+
+                let! reloaded =
+                    Persist.loadAsync store declared
+                    |> Async.AwaitTask
+
+                Expect.equal reloaded.Position None "the position is written after every record"
+            }
+
+            testCaseAsync "a save without a journal deletes an earlier session's position"
+            <| async {
+                let store = MemoryStateStore () :> IStateStore
+                let! _ = journaled store (MemoryJournal "app") (fun a _ _ -> a.Value <- 1)
+
+                let! session =
+                    Persist.loadAsync store declared
+                    |> Async.AwaitTask
+
+                Expect.notEqual session.Position None "the first session saved a position"
+
+                do
+                    use graph = new Graph (GraphOptions.Default)
+                    use _active = graph.Activate ()
+                    (Persist.signal session a 0).Value <- 5
+
+                do! session.FlushAsync () |> Async.AwaitTask
+
+                let! reloaded =
+                    Persist.loadAsync store declared
+                    |> Async.AwaitTask
+
+                Expect.equal reloaded.Position None "no position describes the newer record"
+                Expect.equal (Persist.restore reloaded a 0) 5 "the newer record"
             }
         ]

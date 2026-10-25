@@ -255,9 +255,9 @@ type PersistSession
         saves <- save
         outcome <- PersistTask.both outcome save
 
-    // Clears the store unless it already holds the new buster, then saves the records with the new buster. The bust
-    // stays pending until both succeed.
-    let saveBusted (records: StoredRecord list) : Task =
+    // Clears the store unless it already holds the new buster, runs prepare, then saves the records with the new
+    // buster. The bust stays pending until all three succeed.
+    let saveBusted (prepare: unit -> Task) (records: StoredRecord list) : Task =
         let records =
             match options.Buster with
             | Some buster ->
@@ -282,28 +282,46 @@ type PersistSession
                 else
                     store.Clear ())
 
-        PersistTask.andThen (fun () -> PersistTask.andThen clearStale (fun () -> store.SaveMany records)) (fun () ->
+        let prepareAndSave () =
+            PersistTask.andThen prepare (fun () -> store.SaveMany records)
+
+        PersistTask.andThen (fun () -> PersistTask.andThen clearStale prepareAndSave) (fun () ->
             busterPending <- false
             PersistTask.completed ())
 
     // The Seq of the last entry other than a Flush recorded through the session's journal wrapper.
     let mutable journaled: int option = None
+    // Whether the store may hold a position that this session's saves have not rewritten.
+    let mutable positionStale = position.IsSome
+
+    // Deletes the stored position, ahead of a save with no journal position to store.
+    let deletePosition () =
+        if positionStale then
+            PersistTask.andThen (fun () -> store.DeleteMany [ PersistReserved.positionKey ]) (fun () ->
+                positionStale <- false
+                PersistTask.completed ())
+        else
+            PersistTask.completed ()
 
     let drainDirty () =
         if dirty.Count > 0 then
             let records = dirty.Values |> Seq.choose id |> List.ofSeq
 
-            let records =
+            // The position follows every data record, so a save that stops part way leaves the position behind them.
+            let records, prepare =
                 match journaled with
                 | Some seq ->
-                    {
-                        Key = PersistReserved.positionKey
-                        Version = 1
-                        Payload = string seq
-                        ETag = None
-                    }
-                    :: records
-                | None -> records
+                    records
+                    @ [
+                        {
+                            Key = PersistReserved.positionKey
+                            Version = 1
+                            Payload = string seq
+                            ETag = None
+                        }
+                    ],
+                    PersistTask.completed
+                | None -> records, deletePosition
 
             let deleted =
                 dirty
@@ -314,9 +332,12 @@ type PersistSession
             dirty.Clear ()
 
             let save () =
-                if busterPending then saveBusted records
-                elif records.IsEmpty then PersistTask.completed ()
-                else store.SaveMany records
+                if busterPending then
+                    saveBusted prepare records
+                elif records.IsEmpty then
+                    prepare ()
+                else
+                    PersistTask.andThen prepare (fun () -> store.SaveMany records)
 
             enqueue (fun () ->
                 if deleted.IsEmpty then
@@ -332,7 +353,9 @@ type PersistSession
     /// <summary>
     /// A journal that records every entry in <c>inner</c>. Each save of the session then also stores, under
     /// <c>$ranvier/position</c> in the same <c>SaveMany</c>, the <c>Seq</c> of the last entry other than a
-    /// <c>Flush</c> recorded before the save: the saved records include every input up to it. The graph's
+    /// <c>Flush</c> recorded before the save: the saved records include every input up to it. The position is the last
+    /// record of the <c>SaveMany</c>, so a save that faults part way leaves the stored position behind the records.
+    /// A save with no such entry to store deletes <c>$ranvier/position</c> before it saves its records. The graph's
     /// <c>GraphOptions</c> take the wrapper as their journal.
     /// </summary>
     member _.Journal(inner: IInputJournal) : IInputJournal =
