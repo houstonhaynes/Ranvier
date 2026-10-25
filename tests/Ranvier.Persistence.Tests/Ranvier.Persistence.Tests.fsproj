@@ -12,6 +12,7 @@
     <ItemGroup>
         <Compile Include="FileStore.fs" />
         <Compile Include="RoundTrip.fs" />
+        <Compile Include="Tracking.fs" />
         <Compile Include="Main.fs" />
     </ItemGroup>
 

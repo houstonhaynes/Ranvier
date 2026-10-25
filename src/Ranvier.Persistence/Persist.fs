@@ -548,6 +548,26 @@ module Persist =
         | Some value -> unbox<'T> value
         | None -> fallback
 
+    // Marks each value of `read` whose payload differs from the last marked one, starting from `marked` (None: the
+    // first value is taken as marked), and remembers it for inputs created for the key later.
+    let private persistReads (session: PersistSession) (key: PersistKey<'T>) (marked: string option) (read: unit -> 'T) =
+        let mutable marked = marked
+
+        let mark (value: 'T) =
+            let record = PersistCodec.encode key.Codec key.Key value
+
+            match marked with
+            | None -> marked <- Some record.Payload
+            | Some payload when payload = record.Payload -> ()
+            | Some _ ->
+                marked <- Some record.Payload
+                session.Mark record
+                session.Remember (key.Key, box value)
+
+        createEffectOn read mark
+        // Marks a write made in the batch that disposes the owner.
+        onCleanup (fun () -> mark (untrack read))
+
     /// <summary>
     /// A signal holding <c>Persist.restore session key fallback</c>, made in the current graph and owner, so a signal
     /// re-created for the key starts from its last written value.
@@ -562,20 +582,32 @@ module Persist =
         session.Attach Graph.Current
         session.Claim key.Key
         let signal = createSignal initial
-        let mutable marked = key.Codec.Codec.Encode initial
-
-        let mark (value: 'T) =
-            let record = PersistCodec.encode key.Codec key.Key value
-
-            if record.Payload <> marked then
-                marked <- record.Payload
-                session.Mark record
-                session.Remember (key.Key, box value)
-
-        createEffectOn (fun () -> signal.Value) mark
-        // Marks a write made in the batch that disposes the owner.
-        onCleanup (fun () -> mark (untrack (fun () -> signal.Value)))
+        persistReads session key (Some (key.Codec.Codec.Encode initial)) (fun () -> signal.Value)
         signal
+
+    /// <summary>
+    /// Saves the value of <c>read</c> under <c>key</c> after each flush that changes it, also when the flush disposes
+    /// the current owner, until the owner is disposed. <c>read</c> is a tracked read, such as an <c>Mvu</c>'s
+    /// <c>Model</c>. Its first value is saved only when it differs from the key's restored value; with no restored
+    /// value, its first value is not saved.
+    /// </summary>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let app = Mvu.create (Persist.restore session modelKey init) update
+    /// Persist.track session modelKey (fun () -> app.Model)
+    /// </code>
+    /// </example>
+    /// <exception cref="T:System.InvalidOperationException">
+    /// The key was not passed to the load, a live persisted input already holds it, or the session serves another graph.
+    /// </exception>
+    let track (session: PersistSession) (key: PersistKey<'T>) (read: unit -> 'T) : unit =
+        let restored =
+            session.TryRestored key.Key
+            |> Option.map (fun value -> key.Codec.Codec.Encode (unbox<'T> value))
+
+        session.Attach Graph.Current
+        session.Claim key.Key
+        persistReads session key restored read
 
 
     /// <summary>
