@@ -31,3 +31,7 @@ type MemoryStateStore() =
                 records.Remove key |> ignore
 
             PersistTask.completed ()
+
+        member _.Clear() =
+            records.Clear ()
+            PersistTask.completed ()

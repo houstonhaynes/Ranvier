@@ -22,6 +22,8 @@ type IStateStore =
     abstract SaveMany: records: StoredRecord list -> Task
     /// <summary>Removes the records of the keys; an absent key is skipped.</summary>
     abstract DeleteMany: keys: string list -> Task
+    /// <summary>Removes every record of the store.</summary>
+    abstract Clear: unit -> Task
 
 /// <summary>Rewrites a payload stored at version <c>From</c> into its version <c>From + 1</c> form.</summary>
 type PersistMigration =

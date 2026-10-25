@@ -109,19 +109,8 @@ type PersistSession
         saves <- save
         outcome <- PersistTask.both outcome save
 
-    // Deletes the stale keys, then saves the records with the new buster. The bust stays pending until both succeed.
+    // Clears the store, then saves the records with the new buster. The bust stays pending until both succeed.
     let saveBusted (records: StoredRecord list) : Task =
-        let written = HashSet<string>(records |> List.map _.Key)
-
-        let stale =
-            [
-                yield! declared
-                yield PersistReserved.positionKey
-                if options.Buster.IsNone then
-                    yield PersistReserved.busterKey
-            ]
-            |> List.filter (written.Contains >> not)
-
         let records =
             match options.Buster with
             | Some buster ->
@@ -134,7 +123,7 @@ type PersistSession
                 :: records
             | None -> records
 
-        PersistTask.andThen (fun () -> PersistTask.andThen (fun () -> store.DeleteMany stale) (fun () -> store.SaveMany records)) (fun () ->
+        PersistTask.andThen (fun () -> PersistTask.andThen (fun () -> store.Clear ()) (fun () -> store.SaveMany records)) (fun () ->
             busterPending <- false
             PersistTask.completed ())
 
@@ -260,8 +249,8 @@ module Persist =
     /// <summary>
     /// Loads the stored records of <c>keys</c>. The task faults with a <c>PersistLoadException</c> naming the key when
     /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode; with
-    /// <c>options.DiscardUndecodable</c> set, a record that fails to decode reads as absent instead. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first successful save deletes
-    /// the stored records of the unwritten keys and the journal position.
+    /// <c>options.DiscardUndecodable</c> set, a record that fails to decode reads as absent instead. A stored buster unequal to <c>options.Buster</c> discards every record: each save of the session clears the store
+    /// before it writes, until one such save succeeds.
     /// </summary>
     /// <exception cref="T:System.ArgumentException">Two of the keys share a store key.</exception>
     let loadWith (options: PersistOptions) (store: IStateStore) (keys: IPersistKey list) : Task<PersistSession> =

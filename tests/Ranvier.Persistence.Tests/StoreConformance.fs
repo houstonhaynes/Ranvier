@@ -68,6 +68,19 @@ let storeCases (create: unit -> IStateStore) =
             Expect.equal (contents loaded) [ "b", 1, "beta" ] "only the kept record loads"
         }
 
+        testCaseAsync "a cleared store loads no records and takes later saves"
+        <| async {
+            let store = create ()
+            do! saveMany store [ record "a" 1 "alpha"; record "$ranvier/buster" 1 "v1" ]
+            do! store.Clear () |> Async.AwaitTask
+            do! store.Clear () |> Async.AwaitTask
+            let! cleared = loadMany store [ "a"; "$ranvier/buster" ]
+            Expect.isEmpty cleared "every record is removed"
+            do! saveMany store [ record "b" 1 "beta" ]
+            let! loaded = loadMany store [ "a"; "b" ]
+            Expect.equal (contents loaded) [ "b", 1, "beta" ] "a save after the clear loads"
+        }
+
         testCaseAsync "keys and payloads with separators, reserved prefixes and non-ASCII text round trip"
         <| async {
             let store = create ()

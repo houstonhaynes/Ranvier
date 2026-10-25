@@ -201,4 +201,11 @@ type FileStateStore(directory: string) =
                     if File.Exists file then
                         File.Delete file
             }
+
+        member _.Clear() =
+            task {
+                if Directory.Exists directory then
+                    for file in Directory.GetFiles (directory, "*" + FileRecord.Extension) do
+                        File.Delete file
+            }
 #endif

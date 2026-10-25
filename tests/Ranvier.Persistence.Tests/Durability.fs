@@ -56,7 +56,7 @@ let private failed (message: string) : Task =
 
 /// <summary>
 /// A memory store whose <c>SaveMany</c> calls fault with the messages of <c>faults</c>, and whose <c>DeleteMany</c>
-/// calls fault with the messages of <c>deleteFaults</c>, in call order.
+/// and <c>Clear</c> calls fault with the messages of <c>deleteFaults</c>, in call order.
 /// </summary>
 type private FaultingStore(faults: string option list, deleteFaults: string option list) =
     let inner = MemoryStateStore () :> IStateStore
@@ -91,6 +91,16 @@ type private FaultingStore(faults: string option list, deleteFaults: string opti
                 inner.DeleteMany keys
             | [] -> inner.DeleteMany keys
 
+        member _.Clear() =
+            match remainingDeletes with
+            | Some message :: rest ->
+                remainingDeletes <- rest
+                failed message
+            | None :: rest ->
+                remainingDeletes <- rest
+                inner.Clear ()
+            | [] -> inner.Clear ()
+
 [<Tests>]
 let tests =
     testList
@@ -104,6 +114,25 @@ let tests =
                 let! _ = session (withBuster (Some "v2")) store (fun a _ -> a.Value <- 5)
                 let! values = restored (withBuster (Some "v2")) store
                 Expect.equal values (5, 0) "only the record written after the bust is restored"
+            }
+
+            testCaseAsync "a buster mismatch discards the records of keys the busting load did not declare"
+            <| async {
+                let store =
+                    storeWith [ record "$ranvier/buster" 1 "v1"; record "a" 1 "1"; record "b" 1 "2" ]
+
+                let! busting =
+                    Persist.loadWith (withBuster (Some "v2")) store [ a ]
+                    |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default.WithDispatcher (ImmediateDispatcher ()))
+                    use _active = graph.Activate ()
+                    (Persist.signal busting a 0).Value <- 9
+
+                do! busting.FlushAsync () |> Async.AwaitTask
+                let! values = restored (withBuster (Some "v2")) store
+                Expect.equal values (9, 0) "the undeclared stale record is discarded"
             }
 
             testCaseAsync "a buster set on a store saved without one keeps the old records discarded on the next load"

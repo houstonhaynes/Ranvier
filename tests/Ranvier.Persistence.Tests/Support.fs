@@ -77,6 +77,9 @@ type RecordingStore() =
         member _.DeleteMany keys =
             (inner :> IStateStore).DeleteMany keys
 
+        member _.Clear() =
+            (inner :> IStateStore).Clear()
+
 /// <summary>The key and payload of each record of each save.</summary>
 let savedPayloads (store: RecordingStore) =
     store.Saves
