@@ -1958,6 +1958,10 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
     /// <summary>The memo-free factory, or null.</summary>
     let mutable once: (unit -> 'T) -> 'V = Unchecked.defaultof<_>
 
+    /// <summary>Runs <c>once</c> for a memo-free row; null until <c>UseOnce</c>.</summary>
+    let mutable construct: struct (OnceRow<'T, 'K, 'V> * int) -> unit =
+        Unchecked.defaultof<_>
+
     /// <summary>
     /// Stages one item of the pass: a write to a survivor's item source, or a
     /// row to create.
@@ -2078,6 +2082,7 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
     /// <summary>Makes every row a memo-free row: the factory's result, stored once per key.</summary>
     member internal this.UseOnce(factory: (unit -> 'T) -> 'V) =
         once <- factory
+        construct <- fun (struct (entry, before)) -> this.ConstructOnce (entry, before)
 
         this.OnceValue <-
             Func<RowEntry<'K, 'V>, 'V>(fun entry ->
@@ -2094,7 +2099,6 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
         let entry = OnceRow<'T, 'K, 'V>(key, Signal<'T>(graph, item))
         Tracer.Part (graph, (entry.Item :> INode).Id, (this :> INode).Id, box key)
         this.AddEntry (key, entry)
-        let source = entry.Item
         let keyScope = new Owner (graph.Root)
         keyScope.SetParent (this.Scope.AttachLinked keyScope)
         entry.Scope <- keyScope
@@ -2102,19 +2106,18 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
 #if RANVIER_COUNTERS
         Counters.OnceRowCreated ()
 #endif
-        let before = this.Runs
+        graph.RunOwnedWith (keyScope, construct, struct (entry, this.Runs))
 
-        graph.RunOwned (
-            keyScope,
-            fun () ->
-                entry.Reader <- OnceRow<'T, 'K, 'V>.Constructing
+    /// <summary>Stores the result of <c>once</c> on <c>entry</c>, or a reader that raises its failure.</summary>
+    member private this.ConstructOnce(entry: OnceRow<'T, 'K, 'V>, before: int) =
+        let source = entry.Item
+        entry.Reader <- OnceRow<'T, 'K, 'V>.Constructing
 
-                try
-                    entry.Value <- once (fun () -> source.Value)
-                    entry.Reader <- Unchecked.defaultof<_>
-                with ex ->
-                    entry.Reader <- this.FactoryFailure (key, ex, "", before)
-        )
+        try
+            entry.Value <- once (fun () -> source.Value)
+            entry.Reader <- Unchecked.defaultof<_>
+        with ex ->
+            entry.Reader <- this.FactoryFailure (entry.Key, ex, "", before)
 
     abstract Enumerate: unit -> unit
 

@@ -2584,6 +2584,16 @@ type Graph(options: GraphOptions) =
         finally
             currentOwner <- previous
 
+    /// <summary>Applies <c>f</c> to <c>arg</c> with <c>owner</c> as the current owner.</summary>
+    member internal _.RunOwnedWith(owner: Owner, f: 'A -> unit, arg: 'A) =
+        let previous = currentOwner
+        currentOwner <- owner
+
+        try
+            f arg
+        finally
+            currentOwner <- previous
+
     /// <summary>
     /// Tears down every scope the graph owns, and faults the task of every <c>DispatchAsync</c> item still in the
     /// inbox with <c>ObjectDisposedException</c>.
