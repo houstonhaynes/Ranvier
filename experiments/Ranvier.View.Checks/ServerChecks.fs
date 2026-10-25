@@ -1386,18 +1386,14 @@ let private pendingMessage () =
             .Message
 
 let private boundaryIdentity () =
-    let render ready fails =
-        idContentReady <- ready
-        idContentFails <- fails
+    let render content =
         identityLog.Clear ()
-        let html = Server.render Server.Options.defaults idBoundary ()
+        let html = Server.render Server.Options.defaults (idBoundary content) ()
         html, List.ofSeq identityLog
 
-    let ready = render true false
-    let pending = render false false
-    let failed = render true true
-    idContentReady <- true
-    idContentFails <- false
+    let ready = render IdReady
+    let pending = render IdPending
+    let failed = render IdFails
 
     equal ("""<!--[r--><div id="r-0-0"><!--[c--><b id="r-0.r0.0-0">ready</b><!--]--></div><!--]-->""", boundaryContentIds) ready
 

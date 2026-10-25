@@ -7,14 +7,14 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "nod
 import { join, relative, sep } from "node:path";
 
 /**
- * The paths keyed-rows.mjs records by hash, relative to examples/Fable.Ranvier.Playground: the benchmark and its page,
- * the core and view sources both modes compile, and every input of the Arms.Match lowering, the Fable plugin project
- * and each file it compiles included.
+ * The paths keyed-rows.mjs records by hash and the pool compares, relative to examples/Fable.Ranvier.Playground: the
+ * benchmark, its page and build config, the keyed-rows fixtures, and every input of the Arms.Match lowering, the Fable
+ * plugin project and each file it compiles included. A committed run is compared on these paths alone, whatever else
+ * it records. A core or view-library change leaves the pool unchanged.
  */
 export const hashedSources = [
-  "benchmarks/frameworks/keyed-rows.mjs", "benchmarks/frameworks/keyed-page.mjs", "benchmarks/frameworks/keyed-solid.jsx", "benchmarks/frameworks/vite.config.mjs", "tests/KeyedRowsPerf.fs", "package-lock.json",
-  ...["Lifetime.fs", "Representation.fs", "Template.fs"].map(path => `../../src/Ranvier.View/${path}`), ...["TemplateDom.fs", "Mounting.fs"].map(path => `../../src/Ranvier.View.Dom/${path}`), "../../src/Ranvier/Core.fs", "../../src/Ranvier/Projections.fs", "../../src/Ranvier/Api.fs", "../../src/Ranvier/Combinators.fs",
-  "tests/KeyedRowsSugarPerf.fs", "tests/KeyedRowsArmsMatchPerf.fs", ...["Arms.fs", "Cells.fs", "Site.fs", "Errors.fs", "Diagnostics.fs"].map(path => `../../experiments/Ranvier.View.Arms/${path}`),
+  "benchmarks/frameworks/keyed-rows.mjs", "benchmarks/frameworks/keyed-page.mjs", "benchmarks/frameworks/keyed-solid.jsx", "benchmarks/frameworks/vite.config.mjs",
+  "tests/KeyedRowsPerf.fs", "tests/KeyedRowsSugarPerf.fs", "tests/KeyedRowsArmsMatchPerf.fs", ...["Arms.fs", "Cells.fs", "Site.fs", "Errors.fs", "Diagnostics.fs"].map(path => `../../experiments/Ranvier.View.Arms/${path}`),
   ...["Ranvier.View.Arms.FablePlugin.fsproj", "Shape.fs", "Lower.fs", "Plugin.fs"].map(path => `../../experiments/Ranvier.View.Arms.FablePlugin/${path}`)
 ];
 

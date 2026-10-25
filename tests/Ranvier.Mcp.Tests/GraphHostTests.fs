@@ -138,3 +138,33 @@ let tests =
                 Expect.equal (host.Invoke(fun signal -> signal.Value).Result) 0 "the signal kept its value"
             }
         ]
+
+#if RANVIER_TRACE
+[<Tests>]
+let sites =
+    testList
+        "GraphHost sites (traced)"
+        [
+            test "nodes built by setup, an Mvu and an Exposure name the test's file in their sites and identity paths" {
+                use host =
+                    GraphHost.Start (fun graph ->
+                        let s = createSignal 1
+                        let m = createMemo (fun _ -> s.Value + 1)
+                        let app = Ranvier.Elmish.Mvu.create 0 (fun (n: int) model -> model + n)
+                        let exposure = Exposure ()
+                        exposure |> Expose.node "m" m
+                        exposure |> Expose.messages app []
+                        exposure.Start ()
+                        graph)
+
+                let snapshot = host.Invoke(fun graph -> Trace.snapshot graph).Result
+                let file = IO.Path.GetFileName __SOURCE_FILE__
+
+                Expect.isGreaterThanOrEqual snapshot.Nodes.Count 4 "the signal, the memo, the model and the effect"
+
+                for node in snapshot.Nodes.Values do
+                    Expect.stringContains node.Site file $"node {node.Id}'s site names the test's file"
+                    Expect.stringContains node.Path file $"node {node.Id}'s path names the test's file"
+            }
+        ]
+#endif

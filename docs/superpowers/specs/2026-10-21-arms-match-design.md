@@ -530,29 +530,38 @@ Each item names its suite; the research's unprobed items are marked **(new)**.
     | `arms-match-22d86d44-4` (52, 59, 68 / 57, 82, 76) | 1.024 (0.989-1.057) | 1.003 (0.951-1.048) | 0.994 (0.946-1.084) | 0.955 (0.869-1.030) |
     | `arms-match-22d86d44-5` (71, 88, 59 / 66, 71, 63) | 1.002 (0.952-1.053) | 1.018 (0.981-1.077) | 1.013 (0.939-1.128) | 1.035 (0.893-1.156) |
     | `arms-match-22d86d44-6` (65, 64, 59 / 81, 68, 68) | 0.977 (0.917-1.041) | 1.051 (0.997-1.101) | 1.017 (0.929-1.144) | 1.015 (0.922-1.107) |
-    | pooled, 270 pairs | 1.006 (0.986-1.025) | 1.015 (0.997-1.048) | 1.042 (1.009-1.089) | 0.991 (0.946-1.030) |
+    | `arms-match-2dc2835b-1` (54, 48, 38 / 45, 51, 65) | 1.009 (0.979-1.036) | 1.005 (0.969-1.026) | 1.094 (0.979-1.158) | 0.970 (0.880-1.064) |
+    | `arms-match-2dc2835b-2` (54, 48, 37 / 77, 26, 44) | 0.983 (0.962-1.004) | 1.016 (0.991-1.047) | 1.024 (0.967-1.088) | 1.004 (0.891-1.133) |
+    | `arms-match-2dc2835b-3` (57, 20, 34 / 46, 46, 62) | 1.014 (0.971-1.057) | 0.975 (0.937-1.041) | 0.955 (0.895-1.090) | 1.119 (0.931-1.192) |
+    | `arms-match-2dc2835b-4` (48, 32, 58 / 42, 35, 29) | 0.992 (0.975-1.018) | 1.012 (0.981-1.041) | 1.033 (0.972-1.095) | 0.983 (0.902-1.096) |
+    | `arms-match-2dc2835b-5` (33, 46, 23 / 35, 54, 38) | 0.993 (0.975-1.043) | 1.014 (0.977-1.049) | 0.970 (0.892-1.011) | 0.863 (0.797-1.132) |
+    | `arms-match-2dc2835b-6` (40, 51, 63 / 18, 12, 28) | 1.046 (1.022-1.058) | 0.998 (0.965-1.014) | 1.048 (0.987-1.096) | 1.040 (0.913-1.141) |
+    | pooled, 540 pairs | 1.006 (0.993-1.018) | 1.011 (0.999-1.022) | 1.033 (1.010-1.060) | 0.991 (0.957-1.020) |
 
-    Every pooled median is within its budget. The create and clear pooled intervals lie below their budgets; the pooled
-    switch interval (0.997-1.048) straddles 1.04 and the pooled payload interval (1.009-1.089) straddles 1.07. The runs'
-    switch medians spread from 0.975 to 1.051 and their payload medians from 0.994 to 1.149.
+    Every pooled median is within its budget, and every pooled interval lies below its budget. The runs' switch medians
+    spread from 0.975 to 1.051 and their payload medians from 0.955 to 1.149.
     `Checks/pooled-interval.mjs` prints the pool, each pooled run, and the sources that keep each other run out;
     `pooled-interval.test.mjs` checks the fixed budgets, the pooled medians against them, and the pool against the
     source rule; `keyed-rows.mjs` writes a run into `docs/research/arms-match/` only from committed sources unchanged
     during the run, and only with `--build`: the run builds its own bundle into `generated-keyed-pooled/<label>` under a
     lock per checkout, records `built` and the served bundle's `bundleHash`, and refuses the write when the bundle
-    changed during the run. The hashed sources (`benchmarks/frameworks/run-sources.mjs`) are the benchmark, the core and view
-    sources both modes compile, and the Fable plugin project with each file it compiles; a run matches when it records
-    each with the tree's hash, up to line endings. The six pooled runs were recorded at `22d86d44`, two at a time under
-    `gate-lock.ps1 bench`; each built its own bundle, and all six record the same `bundleHash`. The five runs at
+    changed during the run. The hashed sources (`benchmarks/frameworks/run-sources.mjs`) are the Arms.Match lowering
+    (`experiments/Ranvier.View.Arms` and the Fable plugin project with each file it compiles), the keyed-rows benchmark
+    with its page and build config, and the keyed-rows fixtures `tests/KeyedRows{,Sugar,ArmsMatch}Perf.fs`; a run
+    matches when it records each with the tree's hash, up to line endings, and is compared on these paths alone. The
+    core (`src/Ranvier`), the view libraries and the Playground lock file are not hashed (user decision, 2026-10-25,
+    plan Decision P9): a change to them leaves the pool unchanged, and a core change that slows Arms.Match shows in the
+    gate only once the lowering changes or a run is recorded. The twelve pooled runs were recorded six at `22d86d44` and
+    six at `2dc2835b`, two at a time under `gate-lock.ps1 bench`; each built its own bundle, and the six runs at each
+    commit record the same `bundleHash`. The five runs at
     `da6d32e6` stay committed and out of the pool: they predate the `--build` requirement, four of them served a bundle
     they did not build, and their hashes differ from the tree in `keyed-rows.mjs`. The earlier runs `8ee10018` (`docs/.ai/benchmarks/arms-157-noisy-probe.json`),
     `299ab276`, `fccc740c` (`arms-match-shape.json`), `dc8b3d5b`, `5369d6a0` and `4d00179e` (`arms-match.json`) stay
-    committed and out of the pool: their hashes differ from the tree in `src/Ranvier/Core.fs`, `src/Ranvier/Projections.fs`
-    and `keyed-rows.mjs`, and they record none for the plugin project, `Shape.fs` or `Plugin.fs`; the first three also
-    differ in `Site.fs` and `Lower.fs`. A change to any hashed source takes every run out of the pool, and the gate
-    fails until runs are recorded on the new sources. CI runs the gate only for a change to the lowering, its
-    benchmark, its runs or the workflow (`.github/scripts/changes.cjs`, `armsRuns`); a core, view or Playground
-    lock-file change alone skips it.
+    committed and out of the pool: their hashes differ from the tree in `keyed-rows.mjs`, and they record none for the
+    plugin project, `Shape.fs` or `Plugin.fs`; the first three also differ in `Site.fs` and `Lower.fs`. A change to any
+    hashed source takes every run out of the pool, and the gate fails until runs are recorded on the new sources. CI
+    runs the gate only for a change to the lowering, its benchmark, its runs or the workflow
+    (`.github/scripts/changes.cjs`, `armsRuns`); a core, view or Playground lock-file change alone skips it.
 12. **Heap profile (new)**: `keyed-heap.mjs --fixture=arms` with the new mode at 1,000 and 10,000 rows; retained bytes
     per row after create within 10 % of `ranvier-sugar`, and the heap after one switch of every row (`--after=switch`)
     reported at both counts. `Checks/chromium-gate.mjs` checks the first and prints the second.
@@ -636,6 +645,6 @@ Each phase lands with its tests green and is reviewable alone.
    clear 1.011, every 95 % interval straddling 1.05. A paired run against the spike's hand-written shape finds the
    plugin's output indistinguishable from it (research note, "Chromium"). Under the user's ruling of 2026-10-24 the
    Chromium budgets are per operation (Testing 11): create and clear 1.05, switch 1.04 and payload 1.07, fixed, judged by
-   the pooled paired median over the six runs whose sources match the tree and which built their own bundle: create
-   1.006, switch 1.015, payload 1.042 and clear 0.991, and `chromium-gate.mjs` passes; the pooled switch interval
-   (0.997-1.048) straddles 1.04 and the pooled payload interval (1.009-1.089) straddles 1.07.
+   the pooled paired median over the twelve runs whose sources match the tree and which built their own bundle: create
+   1.006, switch 1.011, payload 1.033 and clear 0.991, and `chromium-gate.mjs` passes; every pooled interval lies below
+   its budget.

@@ -1560,6 +1560,512 @@ type internal PendingDispatch<'T>() =
                 this.SetException error
 #endif
 
+/// <summary>The application key and codec of a journaled input node, with the value type erased.</summary>
+[<AbstractClass>]
+type internal JournalBinding(key: string, codec: string, version: int) =
+    member _.Key = key
+    member _.Codec = codec
+    member _.Version = version
+
+    /// <summary>The codec's text for <c>value</c>. Raises when the codec raises.</summary>
+    abstract Encode: value: obj -> string
+
+    /// <summary>True when the node accepts entries of <c>kind</c>.</summary>
+    abstract Accepts: kind: JournalEntryKind -> bool
+
+    /// <summary>
+    /// The application of a <c>kind</c> entry carrying <c>data</c> to the node, or the decode error. A <c>Fail</c>
+    /// entry's <c>data</c> is the exception's message.
+    /// </summary>
+    abstract Prepare: kind: JournalEntryKind * data: string -> Result<unit -> unit, string>
+
+/// <summary>
+/// The work a journaled input is attributed to: external input, an async work of the graph, or a replayed entry.
+/// </summary>
+[<Sealed; AllowNullLiteral>]
+type internal JournalAttribution(origin: JournalOrigin, replayed: int, matched: string) =
+    /// <summary>The origin an input of the work records.</summary>
+    member _.Origin = origin
+
+    /// <summary>The kind of the work in a setup record: <c>effect</c> for an effect's run, <c>work</c> otherwise.</summary>
+    member val Kind = "work" with get, set
+
+    /// <summary>The application key of the input that started the work, or null.</summary>
+    member val Name: string = null with get, set
+
+    /// <summary>The work's description in a setup record: its kind, followed by its quoted name when it has one.</summary>
+    member this.Describe() =
+        if isNull this.Name then
+            this.Kind
+        else
+            this.Kind
+            + " \""
+            + this.Name.Replace("\\", "\\\\").Replace("\"", "\\\"")
+            + "\""
+
+    /// <summary>
+    /// The <c>Seq</c> of the replayed entry the attribution applies, or 0. A replayed attribution is always admitted.
+    /// </summary>
+    member _.ReplayedSeq = replayed
+
+    /// <summary>
+    /// The key under which a diagnostic replay counts the recorded <c>Produced</c> entries of the work, or null for
+    /// work started outside a diagnostic replay.
+    /// </summary>
+    member _.Match = matched
+
+    /// <summary>The number of calls of the work that made inputs.</summary>
+    member val Calls = 0 with get, set
+
+    /// <summary>True while a call of the work runs, such as the body passed to <c>Journal.produce</c>.</summary>
+    member val InCall = false with get, set
+
+    /// <summary>The position of the running call among <c>Calls</c>, or -1 before the call's first input.</summary>
+    member val Call = -1 with get, set
+
+    /// <summary>
+    /// The position of the call an input of the work arriving now belongs to: the running call, or a new call of its
+    /// own outside one.
+    /// </summary>
+    member this.Claim() =
+        if this.Call >= 0 then
+            this.Call
+        else
+            let call = this.Calls
+            this.Calls <- call + 1
+
+            if this.InCall then
+                this.Call <- call
+
+            call
+
+    static member val External = JournalAttribution (JournalOrigin.External, 0, null)
+
+/// <summary>
+/// A replay running on a graph: the position of the replayed entries, and the target <c>Seq</c> each applied entry
+/// recorded.
+/// </summary>
+[<Sealed; AllowNullLiteral>]
+type internal JournalReplaySession(id: int, diagnostic: bool, setupOpen: bool) =
+    let recorded = Dictionary<int, int>()
+
+    member _.Diagnostic = diagnostic
+
+    /// <summary>
+    /// True when the target recorded no input before the replay, so its setup work re-runs the recorded run's setup work.
+    /// </summary>
+    member _.SetupOpen = setupOpen
+
+    /// <summary>The <c>Seq</c> of the last replayed non-<c>Flush</c> entry applied, or -1 before the first.</summary>
+    member val Anchor = -1 with get, set
+
+    /// <summary>The number of works started since <c>Anchor</c> was applied.</summary>
+    member val Started = 0 with get, set
+
+    /// <summary>The key of the work <c>(started, index)</c> of the replayed entries.</summary>
+    member _.Key(started: int, index: int) =
+        string id
+        + ":"
+        + string started
+        + ":"
+        + string index
+
+    /// <summary>Records that the replayed entry <c>source</c> recorded the target entry <c>target</c>.</summary>
+    member _.Recorded(source: int, target: int) =
+        recorded[source] <- target
+
+    /// <summary>The target <c>Seq</c> the replayed entry <c>source</c> recorded, or <c>source</c>.</summary>
+    member _.TargetOf(source: int) =
+        match recorded.TryGetValue source with
+        | true, target -> target
+        | _ -> source
+
+/// <summary>
+/// The async work of the effect body running in the calling context. On .NET it flows with the execution context into
+/// every continuation of the body; under Fable it is always null.
+/// </summary>
+module internal JournalAmbient =
+#if FABLE_COMPILER
+    let current () : JournalAttribution = null
+#else
+    let private ambient = AsyncLocal<JournalAttribution>()
+
+    let current () =
+        ambient.Value
+
+    let set (work: JournalAttribution) =
+        ambient.Value <- work
+#endif
+
+/// <summary>
+/// A graph's journal state: the journal, the bindings of its keyed input nodes, and the position of the last entry.
+/// </summary>
+[<Sealed; AllowNullLiteral>]
+type internal JournalRecorder(journal: IInputJournal) =
+    let bindings = Dictionary<int, JournalBinding>()
+    let keys = Dictionary<string, int>()
+    let mutable position = 0
+    let mutable unflushed = false
+    let mutable derivedDepth = 0
+    let mutable attribution: JournalAttribution = null
+    // The Seq of the last non-Flush entry, and the number of works started after it.
+    let mutable anchor = 0
+    let mutable started = 0
+    let mutable session: JournalReplaySession = null
+    let mutable sessions = 0
+    let expected = Dictionary<string, int>()
+    let mutable nextSite = 0
+    // The call of the input last admitted, for the origin it records.
+    let mutable inputCall = 0
+    // The works started before the first entry, and their setup record, fixed at the first entry.
+    let setupWorks = List<JournalAttribution>()
+    let mutable setupRecord: string = null
+
+    let describeSetup () =
+        String.Join (
+            ", ",
+            setupWorks
+            |> Seq.map (fun work -> work.Describe ())
+        )
+
+    /// <summary>
+    /// The setup record of the graph: the descriptions of the works it started before its first entry, in start order,
+    /// separated by <c>", "</c>. Before the first entry it describes the works started so far.
+    /// </summary>
+    member _.SetupRecord = if isNull setupRecord then describeSetup () else setupRecord
+
+    /// <summary>The number of entries recorded on the graph, its <c>Setup</c> entry excluded.</summary>
+    member _.Position = position
+
+    /// <summary>True when an entry was recorded after the last <c>Flush</c> entry.</summary>
+    member _.Unflushed = unflushed
+
+    /// <summary>The mode of the replay running on the graph, if any.</summary>
+    member val Replaying: ReplayMode option = None with get, set
+
+    /// <summary>A fresh negative id for an input site that is not a node, such as an MVU loop's messages.</summary>
+    member _.NextSiteId() =
+        nextSite <- nextSite - 1
+        nextSite
+
+    /// <summary>The binding registered under <c>key</c>, or null.</summary>
+    member _.BindingOfKey(key: string) : JournalBinding =
+        match keys.TryGetValue key with
+        | true, nodeId -> bindings[nodeId]
+        | _ -> Unchecked.defaultof<JournalBinding>
+
+    /// <summary>The nesting depth of derived sections: bodies that run outside the tracking context.</summary>
+    member _.DerivedDepth = derivedDepth
+
+    member _.EnterDerived() =
+        derivedDepth <- derivedDepth + 1
+
+    member _.LeaveDerived() =
+        derivedDepth <- derivedDepth - 1
+
+    /// <summary>
+    /// The next async work on the graph, identified by the last non-<c>Flush</c> entry and its position among the works
+    /// started after it. During a diagnostic replay it also carries its identity in the replayed entries.
+    /// </summary>
+    member _.NextWork(kind: string) =
+        let origin = JournalOrigin.Produced (anchor, started, 0)
+
+        let matched =
+            if
+                not (Platform.isNull session)
+                && session.Anchor >= 0
+            then
+                let key =
+                    if session.Diagnostic then
+                        session.Key (session.Anchor, session.Started)
+                    else
+                        null
+
+                session.Started <- session.Started + 1
+                key
+            elif anchor = 0 then
+                // Setup work, started before the graph's first entry, is matched by its position among the setup work.
+                JournalRecorder.SetupKey started
+            else
+                null
+
+        started <- started + 1
+        let work = JournalAttribution (origin, 0, matched)
+        work.Kind <- kind
+
+        if position = 0 then
+            setupWorks.Add work
+
+        work
+
+    static member private SetupKey(index: int) =
+        "setup:" + string index
+
+    /// <summary>The key of a call of a work, under which a diagnostic replay counts the call's replayed entries.</summary>
+    static member private CallKey(work: string, call: int) =
+        work + "/" + string call
+
+    /// <summary>
+    /// The key of the call <c>call</c> of a work of the replayed entries, or null for setup work the replay leaves
+    /// unmatched.
+    /// </summary>
+    member private _.ExpectedKey(started: int, index: int, call: int) =
+        if started > 0 then
+            JournalRecorder.CallKey (session.Key (started, index), call)
+        elif session.SetupOpen then
+            JournalRecorder.CallKey (JournalRecorder.SetupKey index, call)
+        else
+            null
+
+    /// <summary>Starts a replay on the graph, and returns the replay it nests in, or null.</summary>
+    member _.BeginReplay(mode: ReplayMode) : JournalReplaySession =
+        let previous = session
+        sessions <- sessions + 1
+        session <- JournalReplaySession (sessions, (mode = ReplayMode.Diagnostic), (anchor = 0))
+        previous
+
+    /// <summary>Ends the running replay, restoring <c>previous</c>.</summary>
+    member _.EndReplay(previous: JournalReplaySession) =
+        session <- previous
+
+    /// <summary>Runs <c>run</c>, the application of the replayed entry <c>work</c> applies.</summary>
+    member this.RunReplayed(work: JournalAttribution, run: unit -> unit) =
+        if not (Platform.isNull session) then
+            session.Anchor <- work.ReplayedSeq
+            session.Started <- 0
+
+        this.RunAttributed (work, run)
+
+    /// <summary>
+    /// Runs <c>run</c>, the body of an effect, as a new async work: on .NET its continuations carry the work.
+    /// </summary>
+    member this.RunWork(run: unit -> unit) =
+        let work = this.NextWork "effect"
+#if FABLE_COMPILER
+        ignore work
+        run ()
+#else
+        let previous = JournalAmbient.current ()
+        JournalAmbient.set work
+
+        try
+            run ()
+        finally
+            JournalAmbient.set previous
+#endif
+
+    /// <summary>
+    /// Runs <c>run</c> with its inputs attributed to <c>work</c>, as one call of a live work: a call nested in a running
+    /// call of the same work joins it.
+    /// </summary>
+    member _.RunAttributed(work: JournalAttribution, run: unit -> unit) =
+        let previous = attribution
+        attribution <- work
+        let opens = work.ReplayedSeq = 0 && not work.InCall
+
+        if opens then
+            work.InCall <- true
+            work.Call <- -1
+
+        try
+            run ()
+        finally
+            attribution <- previous
+
+            if opens then
+                work.InCall <- false
+                work.Call <- -1
+
+    /// <summary>The work an input arriving now is attributed to, or null for an external input.</summary>
+    member _.Current: JournalAttribution =
+        if Platform.isNull attribution then
+            JournalAmbient.current ()
+        else
+            attribution
+
+    /// <summary>
+    /// Counts one replayed <c>Produced</c> entry of the call <c>call</c> of the work <c>(started, index)</c> of the
+    /// running replay, for <c>Admit</c>.
+    /// </summary>
+    member this.Expect(started: int, index: int, call: int) =
+        let key = this.ExpectedKey (started, index, call)
+
+        if not (isNull key) then
+            match expected.TryGetValue key with
+            | true, count -> expected[key] <- count + 1
+            | _ -> expected[key] <- 1
+
+    /// <summary>Withdraws one count of <c>Expect</c>, for a replayed entry left unapplied.</summary>
+    member this.Unexpect(started: int, index: int, call: int) =
+        let key = this.ExpectedKey (started, index, call)
+
+        if not (isNull key) then
+            match expected.TryGetValue key with
+            | true, count when count > 1 -> expected[key] <- count - 1
+            | true, _ -> expected.Remove key |> ignore
+            | _ -> ()
+
+    /// <summary>
+    /// False when the input arriving now is dropped: it comes from a call of a work re-run by a diagnostic replay, with
+    /// an unmatched replayed <c>Produced</c> entry of the same call, which it then matches.
+    /// </summary>
+    member this.Admit() : bool =
+        this.AdmitWork this.Current
+
+    /// <summary>
+    /// <c>Admit</c> for an input made inside a computation, a flush or another derived section: only an input of a
+    /// <c>Journal.produce</c> call can match a replayed entry, as when a re-run work's await completes synchronously.
+    /// </summary>
+    member this.AdmitDerived() : bool =
+        this.AdmitWork attribution
+
+    member private _.AdmitWork(work: JournalAttribution) : bool =
+        if Platform.isNull work || work.ReplayedSeq > 0 then
+            true
+        else
+            inputCall <- work.Claim ()
+
+            if Platform.isNull work.Match then
+                true
+            else
+                let key = JournalRecorder.CallKey (work.Match, inputCall)
+
+                match expected.TryGetValue key with
+                | true, count when count > 1 ->
+                    expected[key] <- count - 1
+                    false
+                | true, _ ->
+                    expected.Remove key |> ignore
+                    false
+                | _ -> true
+
+    /// <summary>Registers <c>binding</c> for the node <c>nodeId</c>.</summary>
+    /// <exception cref="T:System.ArgumentException">
+    /// The graph already has a node with the binding's key, or the node already has a key.
+    /// </exception>
+    member _.Bind(nodeId: int, binding: JournalBinding) =
+        match bindings.TryGetValue nodeId with
+        | true, held ->
+            raise (
+                ArgumentException (
+                    "The node is already registered under the journal key \""
+                    + held.Key
+                    + "\"."
+                )
+            )
+        | _ -> ()
+
+        if keys.ContainsKey binding.Key then
+            raise (
+                ArgumentException (
+                    "The journal key \""
+                    + binding.Key
+                    + "\" is already registered on this graph."
+                )
+            )
+
+        keys[binding.Key] <- nodeId
+        bindings[nodeId] <- binding
+
+    /// <summary>Removes the binding of the node <c>nodeId</c>, and frees its key for another node.</summary>
+    member _.Unbind(nodeId: int, key: string) =
+        match keys.TryGetValue key with
+        | true, holder when holder = nodeId ->
+            keys.Remove key |> ignore
+            bindings.Remove nodeId |> ignore
+        | _ -> ()
+
+    /// <summary>The binding of the node <c>nodeId</c>, or null when the node is unkeyed.</summary>
+    member _.BindingOf(nodeId: int) : JournalBinding =
+        match bindings.TryGetValue nodeId with
+        | true, binding -> binding
+        | _ -> Unchecked.defaultof<JournalBinding>
+
+    member private this.Emit(kind: JournalEntryKind, key: string option, payloadType: string, payload: JournalPayload) =
+        if position = 0 then
+            setupRecord <- describeSetup ()
+
+            if setupWorks.Count > 0 then
+                journal.Record
+                    {
+                        Schema = 3
+                        Stream = journal.Stream
+                        Seq = 0
+                        Kind = JournalEntryKind.Setup
+                        Key = None
+                        PayloadType = "setup"
+                        Payload = JournalPayload.Encoded ("setup", 1, setupRecord)
+                        Origin = JournalOrigin.External
+                    }
+
+            setupWorks.Clear ()
+
+        position <- position + 1
+
+        let work = if kind = JournalEntryKind.Flush then null else this.Current
+
+        let origin =
+            if Platform.isNull work then
+                JournalOrigin.External
+            elif work.ReplayedSeq > 0 then
+                if not (Platform.isNull session) then
+                    session.Recorded (work.ReplayedSeq, position)
+
+                match work.Origin with
+                | JournalOrigin.Produced (started, index, call) when not (Platform.isNull session) ->
+                    JournalOrigin.Produced (session.TargetOf started, index, call)
+                | origin -> origin
+            else
+                match work.Origin with
+                | JournalOrigin.Produced (started, index, _) -> JournalOrigin.Produced (started, index, inputCall)
+                | origin -> origin
+
+        if kind <> JournalEntryKind.Flush then
+            unflushed <- true
+            anchor <- position
+            started <- 0
+
+        journal.Record
+            {
+                Schema = 3
+                Stream = journal.Stream
+                Seq = position
+                Kind = kind
+                Key = key
+                PayloadType = payloadType
+                Payload = payload
+                Origin = origin
+            }
+
+    /// <summary>
+    /// Records <c>value</c> arriving at the node <c>nodeId</c>: encoded by the node's codec when the node is keyed and the
+    /// codec succeeds, and non-replayable otherwise. A <c>Fail</c> entry of a keyed node carries the exception's message
+    /// under the <c>exn</c> codec, version 1.
+    /// </summary>
+    member this.Input(kind: JournalEntryKind, nodeId: int, value: obj) =
+        let payloadType = Platform.typeName value
+        let binding = this.BindingOf nodeId
+
+        if Platform.isNull (box binding) then
+            this.Emit (kind, None, payloadType, JournalPayload.NonReplayable payloadType)
+        else
+            let payload =
+                try
+                    if kind = JournalEntryKind.Fail then
+                        JournalPayload.Encoded ("exn", 1, (value :?> exn).Message)
+                    else
+                        JournalPayload.Encoded (binding.Codec, binding.Version, binding.Encode value)
+                with _ ->
+                    JournalPayload.NonReplayable payloadType
+
+            this.Emit (kind, Some binding.Key, payloadType, payload)
+
+    /// <summary>Records a <c>Flush</c> entry when an entry was recorded since the previous one.</summary>
+    member this.Boundary() =
+        if unflushed then
+            unflushed <- false
+            this.Emit (JournalEntryKind.Flush, None, "", JournalPayload.Empty)
+
 /// <summary>
 /// Owns the tracking context and the construction-time policy. One graph is a
 /// single consistency domain; on .NET that also means a single thread of
@@ -1695,6 +2201,12 @@ type Graph(options: GraphOptions) =
 
     let mutable batchDepth = 0
     let mutable flushing = false
+
+    /// <summary>The recorder of <c>options.Journal</c>, or null when the graph has no journal.</summary>
+    let journal =
+        match options.Journal with
+        | Some inputJournal -> JournalRecorder inputJournal
+        | None -> null
 
     /// <summary>
     /// The scope everything created outside an explicit <c>Root</c> belongs to.
@@ -1880,6 +2392,24 @@ type Graph(options: GraphOptions) =
         || not (Platform.isNull (box current))
         || detachedDepth > 0
         || untrackedInBody
+
+    /// <summary>The graph's journal recorder, or null when the graph has no journal.</summary>
+    /// <remarks>Inline, so a guarded hook reads the field directly under Fable instead of calling a getter.</remarks>
+    member inline internal _.Journal = journal
+
+    /// <summary>
+    /// Records <c>value</c> arriving at the node <c>nodeId</c> as a <c>kind</c> entry, unless a computation, flush,
+    /// stale read, teardown or other derived section is running. Requires a journal.
+    /// </summary>
+    /// <returns>False when a diagnostic replay drops the input, which the caller then leaves unapplied.</returns>
+    member internal this.RecordInput(kind: JournalEntryKind, nodeId: int, value: obj) : bool =
+        if this.Running || journal.DerivedDepth > 0 then
+            journal.AdmitDerived ()
+        elif journal.Admit () then
+            journal.Input (kind, nodeId, value)
+            true
+        else
+            false
 
     /// <summary>
     /// Makes this graph ambient and returns the graph it replaced in <c>Hosting</c>.
@@ -2133,12 +2663,29 @@ type Graph(options: GraphOptions) =
         if this.IsOnGraphThread then
             work ()
         else
-            // The work goes into the graph's inbox; the dispatcher receives
-            // only the drain. ImmediateDispatcher drains on this thread: under
-            // Unchecked the work runs here, and under Guarded the pump raises
-            // and the work stays queued.
+            this.PostQueued work
+#endif
+
+#if !FABLE_COMPILER
+    // Out of line, so Post stays small enough to inline into its callers.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.PostQueued(work: unit -> unit) =
+        // The work goes into the graph's inbox; the dispatcher receives
+        // only the drain. ImmediateDispatcher drains on this thread: under
+        // Unchecked the work runs here, and under Guarded the pump raises
+        // and the work stays queued.
+        let attributed =
+            if Platform.isNull journal then
+                null
+            else
+                JournalAmbient.current ()
+
+        if Platform.isNull attributed then
             inbox.Enqueue work
-            dispatcher.Post (Action this.PumpFromDispatcher)
+        else
+            inbox.Enqueue (fun () -> journal.RunAttributed (attributed, work))
+
+        dispatcher.Post (Action this.PumpFromDispatcher)
 #endif
 
     /// <summary>
@@ -2310,22 +2857,37 @@ type Graph(options: GraphOptions) =
         let mutable ran = 0
         let mutable draining = true
 
-        while draining do
-            match inbox.TryTake () with
-            | ValueNone -> draining <- false
-            | ValueSome work ->
-                ran <- ran + 1
+        // An inbox item carries its own attribution from Post, so the drain
+        // runs outside the work of the context that posted the drain.
+        let carried =
+            if Platform.isNull journal then
+                null
+            else
+                JournalAmbient.current ()
 
-                // One bad continuation must not strand the rest of the inbox,
-                // for the same reason one bad effect must not strand the flush
-                // queue.
-                try
-                    work ()
-                with ex ->
-                    root.RecordError ex
+        if not (Platform.isNull carried) then
+            JournalAmbient.set null
 
-        if ran > 0 then
-            this.RequestFlush ()
+        try
+            while draining do
+                match inbox.TryTake () with
+                | ValueNone -> draining <- false
+                | ValueSome work ->
+                    ran <- ran + 1
+
+                    // One bad continuation must not strand the rest of the inbox,
+                    // for the same reason one bad effect must not strand the flush
+                    // queue.
+                    try
+                        work ()
+                    with ex ->
+                        root.RecordError ex
+
+            if ran > 0 then
+                this.RequestFlush ()
+        finally
+            if not (Platform.isNull carried) then
+                JournalAmbient.set carried
 
         ran
 #endif
@@ -2557,6 +3119,9 @@ type Graph(options: GraphOptions) =
                 Tracer.FlushEnd this
                 Tracer.Flushed this
                 this.LeaveAmbient previousAmbient
+
+                if not (Platform.isNull journal) then
+                    journal.Boundary ()
 
     /// <summary>
     /// Runs the queued effects. Inside a batch they run when the batch ends.
@@ -2926,6 +3491,10 @@ type Graph(options: GraphOptions) =
                 current <- Unchecked.defaultof<IComputation>
                 currentOwner <- root
                 raisedPending <- Unchecked.defaultof<INode>
+
+                if not (Platform.isNull journal) then
+                    journal.EnterDerived ()
+
                 true
 
     /// <summary>Restores what <c>EnterContinuation</c> detached for <c>frame</c>.</summary>
@@ -2943,6 +3512,9 @@ type Graph(options: GraphOptions) =
                 current <- computation
                 currentOwner <- owner
                 raisedPending <- raised
+
+                if not (Platform.isNull journal) then
+                    journal.LeaveDerived ()
 #endif
 
     /// <summary>
@@ -3058,6 +3630,9 @@ type Graph(options: GraphOptions) =
         currentOwner <- Unchecked.defaultof<Owner>
         untrackedHost <- host
 
+        if not (Platform.isNull journal) then
+            journal.EnterDerived ()
+
         try
             body ()
         finally
@@ -3066,10 +3641,16 @@ type Graph(options: GraphOptions) =
             untrackedHost <- previousHost
             untrackedInBody <- previousInBody
 
+            if not (Platform.isNull journal) then
+                journal.LeaveDerived ()
+
     /// <summary>
     /// Applies <c>f</c> to <c>arg</c> with tracking suppressed and the scope rule of <c>host</c> applied to every node
     /// created by <c>f</c>.
     /// </summary>
+    /// <remarks>
+    /// The caller marks the journal's derived section: <c>EffectOn</c>'s action does so on its journaled path.
+    /// </remarks>
     member internal _.RunUntrackedHostedWith(host: IScopeHost, f: 'A -> unit, arg: 'A) =
         let previous = current
         let previousOwner = currentOwner
@@ -3153,16 +3734,23 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
             graph.Entered (
                 "A signal write",
                 fun () ->
-                    if not (equal.Equals (value, v)) then
-                        value <- v
-                        Tracer.Write (observers, true, box v)
+                    // Written with && so that Fable emits a short-circuit, not a ternary, on the unjournaled path.
+                    if
+                        not (
+                            not (Platform.isNull graph.Journal)
+                            && not (this.RecordWrite v)
+                        )
+                    then
+                        if not (equal.Equals (value, v)) then
+                            value <- v
+                            Tracer.Write (observers, true, box v)
 
-                        observers.NotifyDirty ()
-                        Tracer.Notified observers
+                            observers.NotifyDirty ()
+                            Tracer.Notified observers
 
-                        graph.RequestFlush ()
-                    else
-                        Tracer.Write (observers, false, box v)
+                            graph.RequestFlush ()
+                        else
+                            Tracer.Write (observers, false, box v)
             )
 
     /// <summary>
@@ -3183,6 +3771,11 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
                     Tracer.Write (observers, false, box v)
         )
 
+    // Out of line, so the setter's body stays at one field load and a null check when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private _.RecordWrite(v: 'T) : bool =
+        graph.RecordInput (JournalEntryKind.Write, id, box v)
+
     /// <summary>Marks every reader for a check, leaving the value unchanged.</summary>
     member internal _.NotifyCheck() =
         observers.NotifyCheck ()
@@ -3198,6 +3791,8 @@ type Signal<'T> internal (graph: Graph, initial: 'T, equal: IEqualityComparer<'T
     /// Untracked read.
     /// </summary>
     member _.Peek = value
+
+    member internal _.Graph = graph
 
     /// <summary>
     /// How many computations currently read this signal. Exposed for tests
@@ -3257,16 +3852,22 @@ type AsyncSource<'T>(graph: Graph) =
     /// Marshalled through <c>Dispatch</c>, because this is the one entry point that
     /// is genuinely called from off-thread: it is what a completing <c>Task</c> runs.
     /// </remarks>
-    member _.Settle(v: 'T) =
+    member this.Settle(v: 'T) =
         graph.Post (fun () ->
-            value <- v
-            status <- Status.None
-            Tracer.SourceSettled (observers, false, box v)
+            if
+                not (
+                    not (Platform.isNull graph.Journal)
+                    && not (this.RecordSettle v)
+                )
+            then
+                value <- v
+                status <- Status.None
+                Tracer.SourceSettled (observers, false, box v)
 
-            observers.NotifyDirty ()
-            Tracer.Notified observers
+                observers.NotifyDirty ()
+                Tracer.Notified observers
 
-            graph.RequestFlush ())
+                graph.RequestFlush ())
 
     /// <summary>
     /// Publishes a failure as a settled outcome: dependents suspended on the source read <c>reason</c> as its error.
@@ -3277,14 +3878,29 @@ type AsyncSource<'T>(graph: Graph) =
             raise (ArgumentNullException (nameof reason))
 
         graph.Post (fun () ->
-            failure <- Failure (reason, (this :> INode))
-            status <- Status.Error
-            Tracer.SourceSettled (observers, true, reason)
+            if
+                not (
+                    not (Platform.isNull graph.Journal)
+                    && not (this.RecordFail reason)
+                )
+            then
+                failure <- Failure (reason, (this :> INode))
+                status <- Status.Error
+                Tracer.SourceSettled (observers, true, reason)
 
-            observers.NotifyDirty ()
-            Tracer.Notified observers
+                observers.NotifyDirty ()
+                Tracer.Notified observers
 
-            graph.RequestFlush ())
+                graph.RequestFlush ())
+
+    // Out of line, so the settle and fail closures stay at one field load and a null check when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private _.RecordSettle(v: 'T) : bool =
+        graph.RecordInput (JournalEntryKind.Settle, id, box v)
+
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private _.RecordFail(reason: exn) : bool =
+        graph.RecordInput (JournalEntryKind.Fail, id, reason)
 
     /// <summary>
     /// Transparent, tracked read. Links the edge, then suspends if pending.
@@ -3317,6 +3933,8 @@ type AsyncSource<'T>(graph: Graph) =
             this :> INode
         else
             Unchecked.defaultof<INode>
+
+    member internal _.Graph = graph
 
 /// <summary>
 /// A derived, cached computation.
@@ -4109,7 +4727,10 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
 
         try
             try
-                graph.RunHosted (this :> IComputation, body)
+                if Platform.isNull graph.Journal then
+                    graph.RunHosted (this :> IComputation, body)
+                else
+                    this.RunBodyJournaled ()
             finally
                 if disposed then
                     sources.Clear (this :> IComputation)
@@ -4132,6 +4753,11 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
             status <- Status.Error
 
         Tracer.RunEnd (graph, id, status)
+
+    // Out of line, so RunBody allocates no closure and, under Fable, no closure context when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.RunBodyJournaled() =
+        graph.Journal.RunWork (fun () -> graph.RunHosted (this :> IComputation, body))
 
     /// <summary>
     /// Detaches from every source and discharges the run scope. Idempotent.
@@ -4338,7 +4964,10 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
 
             try
                 try
-                    graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
+                    if Platform.isNull graph.Journal then
+                        graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
+                    else
+                        this.ActJournaled v
                 finally
                     acting <- false
             with
@@ -4346,6 +4975,19 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
             | ex ->
                 error <- ex
                 status <- Status.Error
+
+    // Out of line, so Act allocates no closure and, under Fable, no closure context when the graph has no journal.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+    member private this.ActJournaled(v: 'T) =
+        let recorder = graph.Journal
+
+        recorder.RunWork (fun () ->
+            recorder.EnterDerived ()
+
+            try
+                graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
+            finally
+                recorder.LeaveDerived ())
 
     /// <summary>Detaches from the sources and disposes the action's scope. Idempotent.</summary>
     member this.Dispose() =

@@ -320,8 +320,16 @@ the node, which tells apart a node created at startup from one re-created by eac
 
 :::details Creation sites and resolving paths
 
-The site is the innermost stack frame outside Ranvier, FSharp.Core and `System.*`. `Trace.resolve
-graph "/total"` goes the other way, from a path to the node id.
+The site is the innermost stack frame with file information outside the Ranvier libraries,
+FSharp.Core and `System.*`. The Ranvier libraries are the core and every Ranvier package built from
+`src/` (Ranvier.Elmish, Ranvier.Query, Ranvier.Mcp, Ranvier.View and the others), each marked
+`AssemblyMetadata("RanvierLibrary", "true")`. A frame whose source file sits in a library's `src/`
+directory is skipped too, for library code inlined into the caller's assembly. A node created by
+`Mvu.create`, `GraphHost.Start`'s setup or a view binding reports the application's line that led
+to it. A node a library creates from a deferred callback, with no application frame on the stack,
+reports the next frame outside those, or `?` when none qualifies.
+
+`Trace.resolve graph "/total"` goes the other way, from a path to the node id.
 
 :::
 
@@ -742,7 +750,7 @@ Ship against the untraced `Ranvier` package.
 The repository provides `tools/verify-trace.fsx` to check trace changes:
 
 - The untraced Release IL references no trace type and equals the IL of the merge base, method by
-  method. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
+  method, with closure line numbers and the checkout's path ignored. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
   `Trace.label` and the timed-value members in `docs/.ai/debounce-throttle-api-additions.txt`.
 - A sample using `Trace.named` or `Trace.label` compiles to the same IL as the sample without it.
 - A lint checks the hook sites and `#if RANVIER_TRACE` blocks in the engine sources.
@@ -752,6 +760,11 @@ The repository provides `tools/verify-trace.fsx` to check trace changes:
   library's own counters, and the edges folded from the log equal the live graph.
 - With elevated rights, the counter bench shows equal allocations and instruction counts between
   the merge base and the change.
+
+The merge base is taken with the branch the change targets: the base branch of the current branch's
+open pull request, or `master` when there is none. `--base <ref>` names another, for example
+`dotnet fsi tools/verify-trace.fsx --base origin/integration/issues`. The base is built in a
+temporary git worktree, and the pack step writes its intermediate files outside the repository.
 
 CI also runs the test suite traced, and publishes the NativeAOT smoke application traced and untraced.
 

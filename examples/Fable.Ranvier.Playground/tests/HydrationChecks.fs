@@ -1570,22 +1570,19 @@ let private identityContinues () =
     equal ((identityIds "a", shown [ 0; 1 ]), (identityIds "a", shown [ 0; 1 ], true), (row 2, shown [ 0; 1; 2 ])) (served, hydrated, continued)
 
 let private boundaryIdsHydrate () =
-    let check ready fails =
-        idContentReady <- ready
-        idContentFails <- fails
-        let served = servedIds idBoundary ()
+    let check content =
+        let definition = idBoundary content
+        let served = servedIds definition ()
         use graph = new Graph ()
-        let host = serve idBoundary ()
+        let host = serve definition ()
         let before = serverNodes host
         let reports = ResizeArray<exn list>()
 
         let mounted =
-            Hydration.hydrate graph None reports.Add strictOptions host idBoundary ()
+            Hydration.hydrate graph None reports.Add strictOptions host definition ()
 
         let shown = domIds host, sameNodes before (serverNodes host), messages reports
         mounted.Dispose ()
-        idContentReady <- true
-        idContentFails <- false
         served, shown
 
     let shown = [ "r-0-0"; "r-0.r0.1-0" ]
@@ -1596,7 +1593,7 @@ let private boundaryIdsHydrate () =
             shown, (shown, true, [])
             shown, (shown, false, [ [ "failed" ] ])
         ]
-        [ check true false; check false false; check true true ]
+        [ check IdReady; check IdPending; check IdFails ]
 
 type private IssuedSource =
     {
@@ -2986,29 +2983,26 @@ let private clientHolesIdentity () =
 /// DOM ids against the server's, and the failures the boundary reported.
 /// </summary>
 let private clientBoundaryIdentity () =
-    let check ready fails (expected: string list) (visible: string list) (reported: string list list) =
-        idContentReady <- ready
-        idContentFails <- fails
-        let served = servedIds idBoundary ()
+    let check content (expected: string list) (visible: string list) (reported: string list list) =
+        let definition = idBoundary content
+        let served = servedIds definition ()
         use graph = new Graph ()
         let target = host ()
         let reports = ResizeArray<exn list>()
         identityLog.Clear ()
 
         let mounted =
-            Mounting.mount graph None reports.Add target None (fun context -> Program.run (Component.render idBoundary ()) context.Backend)
+            Mounting.mount graph None reports.Add target None (fun context -> Program.run (Component.render definition ()) context.Backend)
 
         let issued = List.ofSeq identityLog
         let shown = domIds target
         mounted.Dispose ()
-        idContentReady <- true
-        idContentFails <- false
 
         equal (expected, visible, visible, reported) (issued, shown, served, [ for errors in reports -> [ for error in errors -> error.Message ] ])
 
-    check true false boundaryContentIds boundaryContentIds []
-    check false false boundaryPendingIds [ "r-0-0"; "r-0.r0.1-0" ] []
-    check true true boundaryErrorIds [ "r-0-0"; "r-0.r0.1-0" ] [ [ "failed" ] ]
+    check IdReady boundaryContentIds boundaryContentIds []
+    check IdPending boundaryPendingIds [ "r-0-0"; "r-0.r0.1-0" ] []
+    check IdFails boundaryErrorIds [ "r-0-0"; "r-0.r0.1-0" ] [ [ "failed" ] ]
 
 let private clientCreateIdInLaterSetup () =
     use graph = new Graph ()

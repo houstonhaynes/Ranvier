@@ -35,12 +35,13 @@
             <_FableSource Include="@(_PackageFiles)"
                           Condition="'%(Extension)' == '.fs' or '%(Extension)' == '.fsi'" />
         </ItemGroup>
-        <MakeDir Directories="$(IntermediateOutputPath)fable" />
-        <WriteLinesToFile File="$(IntermediateOutputPath)fable/$(MSBuildProjectFile)" Overwrite="true"
+        <!-- Written beside the nuspec, so a pack with its own NuspecOutputPath adds nothing to obj. -->
+        <MakeDir Directories="$(NuspecOutputPath)fable" />
+        <WriteLinesToFile File="$(NuspecOutputPath)fable/$(MSBuildProjectFile)" Overwrite="true"
                           Lines="&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;;  &lt;PropertyGroup&gt;;    &lt;TargetFramework&gt;netstandard2.1&lt;/TargetFramework&gt;;  &lt;/PropertyGroup&gt;;  &lt;ItemGroup&gt;;@(_FableSource-&gt;'    &lt;Compile Include=&quot;%(Identity)&quot; /&gt;');  &lt;/ItemGroup&gt;;&lt;/Project&gt;" />
         <ItemGroup>
             <_PackageFiles Remove="$(MSBuildProjectFullPath)" />
-            <_PackageFiles Include="$(IntermediateOutputPath)fable/$(MSBuildProjectFile)"
+            <_PackageFiles Include="$(NuspecOutputPath)fable/$(MSBuildProjectFile)"
                            Pack="true" PackagePath="fable/" BuildAction="None" />
         </ItemGroup>
     </Target>

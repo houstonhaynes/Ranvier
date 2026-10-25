@@ -37,8 +37,8 @@ function armsAffected(paths) {
 }
 
 // Paths that own the committed Chromium runs of Arms.Match: the lowering and its plugin, the gate scripts, the keyed-rows
-// benchmark and its Arms.Match fixture, the runs themselves and the workflow. A change to the core, the view or the
-// Playground's lock file also changes a hashed source, and its runs are recorded with the next change to these paths.
+// benchmark and its fixtures, the runs themselves and the workflow. They cover every source run-sources.mjs hashes; the
+// core, the view libraries and the Playground's lock file are not hashed and leave the pool unchanged.
 const armsRunsPatterns = [
   /^experiments\/Ranvier\.View\.Arms/,
   /^examples\/Fable\.Ranvier\.Playground\/benchmarks\/frameworks\//,
