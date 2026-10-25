@@ -109,39 +109,45 @@ type PersistSession
         saves <- save
         outcome <- PersistTask.both outcome save
 
+    // Deletes the stale keys, then saves the records with the new buster. The bust stays pending until both succeed.
+    let saveBusted (records: StoredRecord list) : Task =
+        let written = HashSet<string>(records |> List.map _.Key)
+
+        let stale =
+            [
+                yield! declared
+                yield PersistReserved.positionKey
+                if options.Buster.IsNone then
+                    yield PersistReserved.busterKey
+            ]
+            |> List.filter (written.Contains >> not)
+
+        let records =
+            match options.Buster with
+            | Some buster ->
+                {
+                    Key = PersistReserved.busterKey
+                    Version = 1
+                    Payload = buster
+                    ETag = None
+                }
+                :: records
+            | None -> records
+
+        PersistTask.andThen (fun () -> PersistTask.andThen (fun () -> store.DeleteMany stale) (fun () -> store.SaveMany records)) (fun () ->
+            busterPending <- false
+            PersistTask.completed ())
+
     let drainDirty () =
         if dirty.Count > 0 then
             let records = List.ofSeq dirty.Values
             dirty.Clear ()
 
-            if busterPending then
-                busterPending <- false
-                let written = HashSet<string>(records |> List.map _.Key)
-
-                let stale =
-                    [
-                        yield! declared
-                        yield PersistReserved.positionKey
-                        if options.Buster.IsNone then
-                            yield PersistReserved.busterKey
-                    ]
-                    |> List.filter (written.Contains >> not)
-
-                let records =
-                    match options.Buster with
-                    | Some buster ->
-                        {
-                            Key = PersistReserved.busterKey
-                            Version = 1
-                            Payload = buster
-                            ETag = None
-                        }
-                        :: records
-                    | None -> records
-
-                enqueue (fun () -> PersistTask.andThen (fun () -> store.DeleteMany stale) (fun () -> store.SaveMany records))
-            else
-                enqueue (fun () -> store.SaveMany records)
+            enqueue (fun () ->
+                if busterPending then
+                    saveBusted records
+                else
+                    store.SaveMany records)
 
     /// <summary>
     /// The journal position stored under <c>$ranvier/position</c> at load, or <c>None</c> when the store holds none.
@@ -247,7 +253,7 @@ module Persist =
     /// <summary>
     /// Loads the stored records of <c>keys</c>. The task faults with a <c>PersistLoadException</c> naming the key when
     /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode, unless
-    /// <c>options.DiscardUndecodable</c> is set. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first save deletes
+    /// <c>options.DiscardUndecodable</c> is set. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first successful save deletes
     /// the stored records of the unwritten keys and the journal position.
     /// </summary>
     /// <exception cref="T:System.ArgumentException">Two of the keys share a store key.</exception>

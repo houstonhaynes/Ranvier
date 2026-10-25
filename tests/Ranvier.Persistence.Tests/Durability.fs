@@ -54,10 +54,16 @@ let private failed (message: string) : Task =
     Task.FromException (InvalidOperationException message)
 #endif
 
-/// <summary>A memory store whose <c>SaveMany</c> calls fault with the messages of <c>faults</c>, in call order.</summary>
-type private FaultingStore(faults: string option list) =
+/// <summary>
+/// A memory store whose <c>SaveMany</c> calls fault with the messages of <c>faults</c>, and whose <c>DeleteMany</c>
+/// calls fault with the messages of <c>deleteFaults</c>, in call order.
+/// </summary>
+type private FaultingStore(faults: string option list, deleteFaults: string option list) =
     let inner = MemoryStateStore () :> IStateStore
     let mutable remaining = faults
+    let mutable remainingDeletes = deleteFaults
+
+    new(faults) = FaultingStore (faults, [])
 
     member _.Inner = inner
 
@@ -76,7 +82,14 @@ type private FaultingStore(faults: string option list) =
             | [] -> inner.SaveMany records
 
         member _.DeleteMany keys =
-            inner.DeleteMany keys
+            match remainingDeletes with
+            | Some message :: rest ->
+                remainingDeletes <- rest
+                failed message
+            | None :: rest ->
+                remainingDeletes <- rest
+                inner.DeleteMany keys
+            | [] -> inner.DeleteMany keys
 
 [<Tests>]
 let tests =
@@ -160,5 +173,52 @@ let tests =
                 do! session.FlushAsync () |> Async.AwaitTask
                 let! values = restored PersistOptions.defaults store
                 Expect.equal values (2, 0) "the later save ran"
+            }
+            testCaseAsync "a faulted first save after a bust keeps the later saves on the next load"
+            <| async {
+                let store = FaultingStore [ Some "disk full" ]
+
+                store.Inner.SaveMany [ record "$ranvier/buster" 1 "v1"; record "a" 1 "1"; record "b" 1 "2" ]
+                |> ignore
+
+                let! session =
+                    Persist.loadWith (withBuster (Some "v2")) store declared
+                    |> Async.AwaitTask
+
+                use graph = new Graph (GraphOptions.Default.WithDispatcher (ImmediateDispatcher ()))
+                use _active = graph.Activate ()
+                let first = Persist.signal session a 0
+                let second = Persist.signal session b 0
+                first.Value <- 1
+                let! error = failureOf (session.FlushAsync () |> Async.AwaitTask)
+                Expect.equal error.Message "disk full" "the busted save faults"
+                second.Value <- 2
+                first.Value <- 3
+                do! session.FlushAsync () |> Async.AwaitTask
+                let! values = restored (withBuster (Some "v2")) store
+                Expect.equal values (3, 2) "the saves after the faulted bust are restored"
+            }
+
+            testCaseAsync "a faulted delete after a bust keeps the old records discarded on the next load"
+            <| async {
+                let store = FaultingStore ([], [ Some "disk full" ])
+
+                store.Inner.SaveMany [ record "$ranvier/buster" 1 "v1"; record "a" 1 "1"; record "b" 1 "2" ]
+                |> ignore
+
+                let! session =
+                    Persist.loadWith (withBuster (Some "v2")) store declared
+                    |> Async.AwaitTask
+
+                use graph = new Graph (GraphOptions.Default.WithDispatcher (ImmediateDispatcher ()))
+                use _active = graph.Activate ()
+                let first = Persist.signal session a 0
+                first.Value <- 1
+                let! error = failureOf (session.FlushAsync () |> Async.AwaitTask)
+                Expect.equal error.Message "disk full" "the busted delete faults"
+                first.Value <- 3
+                do! session.FlushAsync () |> Async.AwaitTask
+                let! values = restored (withBuster (Some "v2")) store
+                Expect.equal values (3, 0) "the later save is restored and the stale record stays discarded"
             }
         ]
