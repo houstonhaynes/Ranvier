@@ -123,6 +123,7 @@ let theme =
                     "Reference"
                     [
                         Menu.page "guide/tracing.md"
+                        Menu.page "guide/journal.md"
                         Menu.page "guide/signal-maps.md"
                         Menu.page "guide/troubleshooting.md"
                     ]
@@ -213,6 +214,7 @@ let theme =
                         Menu.page "benchmarks/suspension.md"
                         Menu.page "benchmarks/streams.md"
                         Menu.page "benchmarks/counters.md"
+                        Menu.page "benchmarks/tracing.md"
                     ]
                 Menu.section "Ranvier.Query" [ Menu.page "benchmarks/queries.md" ]
             ]
