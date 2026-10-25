@@ -33,7 +33,7 @@ try {
     foreach ($traced in @($false, $true)) {
         $references = @()
         $viewReferences = @()
-        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query', 'Ranvier.Wire') + $viewPackages) {
+        foreach ($name in @('Ranvier', 'Ranvier.Elmish', 'Ranvier.CSharp', 'Ranvier.Query', 'Ranvier.Wire', 'Ranvier.Persistence') + $viewPackages) {
             $project = Join-Path $repo "src/$name/$name.fsproj"
             Invoke-DotNet pack $project -c Release "-p:RanvierTrace=$($traced.ToString().ToLowerInvariant())" -o $feed
             $id = if ($traced) { "$name.Traced" } else { $name }

@@ -85,8 +85,16 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 | NumberText.fs | 36 | 36 | 36 | 36 | 36 | 36 | 2 | 0 |
 | Conformance.fs | 104 | 104 | 104 | 104 | 104 | 104 | 0 | 0 |
 | Streams.fs (sources) | 9 | 9 | 9 | 9 | 9 | 9 | 0 | 0 |
+| Persistence/Scaffold.fs | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
+| Persistence/MemoryStore.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
+| Persistence/Loading.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
+| Persistence/Coalescing.fs | 16 | 16 | 16 | 16 | 16 | 16 | 0 | 0 |
+| Persistence/Durability.fs | 10 | 10 | 10 | 10 | 10 | 10 | 0 | 0 |
+| Persistence/Collections.fs | 13 | 13 | 13 | 13 | 13 | 13 | 0 | 0 |
+| Persistence/Position.fs | 8 | 8 | 8 | 8 | 8 | 8 | 0 | 0 |
+| Persistence/LocalStorage.fs | 14 | 14 | 14 | 14 | 14 | 14 | 0 | 0 |
 | Streams.fs (traces) | 0 | 0 | 0 | 3 | 3 | 3 | 0 | 0 |
-| **Total** | 1636 | 1614 | 1611 | 1857 | 1830 | 1827 | 147 | 1 |
+| **Total** | 1724 | 1702 | 1699 | 1945 | 1918 | 1915 | 147 | 1 |
 
 ## Tests.fs
 
@@ -2672,6 +2680,150 @@ Excluded tests exercise a .NET-only facility and are compiled out with `#if !FAB
 - ofAsyncIterable: a rejected next fails the stream
 - ofAsyncIterable: disposing while next is pending calls return once and ignores the later value
 - ofAsyncIterable: cancellation ends Run with OperationCanceledException
+
+</details>
+
+## Persistence/Scaffold.fs
+
+<details><summary>1 passed in every build and delivery that runs them</summary>
+
+- a load exception names the key
+
+</details>
+
+## Persistence/MemoryStore.fs
+
+<details><summary>10 passed in every build and delivery that runs them</summary>
+
+- an empty store loads no records
+- saved records load back
+- a load returns the requested keys only
+- a later save of a key replaces its record
+- deleted keys load nothing and absent keys are skipped
+- a cleared store loads no records and takes later saves
+- keys and payloads with separators, reserved prefixes and non-ASCII text round trip
+- a record of an older version loads through its migrations
+- a record of a newer version fails the load naming the key
+- a matching buster keeps the records and a different one discards them
+
+</details>
+
+## Persistence/Loading.fs
+
+<details><summary>16 passed in every build and delivery that runs them</summary>
+
+- a key under the reserved prefix is rejected
+- an empty key is rejected
+- two declarations of one key are rejected
+- a stored value restores and an absent key uses the fallback
+- an older version runs its migrations in version order
+- a current version runs no migration
+- a newer version fails the load naming the key
+- a missing migration fails the load naming the key
+- a failed migration fails the load naming the key
+- a decode failure fails the load naming the key
+- with the discard option an undecodable record uses the fallback
+- with the discard option a newer version still fails the load
+- with the discard option a missing migration still fails the load
+- with the discard option a failed migration still fails the load
+- a buster mismatch discards every record
+- a buster set on a store saved without one discards every record
+
+</details>
+
+## Persistence/Coalescing.fs
+
+<details><summary>16 passed in every build and delivery that runs them</summary>
+
+- the first read returns the stored value and creating the signal saves nothing
+- a signal created and written in one batch saves the write
+- a second live signal of one key is rejected
+- a key is free again once its signal's owner is disposed
+- a signal re-created for a key starts from its last written value
+- a write in the batch that disposes its signal's owner is saved and restored
+- a session serves one graph
+- ManualDispatcher / a batch writing three persisted signals saves once with three records
+- ManualDispatcher / a key written twice in one batch is saved once with its last value
+- ManualDispatcher / unbatched writes save once each
+- ImmediateDispatcher / a batch writing three persisted signals saves once with three records
+- ImmediateDispatcher / a key written twice in one batch is saved once with its last value
+- ImmediateDispatcher / unbatched writes save once each
+- default dispatcher / a batch writing three persisted signals saves once with three records
+- default dispatcher / a key written twice in one batch is saved once with its last value
+- default dispatcher / unbatched writes save once each
+
+</details>
+
+## Persistence/Durability.fs
+
+<details><summary>10 passed in every build and delivery that runs them</summary>
+
+- a buster mismatch keeps the unwritten records discarded on the next load
+- a buster mismatch discards the records of keys the busting load did not declare
+- two sessions loaded against a stale buster keep each other's saves
+- a buster set on a store saved without one keeps the old records discarded on the next load
+- a buster removed from the options keeps the old records discarded on the next load
+- a buster mismatch removes the stored journal position
+- FlushAsync faults with the first faulted save's exception, and later saves still run
+- FlushAsync reports a fault once, and the next FlushAsync covers the later saves
+- a faulted first save after a bust keeps the later saves on the next load
+- a faulted delete after a bust keeps the old records discarded on the next load
+
+</details>
+
+## Persistence/Collections.fs
+
+<details><summary>13 passed in every build and delivery that runs them</summary>
+
+- row layout / editing one row saves that row's record only
+- row layout / adding a row saves its record and the order
+- row layout / removing a row saves the order and deletes the row's record
+- row layout / a restored collection keeps insertion order
+- row layout / a row re-added at the end restores at the end
+- row layout / an edit in the batch that disposes the collection's owner is saved
+- row layout / a collection re-created for the key starts from its last rows
+- row layout / an undecodable row fails the load naming the row's key
+- row layout / with the discard option an undecodable row is left out
+- document layout / editing one row saves the one document record
+- document layout / a restored collection keeps insertion order
+- document layout / an older document runs its migrations on every row
+- declaring / a collection key under the reserved prefix is rejected
+
+</details>
+
+## Persistence/Position.fs
+
+<details><summary>8 passed in every build and delivery that runs them</summary>
+
+- a save records the position of the last journal entry in the same SaveMany
+- a load exposes the saved position
+- inputs journaled after the last save are not included in the position
+- the wrapper forwards every entry to the inner journal
+- a session without a journal saves no position
+- a save that faults part way leaves no position ahead of the records
+- a save without a journal deletes an earlier session's position
+- a persisted signal written by an effect saves in the flush's one SaveMany
+
+</details>
+
+## Persistence/LocalStorage.fs
+
+<details><summary>14 passed in every build and delivery that runs them</summary>
+
+- a record and a union round trip through Wire codecs
+- items live under the prefix as the version and the payload
+- a clear removes the items under the prefix only
+- an item that is not a record fails the load naming the key
+- conformance / an empty store loads no records
+- conformance / saved records load back
+- conformance / a load returns the requested keys only
+- conformance / a later save of a key replaces its record
+- conformance / deleted keys load nothing and absent keys are skipped
+- conformance / a cleared store loads no records and takes later saves
+- conformance / keys and payloads with separators, reserved prefixes and non-ASCII text round trip
+- conformance / a record of an older version loads through its migrations
+- conformance / a record of a newer version fails the load naming the key
+- conformance / a matching buster keeps the records and a different one discards them
 
 </details>
 

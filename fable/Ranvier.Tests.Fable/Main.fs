@@ -132,6 +132,14 @@ let all =
             testList "DateTimeOffsetCodec.fs" [ Ranvier.Wire.Tests.DateTimeOffsetCodec.tests ]
             testList "NumberText.fs" [ Ranvier.Wire.Tests.NumberText.tests ]
             testList "Conformance.fs" [ Ranvier.Wire.Tests.Conformance.tests ]
+            testList "Persistence/Scaffold.fs" [ Ranvier.Persistence.Tests.Scaffold.tests ]
+            testList "Persistence/MemoryStore.fs" [ Ranvier.Persistence.Tests.MemoryStore.tests ]
+            testList "Persistence/Loading.fs" [ Ranvier.Persistence.Tests.Loading.tests ]
+            testList "Persistence/Coalescing.fs" [ Ranvier.Persistence.Tests.Coalescing.tests ]
+            testList "Persistence/Durability.fs" [ Ranvier.Persistence.Tests.Durability.tests ]
+            testList "Persistence/Collections.fs" [ Ranvier.Persistence.Tests.Collections.tests ]
+            testList "Persistence/Position.fs" [ Ranvier.Persistence.Tests.Position.tests ]
+            testList "Persistence/LocalStorage.fs" [ Ranvier.Persistence.Tests.LocalStorage.tests ]
         ]
 
 Mocha.runTests all |> ignore
