@@ -84,8 +84,9 @@ type PersistOptions =
         /// <summary>The store-wide buster. A stored buster unequal to it discards every record of the load.</summary>
         Buster: string option
         /// <summary>
-        /// When true, a record that cannot be restored is discarded and its key uses the fallback; when false, it
-        /// fails the load with a <c>PersistLoadException</c>.
+        /// When true, a record that fails to decode (<c>DecodeFailed</c>) is discarded and its key uses the fallback;
+        /// when false, it fails the load with a <c>PersistLoadException</c>. A newer version, a missing migration and
+        /// a failed migration fail the load either way.
         /// </summary>
         DiscardUndecodable: bool
     }

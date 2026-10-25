@@ -259,8 +259,8 @@ module Persist =
 
     /// <summary>
     /// Loads the stored records of <c>keys</c>. The task faults with a <c>PersistLoadException</c> naming the key when
-    /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode, unless
-    /// <c>options.DiscardUndecodable</c> is set. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first successful save deletes
+    /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode; with
+    /// <c>options.DiscardUndecodable</c> set, a record that fails to decode reads as absent instead. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first successful save deletes
     /// the stored records of the unwritten keys and the journal position.
     /// </summary>
     /// <exception cref="T:System.ArgumentException">Two of the keys share a store key.</exception>
@@ -305,9 +305,8 @@ module Persist =
                     | Some record ->
                         match key.Restore record with
                         | Result.Ok value -> values[key.Key] <- value
-                        | Result.Error failure ->
-                            if not options.DiscardUndecodable then
-                                raise (PersistLoadException (key.Key, failure))
+                        | Result.Error (DecodeFailed _) when options.DiscardUndecodable -> ()
+                        | Result.Error failure -> raise (PersistLoadException (key.Key, failure))
 
                 let position =
                     stored positionKey

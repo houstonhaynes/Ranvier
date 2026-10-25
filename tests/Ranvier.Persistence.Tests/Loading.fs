@@ -19,6 +19,11 @@ let private appending (trail: ResizeArray<int>) (from: int) (suffix: string) (pa
     trail.Add from
     Result.Ok (payload + suffix)
 
+let private discarding =
+    { PersistOptions.defaults with
+        DiscardUndecodable = true
+    }
+
 let private textCodec (version: int) : PersistCodec<string> =
     PersistCodec.ofJournal
         {
@@ -159,24 +164,47 @@ let tests =
                     |> expectLoadFailure "count" (DecodeFailed "not an int: many")
             }
 
-            testCaseAsync "with the discard option an unrestorable record uses the fallback"
+            testCaseAsync "with the discard option an undecodable record uses the fallback"
             <| async {
                 let count = Persist.key "count" (PersistCodec.ofJournal (intCodec 1))
-                let newer = Persist.key "newer" (PersistCodec.ofJournal (intCodec 1))
                 let kept = Persist.key "kept" (PersistCodec.ofJournal (intCodec 1))
 
-                let options =
-                    { PersistOptions.defaults with
-                        DiscardUndecodable = true
-                    }
+                let store = storeWith [ record "count" 1 "many"; record "kept" 1 "3" ]
 
-                let store =
-                    storeWith [ record "count" 1 "many"; record "newer" 5 "1"; record "kept" 1 "3" ]
-
-                let! session = load options store [ count; newer; kept ]
+                let! session = load discarding store [ count; kept ]
                 Expect.equal (Persist.restore session count -1) -1 "the undecodable record is discarded"
-                Expect.equal (Persist.restore session newer -1) -1 "the newer record is discarded"
                 Expect.equal (Persist.restore session kept -1) 3 "a restorable record is kept"
+            }
+
+            testCaseAsync "with the discard option a newer version still fails the load"
+            <| async {
+                let key = Persist.key "count" (PersistCodec.ofJournal (intCodec 2))
+
+                do!
+                    load discarding (storeWith [ record "count" 3 "1" ]) [ key ]
+                    |> expectLoadFailure "count" (NewerVersion (3, 2))
+            }
+
+            testCaseAsync "with the discard option a missing migration still fails the load"
+            <| async {
+                let key = Persist.key "text" (textCodec 2)
+
+                do!
+                    load discarding (storeWith [ record "text" 1 "v1" ]) [ key ]
+                    |> expectLoadFailure "text" (MissingMigration 1)
+            }
+
+            testCaseAsync "with the discard option a failed migration still fails the load"
+            <| async {
+                let key =
+                    Persist.key
+                        "text"
+                        (textCodec 2
+                         |> PersistCodec.withMigration 1 (fun _ -> Result.Error "bad"))
+
+                do!
+                    load discarding (storeWith [ record "text" 1 "v1" ]) [ key ]
+                    |> expectLoadFailure "text" (MigrationFailed (1, "bad"))
             }
 
             testCaseAsync "a buster mismatch discards every record"
