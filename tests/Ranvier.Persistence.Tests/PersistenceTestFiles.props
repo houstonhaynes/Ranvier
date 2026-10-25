@@ -6,5 +6,6 @@
         <Compile Include="$(MSBuildThisFileDirectory)StoreConformance.fs" Link="StoreConformance.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)MemoryStore.fs" Link="MemoryStore.fs" />
         <Compile Include="$(MSBuildThisFileDirectory)Loading.fs" Link="Loading.fs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Coalescing.fs" Link="Coalescing.fs" />
     </ItemGroup>
 </Project>

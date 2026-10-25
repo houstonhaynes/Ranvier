@@ -57,3 +57,27 @@ let expectLoadFailure (key: string) (failure: PersistFailure) (load: Async<Persi
             Expect.stringContains error.Message ("\"" + key + "\"") "the message names the key"
         | other -> failtestf "expected a PersistLoadException, got %s: %s" (other.GetType().Name) other.Message
     }
+
+/// <summary>A memory store that records the records of each <c>SaveMany</c> call, in call order.</summary>
+type RecordingStore() =
+    let inner = MemoryStateStore ()
+    let saves = ResizeArray<StoredRecord list>()
+
+    member _.Inner = inner
+    member _.Saves = List.ofSeq saves
+
+    interface IStateStore with
+        member _.LoadMany keys =
+            (inner :> IStateStore).LoadMany keys
+
+        member _.SaveMany records =
+            saves.Add records
+            (inner :> IStateStore).SaveMany records
+
+        member _.DeleteMany keys =
+            (inner :> IStateStore).DeleteMany keys
+
+/// <summary>The key and payload of each record of each save.</summary>
+let savedPayloads (store: RecordingStore) =
+    store.Saves
+    |> List.map (List.map (fun record -> record.Key, record.Payload))
