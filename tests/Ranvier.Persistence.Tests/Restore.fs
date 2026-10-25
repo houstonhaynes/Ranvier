@@ -207,5 +207,161 @@ let private sourceTests =
                 Expect.equal error.Message "boom" "the message"
         ]
 
+let private aKey = Persist.key "a" (PersistCodec.ofJournal (intCodec 1))
+let private bKey = Persist.key "b" (PersistCodec.ofJournal (intCodec 1))
+let private signalKeys: IPersistKey list = [ aKey; bKey ]
+
+/// <summary>The persisted signals <c>a</c> and <c>b</c>, each registered on the journal under its store key.</summary>
+let private signals (session: PersistSession) =
+    Journal.key "a" (intCodec 1) (Persist.signal session aKey 0), Journal.key "b" (intCodec 1) (Persist.signal session bKey 0)
+
+/// <summary>
+/// Loads <c>signalKeys</c> from <c>store</c>, builds a graph over the session's journal wrapper, and runs
+/// <c>run</c> on it and its signals; returns the recorded entries.
+/// </summary>
+let private recorded (store: IStateStore) (run: Graph -> Signal<int> * Signal<int> -> unit) =
+    async {
+        let journal = MemoryJournal "app"
+        let! session = load store signalKeys
+        do! inGraph session journal (fun graph -> run graph (signals session))
+        return journal.Entries
+    }
+
+/// <summary>
+/// Loads <c>signalKeys</c> from <c>snapshot</c>, builds a graph over the session's journal wrapper, logs every value of
+/// <c>a</c>, runs <c>Persist.replay mode</c> over <c>entries</c>, and returns the log, <c>b</c> and the new journal.
+/// </summary>
+let private restored (mode: ReplayMode) (snapshot: IStateStore) (entries: JournalEntry list) =
+    async {
+        let journal = MemoryJournal "app"
+        let! session = load snapshot signalKeys
+
+        let! log, b =
+            inGraph session journal (fun graph ->
+                let a, b = signals session
+                let log = ResizeArray<int>()
+                createEffectOn (fun () -> a.Value) log.Add
+                Persist.replay mode session graph entries
+                List.ofSeq log, b.Peek)
+
+        return log, b, journal.Entries
+    }
+
+let private inputs (journal: JournalEntry list) =
+    journal
+    |> List.filter (fun entry ->
+        entry.Kind <> JournalEntryKind.Flush
+        && entry.Kind <> JournalEntryKind.Setup)
+
+let private replayTests (mode: ReplayMode) =
+    testList
+        (string mode)
+        [
+            testCaseAsync "with no stored position every entry replays"
+            <| async {
+                let! entries =
+                    recorded (MemoryStateStore ()) (fun _ (a, _) ->
+                        a.Value <- 1
+                        a.Value <- 2)
+
+                let! log, _, _ = restored mode (MemoryStateStore ()) entries
+                Expect.equal log [ 0; 1; 2 ] "the whole journal"
+            }
+
+            testCaseAsync "with a stored position only the later entries replay"
+            <| async {
+                let prefix = MemoryStateStore ()
+
+                let! _ =
+                    recorded prefix (fun _ (a, b) ->
+                        a.Value <- 1
+                        b.Value <- 4)
+
+                let! entries =
+                    recorded (MemoryStateStore ()) (fun _ (a, b) ->
+                        a.Value <- 1
+                        b.Value <- 4
+                        a.Value <- 2)
+
+                let! log, b, journal = restored mode prefix entries
+                Expect.equal log [ 1; 2 ] "the snapshot's value, then the tail"
+                Expect.equal b 4 "the snapshot's value"
+                Expect.equal (inputs journal |> List.map _.Seq) [ 1 ] "the tail is recorded from Seq 1"
+            }
+
+            testCaseAsync "entries without the stored position raise ArgumentException naming it"
+            <| async {
+                let prefix = MemoryStateStore ()
+                let! _ = recorded prefix (fun _ (a, _) -> a.Value <- 1)
+                let! error = failureOf (restored mode prefix [])
+
+                match error with
+                | :? System.ArgumentException -> Expect.stringContains error.Message "position 1" "the message names the position"
+                | other -> failtestf "expected an ArgumentException, got: %s" other.Message
+            }
+
+            testCaseAsync "an input of work started before the position is applied once"
+            <| async {
+                let prefix = MemoryStateStore ()
+                let! _ = recorded prefix (fun _ (a, _) -> a.Value <- 1)
+
+                let! entries =
+                    recorded (MemoryStateStore ()) (fun graph (a, _) ->
+                        a.Value <- 1
+                        let work = Journal.work graph
+                        Journal.produce work (fun () -> a.Value <- 2))
+
+                match inputs entries |> List.map _.Origin with
+                | [ JournalOrigin.External; JournalOrigin.Produced (1, _, 0) ] -> ()
+                | origins -> failtestf "expected an input of work started after entry 1, got %A" origins
+
+                let! log, _, journal = restored mode prefix entries
+                Expect.equal log [ 1; 2 ] "the input is applied once"
+                Expect.equal (inputs journal |> List.map _.Origin) [ JournalOrigin.External ] "the input is recorded as external"
+            }
+
+            testCaseAsync "an input of setup work after the position raises before any entry applies"
+            <| async {
+                let setupRun (more: bool) (graph: Graph) (a: Signal<int>, b: Signal<int>) =
+                    let work = Journal.work graph
+                    a.Value <- 1
+
+                    if more then
+                        b.Value <- 5
+                        Journal.produce work (fun () -> a.Value <- 2)
+
+                let prefix = MemoryStateStore ()
+                let! _ = recorded prefix (setupRun false)
+                let! entries = recorded (MemoryStateStore ()) (setupRun true)
+                let! session = load prefix signalKeys
+
+                let! error, b =
+                    inGraph session (MemoryJournal "app") (fun graph ->
+                        let _, b = signals session
+
+                        let error =
+                            try
+                                Persist.replay mode session graph entries
+                                None
+                            with error ->
+                                Some error
+
+                        error, b.Peek)
+
+                match error with
+                | Some (:? JournalReplayException as error) -> Expect.stringContains error.Reason "input of setup work" "the reason names setup work"
+                | Some other -> failtestf "expected a JournalReplayException, got: %s" other.Message
+                | None -> failtest "the replay applied an input of setup work"
+
+                Expect.equal b 0 "no entry applied"
+            }
+        ]
+
 [<Tests>]
-let tests = testList "Restore" [ sourceTests ]
+let tests =
+    testList
+        "Restore"
+        [
+            sourceTests
+            testList "Persist.replay" [ replayTests ReplayMode.Diagnostic; replayTests ReplayMode.Reenact ]
+        ]

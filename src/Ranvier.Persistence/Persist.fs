@@ -913,3 +913,73 @@ module Persist =
         // Marks an edit made in the batch that disposes the owner; it runs before the collection's own cleanup.
         onCleanup (fun () -> untrack (fun () -> apply (reader.Read ())))
         rows
+
+    /// <summary>
+    /// Replays on <c>graph</c>, restored from <c>session</c>, the entries of <c>entries</c> recorded after the
+    /// session's stored position, with <c>Journal.replay mode</c>; with no stored position, every entry. An input of
+    /// work started at or before the position is applied as an <c>External</c> entry in both modes, since the restored
+    /// graph does not re-run that work. The replayed entries are recorded on <c>graph</c>'s journal from its own next
+    /// <c>Seq</c>, so a position saved afterwards refers to that journal.
+    /// </summary>
+    /// <remarks>
+    /// <c>entries</c> is the journal of the graph that saved the snapshot. Every keyed input of <c>graph</c> is
+    /// persisted under its journal key, so the snapshot holds the state the entries up to the position made.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// The session has a stored position and <c>entries</c> holds no entry other than a <c>Flush</c> at it.
+    /// </exception>
+    /// <exception cref="T:Ranvier.JournalReplayException">
+    /// An entry after the position is an input of setup work, which the restored graph re-runs; or
+    /// <c>Journal.replay</c> raises on an entry. The replay then applies no entry for the first reason.
+    /// </exception>
+    let replay (mode: ReplayMode) (session: PersistSession) (graph: Graph) (entries: JournalEntry seq) : unit =
+        match session.Position with
+        | None -> Journal.replay mode graph entries
+        | Some position ->
+            let sorted =
+                entries
+                |> Seq.sortBy (fun entry -> entry.Seq)
+                |> Array.ofSeq
+
+            if
+                not (
+                    sorted
+                    |> Array.exists (fun entry ->
+                        entry.Seq = position
+                        && entry.Kind <> JournalEntryKind.Flush)
+                )
+            then
+                invalidArg
+                    (nameof entries)
+                    ("The entries hold no input at the snapshot's position "
+                     + string position
+                     + "; pass the journal of the graph that saved the snapshot.")
+
+            let tail =
+                sorted
+                |> Array.filter (fun entry -> entry.Seq > position)
+
+            for entry in tail do
+                match entry.Origin with
+                | JournalOrigin.Produced (0, _, _) when entry.Kind <> JournalEntryKind.Flush ->
+                    raise (
+                        JournalReplayException (
+                            entry.Seq,
+                            entry.Key,
+                            entry.PayloadType,
+                            "the entries after the snapshot's position "
+                            + string position
+                            + " hold an input of setup work; a restore replays the inputs of work started after the position"
+                        )
+                    )
+                | _ -> ()
+
+            tail
+            |> Array.map (fun entry ->
+                match entry.Origin with
+                | JournalOrigin.Produced (started, _, _) when started <= position ->
+                    { entry with
+                        Origin = JournalOrigin.External
+                    }
+                | _ -> entry)
+            |> Journal.replay mode graph
