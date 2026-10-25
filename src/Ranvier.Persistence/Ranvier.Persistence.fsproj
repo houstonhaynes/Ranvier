@@ -19,6 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="MemoryStore.fs" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
     <ProjectReference Include="../Ranvier/Ranvier.fsproj" />
