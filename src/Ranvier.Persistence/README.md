@@ -33,6 +33,9 @@ task {
 - `Persist.restore` and `Persist.track` persist an `Mvu` model or any tracked read.
 - `session.Journal` records the input-journal position each save includes; a reload exposes it as
   `session.Position`.
+- `Persist.sourceKey` and `Persist.source` persist an async source's settled value or failure message.
+- `Persist.replay` replays the journal entries after `session.Position` on a restored graph, in either replay
+  mode.
 
 Persisted inputs belong at the root of a graph or in a keyed factory. The trace dump is not a persistence format.
 Guide: [Persisted inputs](https://shayanhabibi.github.io/Ranvier/guide/persistence/).

@@ -198,8 +198,20 @@ use graph = new Graph (GraphOptions.Default.WithJournal (session.Journal journal
 // after a reload: session.Position is the Seq the stored records include
 ```
 
-`session.Position` is the stored position, or `None`. Replaying the journal's tail after it is
-[#197](https://github.com/shayanhabibi/Ranvier/issues/197).
+`session.Position` is the stored position, or `None`. `Persist.replay mode session graph entries`
+replays the journal entries after it on a graph restored from the session, in diagnostic or
+re-enactment mode: see [Restore](journal.md#restore). A position refers to the journal of the graph
+that saved it; after a restore, the restored graph's journal numbers the replayed entries afresh.
+
+An async source persists with `Persist.sourceKey` and `Persist.source`. Its record holds the
+settled value, or the failure's message, which restores as a `PersistedFailure`; a pending source
+has no record. A restore covers every keyed input only when each is persisted under its journal
+key.
+
+```fsharp
+let results = Persist.sourceKey "results" (PersistCodec.ofJournal resultsCodec)
+let source = Journal.keySource "results" resultsCodec (Persist.source session results)
+```
 
 ## What is not stored
 

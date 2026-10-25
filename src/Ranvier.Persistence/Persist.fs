@@ -917,13 +917,13 @@ module Persist =
     /// <summary>
     /// Replays on <c>graph</c>, restored from <c>session</c>, the entries of <c>entries</c> recorded after the
     /// session's stored position, with <c>Journal.replay mode</c>; with no stored position, every entry. An input of
-    /// work started at or before the position is applied as an <c>External</c> entry in both modes, since the restored
-    /// graph does not re-run that work. The replayed entries are recorded on <c>graph</c>'s journal from its own next
-    /// <c>Seq</c>, so a position saved afterwards refers to that journal.
+    /// work started at or before the position is applied as an <c>External</c> entry in both modes. The replayed
+    /// entries are recorded on <c>graph</c>'s journal from its own next <c>Seq</c>, and a position saved afterwards
+    /// refers to that journal.
     /// </summary>
     /// <remarks>
-    /// <c>entries</c> is the journal of the graph that saved the snapshot. Every keyed input of <c>graph</c> is
-    /// persisted under its journal key, so the snapshot holds the state the entries up to the position made.
+    /// <c>entries</c> is the journal of the graph that saved the snapshot. The restored graph equals the uninterrupted
+    /// run when each of its keyed inputs is persisted under its journal key.
     /// </remarks>
     /// <exception cref="T:System.ArgumentException">
     /// The session has a stored position and <c>entries</c> holds no entry other than a <c>Flush</c> at it.
