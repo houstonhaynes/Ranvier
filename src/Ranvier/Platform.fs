@@ -609,6 +609,15 @@ module internal Platform =
         slots[index] <- value
 #endif
 
+    /// <summary>Makes <c>slots</c> hold at least <c>count</c> entries without growing; does nothing under Fable.</summary>
+#if FABLE_COMPILER
+    let inline reserve (_slots: ResizeArray<'T>) (_count: int) = ()
+#else
+    let inline reserve (slots: ResizeArray<'T>) (count: int) =
+        if slots.Capacity < count then
+            slots.Capacity <- count
+#endif
+
 #if FABLE_COMPILER
     [<Emit("$0.has($1)")>]
     let private tableHas (table: Dictionary<'K, 'V>) (key: 'K) : bool = jsNative
@@ -740,6 +749,9 @@ module internal Platform =
             prims.clear ()
             objs.Clear ()
 
+        /// <summary>Holds at least <c>count</c> keys without growing; does nothing under Fable.</summary>
+        member _.Reserve(_count: int) = ()
+
         /// <summary>
         /// Visits every entry: primitive keys first, then object keys.
         /// </summary>
@@ -799,6 +811,10 @@ module internal Platform =
             hasNull <- false
             nullValue <- Unchecked.defaultof<'V>
             table.Clear ()
+
+        /// <summary>Holds at least <c>count</c> keys without growing; does nothing under Fable.</summary>
+        member _.Reserve(count: int) =
+            table.EnsureCapacity count |> ignore
 
         /// <summary>
         /// Visits every entry: the null key first, then the rest.
@@ -866,6 +882,9 @@ module internal Platform =
             prims.clear ()
             objs.Clear ()
 
+        /// <summary>Holds at least <c>count</c> keys without growing; does nothing under Fable.</summary>
+        member _.Reserve(_count: int) = ()
+
         /// <summary>
         /// Visits every key: primitive keys first, then object keys.
         /// </summary>
@@ -905,6 +924,10 @@ module internal Platform =
         member _.Clear() =
             hasNull <- false
             table.Clear ()
+
+        /// <summary>Holds at least <c>count</c> keys without growing; does nothing under Fable.</summary>
+        member _.Reserve(count: int) =
+            table.EnsureCapacity count |> ignore
 
         /// <summary>
         /// Visits every key: the null key first, then the rest.

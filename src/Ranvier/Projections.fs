@@ -525,6 +525,12 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
     member internal _.PassKeys = passKeys
     member internal _.Seen = seen
 
+    /// <summary>Sizes the pass's key list, its seen set and the row table for a pass over <c>count</c> items.</summary>
+    member internal _.ReservePass(count: int) =
+        Platform.reserve passKeys count
+        seen.Reserve count
+        entries.Reserve count
+
     member internal _.TrackedReads = trackedReads
     member internal _.ScopeRequests = scopeRequests
     member internal _.Removed = removed
@@ -1977,6 +1983,13 @@ type internal RowsOf<'T, 'K, 'V when 'K: equality>(graph: Graph, map: 'T -> 'V, 
     member internal this.HasRow(key: 'K) =
         not (Platform.isNull (this.Entries.Find key))
 
+    /// <summary>
+    /// Sizes the pass's tables for <c>count</c> items, and the staged additions for the items beyond the current rows.
+    /// </summary>
+    member internal this.Reserve(count: int) =
+        this.ReservePass count
+        Platform.reserve adds (count - this.Entries.Count)
+
     abstract Applied: unit -> unit
     default _.Applied() = ()
 
@@ -2496,6 +2509,7 @@ type internal KeyedProjection<'T, 'K, 'V when 'K: equality>
 
         if not (trim && this.Trim (items, count, owned)) then
             install items count owned
+            this.Reserve count
             let mine = this.Runs
             let items = lastItems
             let mutable i = 0
