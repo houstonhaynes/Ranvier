@@ -492,11 +492,11 @@ let holesIds =
         "r-0.r0.0.a1-0"
     ]
 
-/// <summary>Whether the content of <c>idBoundary</c> settles its source during setup; otherwise the source stays pending.</summary>
-let mutable idContentReady = true
-
-/// <summary>Whether the content of <c>idBoundary</c> fails its source during setup, whatever <c>idContentReady</c> holds.</summary>
-let mutable idContentFails = false
+/// <summary>The state the content of <c>idBoundary</c> leaves its source in at the end of its setup.</summary>
+type IdContent =
+    | IdReady
+    | IdPending
+    | IdFails
 
 let private idPending =
     Component.define (fun setup () -> issue setup ()) (fun t -> t.i [| t.Attrs.id (fun (r: Issued<unit>) -> r.Id) |] [||])
@@ -504,22 +504,28 @@ let private idPending =
 let private idFailed =
     Component.define (fun setup (failure: BoundaryFailure) -> issue setup failure) (fun t -> t.span [| t.Attrs.id (fun r -> r.Id) |] [||])
 
-let private idContent =
+let private idContent (content: IdContent) =
     Component.define
         (fun setup (_: BoundaryStatus) ->
             let source = Api.createAsyncSource<string>()
 
-            if idContentFails then
-                source.Fail (System.Exception "failed")
-            elif idContentReady then
-                source.Settle "ready"
+            match content with
+            | IdReady -> source.Settle "ready"
+            | IdFails -> source.Fail (System.Exception "failed")
+            | IdPending -> ()
 
             issue setup source)
         (fun t -> t.b [| t.Attrs.id (fun r -> r.Id) |] [| t.text (fun r -> r.Props.Value) |])
 
-/// <summary>A boundary whose content, pending view and error view each show the id their setup issued.</summary>
-let idBoundary =
-    Component.define (fun setup () -> issue setup ()) (fun t -> t.div [| t.Attrs.id (fun r -> r.Id) |] [| t.boundary idPending idFailed idContent |])
+/// <summary>
+/// A boundary whose content, pending view and error view each show the id their setup issued, and whose content leaves
+/// its source as <c>content</c> states. Each call builds new definitions.
+/// </summary>
+let idBoundary (content: IdContent) : Component<unit> =
+    let contentView = idContent content
+
+    Component.define (fun setup () -> issue setup ()) (fun t ->
+        t.div [| t.Attrs.id (fun r -> r.Id) |] [| t.boundary idPending idFailed contentView |])
 
 /// <summary>The ids <c>idBoundary</c> issues in setup order when its content is ready: the content takes row 0.</summary>
 let boundaryContentIds = [ "r-0-0"; "r-0.r0.0-0" ]
