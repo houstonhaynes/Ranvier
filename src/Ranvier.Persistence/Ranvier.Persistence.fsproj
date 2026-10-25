@@ -21,6 +21,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="PersistTask.fs" />
     <Compile Include="MemoryStore.fs" />
+    <Compile Include="FileStore.fs" />
     <Compile Include="Persist.fs" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />

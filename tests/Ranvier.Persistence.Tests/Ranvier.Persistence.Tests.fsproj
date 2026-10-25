@@ -10,6 +10,7 @@
     <Import Project="PersistenceTestFiles.props" />
 
     <ItemGroup>
+        <Compile Include="FileStore.fs" />
         <Compile Include="Main.fs" />
     </ItemGroup>
 
