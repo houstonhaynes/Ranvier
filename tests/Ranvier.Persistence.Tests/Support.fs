@@ -58,27 +58,29 @@ let expectLoadFailure (key: string) (failure: PersistFailure) (load: Async<Persi
         | other -> failtestf "expected a PersistLoadException, got %s: %s" (other.GetType().Name) other.Message
     }
 
-/// <summary>A memory store that records the records of each <c>SaveMany</c> call, in call order.</summary>
-type RecordingStore() =
-    let inner = MemoryStateStore ()
+/// <summary>A store over <c>inner</c> that records the records of each <c>SaveMany</c> call, in call order.</summary>
+type RecordingStore(inner: IStateStore) =
     let saves = ResizeArray<StoredRecord list>()
+
+    /// <summary>A recording store over a new memory store.</summary>
+    new() = RecordingStore (MemoryStateStore ())
 
     member _.Inner = inner
     member _.Saves = List.ofSeq saves
 
     interface IStateStore with
         member _.LoadMany keys =
-            (inner :> IStateStore).LoadMany keys
+            inner.LoadMany keys
 
         member _.SaveMany records =
             saves.Add records
-            (inner :> IStateStore).SaveMany records
+            inner.SaveMany records
 
         member _.DeleteMany keys =
-            (inner :> IStateStore).DeleteMany keys
+            inner.DeleteMany keys
 
         member _.Clear() =
-            (inner :> IStateStore).Clear()
+            inner.Clear ()
 
 /// <summary>The key and payload of each record of each save.</summary>
 let savedPayloads (store: RecordingStore) =

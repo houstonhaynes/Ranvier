@@ -59,15 +59,82 @@ module PersistCodec =
             ETag = None
         }
 
+/// <summary>A list of texts in one payload: each text as its length, a colon, then the text.</summary>
+module internal PersistFrames =
+    /// <summary>The version of a row index record.</summary>
+    [<Literal>]
+    let IndexVersion = 1
+
+    let encode (texts: string seq) =
+        texts
+        |> Seq.map (fun text -> string text.Length + ":" + text)
+        |> String.concat ""
+
+    let decode (payload: string) : Result<string list, string> =
+        let texts = ResizeArray<string>()
+        let mutable index = 0
+        let mutable failure = None
+
+        while failure.IsNone && index < payload.Length do
+            let colon = payload.IndexOf (':', index)
+
+            let length =
+                if colon < 0 then
+                    -1
+                else
+                    match Int32.TryParse (payload.Substring (index, colon - index)) with
+                    | true, length when
+                        length >= 0
+                        && colon + 1 + length <= payload.Length
+                        ->
+                        length
+                    | _ -> -1
+
+            if length < 0 then
+                failure <- Some ("malformed frame at offset " + string index)
+            else
+                texts.Add (payload.Substring (colon + 1, length))
+                index <- colon + 1 + length
+
+        match failure with
+        | Some message -> Result.Error message
+        | None -> Result.Ok (List.ofSeq texts)
+
+/// <summary>How <c>Persist.loadAsync</c> restores a declared key. Built by <c>Persist.key</c>, <c>Persist.rows</c> and <c>Persist.document</c>.</summary>
+[<Sealed>]
+type PersistLoader
+    internal
+    (
+        rowKeys: StoredRecord -> Result<string list, PersistFailure>,
+        restore: bool -> StoredRecord -> (string -> StoredRecord option) -> Result<obj, string * PersistFailure>
+    ) =
+    /// <summary>The store keys of the row records the key's stored record lists, loaded after it.</summary>
+    member internal _.RowKeys = rowKeys
+
+    /// <summary>
+    /// The boxed value of the stored record and its row records, or the store key of the failing record and the
+    /// failure. With the discard flag set, an undecodable row is left out.
+    /// </summary>
+    member internal _.Restore = restore
+
 /// <summary>A declared persisted key, as <c>Persist.loadAsync</c> reads it.</summary>
 type IPersistKey =
     /// <summary>The store key.</summary>
     abstract Key: string
-    /// <summary>The restored value of the key's stored record, boxed.</summary>
-    abstract Restore: record: StoredRecord -> Result<obj, PersistFailure>
+    /// <summary>How the key's stored records are restored.</summary>
+    abstract Loader: PersistLoader
 
 /// <summary>A persisted value's store key and codec. <c>Persist.key</c> declares one.</summary>
 type PersistKey<'T> internal (key: string, codec: PersistCodec<'T>) =
+    let loader =
+        PersistLoader (
+            (fun _ -> Result.Ok []),
+            fun _ record _ ->
+                PersistCodec.restore codec record
+                |> Result.map box
+                |> Result.mapError (fun failure -> key, failure)
+        )
+
     /// <summary>The store key.</summary>
     member _.Key = key
 
@@ -76,10 +143,88 @@ type PersistKey<'T> internal (key: string, codec: PersistCodec<'T>) =
 
     interface IPersistKey with
         member _.Key = key
+        member _.Loader = loader
 
-        member _.Restore record =
-            PersistCodec.restore codec record
-            |> Result.map box
+/// <summary>The records a persisted collection is stored as.</summary>
+type internal RowLayout<'K> =
+    /// <summary>A record per row under <c>key/keyText rowKey</c>, and the row key texts in order under <c>key</c>.</summary>
+    | Rows of keyText: ('K -> string)
+    /// <summary>Every row payload in order, in one record under <c>key</c>.</summary>
+    | Document
+
+/// <summary>
+/// A persisted keyed collection's store key, row codec and layout. <c>Persist.rows</c> and <c>Persist.document</c>
+/// declare one.
+/// </summary>
+[<Sealed>]
+type PersistRows<'K, 'V when 'K: equality> internal (key: string, codec: PersistCodec<'V>, keyOf: 'V -> 'K, layout: RowLayout<'K>) =
+    let withPayload (record: StoredRecord) payload =
+        { record with Payload = payload }
+
+    // Restores each row record in order; an undecodable row is left out when discarding.
+    let restoreRows (discard: bool) (records: (string * StoredRecord) list) =
+        let values = ResizeArray<'V>()
+        let mutable failure = None
+
+        for name, record in records do
+            if failure.IsNone then
+                match PersistCodec.restore codec record with
+                | Result.Ok value -> values.Add value
+                | Result.Error (DecodeFailed _) when discard -> ()
+                | Result.Error reason -> failure <- Some (name, reason)
+
+        match failure with
+        | Some failure -> Result.Error failure
+        | None -> Result.Ok (box (List.ofSeq values))
+
+    let frames (record: StoredRecord) =
+        PersistFrames.decode record.Payload
+        |> Result.mapError DecodeFailed
+
+    let loader =
+        match layout with
+        | Rows _ ->
+            let index (record: StoredRecord) =
+                if record.Version > PersistFrames.IndexVersion then
+                    Result.Error (NewerVersion (record.Version, PersistFrames.IndexVersion))
+                else
+                    frames record
+                    |> Result.map (List.map (fun text -> key + "/" + text))
+
+            PersistLoader (
+                index,
+                fun discard record lookup ->
+                    index record
+                    |> Result.mapError (fun failure -> key, failure)
+                    |> Result.bind (fun names ->
+                        names
+                        |> List.choose (fun name -> lookup name |> Option.map (fun row -> name, row))
+                        |> restoreRows discard)
+            )
+        | Document ->
+            PersistLoader (
+                (fun _ -> Result.Ok []),
+                fun discard record _ ->
+                    frames record
+                    |> Result.mapError (fun failure -> key, failure)
+                    |> Result.bind (fun payloads ->
+                        payloads
+                        |> List.map (fun payload -> key, withPayload record payload)
+                        |> restoreRows discard)
+            )
+
+    /// <summary>The store key of the collection's index or document record.</summary>
+    member _.Key = key
+
+    /// <summary>The codec of a row.</summary>
+    member _.Codec = codec
+
+    member internal _.KeyOf = keyOf
+    member internal _.Layout = layout
+
+    interface IPersistKey with
+        member _.Key = key
+        member _.Loader = loader
 
 /// <summary>The store keys of the package's own records.</summary>
 module internal PersistReserved =
@@ -96,7 +241,8 @@ type PersistSession
     internal
     (store: IStateStore, options: PersistOptions, declared: HashSet<string>, values: Dictionary<string, obj>, position: int option, busterStale: bool)
     =
-    let dirty = Dictionary<string, StoredRecord>()
+    // A key's record to save, or None to delete it.
+    let dirty = Dictionary<string, StoredRecord option>()
     let live = HashSet<string>()
     let mutable graph: Graph option = None
     let mutable drain: Signal<int> option = None
@@ -142,14 +288,26 @@ type PersistSession
 
     let drainDirty () =
         if dirty.Count > 0 then
-            let records = List.ofSeq dirty.Values
+            let records = dirty.Values |> Seq.choose id |> List.ofSeq
+
+            let deleted =
+                dirty
+                |> Seq.filter (fun entry -> entry.Value.IsNone)
+                |> Seq.map _.Key
+                |> List.ofSeq
+
             dirty.Clear ()
 
+            let save () =
+                if busterPending then saveBusted records
+                elif records.IsEmpty then PersistTask.completed ()
+                else store.SaveMany records
+
             enqueue (fun () ->
-                if busterPending then
-                    saveBusted records
+                if deleted.IsEmpty then
+                    save ()
                 else
-                    store.SaveMany records)
+                    PersistTask.andThen save (fun () -> store.DeleteMany deleted))
 
     /// <summary>
     /// The journal position stored under <c>$ranvier/position</c> at load, or <c>None</c> when the store holds none.
@@ -218,18 +376,27 @@ type PersistSession
 
         onCleanup (fun () -> live.Remove key |> ignore)
 
-    /// <summary>
-    /// Records <c>record</c> for the drain of the current flush; a later record of its key replaces it. A persisted
-    /// input created for the key afterwards starts from <c>value</c>.
-    /// </summary>
-    member internal _.Mark(record: StoredRecord, value: obj) =
+    member private _.MarkEntry(key: string, entry: StoredRecord option) =
         if dirty.Count = 0 then
             match drain with
             | Some signal -> signal.Value <- signal.Value + 1
             | None -> ()
 
-        dirty[record.Key] <- record
-        values[record.Key] <- value
+        dirty[key] <- entry
+
+    /// <summary>
+    /// Records <c>record</c> for the drain of the current flush; a later record or deletion of its key replaces it.
+    /// </summary>
+    member internal this.Mark(record: StoredRecord) =
+        this.MarkEntry (record.Key, Some record)
+
+    /// <summary>Records the deletion of <c>key</c> for the drain of the current flush.</summary>
+    member internal this.MarkDeleted(key: string) =
+        this.MarkEntry (key, None)
+
+    /// <summary>A persisted input created for the declared <c>key</c> afterwards starts from <c>value</c>.</summary>
+    member internal _.Remember(key: string, value: obj) =
+        values[key] <- value
 
 /// <summary>Declaring, loading and restoring persisted inputs.</summary>
 module Persist =
@@ -260,6 +427,25 @@ module Persist =
         PersistKey (key, codec)
 
     /// <summary>
+    /// Declares a persisted keyed collection stored a record per row: each row under <c>key + "/" + keyText rowKey</c>,
+    /// and the row key texts in insertion order under <c>key</c>. Editing a row saves that row's record; adding or
+    /// removing a row also saves the order, and removing deletes the row's record.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentException">The key is empty or begins with <c>$ranvier/</c>.</exception>
+    let rows (key: string) (codec: PersistCodec<'V>) (keyOf: 'V -> 'K) (keyText: 'K -> string) : PersistRows<'K, 'V> =
+        checkKey key
+        PersistRows (key, codec, keyOf, Rows keyText)
+
+    /// <summary>
+    /// Declares a persisted keyed collection stored as one record under <c>key</c> holding every row in insertion
+    /// order. Any edit saves that record.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentException">The key is empty or begins with <c>$ranvier/</c>.</exception>
+    let document (key: string) (codec: PersistCodec<'V>) (keyOf: 'V -> 'K) : PersistRows<'K, 'V> =
+        checkKey key
+        PersistRows (key, codec, keyOf, Document)
+
+    /// <summary>
     /// Loads the stored records of <c>keys</c>. The task faults with a <c>PersistLoadException</c> naming the key when
     /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode; with
     /// <c>options.DiscardUndecodable</c> set, a record that fails to decode reads as absent instead. A stored buster unequal to <c>options.Buster</c> discards every record: each save of the session clears the store
@@ -283,42 +469,69 @@ module Persist =
             :: positionKey
             :: (keys |> List.map _.Key)
 
-        PersistTask.map (store.LoadMany names) (fun records ->
+        let lookupIn (records: StoredRecord list) =
             let byKey = Dictionary<string, StoredRecord>()
 
             for record in records do
                 byKey[record.Key] <- record
 
-            let stored name =
+            fun name ->
                 match byKey.TryGetValue name with
                 | true, record -> Some record
                 | _ -> None
 
+        let discards failure =
+            match failure with
+            | DecodeFailed _ -> options.DiscardUndecodable
+            | _ -> false
+
+        PersistTask.chain (store.LoadMany names) (fun records ->
+            let stored = lookupIn records
             let values = Dictionary<string, obj>()
 
             if
                 (stored busterKey |> Option.map _.Payload)
                 <> options.Buster
             then
-                PersistSession (store, options, declared, values, None, true)
+                PersistTask.result (PersistSession (store, options, declared, values, None, true))
             else
+                let present = ResizeArray<IPersistKey * StoredRecord>()
+                let rowNames = ResizeArray<string>()
+
                 for key in keys do
                     match stored key.Key with
                     | None -> ()
                     | Some record ->
-                        match key.Restore record with
-                        | Result.Ok value -> values[key.Key] <- value
-                        | Result.Error (DecodeFailed _) when options.DiscardUndecodable -> ()
+                        match key.Loader.RowKeys record with
+                        | Result.Ok names ->
+                            present.Add (key, record)
+                            rowNames.AddRange names
+                        | Result.Error failure when discards failure -> ()
                         | Result.Error failure -> raise (PersistLoadException (key.Key, failure))
 
-                let position =
-                    stored positionKey
-                    |> Option.bind (fun record ->
-                        match Int32.TryParse record.Payload with
-                        | true, position -> Some position
-                        | _ -> None)
+                let rows =
+                    if rowNames.Count = 0 then
+                        PersistTask.result []
+                    else
+                        store.LoadMany (List.ofSeq rowNames)
 
-                PersistSession (store, options, declared, values, position, false))
+                PersistTask.map rows (fun rowRecords ->
+                    let row = lookupIn rowRecords
+
+                    for key, record in present do
+                        match key.Loader.Restore options.DiscardUndecodable record row with
+                        | Result.Ok value -> values[key.Key] <- value
+                        | Result.Error (name, failure) when name = key.Key && discards failure -> ()
+                        | Result.Error (name, failure) -> raise (PersistLoadException (name, failure))
+
+                    let position =
+                        stored positionKey
+                        |> Option.bind (fun record ->
+                            match Int32.TryParse record.Payload with
+                            | true, position -> Some position
+                            | _ -> None)
+
+                    PersistSession (store, options, declared, values, position, false)))
 
     /// <summary>Loads the stored records of <c>keys</c> with <c>PersistOptions.defaults</c>.</summary>
     /// <exception cref="T:System.ArgumentException">Two of the keys share a store key.</exception>
@@ -356,9 +569,145 @@ module Persist =
 
             if record.Payload <> marked then
                 marked <- record.Payload
-                session.Mark (record, box value)
+                session.Mark record
+                session.Remember (key.Key, box value)
 
         createEffectOn (fun () -> signal.Value) mark
         // Marks a write made in the batch that disposes the owner.
         onCleanup (fun () -> mark (untrack (fun () -> signal.Value)))
         signal
+
+
+    /// <summary>
+    /// A keyed collection holding the last rows a persisted collection of the session wrote to <c>key</c>, else its
+    /// restored rows, else none, in insertion order; made in the current graph and owner. After each flush that
+    /// changes it, the changed records are saved to the session's store, also when the flush disposes its owner: a
+    /// row edit saves that row's record (row layout) or the one document record (document layout).
+    /// </summary>
+    /// <exception cref="T:System.InvalidOperationException">
+    /// The key was not passed to the load, a live persisted input already holds it, or the session serves another graph.
+    /// </exception>
+    let collection (session: PersistSession) (key: PersistRows<'K, 'V>) : KeyedCollection<'K, 'V> =
+        let initial: 'V list =
+            match session.TryRestored key.Key with
+            | Some value -> unbox value
+            | None -> []
+
+        session.Attach Graph.Current
+        session.Claim key.Key
+        let rows = createKeyedCollection key.KeyOf
+
+        if not initial.IsEmpty then
+            rows.Edit (fun rows ->
+                for value in initial do
+                    rows.AddOrUpdate value)
+
+        let values () =
+            rows.Rows.Keys
+            |> Array.map rows.Rows.Get
+            |> List.ofArray
+
+        let encodeAll (items: 'V list) =
+            items
+            |> List.map key.Codec.Codec.Encode
+            |> PersistFrames.encode
+
+        let indexRecord (texts: string seq) =
+            {
+                Key = key.Key
+                Version = PersistFrames.IndexVersion
+                Payload = PersistFrames.encode texts
+                ETag = None
+            }
+
+        // Marks the records the delta changes and returns whether it marked one.
+        let persist: ProjectionDelta<'K> -> bool =
+            match key.Layout with
+            | Document ->
+                let mutable marked = encodeAll initial
+
+                fun _ ->
+                    let payload = encodeAll (values ())
+
+                    if payload <> marked then
+                        marked <- payload
+
+                        session.Mark
+                            {
+                                Key = key.Key
+                                Version = key.Codec.Codec.Version
+                                Payload = payload
+                                ETag = None
+                            }
+
+                        true
+                    else
+                        false
+            | Rows keyText ->
+                let rowKey (rowKey: 'K) =
+                    key.Key + "/" + keyText rowKey
+
+                let saved = Dictionary<string, string>()
+
+                for value in initial do
+                    saved[rowKey (key.KeyOf value)] <- key.Codec.Codec.Encode value
+
+                let mutable index =
+                    (indexRecord (initial |> List.map (key.KeyOf >> keyText))).Payload
+
+                fun delta ->
+                    let mutable changed = false
+
+                    let save (row: 'K) =
+                        let record = PersistCodec.encode key.Codec (rowKey row) (rows.Rows.Get row)
+
+                        match saved.TryGetValue record.Key with
+                        | true, payload when payload = record.Payload -> ()
+                        | _ ->
+                            saved[record.Key] <- record.Payload
+                            session.Mark record
+                            changed <- true
+
+                    let delete (name: string) =
+                        if saved.Remove name then
+                            session.MarkDeleted name
+                            changed <- true
+
+                    if delta.IsReset then
+                        let live = HashSet<string>()
+
+                        for row in delta.Keys do
+                            live.Add (rowKey row) |> ignore
+                            save row
+
+                        for name in List.ofSeq saved.Keys do
+                            if not (live.Contains name) then
+                                delete name
+                    else
+                        for change in delta.Changes do
+                            match change.Value with
+                            | KeyChange.Removed -> delete (rowKey change.Key)
+                            | _ -> save change.Key
+
+                    let order = indexRecord (delta.Keys |> Seq.map keyText)
+
+                    if order.Payload <> index then
+                        index <- order.Payload
+                        session.Mark order
+                        changed <- true
+
+                    changed
+
+        let reader = rows.Rows.NewValueReader ()
+
+        let apply (delta: ProjectionDelta<'K>) =
+            if not delta.IsEmpty && persist delta then
+                session.Remember (key.Key, box (values ()))
+
+        createEffect (fun () ->
+            let delta = reader.Read ()
+            untrack (fun () -> apply delta))
+
+        // Marks an edit made in the batch that disposes the owner; it runs before the collection's own cleanup.
+        onCleanup (fun () -> untrack (fun () -> apply (reader.Read ())))
+        rows

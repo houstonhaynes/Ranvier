@@ -15,10 +15,18 @@ module internal PersistTask =
         Task.CompletedTask
 #endif
 
+    /// <summary>A finished task holding <c>value</c>.</summary>
+    let result (value: 'T) : Task<'T> =
+        Task.FromResult value
+
 #if FABLE_COMPILER
     /// <summary>The task of <c>f</c> applied to the result of <c>work</c>; a raise in <c>f</c> faults it.</summary>
     [<Emit("$0.then($1)")>]
     let map (work: Task<'T>) (f: 'T -> 'U) : Task<'U> = jsNative
+
+    /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a raise in <c>next</c> faults it.</summary>
+    [<Emit("$0.then($1)")>]
+    let chain (work: Task<'T>) (next: 'T -> Task<'U>) : Task<'U> = jsNative
 
     /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a fault of <c>work</c> faults it.</summary>
     [<Emit("$0.then($1)")>]
@@ -44,6 +52,13 @@ module internal PersistTask =
         task {
             let! value = work.ConfigureAwait false
             return f value
+        }
+
+    /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a raise in <c>next</c> faults it.</summary>
+    let chain (work: Task<'T>) (next: 'T -> Task<'U>) : Task<'U> =
+        task {
+            let! value = work.ConfigureAwait false
+            return! (next value).ConfigureAwait false
         }
 
     /// <summary>The task <c>next</c> returns for the result of <c>work</c>; a fault of <c>work</c> faults it.</summary>
