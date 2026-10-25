@@ -55,6 +55,7 @@
         <InternalsVisibleTo Include="Ranvier.View.Dom" />
         <InternalsVisibleTo Include="RepresentationChecks" />
         <InternalsVisibleTo Include="ServerBench" />
+        <InternalsVisibleTo Include="Ranvier.Counters" />
         <InternalsVisibleTo Include="Ranvier.View.Twin" />
         <InternalsVisibleTo Include="Ranvier.View.Twin.Tests" />
     </ItemGroup>

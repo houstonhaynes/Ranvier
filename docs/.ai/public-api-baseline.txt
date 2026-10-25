@@ -34,6 +34,7 @@ field Ranvier.ReplayMode+Tags Reenact : Int32
 field Ranvier.Status Error : Ranvier.Status
 field Ranvier.Status None : Ranvier.Status
 field Ranvier.Status Pending : Ranvier.Status
+field Ranvier.Status Stale : Ranvier.Status
 field Ranvier.Status Uninitialized : Ranvier.Status
 field Ranvier.Status value__ : Byte
 field Ranvier.ThreadAffinity+Tags Guarded : Int32
@@ -51,6 +52,7 @@ member Ranvier.Api static createBoundaryWithComparer<1>(System.Collections.Gener
 member Ranvier.Api static createDraft<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Editable`1<!!0>
 member Ranvier.Api static createEditable<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>) : Ranvier.Editable`1<!!0>
 member Ranvier.Api static createEffect(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.Unit>) : Void
+member Ranvier.Api static createEffectNode(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,Microsoft.FSharp.Core.Unit>) : Ranvier.INode
 member Ranvier.Api static createEffectOn<1>(Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>) : Void
 member Ranvier.Api static createEffectOnWithComparer<1>(System.Collections.Generic.IEqualityComparer`1<!!0>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>,Microsoft.FSharp.Core.FSharpFunc`2<!!0,Microsoft.FSharp.Core.Unit>) : Void
 member Ranvier.Api static createErrorBoundary<1>(Microsoft.FSharp.Core.FSharpFunc`2<System.Exception,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.FSharpValueOption`1<!!0>,!!0>>,Microsoft.FSharp.Core.FSharpFunc`2<Microsoft.FSharp.Core.Unit,!!0>) : Ranvier.Boundary`1<!!0>
@@ -163,6 +165,8 @@ member Ranvier.Graph AssertOnGraphThread(String) : Void
 member Ranvier.Graph Batch<1>(System.Func`1<!!0>) : !!0
 member Ranvier.Graph CreateRoot<1>(System.Func`2<Ranvier.Owner,!!0>) : !!0
 member Ranvier.Graph Dispatch(System.Action) : Void
+member Ranvier.Graph DispatchAsync<1>(System.Func`1<!!0>) : System.Threading.Tasks.Task`1<!!0>
+member Ranvier.Graph DispatchAsync<1>(System.Func`1<!!0>,System.Threading.CancellationToken) : System.Threading.Tasks.Task`1<!!0>
 member Ranvier.Graph Dispose() : Void
 member Ranvier.Graph Flush() : Void
 member Ranvier.Graph OnCleanup(System.Action) : Void
@@ -720,6 +724,7 @@ type Ranvier.StreamMemo`1 implements Ranvier.IOwned
 type Ranvier.StreamMemo`1 implements Ranvier.IScheduled
 type Ranvier.StreamMemo`1 implements Ranvier.IScopeHost
 type Ranvier.StreamMemo`1 implements Ranvier.ISource
+type Ranvier.StreamMemo`1 implements Ranvier.IStreamRequester
 type Ranvier.StreamMemo`1 implements System.IDisposable
 type Ranvier.StreamSink`1 : System.Object
 type Ranvier.StreamSourceModule : System.Object

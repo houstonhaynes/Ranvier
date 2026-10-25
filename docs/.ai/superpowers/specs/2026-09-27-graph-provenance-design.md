@@ -68,9 +68,10 @@ requires `unit`-returning methods; the walker stack is a push hook and a pop hoo
 - A hook is a single `Tracer.X(...)` statement. `Tracer` is never bound, piped, passed as a value or wrapped.
 - No hook site gains `try`, `finally`, `#if` or a rebinding of an engine expression. Hooks that close a run or a walk
   sit where control flow already converges (§4.2); the `Tracer` recovers from exits it does not see.
-- `#if RANVIER_TRACE` blocks in engine files hold declarations only: traced-only fields and `interface ITraced with`
-  implementations. Every such block is listed in Appendix A and matched by the lint. The graph's log is created by the
-  `Tracer.GraphNew(root, guarded)` hook in the `Graph` constructor and stored on the root owner.
+- `#if RANVIER_TRACE` blocks in engine files hold declarations only: traced-only fields and implementations of the
+  trace interfaces (`ITraced`, `ITracedEdges`, `ITracedNode`, `ITracedHost`, `ITimedTrace`). Every such block is
+  listed in Appendix A and matched by the lint. The graph's log is created by the `Tracer.GraphNew(root, guarded)`
+  hook in the `Graph` constructor and stored on the root owner.
 - `ITraced` exposes `TraceLog` (get/set) and `TraceId` (get/set). `Graph`, `Owner`, `ObserverSet` and `SourceList`
   implement it. A node's `ObserverSet` and `SourceList` are bound to the graph's log and the node's id by a
   `Tracer.Bind(set, graph, id)` hook in the node constructor. A `Binding` implements `ITraced` and `ITracedEdges`
@@ -341,7 +342,7 @@ Run tiers: per commit, the lint plus the .NET suite traced and untraced; per pha
 | 1. Zero Release cost | **Primary, deterministic.** Scan the untraced Release `Ranvier.dll` IL (System.Reflection.Metadata): fail on any `call`, `callvirt`, `ldftn` or `newobj` targeting a `Tracer` member, and on any `TraceEvent`/`TraceLog`/`TraceModel` type. Scan Fable Release JS: fail if any module other than `Trace.js` imports `Trace.js`. Positive control: the same scans over the `RanvierTrace=true` build must report hooks, otherwise the gate fails. A sample using `Trace.named "x" (fun () -> createMemo ...)` has Release IL and Fable JS equal to the same sample without `named`. The packed `.nupkg` DLL has no `AssemblyMetadata("RanvierTrace", ...)`, and its public surface equals the committed baseline plus `Trace.named`, `Trace.label` and the §6.3 preset. A sample using `Trace.label` (`samples/label-zero-cost.fsx`) has Release IL and Fable JS equal to the same sample without the call. The untraced Release IL equals the merge-base Release IL method by method (closure line numbers and the checkout path in string operands ignored). **Secondary.** Build the merge-base and HEAD untraced and run `counters.ps1` on both in one elevated session: exact equality on bytes/op, objects/op and every library counter; `InstructionRetired` median delta within max(0.5%, the scenario's calibration spread); both report headers show `RanvierTrace=false`. |
 | 2. Same behaviour | The .NET Expecto suite passes under Release (`-p:RanvierTrace=false`) and under Release with `-p:RanvierTrace=true`. `fable/Ranvier.Fable` (`Smoke.fs`) passes under Fable untraced and traced. Allocation assertions are the permitted difference: an `untracedOnly` helper marks them skipped with reason "traced build", and the gate fails if the untraced run skips any test. Retention and weak-reference tests (`Retention.fs`, `DischargeReentry.fs:314`) run in both builds. `samples/trace-sample.fsx` runs 5 times per target with byte-identical canonical dumps. The Fable canonical dump equals the .NET one after site mapping, with payload text reduced to canonical form for `int`, `string`, `bool`, `float` (round-trip) and to the type name otherwise. |
 | 3. Complete trace | In a build with `RanvierCounters=true` and `RanvierTrace=true`, run each scenario of `bench/Ranvier.Counters/Scenarios.fs` (and `fable/Ranvier.Counters/Scenarios.fs`) sequentially, one graph per scenario: `Counters.Reset()`, run, then compare `Counters.Snapshot()` with the graph's log. `RunStart` where `NodeNew.Arg = Memo` = `MemoRecomputes`; `RunStart` for `Effect` = `EffectRuns`; `EdgeAdd` = `EdgesAdded`; `EdgeRemove` = `EdgesRemoved`; `ObserverAdd`/`ObserverRemove` = observer inserts/removes; `FlushStart` = `Flushes`; `NodeNew` per kind = `SignalsCreated`/`MemosCreated`/`EffectsCreated`; `GraphNew` + `OwnerNew` = `OwnersCreated`. Edge reconciliation: a traced-only internal accessor reached through `TraceApi` walks every live `SourceList` and `ObserverSet` and compares them with the edges and observers folded from the log. |
-| Lint | Hooks are single `Tracer.X(...)` statements; `Tracer` is never bound, piped or passed. No `.Value`, `TryValue`, `EnsureCurrent`, `UpdateIfNecessary`, `Track`, `NextId`, `ToString`, `Equals`, `%A`, `sprintf`, `StackTrace`, `Error`, owner or node construction in hook arguments or `Trace.fs` bodies. Every `#if RANVIER_TRACE` block in `Core.fs`, `Projections.fs` and `Combinators.fs` matches Appendix A and holds declarations only. No `Dictionary`/`HashSet` keyed by node or owner objects in `Trace.fs`. Formatting appears only in `TraceModel`, `TraceApi` dump functions and `Trace.render`. |
+| Lint | Hooks are single `Tracer.X(...)` statements; `Tracer` is never bound, piped or passed. No `.Value`, `TryValue`, `EnsureCurrent`, `UpdateIfNecessary`, `Track`, `NextId`, `ToString`, `Equals`, `%A`, `sprintf`, `StackTrace`, `Error`, owner or node construction in hook arguments or `Trace.fs` bodies. The `Track` rule covers the engine's `Graph.Track` only; `TraceLog.Track`, declared and called in `Trace.fs`, passes it. Every `#if RANVIER_TRACE` block in the engine files matches Appendix A and holds declarations only. No `Dictionary`/`HashSet` keyed by node or owner objects in `Trace.fs`. Formatting appears only in `TraceModel`, `TraceApi` dump functions and `Trace.render`, with one recorded exception: in `TraceEvents.fs`, the `TraceText` module and the trace types' `ToString` overrides format with `ToString` and `string`, so a trace value prints without `%A` under NativeAOT (#92). `sprintf`, interpolation, `String.Format` and `%A` stay forbidden there. |
 
 Performance and allocation measurements are never taken in a SageFs session or a Debug build.
 
@@ -455,6 +456,17 @@ Declaration blocks only; the lint matches this list. Line numbers are the `#if R
 | `Core.fs` | `Owner` | `TraceLog` and `TraceId` fields; `interface ITraced`. | 656, 919 |
 | `Core.fs` | `ObserverSet` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 149, 332 |
 | `Core.fs` | `SourceList` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`. | 419, 537 |
+| `Core.fs` | `Signal` | `interface ITracedNode`, the node's graph. | 3117 |
+| `Core.fs` | `AsyncSource` | `interface ITracedNode`, the node's graph. | 3227 |
+| `Core.fs` | `Memo` | `interface ITracedNode`, the node's graph. | 3724 |
+| `Core.fs` | `Effect` | `interface ITracedNode`, the node's graph. | 3989 |
+| `Core.fs` | `EffectOn` | `interface ITracedNode`, the node's graph. | 4381 |
+| `Core.fs` | `AsyncMemo` | `interface ITracedNode`, the node's graph. | 5096 |
+| `Core.fs` | `Boundary` | `interface ITracedNode`, the node's graph. | 5685 |
+| `Projections.fs` | `RowWatch` | `interface ITracedNode`, the node's graph. | 40 |
+| `Projections.fs` | `ProjectionBeacon` | `interface ITracedNode`, the node's graph. | 96 |
+| `Projections.fs` | `Projection` | `interface ITracedNode`, the node's graph. | 1204 |
+| `Projections.fs` | `LookupCell` | `interface ITracedNode`, the node's graph. | 2624 |
 | `Bindings.fs` | `Binding` | `TraceLog` and owner-id fields; `interface ITraced` and `ITracedEdges`, the source id while undisposed. | 24, 161 |
 | `Projections.fs` | `Lookup` | Host-id field; `interface ITracedHost`, set by `Tracer.Host` and read by `Tracer.LookupPart`. | 1941, 1954 |
 | `Timed.fs` | `Timed` | `interface ITimedTrace`. | 397 |

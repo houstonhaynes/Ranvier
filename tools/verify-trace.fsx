@@ -536,15 +536,22 @@ let continuation = Regex @"^\s*(\|>|<\||>>|<<|\.)"
 let hookShape =
     Regex @"^\s*(do\s+)?Tracer\.[A-Z]\w*\s*(\(.*\)|[a-z_]\w*(\s+[a-z_]\w*)*)\s*$"
 
+/// <summary>The engine's <c>Graph.Track</c>: a <c>Track</c> other than a call of <c>TraceLog.Track</c>.</summary>
+[<Literal>]
+let EngineTrack = @"(?<!\bTraceLog\.)\bTrack\b"
+
+[<Literal>]
+let ToStringRule = @"\bToString\b"
+
 let forbiddenInArgs =
     [
         @"\.Value\b"
         @"\bTryValue\b"
         @"\bEnsureCurrent\b"
         @"\bUpdateIfNecessary\b"
-        @"\bTrack\b"
+        EngineTrack
         @"\bNextId\b"
-        @"\bToString\b"
+        ToStringRule
         @"\bEquals\b"
         @"%A"
         @"\bsprintf\b"
@@ -695,11 +702,18 @@ let lintEngine () : string list * Set<string * string> =
 /// calls, and a <c>Tracer</c> member outside <c>#if RANVIER_TRACE</c> that is not a <c>Conditional</c> hook with an
 /// empty untraced body.
 /// </summary>
+/// <remarks>
+/// Two exceptions are recorded in spec section 7. <c>TraceLog</c>'s own <c>Track</c> member passes the
+/// <c>Track</c> rule. In <c>TraceEvents.fs</c>, the <c>TraceText</c> module and the <c>ToString</c> overrides pass
+/// the <c>ToString</c> rule and may format with <c>ToString</c>; <c>sprintf</c>, interpolation,
+/// <c>String.Format</c> and <c>%A</c> fail there as anywhere else.
+/// </remarks>
 let lintTraceFiles () : string list =
     let keyed =
         Regex @"(Dictionary|HashSet|ConditionalWeakTable)\s*<\s*(INode|ISource|IComputation|IScheduled|Owner|Graph|ITraced|obj)\b"
 
     let formatting = Regex @"\bsprintf\b|\$""|String\.Format|%A|\.ToString\s*\("
+    let formattingButToString = Regex @"\bsprintf\b|\$""|String\.Format|%A"
 
     let forbidden =
         forbiddenInArgs
@@ -707,16 +721,45 @@ let lintTraceFiles () : string list =
 
     let runStatus = Regex @"\bRunStatus\.Error\b|^\s*\|\s*Error\s*=\s*\d+\s*$"
     let stringLiteral = Regex @"""(\\.|[^""\\])*"""
+    let traceLogTrack = Regex @"^\s*member\s+\w+\.Track\s*\("
+    let textModule = Regex @"^module\s+(internal\s+)?TraceText\b"
+    let toStringOverride = Regex @"^\s*override\s+\w+\.ToString\s*\(\s*\)"
+
+    let indentOf (line: string) =
+        line.Length - line.TrimStart().Length
 
     [
         for file in [ "Trace.fs"; "TraceEvents.fs" ] do
             let lines = File.ReadAllLines (Path.Combine (src, file))
             let mutable depth = 0
             let mutable conditional = false
+            let mutable enclosing = "<none>"
+            // The indent a line must exceed to stay inside the current formatting exception, or -1 outside one.
+            let mutable textRegion = -1
 
             for n in 0 .. lines.Length - 1 do
                 let code = stripComment lines[n]
                 let trimmed = code.Trim ()
+                let header = typeHeader.Match code
+
+                if header.Success then
+                    enclosing <- header.Groups[5].Value
+
+                if
+                    textRegion >= 0
+                    && trimmed <> ""
+                    && not (trimmed.StartsWith "#")
+                    && indentOf code <= textRegion
+                then
+                    textRegion <- -1
+
+                if file = "TraceEvents.fs" then
+                    if textModule.IsMatch code then
+                        textRegion <- indentOf code
+                    elif textRegion < 0 && toStringOverride.IsMatch code then
+                        textRegion <- indentOf code
+
+                let formattingException = textRegion >= 0
 
                 if trimmed.StartsWith "#if" then
                     depth <- depth + 1
@@ -726,7 +769,13 @@ let lintTraceFiles () : string list =
                 if keyed.IsMatch code then
                     yield $"%s{file}:%d{n + 1}: a table keyed by engine objects: %s{trimmed}"
 
-                if formatting.IsMatch code then
+                let formattingRule =
+                    if formattingException then
+                        formattingButToString
+                    else
+                        formatting
+
+                if formattingRule.IsMatch code then
                     yield $"%s{file}:%d{n + 1}: formatting outside TraceModel and TraceApi: %s{trimmed}"
 
                 // Strips `RunStatus` cases, so `RunStatus.Error` passes the `Error` rule, and string literals for
@@ -734,8 +783,17 @@ let lintTraceFiles () : string list =
                 let body = runStatus.Replace (code, "")
                 let unquoted = stringLiteral.Replace (body, "\"\"")
 
+                let exempt (rule: string) =
+                    (rule = EngineTrack
+                     && enclosing = "TraceLog"
+                     && traceLogTrack.IsMatch code)
+                    || (rule = ToStringRule && formattingException)
+
                 for r in forbidden do
-                    if r.IsMatch (if string r = "%A" then body else unquoted) then
+                    if
+                        not (exempt (string r))
+                        && r.IsMatch (if string r = "%A" then body else unquoted)
+                    then
                         yield $"%s{file}:%d{n + 1}: forbidden in a Tracer body (%O{r}): %s{trimmed}"
 
                 if file = "Trace.fs" then
