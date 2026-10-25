@@ -36,6 +36,20 @@ type internal ExposedMessage = JsonElement -> Result<unit, string>
 type internal ExposedValue =
     { Name: string; Read: unit -> JsonNode }
 
+/// <summary>A message the exposure dispatched and its decoder accepted.</summary>
+type internal DispatchRecord =
+    {
+        /// <summary>From 1, in dispatch order.</summary>
+        Index: int
+        Message: string
+        /// <summary>The arguments as JSON text.</summary>
+        Args: string
+        /// <summary>The trace log's last seq before the dispatch ran, or 0 in an untraced build.</summary>
+        Seq: int
+        /// <summary>The snapshot version published once the dispatch and its effects had run.</summary>
+        Version: int64
+    }
+
 /// <summary>
 /// The graph state an adapter may show: named values registered before <c>Start</c>, published as versioned snapshots.
 /// </summary>
@@ -72,7 +86,9 @@ type Exposure() =
     let names = HashSet<string>(StringComparer.Ordinal)
     let messages = Dictionary<string, ExposedMessage>(StringComparer.Ordinal)
     let messageNames = ResizeArray<string>()
+    let shapes = Dictionary<string, string>(StringComparer.Ordinal)
     let waiters = ResizeArray<struct (int64 * TaskCompletionSource<Snapshot>)>()
+    let journal = ResizeArray<DispatchRecord>()
     let mutable graph = Unchecked.defaultof<Graph>
     let nodes = ResizeArray<KeyValuePair<string, INode>>()
     let published = Event<Publication>()
@@ -228,11 +244,31 @@ type Exposure() =
                         try
                             decode args
                         with ex ->
-                            Result.Error $"The arguments of '{name}' are malformed: {ex.Message}"
+                            let expected =
+                                match shapes.TryGetValue name with
+                                | true, shape -> $" Expected {shape}."
+                                | _ -> ""
+
+                            Result.Error $"The arguments of '{name}' are malformed: {ex.Message}{expected}"
 
                     decoded |> Result.map mvu.Dispatch
 
             messageNames.Add name
+
+    /// <summary>
+    /// Describes each named message's arguments in one line, such as <c>{"sku": string, "quantity": int ≥ 1}</c>. The
+    /// adapter shows the line in <c>dispatch</c>'s description and in the message's malformed-argument errors.
+    /// </summary>
+    /// <exception cref="T:System.InvalidOperationException">Called after <c>Start</c>.</exception>
+    member _.MessageShapes(described: seq<string * string>) =
+        if started then
+            invalidOp "Exposure has started; message shapes must be described before Start."
+
+        for name, shape in described do
+            shapes[name] <- shape
+
+    /// <summary>The one-line argument description of each described message.</summary>
+    member _.Shapes: IReadOnlyDictionary<string, string> = shapes
 
     /// <summary>
     /// Decodes <c>args</c> with the decoder exposed under <c>name</c> and dispatches the message, on the graph thread.
@@ -254,9 +290,38 @@ type Exposure() =
             Task.FromResult (Result.Error $"Unknown message '{name}'. Exposed messages: {known}.")
         | true, apply ->
             task {
-                let! outcome = graph.DispatchAsync (Func<Result<unit, string>>(fun () -> apply args))
-                return outcome |> Result.map (fun () -> this.Snapshot)
+                let! outcome =
+                    graph.DispatchAsync (
+                        Func<Result<int, string>>(fun () ->
+                            let seq =
+#if RANVIER_TRACE
+                                Trace.lastSeq graph
+#else
+                                0
+#endif
+                            apply args |> Result.map (fun () -> seq))
+                    )
+
+                return
+                    outcome
+                    |> Result.map (fun seq ->
+                        let snapshot = this.Snapshot
+
+                        lock journal (fun () ->
+                            journal.Add
+                                {
+                                    Index = journal.Count + 1
+                                    Message = name
+                                    Args = args.GetRawText ()
+                                    Seq = seq
+                                    Version = snapshot.Version
+                                })
+
+                        snapshot)
             }
+
+    /// <summary>The accepted messages, oldest first.</summary>
+    member internal _.Journal = lock journal (fun () -> List.ofSeq journal)
 
     /// <summary>
     /// A task holding the first published snapshot whose version is at least <c>version</c>, or <c>None</c> once
@@ -305,6 +370,10 @@ module Expose =
     /// <summary>Authorises each decoder's message, under its name, for dispatch to <c>mvu</c>.</summary>
     let messages (mvu: Mvu<'Model, 'Msg>) (decoders: (string * MessageDecoder<'Msg>) list) (exposure: Exposure) =
         exposure.Messages (mvu, decoders)
+
+    /// <summary>Describes each named message's arguments in one line, for <c>dispatch</c>'s description and errors.</summary>
+    let messageShapes (described: (string * string) list) (exposure: Exposure) =
+        exposure.MessageShapes described
 
     /// <summary>Names <c>node</c> as <c>name</c> for the <c>node</c> argument of a traced build's provenance tools.</summary>
     let node (name: string) (node: INode) (exposure: Exposure) =

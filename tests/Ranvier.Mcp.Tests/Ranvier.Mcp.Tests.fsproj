@@ -17,6 +17,7 @@
         <Compile Include="McpDispatchTests.fs" />
         <Compile Include="McpTraceTests.fs" />
         <Compile Include="SampleTests.fs" />
+        <Compile Include="McpExplainTests.fs" />
         <Compile Include="Main.fs" />
     </ItemGroup>
 

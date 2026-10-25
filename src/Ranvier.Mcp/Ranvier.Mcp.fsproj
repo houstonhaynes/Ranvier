@@ -14,6 +14,7 @@
         <Compile Include="AssemblyInfo.fs" />
         <Compile Include="GraphHost.fs" />
         <Compile Include="Exposure.fs" />
+        <Compile Include="Diagnosis.fs" />
         <Compile Include="McpAdapter.fs" />
     </ItemGroup>
     <ItemGroup>

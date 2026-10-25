@@ -51,6 +51,37 @@ module internal Resources =
         document["value"] <- JsonNode.Parse (snapshot.Values[name].GetRawText())
         document.ToJsonString ()
 
+/// <summary>Options of an <c>McpAdapter</c>.</summary>
+type McpAdapterOptions =
+    {
+        /// <summary>
+        /// In a traced build, also lists <c>trace_state</c>, <c>trace_lookup</c>, <c>why</c>, <c>why_not</c> and
+        /// <c>waiting_on</c>, which return <c>TraceJson</c> documents. <c>trace_state</c> grows with the graph, without
+        /// bound.
+        /// </summary>
+        RawTraceTools: bool
+        /// <summary>The directory whose F# and C# files give the text of a node's creation line.</summary>
+        SourceRoot: string
+    }
+
+    /// <summary>
+    /// No raw trace tools, and as the source root the nearest directory holding <c>.git</c> at or above the current
+    /// directory, else the current directory.
+    /// </summary>
+    static member Default =
+        let start = Environment.CurrentDirectory
+
+        let rec repository (directory: IO.DirectoryInfo) =
+            match directory with
+            | null -> start
+            | directory when IO.Path.Exists (IO.Path.Combine (directory.FullName, ".git")) -> directory.FullName
+            | directory -> repository directory.Parent
+
+        {
+            RawTraceTools = false
+            SourceRoot = repository (IO.DirectoryInfo start)
+        }
+
 /// <summary>
 /// An MCP server surface over an <c>Exposure</c>: resources for the published state, subscriptions with
 /// <c>notifications/resources/updated</c>, and the <c>snapshot</c>, <c>dispatch</c> and <c>wait_version</c> tools.
@@ -61,17 +92,22 @@ module internal Resources =
 /// the snapshot's version. Reads come from the published snapshot and never enter the graph.
 /// </para>
 /// <para>
-/// <c>dispatch</c> (<c>{"message": name, "args": json}</c>, listed when the exposure has messages) runs
-/// <c>Exposure.Dispatch</c> and returns the snapshot after the flush. An unknown message, a decoder <c>Error</c>, a
-/// decoder that raises, or a missing <c>message</c> is a tool error that dispatches nothing. <c>wait_version</c>
-/// (<c>{"version": n, "timeoutMs": ms}</c>) returns the first snapshot at or past <c>n</c>, or a tool error on timeout.
+/// <c>dispatch</c> (listed when the exposure has messages) takes <c>{"message": name, "args": json}</c> or
+/// <c>{"messages": [{"message": name, "args": json}, ...]}</c> and runs <c>Exposure.Dispatch</c> for each message in
+/// order. Its text lists, per message, the exposed values whose encoding changed, then every exposed value at the final
+/// version; its structured content is the final snapshot. An unknown message, a decoder <c>Error</c>, a decoder that
+/// raises, or a missing <c>message</c> is a tool error naming the message's position: the messages before it stay
+/// dispatched, and it and those after it are not. <c>wait_version</c> (<c>{"version": n, "timeoutMs": ms}</c>) returns
+/// the first snapshot at or past <c>n</c>, or a tool error on timeout.
 /// </para>
 /// <para>
-/// A traced build (<c>RANVIER_TRACE</c>) also lists <c>trace_state</c>, <c>trace_lookup</c>, <c>why</c>,
-/// <c>why_not</c> and <c>waiting_on</c>, each returning the <c>TraceJson</c> document of the matching <c>Trace</c>
-/// query, run on the graph thread. Their <c>node</c> argument names a node registered with <c>Expose.node</c>, but
-/// their results read the whole graph's trace log: <c>trace_state</c> lists every node, <c>trace_lookup</c> resolves any
-/// identity <c>path</c>, and a <c>why</c> chain names each node it passes through. An untraced build lists none of them.
+/// A traced build (<c>RANVIER_TRACE</c>) also lists <c>explain</c>, <c>graph</c> and <c>node</c>, which answer in
+/// compact text from the whole graph's trace log, on the graph thread. A node reads as <c>name#id</c>, named by
+/// <c>Expose.node</c>, a trace label, or the <c>let</c> binding at its creation site, with the site's <c>file:line</c>
+/// and, when the source root holds the file, the line's text. <c>explain {node}</c> answers why a node holds its value;
+/// <c>graph</c> is an overview of at most 2,000 characters; <c>node {node, around, detail, limit, cursor}</c> lists a
+/// node's neighbourhood a page at a time, each page at most 4,000 characters. With
+/// <c>McpAdapterOptions.RawTraceTools</c> it lists the <c>TraceJson</c> tools too. An untraced build lists none of them.
 /// </para>
 /// <para>
 /// Each publication notifies the subscribers of <c>ranvier://state</c> and of each value whose encoding changed, in
@@ -84,7 +120,7 @@ module internal Resources =
 /// </para>
 /// </remarks>
 [<Sealed>]
-type McpAdapter(exposure: Exposure) =
+type McpAdapter(exposure: Exposure, options: McpAdapterOptions) =
     let names = exposure.Names
 
     let known =
@@ -159,9 +195,26 @@ type McpAdapter(exposure: Exposure) =
     let success (text: string) =
         CallToolResult (Content = blocks text, StructuredContent = Nullable (json text))
 
-    /// A tool error: the client sees the reason, and the call has changed nothing.
+    /// A result holding text alone.
+    let plain (text: string) =
+        CallToolResult (Content = blocks text)
+
+    /// A tool error: the client sees the reason.
     let failure (reason: string) =
         CallToolResult (Content = blocks reason, IsError = Nullable true)
+
+    let clip (limit: int) (text: string) =
+        if text.Length <= limit then
+            text
+        else
+            text.Substring (0, limit - 1) + "…"
+
+    let alwaysLoad () =
+        JsonObject (
+            [
+                KeyValuePair<string, JsonNode>("anthropic/alwaysLoad", JsonValue.Create true)
+            ]
+        )
 
     let argument (request: CallToolRequestParams) (name: string) =
         match request.Arguments with
@@ -176,7 +229,7 @@ type McpAdapter(exposure: Exposure) =
             Tool =
                 Tool (
                     Name = "snapshot",
-                    Description = "The latest published snapshot of the exposed graph state: {\"version\": n, \"values\": {name: value}}.",
+                    Description = "The latest published state: {\"version\": n, \"values\": {name: value}}.",
                     InputSchema = emptySchema
                 )
             Run = fun _ _ -> Task.FromResult (success (Resources.state exposure.Snapshot))
@@ -207,15 +260,129 @@ type McpAdapter(exposure: Exposure) =
                         "args",
                         JsonObject (
                             [
-                                KeyValuePair<string, JsonNode>("description", JsonValue.Create "The message's arguments, read by its decoder.")
+                                KeyValuePair<string, JsonNode>("description", JsonValue.Create "The message's arguments.")
                             ]
                         )
                     )
                 ]
             )
 
-        schema["required"] <- JsonArray (JsonValue.Create "message")
+        let step = JsonObject ()
+        step["type"] <- JsonValue.Create "object"
+
+        step["properties"] <-
+            JsonObject (
+                [
+                    KeyValuePair<string, JsonNode>("message", JsonObject ([ KeyValuePair<string, JsonNode>("enum", messages.DeepClone ()) ]))
+                    KeyValuePair<string, JsonNode>("args", JsonObject ())
+                ]
+            )
+
+        step["required"] <- JsonArray (JsonValue.Create "message")
+
+        schema["properties"].AsObject()["messages"] <-
+            JsonObject (
+                [
+                    KeyValuePair<string, JsonNode>("type", JsonValue.Create "array")
+                    KeyValuePair<string, JsonNode>("description", JsonValue.Create "Messages to dispatch in order.")
+                    KeyValuePair<string, JsonNode>("items", step)
+                ]
+            )
+
+        // Either 'message' or 'messages': the run checks which.
+        schema.Remove "required" |> ignore
         json (schema.ToJsonString ())
+
+    /// The described messages' argument shapes, as a sentence of the dispatch description.
+    let shapesText =
+        let described =
+            exposure.MessageNames
+            |> List.choose (fun name ->
+                match exposure.Shapes.TryGetValue name with
+                | true, shape -> Some $"{name} {shape}"
+                | _ -> None)
+
+        if described.IsEmpty then
+            ""
+        else
+            " Args: " + String.Join ("; ", described) + "."
+
+    let render (value: JsonElement) =
+        clip 80 (value.GetRawText ())
+
+    /// Every exposed value at the snapshot's version, on one line.
+    let stateLine (snapshot: Snapshot) =
+        let values =
+            names
+            |> List.map (fun name ->
+                match snapshot.Values.TryFind name with
+                | Some value -> $"{name}={render value}"
+                | None -> $"{name}=?")
+
+        $"v{snapshot.Version} "
+        + String.Join (" ", values)
+
+    /// The exposed values whose encoding differs between the snapshots, as `name old→new`.
+    let changes (before: Snapshot) (after: Snapshot) =
+        let changed =
+            names
+            |> List.choose (fun name ->
+                let was = before.Values.TryFind name
+
+                match after.Values.TryFind name with
+                | Some now when
+                    (was |> Option.map _.GetRawText())
+                    <> Some (now.GetRawText ())
+                    ->
+                    let old =
+                        was
+                        |> Option.map render
+                        |> Option.defaultValue "∅"
+
+                    Some $"{name} {old}→{render now}"
+                | _ -> None)
+
+        if changed.IsEmpty then
+            "no exposed value changed"
+        else
+            String.Join ("; ", changed)
+
+    /// The messages a dispatch request names, with their arguments.
+    let messagesOf (request: CallToolRequestParams) =
+        let usage =
+            "dispatch takes a string 'message' with its 'args', or 'messages': [{\"message\": name, \"args\": json}, ...]."
+
+        match argument request "messages", argument request "message" with
+        | Some list, None when list.ValueKind = JsonValueKind.Array ->
+            let items = List.ofSeq (list.EnumerateArray ())
+
+            let parsed =
+                items
+                |> List.map (fun item ->
+                    if item.ValueKind <> JsonValueKind.Object then
+                        None
+                    else
+                        match item.TryGetProperty "message" with
+                        | true, message when message.ValueKind = JsonValueKind.String ->
+                            let args =
+                                match item.TryGetProperty "args" with
+                                | true, args -> args.Clone ()
+                                | _ -> nullElement
+
+                            Some (message.GetString (), args)
+                        | _ -> None)
+
+            if items.IsEmpty || List.contains None parsed then
+                Result.Error usage
+            else
+                Result.Ok (List.choose id parsed)
+        | None, Some message when message.ValueKind = JsonValueKind.String ->
+            let args =
+                argument request "args"
+                |> Option.defaultValue nullElement
+
+            Result.Ok [ message.GetString (), args ]
+        | _ -> Result.Error usage
 
     let dispatchTool =
         {
@@ -223,25 +390,69 @@ type McpAdapter(exposure: Exposure) =
                 Tool (
                     Name = "dispatch",
                     Description =
-                        "Dispatches an exposed message, decoded from 'args', and returns the snapshot published once it and its effects have run. A rejected message is a tool error and changes nothing.",
-                    InputSchema = dispatchSchema
+                        "Dispatches exposed messages in order ('message' with 'args', or 'messages') and returns each one's changed exposed values, then the final state. A rejected message is an error naming its position; earlier ones stay dispatched."
+                        + shapesText,
+                    InputSchema = dispatchSchema,
+                    Meta = alwaysLoad ()
                 )
             Run =
                 fun request _ ->
                     task {
-                        match argument request "message" with
-                        | Some message when message.ValueKind = JsonValueKind.String ->
-                            let args =
-                                argument request "args"
-                                |> Option.defaultValue nullElement
+                        match messagesOf request with
+                        | Result.Error usage -> return failure usage
+                        | Result.Ok messages ->
+                            let steps = ResizeArray<string>()
+                            let mutable before = exposure.Snapshot
+                            let mutable rejected = None
+                            let mutable remaining = messages
 
-                            try
-                                match! exposure.Dispatch (message.GetString (), args) with
-                                | Result.Ok snapshot -> return success (Resources.state snapshot)
-                                | Result.Error reason -> return failure reason
-                            with ex ->
-                                return failure $"The dispatch failed: {ex.Message}"
-                        | _ -> return failure "dispatch takes a string 'message' naming an exposed message."
+                            while rejected.IsNone && not remaining.IsEmpty do
+                                let name, args = remaining.Head
+                                remaining <- remaining.Tail
+                                let position = steps.Count + 1
+
+                                let! outcome =
+                                    task {
+                                        try
+                                            return! exposure.Dispatch (name, args)
+                                        with ex ->
+                                            return Result.Error $"The dispatch failed: {ex.Message}"
+                                    }
+
+                                match outcome with
+                                | Result.Ok after ->
+                                    steps.Add (
+                                        clip 200 $"{position} {name} {clip 60 (args.GetRawText ())} → v{after.Version}: {changes before after}"
+                                    )
+
+                                    before <- after
+                                | Result.Error reason -> rejected <- Some (position, name, reason)
+
+                            match rejected with
+                            | None ->
+                                let text =
+                                    String.Join ("\n", steps)
+                                    + "\n"
+                                    + stateLine before
+
+                                return CallToolResult (Content = blocks text, StructuredContent = Nullable (json (Resources.state before)))
+                            | Some (position, name, reason) ->
+                                let applied =
+                                    if steps.Count = 0 then
+                                        ""
+                                    else
+                                        $" Messages 1–{steps.Count} were dispatched:\n"
+                                        + String.Join ("\n", steps)
+                                        + "\n"
+                                        + stateLine before
+
+                                let prefix =
+                                    if messages.Length = 1 then
+                                        ""
+                                    else
+                                        $"Message {position} ({name}) was rejected: "
+
+                                return failure (prefix + reason + applied)
                     }
         }
 
@@ -252,8 +463,7 @@ type McpAdapter(exposure: Exposure) =
             Tool =
                 Tool (
                     Name = "wait_version",
-                    Description =
-                        $"Waits until the published snapshot reaches 'version', and returns it; a tool error after 'timeoutMs' (default 5000, at most {maximumWait}).",
+                    Description = $"Waits for the snapshot at 'version' or later; an error after 'timeoutMs' (default 5000, at most {maximumWait}).",
                     InputSchema =
                         json
                             """{"type":"object","properties":{"version":{"type":"integer"},"timeoutMs":{"type":"integer","minimum":0}},"required":["version"]}"""
@@ -333,21 +543,120 @@ type McpAdapter(exposure: Exposure) =
                 Result.Error $"Unknown node '{name}'. Exposed nodes: {known}."
         | _ -> Result.Error $"{tool} takes a string 'node' naming an exposed node."
 
-    /// A tool whose query runs on the graph thread and returns a TraceJson document.
-    let traced (name: string) (description: string) (schema: JsonElement) (query: Graph -> CallToolRequestParams -> Result<string, string>) =
+    /// A tool whose query runs on the graph thread and returns the text the result holds.
+    let tracedWith (result: string -> CallToolResult) (tool: Tool) (query: Graph -> CallToolRequestParams -> Result<string, string>) =
         {
-            Tool = Tool (Name = name, Description = description, InputSchema = schema)
+            Tool = tool
             Run =
                 fun request _ ->
                     task {
                         try
                             match! exposure.Enter (fun graph -> query graph request) with
-                            | Result.Ok document -> return success document
+                            | Result.Ok text -> return result text
                             | Result.Error reason -> return failure reason
                         with ex ->
-                            return failure $"{name} failed: {ex.Message}"
+                            return failure $"{tool.Name} failed: {ex.Message}"
                     }
         }
+
+    /// A tool whose query runs on the graph thread and returns a TraceJson document.
+    let traced (name: string) (description: string) (schema: JsonElement) query =
+        tracedWith success (Tool (Name = name, Description = description, InputSchema = schema)) query
+
+    let sources = SourceLines options.SourceRoot
+
+    let diagnosis (graph: Graph) =
+        Diagnosis (graph, exposure.Nodes, exposure.Journal, sources)
+
+    let exposedList = String.Join (", ", nodeNames)
+
+    let text (request: CallToolRequestParams) (name: string) =
+        match argument request name with
+        | Some value when value.ValueKind = JsonValueKind.String -> Some (value.GetString ())
+        | Some value when value.ValueKind = JsonValueKind.Number -> Some (value.GetRawText ())
+        | _ -> None
+
+    let integer (request: CallToolRequestParams) (name: string) (fallback: int) (low: int) (high: int) =
+        match argument request name with
+        | Some value when value.ValueKind = JsonValueKind.Number ->
+            match value.TryGetInt32 () with
+            | true, number -> Result.Ok (max low (min high number))
+            | _ -> Result.Error $"'{name}' must be an integer."
+        | Some value when value.ValueKind = JsonValueKind.String ->
+            match Int32.TryParse (value.GetString ()) with
+            | true, number -> Result.Ok (max low (min high number))
+            | _ -> Result.Error $"'{name}' must be an integer."
+        | _ -> Result.Ok fallback
+
+    let nodeArgument =
+        $"An exposed node ({exposedList}), a name or #id from graph, or a path."
+
+    /// A schema whose required string 'node' takes any node, followed by the JSON text of further properties.
+    let nodeSchemaOf (more: string) =
+        let description = JsonValue.Create(nodeArgument).ToJsonString()
+
+        json (
+            """{"type":"object","properties":{"node":{"type":"string","description":"""
+            + description
+            + "}"
+            + more
+            + """},"required":["node"]}"""
+        )
+
+    let explainTool =
+        tracedWith
+            plain
+            (Tool (
+                Name = "explain",
+                Description =
+                    "Why a node holds its value, in one call: its creation line, what it reads, the message and changes behind its last run, why it has not re-run, upstream cutoffs that kept a value, and changed nodes it does not read.",
+                InputSchema = nodeSchemaOf "",
+                Meta = alwaysLoad ()
+            ))
+            (fun graph request ->
+                match text request "node" with
+                | Some node ->
+                    let d = diagnosis graph
+                    d.Resolve node |> Result.map d.Explain
+                | None -> Result.Error "explain takes a string 'node'.")
+
+    let graphTool =
+        tracedWith
+            plain
+            (Tool (
+                Name = "graph",
+                Description = "Overview: node counts by kind, the exposed nodes with sites, values and sources, and what the last message moved.",
+                InputSchema = emptySchema
+            ))
+            (fun graph _ -> Result.Ok ((diagnosis graph).Overview 2000))
+
+    let nodeTool =
+        tracedWith
+            plain
+            (Tool (
+                Name = "node",
+                Description =
+                    "A node and its sources and observers within 'around' hops (0-2, default 1), a line each; 'detail' full adds runs and source lines; pages of 'limit' lines continue at 'cursor'.",
+                InputSchema =
+                    nodeSchemaOf
+                        ""","around":{"type":"integer","minimum":0,"maximum":2},"detail":{"type":"string","enum":["brief","full"]},"limit":{"type":"integer","minimum":1,"maximum":100},"cursor":{"type":"string"}"""
+            ))
+            (fun graph request ->
+                match text request "node" with
+                | None -> Result.Error "node takes a string 'node'."
+                | Some node ->
+                    let d = diagnosis graph
+
+                    match
+                        d.Resolve node, integer request "around" 1 0 2, integer request "limit" 25 1 100, integer request "cursor" 0 0 Int32.MaxValue
+                    with
+                    | Result.Ok id, Result.Ok around, Result.Ok limit, Result.Ok cursor ->
+                        let full = text request "detail" = Some "full"
+                        Result.Ok (d.Neighbourhood (id, around, full, cursor, limit, 4000))
+                    | Result.Error reason, _, _, _
+                    | _, Result.Error reason, _, _
+                    | _, _, Result.Error reason, _
+                    | _, _, _, Result.Error reason -> Result.Error reason)
 
     let onNode (tool: string) (query: Graph -> int -> INode -> string) =
         fun (graph: Graph) request ->
@@ -402,9 +711,24 @@ type McpAdapter(exposure: Exposure) =
                 dispatchTool
             waitVersionTool
 #if RANVIER_TRACE
-            yield! traceTools
+            explainTool
+            graphTool
+            nodeTool
+            if options.RawTraceTools then
+                yield! traceTools
 #endif
         ]
+
+    let instructions =
+        let traced =
+#if RANVIER_TRACE
+            " When an exposed value is wrong, call explain {node} once: it names the node's creation line and its text, what the node reads, the message behind its last run, why it has not re-run, upstream nodes that kept their value (comparer or equality cutoffs), and changed nodes it does not read. Then read and fix the named line. graph lists the exposed nodes; node {node, around} shows a node's neighbours."
+#else
+            ""
+#endif
+
+        "The running application's reactive state. Reproduce a symptom with dispatch: pass 'messages' for a sequence; each step lists the exposed values it changed, then the final state. snapshot reads the state without dispatching."
+        + traced
 
     let resource (uri: string) (name: string) (description: string) =
         Resource (Uri = uri, Name = name, Description = description, MimeType = "application/json")
@@ -475,6 +799,7 @@ type McpAdapter(exposure: Exposure) =
     member val Options =
         McpServerOptions (
             ServerInfo = Implementation (Name = "ranvier", Version = "0.1.0"),
+            ServerInstructions = instructions,
             // 2026-07-28 replaces resources/subscribe with subscriptions/listen, which the adapter does not serve.
             ProtocolVersion = "2025-11-25",
             Capabilities =
@@ -492,6 +817,9 @@ type McpAdapter(exposure: Exposure) =
                     CallToolHandler = callTool
                 )
         )
+
+    /// <summary>An adapter with <c>McpAdapterOptions.Default</c>.</summary>
+    new(exposure: Exposure) = new McpAdapter (exposure, McpAdapterOptions.Default)
 
     /// <summary>Stops notifying subscribers. Idempotent.</summary>
     member _.Dispose() =

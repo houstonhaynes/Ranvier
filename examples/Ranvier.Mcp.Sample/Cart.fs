@@ -111,6 +111,14 @@ let decoders: (string * MessageDecoder<Msg>) list =
                 Result.Ok (SetDiscount percent)
     ]
 
+/// The arguments of each message in <c>decoders</c>.
+let shapes =
+    [
+        "add_item", """{"sku": string, "unitPrice": int cents ≥ 0, "quantity": int ≥ 1}"""
+        "remove_item", """{"sku": string}"""
+        "set_discount", """{"percent": int 0–100}"""
+    ]
+
 /// The running cart: its Mvu, the derived memos, and the adapter serving them.
 type App =
     {
@@ -171,6 +179,7 @@ let create (defect: bool) : App =
     |> Expose.value "total" encodeInt (fun () -> total.Value)
 
     exposure |> Expose.messages mvu decoders
+    exposure |> Expose.messageShapes shapes
     exposure |> Expose.node "subtotal" subtotal
     exposure |> Expose.node "discount" discount
     exposure |> Expose.node "total" total

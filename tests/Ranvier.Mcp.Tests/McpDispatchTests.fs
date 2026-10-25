@@ -121,9 +121,9 @@ let tests =
                 let! result = call session "dispatch" """{"message":"add","args":{"amount":3}}"""
                 Expect.isFalse (isError result) $"the dispatch succeeds: {textOf result}"
 
-                Expect.equal (textOf result) """{"version":2,"values":{"count":3,"label":"cart"}}""" "the snapshot after the flush"
+                Expect.equal (structuredOf result) """{"version":2,"values":{"count":3,"label":"cart"}}""" "the snapshot after the flush"
 
-                Expect.equal (result.StructuredContent.Value.GetRawText ()) (textOf result) "the structured content agrees"
+                Expect.stringContains (textOf result) "count 0→3" "the text names the changed value"
 
                 let! count, decoderThread =
                     session.Host.Invoke (fun app -> app.Mvu.Model.Count, app.DecoderThread.Value)
@@ -135,7 +135,7 @@ let tests =
                     call session "dispatch" """{"message":"rename","args":{"label":"cart"}}"""
 
                 Expect.equal
-                    (textOf unchanged)
+                    (structuredOf unchanged)
                     """{"version":2,"values":{"count":3,"label":"cart"}}"""
                     "an update leaving the model equal publishes nothing"
             }

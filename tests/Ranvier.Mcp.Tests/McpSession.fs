@@ -85,6 +85,10 @@ let textOf (result: CallToolResult) =
     | :? TextContentBlock as block -> block.Text
     | other -> failtest $"expected text, got {other}"
 
+/// The JSON text of a tool result's structured content.
+let structuredOf (result: CallToolResult) =
+    result.StructuredContent.Value.GetRawText ()
+
 /// True when the result is a tool error.
 let isError (result: CallToolResult) =
     result.IsError.GetValueOrDefault false
