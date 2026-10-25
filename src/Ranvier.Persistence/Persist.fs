@@ -102,19 +102,32 @@ type PersistSession
     let mutable drain: Signal<int> option = None
     let mutable busterPending = busterStale
     let mutable saves = PersistTask.completed ()
+    let mutable outcome = PersistTask.completed ()
 
     let enqueue (work: unit -> Task) =
-        saves <- PersistTask.after saves work
+        let save = PersistTask.after saves work
+        saves <- save
+        outcome <- PersistTask.both outcome save
 
     let drainDirty () =
         if dirty.Count > 0 then
             let records = List.ofSeq dirty.Values
             dirty.Clear ()
 
-            let records =
-                if busterPending then
-                    busterPending <- false
+            if busterPending then
+                busterPending <- false
+                let written = HashSet<string>(records |> List.map _.Key)
 
+                let stale =
+                    [
+                        yield! declared
+                        yield PersistReserved.positionKey
+                        if options.Buster.IsNone then
+                            yield PersistReserved.busterKey
+                    ]
+                    |> List.filter (written.Contains >> not)
+
+                let records =
                     match options.Buster with
                     | Some buster ->
                         {
@@ -124,21 +137,25 @@ type PersistSession
                             ETag = None
                         }
                         :: records
-                    | None ->
-                        enqueue (fun () -> store.DeleteMany [ PersistReserved.busterKey ])
-                        records
-                else
-                    records
+                    | None -> records
 
-            enqueue (fun () -> store.SaveMany records)
+                enqueue (fun () -> PersistTask.andThen (fun () -> store.DeleteMany stale) (fun () -> store.SaveMany records))
+            else
+                enqueue (fun () -> store.SaveMany records)
 
     /// <summary>
-    /// The journal position recorded with the last saved batch, or <c>None</c> when the store holds none.
+    /// The journal position stored under <c>$ranvier/position</c> at load, or <c>None</c> when the store holds none.
     /// </summary>
     member _.Position = position
 
-    /// <summary>A task that completes once every save started before the call has completed.</summary>
-    member _.FlushAsync() : Task = saves
+    /// <summary>
+    /// A task that completes once every save started before the call has completed. It faults with the exception of
+    /// the first save to fault since the previous call; the saves after a faulted save still run.
+    /// </summary>
+    member _.FlushAsync() : Task =
+        let reported = outcome
+        outcome <- PersistTask.after saves PersistTask.completed
+        reported
 
     member internal _.Store = store
     member internal _.Options = options
@@ -230,7 +247,8 @@ module Persist =
     /// <summary>
     /// Loads the stored records of <c>keys</c>. The task faults with a <c>PersistLoadException</c> naming the key when
     /// a record is newer than its codec, lacks a migration, fails a migration or fails to decode, unless
-    /// <c>options.DiscardUndecodable</c> is set. A stored buster unequal to <c>options.Buster</c> discards every record.
+    /// <c>options.DiscardUndecodable</c> is set. A stored buster unequal to <c>options.Buster</c> discards every record, and the session's first save deletes
+    /// the stored records of the unwritten keys and the journal position.
     /// </summary>
     /// <exception cref="T:System.ArgumentException">Two of the keys share a store key.</exception>
     let loadWith (options: PersistOptions) (store: IStateStore) (keys: IPersistKey list) : Task<PersistSession> =

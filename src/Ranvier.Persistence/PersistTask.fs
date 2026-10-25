@@ -23,6 +23,17 @@ module internal PersistTask =
     /// <summary>The task <c>next</c> returns, started once <c>tail</c> has completed in any state.</summary>
     [<Emit("$0.then($1, $1)")>]
     let after (tail: Task) (next: unit -> Task) : Task = jsNative
+
+    /// <summary>The task <c>next</c> returns, started once <c>first</c> has succeeded; a fault of <c>first</c> faults it.</summary>
+    [<Emit("$0().then($1)")>]
+    let andThen (first: unit -> Task) (next: unit -> Task) : Task = jsNative
+
+    /// <summary>
+    /// A task that completes once <c>earlier</c> and <c>later</c> have both completed, faulting with the fault of
+    /// <c>earlier</c>, or else with the fault of <c>later</c>.
+    /// </summary>
+    [<Emit("$0.then(() => $1, e => $1.then(() => Promise.reject(e), () => Promise.reject(e)))")>]
+    let both (earlier: Task) (later: Task) : Task = jsNative
 #else
     /// <summary>The task of <c>f</c> applied to the result of <c>work</c>; a raise in <c>f</c> faults it.</summary>
     let map (work: Task<'T>) (f: 'T -> 'U) : Task<'U> =
@@ -40,6 +51,37 @@ module internal PersistTask =
                 ()
 
             do! (next ()).ConfigureAwait false
+        }
+        :> Task
+
+    /// <summary>The task <c>next</c> returns, started once <c>first</c> has succeeded; a fault of <c>first</c> faults it.</summary>
+    let andThen (first: unit -> Task) (next: unit -> Task) : Task =
+        task {
+            do! (first ()).ConfigureAwait false
+            do! (next ()).ConfigureAwait false
+        }
+        :> Task
+
+    /// <summary>
+    /// A task that completes once <c>earlier</c> and <c>later</c> have both completed, faulting with the fault of
+    /// <c>earlier</c>, or else with the fault of <c>later</c>.
+    /// </summary>
+    let both (earlier: Task) (later: Task) : Task =
+        task {
+            try
+                do! earlier.ConfigureAwait false
+            with _ ->
+                ()
+
+            try
+                do! later.ConfigureAwait false
+            with _ ->
+                ()
+
+            if earlier.IsCompletedSuccessfully then
+                do! later.ConfigureAwait false
+            else
+                do! earlier.ConfigureAwait false
         }
         :> Task
 #endif
