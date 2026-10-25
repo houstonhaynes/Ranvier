@@ -157,6 +157,23 @@ Until then, the message stays queued. See
 [Serialised hosts](../concepts/contracts.md#serialised-hosts).
 :::
 
+## Recording messages
+
+`Mvu.journal key codec` registers the loop's messages on the graph's
+[input journal](journal.md) and returns the same `Mvu`:
+
+```fsharp
+let app =
+    Mvu.withCmd init update
+    |> Mvu.journal "cart" cartMsgCodec
+```
+
+A message dispatched from outside every computation records one entry, and a message a command
+dispatches after an `await` records one as produced work; commands need no journal code.
+`Journal.replay` applies a recorded message by dispatching it to the `Mvu` registered under the same
+key. On a graph without a journal, `Mvu.journal` records nothing. See
+[MVU messages](journal.md#mvu-messages).
+
 ## Selectors and their cost
 
 Each model write recomputes every observed selector directly over the model. Unobserved selectors

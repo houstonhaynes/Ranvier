@@ -140,6 +140,19 @@ jobs:
       - name: Check formatting
         run: dotnet fantomas --check $(git ls-files '*.fs' ':(exclude)src/Ranvier.Wire/Vendor/**')
 
+  # Every page under docs/content is in a Theme.menu of docs/Site.fs (docs/MenuCoverage.fs). Runs on
+  # documentation-only changes too: the site itself builds only after a merge, in docs.yml.
+  docs-menus:
+    name: Docs menu coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Check every docs page is in a menu
+        run: dotnet run --project docs/docs.fsproj -- check-menus
+
   fable:
     name: Fable tests
     needs: changes
@@ -582,7 +595,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

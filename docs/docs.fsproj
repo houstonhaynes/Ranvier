@@ -10,6 +10,7 @@
         <Compile Include="Maps.fs" />
         <Compile Include="Theme.fs" />
         <Compile Include="Directives.fs" />
+        <Compile Include="MenuCoverage.fs" />
         <Compile Include="Site.fs" />
         <Content Include="content\**" CopyToOutputDirectory="Never" />
         <Content Include="static\**" CopyToOutputDirectory="Never" />
