@@ -117,12 +117,14 @@ let theme =
                     [
                         Menu.section "Ranvier.Query" [ Menu.page "guide/queries.md"; Menu.page "guide/query-navigation.md" ]
                         Menu.section "Ranvier.Elmish" [ Menu.page "guide/elmish.md" ]
+                        Menu.section "Ranvier.Persistence" [ Menu.page "guide/persistence.md" ]
                         Menu.section "Ranvier.Mcp" [ Menu.page "guide/mcp.md" ]
                     ]
                 Menu.section
                     "Reference"
                     [
                         Menu.page "guide/tracing.md"
+                        Menu.page "guide/journal.md"
                         Menu.page "guide/signal-maps.md"
                         Menu.page "guide/troubleshooting.md"
                     ]
@@ -213,6 +215,7 @@ let theme =
                         Menu.page "benchmarks/suspension.md"
                         Menu.page "benchmarks/streams.md"
                         Menu.page "benchmarks/counters.md"
+                        Menu.page "benchmarks/tracing.md"
                     ]
                 Menu.section "Ranvier.Query" [ Menu.page "benchmarks/queries.md" ]
             ]
@@ -387,6 +390,27 @@ let site =
     |> Site.collection (Theme.docs theme "content")
     |> Site.collection reference
 
+/// The pages under docs/content that no menu lists: the landing page, which the navbar's brand links to.
+let private unlistedPages = set [ "index.md" ]
+
+/// <summary>
+/// Runs the site. A <c>build</c> exits with 1, generating nothing, while <c>MenuCoverage.check</c> reports a page
+/// outside every menu or a menu entry without a page; <c>watch</c> prints the same report and serves the site.
+/// <c>check-menus</c> runs only the check, and exits with 1 on a report.
+/// </summary>
 [<EntryPoint>]
 let main argv =
-    Nacara.run site argv
+    let problems =
+        MenuCoverage.check (Path.Combine (__SOURCE_DIRECTORY__, "content")) unlistedPages theme.Menus
+
+    for problem in problems do
+        eprintfn "menu coverage: %s" problem
+
+    let failed = not problems.IsEmpty
+
+    match argv with
+    | [| "check-menus" |] -> if failed then 1 else 0
+    | _ when failed && Array.contains "build" argv ->
+        eprintfn "menu coverage: %d problem(s); the build stops before generating the site." problems.Length
+        1
+    | _ -> Nacara.run site argv

@@ -68,6 +68,8 @@ jobs:
         run: dotnet test tests/Ranvier.CSharp.Tests -c Release
       - name: Test Ranvier.Wire.Tests
         run: dotnet test tests/Ranvier.Wire.Tests -c Release
+      - name: Test Ranvier.Persistence.Tests
+        run: dotnet test tests/Ranvier.Persistence.Tests -c Release
       # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.
       - name: Check the vendored Thoth.Json
         shell: pwsh
@@ -82,7 +84,7 @@ jobs:
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1
 
-  # A NativeAOT publish over the library assemblies, Ranvier.Wire included, rooted: any IL2xxx/IL3xxx warning fails
+  # A NativeAOT publish over the library assemblies, Ranvier.Wire and Ranvier.Persistence included, rooted: any IL2xxx/IL3xxx warning fails
   # the publish, and the binary exits non-zero when an exception or a ToString text differs from the expected text,
   # with tracing on and off.
   aot:
@@ -137,6 +139,19 @@ jobs:
       # Tracked F# sources only: `build.fsx --dry-format` also globs untracked output such as dist/.
       - name: Check formatting
         run: dotnet fantomas --check $(git ls-files '*.fs' ':(exclude)src/Ranvier.Wire/Vendor/**')
+
+  # Every page under docs/content is in a Theme.menu of docs/Site.fs (docs/MenuCoverage.fs). Runs on
+  # documentation-only changes too: the site itself builds only after a merge, in docs.yml.
+  docs-menus:
+    name: Docs menu coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Check every docs page is in a menu
+        run: dotnet run --project docs/docs.fsproj -- check-menus
 
   fable:
     name: Fable tests
@@ -580,7 +595,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

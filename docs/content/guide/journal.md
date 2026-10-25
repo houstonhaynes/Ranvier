@@ -337,6 +337,10 @@ applied and its own batch unapplied. A replay into a graph with no journal raise
 
 ## Restore
 
+Persisted inputs are restored from a store before the graph is built, and a persist session
+records the journal position its saved records include: see
+[Persisted inputs](persistence.md#journal-position).
+
 The journal position is an entry's `Seq`. A stored-state snapshot taken at a position, restored
 into a fresh graph, is followed by a replay of the entries with a greater `Seq`. Restoring a
 snapshot lands with the stored-state format of

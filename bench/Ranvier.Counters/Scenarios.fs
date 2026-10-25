@@ -1117,6 +1117,15 @@ let all (scale: int) : Case list =
                 ]
         yield!
             scenario
+                "persist-write"
+                "write a new value to a signal read by one createEffectOn, saved to a MemoryStateStore when persisted"
+                (5000 * scale)
+                [
+                    "Ranvier (signal)", workload (PersistWorkloads.write false)
+                    "Ranvier (persisted signal)", workload (PersistWorkloads.write true)
+                ]
+        yield!
+            scenario
                 Control.Scenario
                 $"refill a %d{Control.Size}-entry closure table, sum it, and sort a copy of its array"
                 (50 * scale)
