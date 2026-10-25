@@ -216,6 +216,39 @@ let tests =
                 Persist.signal session keys[0] 0 |> ignore
             }
 
+            testCaseAsync "a signal re-created for a key starts from its last written value"
+            <| async {
+                let store = RecordingStore ()
+
+                do!
+                    (store :> IStateStore).SaveMany [ record "a" 1 "41" ]
+                    |> Async.AwaitTask
+
+                let! session = sessionOver store
+                let before = store.Saves.Length
+                let seen = ResizeArray<int>()
+
+                do
+                    use graph = new Graph ()
+                    use _active = graph.Activate ()
+
+                    let mount () =
+                        createRoot (fun owner -> owner, Persist.signal session keys[0] 0)
+
+                    let first, signal = mount ()
+                    signal.Value <- 5
+                    first.Dispose ()
+
+                    let second, signal = mount ()
+                    createEffect (fun () -> seen.Add signal.Value)
+                    Expect.equal signal.Value 5 "the re-created signal reads the last written value"
+                    second.Dispose ()
+
+                do! session.FlushAsync () |> Async.AwaitTask
+                Expect.equal (List.ofSeq seen) [ 5 ] "no effect observes the loaded value"
+                Expect.equal (savedPayloads store |> List.skip before) [ [ "a", "5" ] ] "re-creating the signal saves nothing"
+            }
+
             testCaseAsync "a session serves one graph"
             <| async {
                 let! session = sessionOver (RecordingStore ())

@@ -166,7 +166,10 @@ type PersistSession
     member internal _.Store = store
     member internal _.Options = options
 
-    /// <summary>The restored value of a declared key, or <c>None</c> when the store held no restorable record.</summary>
+    /// <summary>
+    /// The last value written to a declared key in the session, else its restored value, or <c>None</c> when it has
+    /// neither.
+    /// </summary>
     member internal _.TryRestored(key: string) =
         if not (declared.Contains key) then
             raise (
@@ -213,14 +216,18 @@ type PersistSession
 
         onCleanup (fun () -> live.Remove key |> ignore)
 
-    /// <summary>Records <c>record</c> for the drain of the current flush; a later record of its key replaces it.</summary>
-    member internal _.Mark(record: StoredRecord) =
+    /// <summary>
+    /// Records <c>record</c> for the drain of the current flush; a later record of its key replaces it. A persisted
+    /// input created for the key afterwards starts from <c>value</c>.
+    /// </summary>
+    member internal _.Mark(record: StoredRecord, value: obj) =
         if dirty.Count = 0 then
             match drain with
             | Some signal -> signal.Value <- signal.Value + 1
             | None -> ()
 
         dirty[record.Key] <- record
+        values[record.Key] <- value
 
 /// <summary>Declaring, loading and restoring persisted inputs.</summary>
 module Persist =
@@ -316,7 +323,10 @@ module Persist =
     let loadAsync (store: IStateStore) (keys: IPersistKey list) : Task<PersistSession> =
         loadWith PersistOptions.defaults store keys
 
-    /// <summary>The restored value of <c>key</c>, or <c>fallback</c> when the store held no restorable record.</summary>
+    /// <summary>
+    /// The last value a persisted input of the session wrote to <c>key</c>, else its restored value, else
+    /// <c>fallback</c>.
+    /// </summary>
     /// <exception cref="T:System.InvalidOperationException">The key was not passed to the load.</exception>
     let restore (session: PersistSession) (key: PersistKey<'T>) (fallback: 'T) : 'T =
         match session.TryRestored key.Key with
@@ -324,7 +334,8 @@ module Persist =
         | None -> fallback
 
     /// <summary>
-    /// A signal holding the restored value of <c>key</c>, or <c>fallback</c>, made in the current graph and owner.
+    /// A signal holding <c>Persist.restore session key fallback</c>, made in the current graph and owner, so a signal
+    /// re-created for the key starts from its last written value.
     /// After each flush that changes it, its value is saved to the session's store; the changes of one flush save in
     /// one <c>SaveMany</c>.
     /// </summary>
@@ -345,6 +356,6 @@ module Persist =
             | Some initial when key.Codec.Codec.Encode initial = record.Payload -> baseline <- None
             | _ ->
                 baseline <- None
-                session.Mark record)
+                session.Mark (record, box value))
 
         signal
