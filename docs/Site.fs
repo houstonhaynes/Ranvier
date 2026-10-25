@@ -387,6 +387,26 @@ let site =
     |> Site.collection (Theme.docs theme "content")
     |> Site.collection reference
 
+/// The pages under docs/content that no menu lists: the landing page, which the navbar's brand links to.
+let private unlistedPages = set [ "index.md" ]
+
+/// <summary>
+/// Runs the site. A <c>build</c> exits with 1, generating nothing, while <c>MenuCoverage.check</c> reports a page
+/// outside every menu or a menu entry without a page; <c>watch</c> prints the same report and serves the site.
+/// </summary>
 [<EntryPoint>]
 let main argv =
-    Nacara.run site argv
+    let problems =
+        MenuCoverage.check (Path.Combine (__SOURCE_DIRECTORY__, "content")) unlistedPages theme.Menus
+
+    for problem in problems do
+        eprintfn "menu coverage: %s" problem
+
+    if
+        not problems.IsEmpty
+        && Array.contains "build" argv
+    then
+        eprintfn "menu coverage: %d problem(s); the build stops before generating the site." problems.Length
+        1
+    else
+        Nacara.run site argv
