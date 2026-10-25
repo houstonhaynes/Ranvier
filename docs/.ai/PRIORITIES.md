@@ -24,6 +24,7 @@ proposed scope for each, and does not implement them.
 | 11 | [#70](https://github.com/shayanhabibi/Ranvier/issues/70) exploratory use cases in LLM stacks | — | — | research | done |
 | 12 | [#184](https://github.com/shayanhabibi/Ranvier/issues/184) input journal and replay for untraced and traced builds | milestone 3 | #166; snapshot criterion on #68's format | implement | todo |
 | 13 | [#185](https://github.com/shayanhabibi/Ranvier/issues/185) store adapters for the input journal and persisted state | — | #184, #68 | implement | blocked |
+| 14 | [#193](https://github.com/shayanhabibi/Ranvier/issues/193) trace identity paths name the application's line | 1.0.0-rc | #166 | implement | done |
 
 Statuses: `todo`, `in-progress` (an iteration left work; see the log), `done` (merged into
 `integration/issues`), `blocked` (the log names what it needs from the user).
@@ -55,6 +56,7 @@ PR on the branch below it. Merge bottom-up.
 | issue/168 | #168 | https://github.com/shayanhabibi/Ranvier/pull/187 | integration/issues |
 | issue/66 | #66 | https://github.com/shayanhabibi/Ranvier/pull/189 | integration/issues |
 | issue/157 | #157 | https://github.com/shayanhabibi/Ranvier/pull/181 | integration/issues |
+| issue/193 | #193 | https://github.com/shayanhabibi/Ranvier/pull/196 | integration/issues |
 
 ## Log
 
@@ -106,3 +108,7 @@ Each iteration appends one line: date, issue, outcome, commit, next step.
 - 2026-10-25 #65 in-progress — Wait-mode Dispose now queues the stream's end past the capacity on the graph thread (no pump needed), the last batch stops at Dispose's seq, and a checkpoint after an off-thread Dispose ends the gap there; full gate passes and fable-compat regenerated; verify-trace --no-counters: 9 checks fail, none from #65's diff (merge-base IL and surface diffs from the base branch, base lint lines, and Fickl samples broken by the script's own pack leaving src/Ranvier/obj/Release/{nuspec,fable}); counter comparison needs an elevated shell; PR #190 — 98afcf67 — next: merge PR #190
 - 2026-10-25 #65 done — trace export sink landed with the Wait-mode Dispose drain fixed, docs written and the full gate passing — b1fd5115 — next: merge PR #190
 - 2026-10-25 #157 done — Arms.Match helpers documented in docs/content/view/arms.md on top of the RAN021 suppression and the analyzer gate; rebased onto origin/integration/issues (c374cfca) — 04b79e74 — next: user confirms plan P8 and the CI scope on PR #181
+- 2026-10-25 #193 in-progress — plan written (docs/superpowers/plans/2026-10-25-issue-193.md): AssemblyMetadata(RanvierLibrary) marker on every src library but the core, read by TraceSite.capture — next: plan steps 1 to 4
+- 2026-10-25 #193 in-progress — TraceSite.capture skips frames from every marked Ranvier library; gate passed (3061 tests, test-fable green) — 6e883b96 — next: verify-trace IL and public-surface check against the base
+- 2026-10-25 #193 done — review-only iteration: full gate green (3061 tests, test-fable green, docs and analyzers pass), no findings; plan step 5's verify-trace and IL checks had not run at this point — 7cdc5a17 — next: review and merge PR #196
+- 2026-10-25 #193 done — plan step 5 run: verify-trace --no-counters fails the same 9 checks on HEAD and on the merge base 091eb5a4, none from #193 (both lints, IL and surface checks against the master merge-base, timed-hook erasure, gate 3 server-render, Fickl samples broken by the script's own pack output); untraced Ranvier.dll identical to the base build apart from commit hash and worktree path; every other src library differs only by the AssemblyMetadata(RanvierLibrary) attribute and its F# signature pickle; packed fable/ folders hold no attribute file; counter comparison not run (needs an elevated shell) — next: review and merge PR #196

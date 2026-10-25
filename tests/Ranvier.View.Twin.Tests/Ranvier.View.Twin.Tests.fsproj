@@ -30,6 +30,7 @@
         <Compile Include="InspectTests.fs" />
         <Compile Include="RowMetadataTests.fs" />
         <Compile Include="DumpTests.fs" />
+        <Compile Include="TraceSiteTests.fs" />
         <Compile Include="../../experiments/Ranvier.View.Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
         <Compile Include="../../experiments/Ranvier.View.Checks/ServerChecks.fs" Link="Checks/ServerChecks.fs" />
         <Compile Include="OracleTests.fs" />

@@ -351,3 +351,33 @@ let tests =
                 Expect.throwsT<InvalidOperationException> (fun () -> m.Value |> ignore) "the memo run fails"
             }
         ]
+
+#if RANVIER_TRACE && !FABLE_COMPILER
+[<Tests>]
+let sites =
+    testList
+        "MvuBridge sites (traced)"
+        [
+            test "an Mvu's model and selector name the test's file in their sites and identity paths" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let app, line = Mvu.create init update, __LINE__
+                let count, selectLine = app.Select _.Count, __LINE__
+                let snapshot = Trace.snapshot g
+                let file = System.IO.Path.GetFileName __SOURCE_FILE__
+
+                for node in snapshot.Nodes.Values do
+                    Expect.stringContains node.Site file $"node {node.Id}'s site names the test's file"
+                    Expect.stringContains node.Path file $"node {node.Id}'s path names the test's file"
+
+                Expect.equal (string (Trace.origin g count).Site) (file + ":" + string selectLine) "the selector's site is the Select line"
+
+                Expect.contains
+                    (snapshot.Nodes.Values
+                     |> Seq.map _.Site
+                     |> Set.ofSeq)
+                    (file + ":" + string line)
+                    "the model's site is the Mvu.create line"
+            }
+        ]
+#endif

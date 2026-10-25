@@ -320,8 +320,16 @@ the node, which tells apart a node created at startup from one re-created by eac
 
 :::details Creation sites and resolving paths
 
-The site is the innermost stack frame outside Ranvier, FSharp.Core and `System.*`. `Trace.resolve
-graph "/total"` goes the other way, from a path to the node id.
+The site is the innermost stack frame with file information outside the Ranvier libraries,
+FSharp.Core and `System.*`. The Ranvier libraries are the core and every Ranvier package built from
+`src/` (Ranvier.Elmish, Ranvier.Query, Ranvier.Mcp, Ranvier.View and the others), each marked
+`AssemblyMetadata("RanvierLibrary", "true")`. A frame whose source file sits in a library's `src/`
+directory is skipped too, for library code inlined into the caller's assembly. A node created by
+`Mvu.create`, `GraphHost.Start`'s setup or a view binding reports the application's line that led
+to it. A node a library creates from a deferred callback, with no application frame on the stack,
+reports the next frame outside those, or `?` when none qualifies.
+
+`Trace.resolve graph "/total"` goes the other way, from a path to the node id.
 
 :::
 
