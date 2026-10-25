@@ -395,6 +395,7 @@ let private unlistedPages = set [ "index.md" ]
 /// <summary>
 /// Runs the site. A <c>build</c> exits with 1, generating nothing, while <c>MenuCoverage.check</c> reports a page
 /// outside every menu or a menu entry without a page; <c>watch</c> prints the same report and serves the site.
+/// <c>check-menus</c> runs only the check, and exits with 1 on a report.
 /// </summary>
 [<EntryPoint>]
 let main argv =
@@ -404,11 +405,11 @@ let main argv =
     for problem in problems do
         eprintfn "menu coverage: %s" problem
 
-    if
-        not problems.IsEmpty
-        && Array.contains "build" argv
-    then
+    let failed = not problems.IsEmpty
+
+    match argv with
+    | [| "check-menus" |] -> if failed then 1 else 0
+    | _ when failed && Array.contains "build" argv ->
         eprintfn "menu coverage: %d problem(s); the build stops before generating the site." problems.Length
         1
-    else
-        Nacara.run site argv
+    | _ -> Nacara.run site argv
