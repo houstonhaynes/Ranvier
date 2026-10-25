@@ -127,8 +127,10 @@ Adding or removing a row of the row layout also saves the index; removing delete
 ## Saving and durability
 
 Every persisted input of a session that changes in one flush is saved in one `SaveMany`, after the
-flush's effects have run; a key written twice in one flush is saved once, with its last value. Saves
-run one after another, in write order.
+flush's effects have run, when the graph's journal is the session's [journal wrapper](#journal-position).
+Without the wrapper, a persisted input written by an effect that runs after the session's save starts
+is saved in a second `SaveMany` of the flush. A key written twice in one flush is saved once, with its
+last value. Saves run one after another, in write order.
 
 `session.FlushAsync ()` completes once every save started before the call has completed, and faults
 with the exception of a save that faulted since the previous `FlushAsync`. A faulted save does not

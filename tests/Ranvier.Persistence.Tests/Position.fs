@@ -225,4 +225,33 @@ let tests =
                 Expect.equal reloaded.Position None "no position describes the newer record"
                 Expect.equal (Persist.restore reloaded a 0) 5 "the newer record"
             }
+
+            testCaseAsync "a persisted signal written by an effect saves in the flush's one SaveMany"
+            <| async {
+                let store = RecordingStore ()
+                let journal = MemoryJournal "app"
+
+                let! session =
+                    Persist.loadAsync store declared
+                    |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default.WithJournal (session.Journal journal))
+                    use _active = graph.Activate ()
+                    let derived = Persist.signal session b 0
+                    let plain = createSignal 0
+                    createEffectOn (fun () -> plain.Value) (fun value -> derived.Value <- value * 10)
+                    let direct = Persist.signal session a 0
+
+                    batch (fun () ->
+                        direct.Value <- 1
+                        plain.Value <- 1)
+
+                do! session.FlushAsync () |> Async.AwaitTask
+
+                Expect.equal
+                    (savedPayloads store |> List.map List.sort)
+                    [ [ "$ranvier/position", string (lastInput journal); "a", "1"; "b", "10" ] ]
+                    "one save holding both records and the position"
+            }
         ]

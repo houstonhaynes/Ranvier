@@ -119,4 +119,25 @@ let tests =
                 Expect.equal (savedPayloads store) [ [ "app/model", "4,1" ] ] "the read value"
                 Expect.equal (Persist.restore session modelKey init) { init with Count = 4 } "the session remembers it"
             }
+
+            testCaseAsync "a read tracked and changed in one batch saves the change"
+            <| async {
+                let store = RecordingStore ()
+
+                let! session =
+                    Persist.loadAsync store [ modelKey ]
+                    |> Async.AwaitTask
+
+                do
+                    use graph = new Graph (GraphOptions.Default)
+                    use _active = graph.Activate ()
+                    let count = createSignal 0
+
+                    batch (fun () ->
+                        Persist.track session modelKey (fun () -> { init with Count = count.Value })
+                        count.Value <- 5)
+
+                do! session.FlushAsync () |> Async.AwaitTask
+                Expect.equal (savedPayloads store) [ [ "app/model", "5,1" ] ] "the changed value"
+            }
         ]

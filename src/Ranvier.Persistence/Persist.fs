@@ -291,6 +291,9 @@ type PersistSession
 
     // The Seq of the last entry other than a Flush recorded through the session's journal wrapper.
     let mutable journaled: int option = None
+    // True from an entry other than a Flush until the next Flush entry: the graph then records a Flush entry at the end
+    // of the current flush, after every effect of the flush, and the wrapper drains there.
+    let mutable flushEntryDue = false
     // Whether the store may hold a position that this session's saves have not rewritten.
     let mutable positionStale = position.IsSome
 
@@ -356,7 +359,8 @@ type PersistSession
     /// <c>Flush</c> recorded before the save: the saved records include every input up to it. The position is the last
     /// record of the <c>SaveMany</c>, so a save that faults part way leaves the stored position behind the records.
     /// A save with no such entry to store deletes <c>$ranvier/position</c> before it saves its records. The graph's
-    /// <c>GraphOptions</c> take the wrapper as their journal.
+    /// <c>GraphOptions</c> take the wrapper as their journal. A flush that records an entry then saves once, after
+    /// its last effect, including the persisted inputs written by its effects.
     /// </summary>
     member _.Journal(inner: IInputJournal) : IInputJournal =
         { new IInputJournal with
@@ -365,8 +369,12 @@ type PersistSession
             member _.Record entry =
                 inner.Record entry
 
-                if entry.Kind <> JournalEntryKind.Flush then
+                if entry.Kind = JournalEntryKind.Flush then
+                    flushEntryDue <- false
+                    drainDirty ()
+                else
                     journaled <- Some entry.Seq
+                    flushEntryDue <- true
         }
 
     /// <summary>
@@ -415,7 +423,10 @@ type PersistSession
             runWithOwner current.Root (fun () ->
                 let signal = createSignal 0
                 drain <- Some signal
-                createEffectOn (fun () -> signal.Value) (fun _ -> drainDirty ()))
+
+                createEffectOn (fun () -> signal.Value) (fun _ ->
+                    if not flushEntryDue then
+                        drainDirty ()))
 
     /// <summary>Claims <c>key</c> for one live persisted input until the current owner is disposed.</summary>
     /// <exception cref="T:System.InvalidOperationException">A live persisted input already holds the key.</exception>
@@ -603,19 +614,16 @@ module Persist =
         | Some value -> unbox<'T> value
         | None -> fallback
 
-    // Marks each value of `read` whose payload differs from the last marked one, starting from `marked` (None: the
-    // first value is taken as marked), and remembers it for inputs created for the key later.
-    let private persistReads (session: PersistSession) (key: PersistKey<'T>) (marked: string option) (read: unit -> 'T) =
+    // Marks each value of `read` whose payload differs from the last marked one, starting from `marked`, and
+    // remembers it for inputs created for the key later.
+    let private persistReads (session: PersistSession) (key: PersistKey<'T>) (marked: string) (read: unit -> 'T) =
         let mutable marked = marked
 
         let mark (value: 'T) =
             let record = PersistCodec.encode key.Codec key.Key value
 
-            match marked with
-            | None -> marked <- Some record.Payload
-            | Some payload when payload = record.Payload -> ()
-            | Some _ ->
-                marked <- Some record.Payload
+            if record.Payload <> marked then
+                marked <- record.Payload
                 session.Mark record
                 session.Remember (key.Key, box value)
 
@@ -627,7 +635,8 @@ module Persist =
     /// A signal holding <c>Persist.restore session key fallback</c>, made in the current graph and owner, so a signal
     /// re-created for the key starts from its last written value.
     /// After each flush that changes it, its value is saved to the session's store, also when the flush disposes its
-    /// owner; the changes of one flush save in one <c>SaveMany</c>.
+    /// owner; with the session's <c>Journal</c> wrapper as the graph's journal, the changes of one flush save in one
+    /// <c>SaveMany</c>.
     /// </summary>
     /// <exception cref="T:System.InvalidOperationException">
     /// The key was not passed to the load, a live persisted input already holds it, or the session serves another graph.
@@ -637,14 +646,14 @@ module Persist =
         session.Attach Graph.Current
         session.Claim key.Key
         let signal = createSignal initial
-        persistReads session key (Some (key.Codec.Codec.Encode initial)) (fun () -> signal.Value)
+        persistReads session key (key.Codec.Codec.Encode initial) (fun () -> signal.Value)
         signal
 
     /// <summary>
     /// Saves the value of <c>read</c> under <c>key</c> after each flush that changes it, also when the flush disposes
     /// the current owner, until the owner is disposed. <c>read</c> is a tracked read, such as an <c>Mvu</c>'s
     /// <c>Model</c>. Its first value is saved only when it differs from the key's restored value; with no restored
-    /// value, its first value is not saved.
+    /// value, its value at the call is not saved.
     /// </summary>
     /// <example>
     /// <code lang="fsharp">
@@ -657,12 +666,13 @@ module Persist =
     /// </exception>
     let track (session: PersistSession) (key: PersistKey<'T>) (read: unit -> 'T) : unit =
         let restored =
-            session.TryRestored key.Key
-            |> Option.map (fun value -> key.Codec.Codec.Encode (unbox<'T> value))
+            match session.TryRestored key.Key with
+            | Some value -> unbox<'T> value
+            | None -> untrack read
 
         session.Attach Graph.Current
         session.Claim key.Key
-        persistReads session key restored read
+        persistReads session key (key.Codec.Codec.Encode restored) read
 
 
     /// <summary>

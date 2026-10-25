@@ -27,7 +27,8 @@ task {
   `PersistLoadException` naming the key on a newer stored version, a missing or failed migration, or a decode
   failure; `PersistOptions.DiscardUndecodable` uses the fallback for a decode failure instead.
 - `PersistOptions.Buster` discards every stored record when the stored buster differs.
-- The changes of one flush save in one `SaveMany`; `FlushAsync` completes after every earlier save.
+- The changes of one flush save in one `SaveMany` when the graph's journal is `session.Journal`; `FlushAsync`
+  completes after every earlier save.
 - `Persist.rows` and `Persist.document` persist a keyed collection by row or as one record, in insertion order.
 - `Persist.restore` and `Persist.track` persist an `Mvu` model or any tracked read.
 - `session.Journal` records the input-journal position each save includes; a reload exposes it as
