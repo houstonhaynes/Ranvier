@@ -26,6 +26,7 @@ proposed scope for each, and does not implement them.
 | 13 | [#185](https://github.com/shayanhabibi/Ranvier/issues/185) store adapters for the input journal and persisted state | — | #184, #68 | implement | blocked |
 | 14 | [#193](https://github.com/shayanhabibi/Ranvier/issues/193) trace identity paths name the application's line | 1.0.0-rc | #166 | implement | done |
 | 15 | [#210](https://github.com/shayanhabibi/Ranvier/issues/210) keyed persisted inputs over an IStateStore (Ranvier.Persistence) | 1.0.0-rc | #68 research, #184 | implement | done |
+| 16 | [#197](https://github.com/shayanhabibi/Ranvier/issues/197) journal snapshot plus tail restore over #68's stored-state format | — | #184, #210 | implement | in-progress |
 
 Statuses: `todo`, `in-progress` (an iteration left work; see the log), `done` (merged into
 `integration/issues`), `blocked` (the log names what it needs from the user).
