@@ -3,16 +3,6 @@ namespace Ranvier.Persistence
 open System.Collections.Generic
 open System.Threading.Tasks
 
-/// <summary>Portable task values.</summary>
-module internal PersistTask =
-    /// <summary>A finished task.</summary>
-    let completed () : Task =
-#if FABLE_COMPILER
-        Task.FromResult () :> Task
-#else
-        Task.CompletedTask
-#endif
-
 /// <summary>An <c>IStateStore</c> in process memory. Every task it returns has finished.</summary>
 type MemoryStateStore() =
     let records = Dictionary<string, StoredRecord>()

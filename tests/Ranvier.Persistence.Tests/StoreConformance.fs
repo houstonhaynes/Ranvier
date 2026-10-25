@@ -7,13 +7,7 @@ module Ranvier.Persistence.Tests.StoreConformance
 open Expecto
 open Ranvier.Persistence
 
-let private record key version payload =
-    {
-        Key = key
-        Version = version
-        Payload = payload
-        ETag = None
-    }
+let private record = Support.record
 
 /// <summary>The key, version and payload of each record, ordered by key.</summary>
 let private contents (records: StoredRecord list) =
@@ -92,6 +86,67 @@ let storeCases (create: unit -> IStateStore) =
         }
     ]
 
+let private countKey (version: int) =
+    Persist.key "count" (PersistCodec.ofJournal (Support.intCodec version))
+
+/// <summary>The version and buster cases: records saved to a store made by <c>create</c>, loaded by <c>Persist</c>.</summary>
+let persistCases (create: unit -> IStateStore) =
+    [
+        testCaseAsync "a record of an older version loads through its migrations"
+        <| async {
+            let store = create ()
+            do! saveMany store [ record "count" 1 "20" ]
+
+            let key =
+                Persist.key
+                    "count"
+                    (PersistCodec.ofJournal (Support.intCodec 2)
+                     |> PersistCodec.withMigration 1 (fun text -> Result.Ok (string (int text * 2))))
+
+            let! session = Persist.loadAsync store [ key ] |> Async.AwaitTask
+            Expect.equal (Persist.restore session key 0) 40 "the migrated value"
+        }
+
+        testCaseAsync "a record of a newer version fails the load naming the key"
+        <| async {
+            let store = create ()
+            do! saveMany store [ record "count" 3 "1" ]
+
+            do!
+                Persist.loadAsync store [ countKey 2 ]
+                |> Async.AwaitTask
+                |> Support.expectLoadFailure "count" (NewerVersion (3, 2))
+        }
+
+        testCaseAsync "a matching buster keeps the records and a different one discards them"
+        <| async {
+            let store = create ()
+            do! saveMany store [ record "$ranvier/buster" 1 "a"; record "count" 1 "9" ]
+            let key = countKey 1
+
+            let! matching =
+                Persist.loadWith
+                    { PersistOptions.defaults with
+                        Buster = Some "a"
+                    }
+                    store
+                    [ key ]
+                |> Async.AwaitTask
+
+            let! different =
+                Persist.loadWith
+                    { PersistOptions.defaults with
+                        Buster = Some "b"
+                    }
+                    store
+                    [ key ]
+                |> Async.AwaitTask
+
+            Expect.equal (Persist.restore matching key 0) 9 "the matching buster keeps the record"
+            Expect.equal (Persist.restore different key 0) 0 "a different buster discards it"
+        }
+    ]
+
 /// <summary>The store conformance cases under the store's name.</summary>
 let suite (name: string) (create: unit -> IStateStore) =
-    testList name (storeCases create)
+    testList name (storeCases create @ persistCases create)
