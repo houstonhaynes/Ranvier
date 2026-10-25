@@ -3648,6 +3648,9 @@ type Graph(options: GraphOptions) =
     /// Applies <c>f</c> to <c>arg</c> with tracking suppressed and the scope rule of <c>host</c> applied to every node
     /// created by <c>f</c>.
     /// </summary>
+    /// <remarks>
+    /// The caller marks the journal's derived section: <c>EffectOn</c>'s action does so on its journaled path.
+    /// </remarks>
     member internal _.RunUntrackedHostedWith(host: IScopeHost, f: 'A -> unit, arg: 'A) =
         let previous = current
         let previousOwner = currentOwner
@@ -3661,9 +3664,6 @@ type Graph(options: GraphOptions) =
         currentOwner <- Unchecked.defaultof<Owner>
         untrackedHost <- host
 
-        if not (Platform.isNull journal) then
-            journal.EnterDerived ()
-
         try
             f arg
         finally
@@ -3671,9 +3671,6 @@ type Graph(options: GraphOptions) =
             currentOwner <- previousOwner
             untrackedHost <- previousHost
             untrackedInBody <- previousInBody
-
-            if not (Platform.isNull journal) then
-                journal.LeaveDerived ()
 
 /// <summary>
 /// A settable source.
@@ -4982,7 +4979,15 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
     // Out of line, so Act allocates no closure and, under Fable, no closure context when the graph has no journal.
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
     member private this.ActJournaled(v: 'T) =
-        graph.Journal.RunWork (fun () -> graph.RunUntrackedHostedWith (this :> IScopeHost, act, v))
+        let recorder = graph.Journal
+
+        recorder.RunWork (fun () ->
+            recorder.EnterDerived ()
+
+            try
+                graph.RunUntrackedHostedWith (this :> IScopeHost, act, v)
+            finally
+                recorder.LeaveDerived ())
 
     /// <summary>Detaches from the sources and disposes the action's scope. Idempotent.</summary>
     member this.Dispose() =
