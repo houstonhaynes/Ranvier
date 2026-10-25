@@ -75,13 +75,18 @@ fails with `PersistLoadException`, whose message and `Key` name the key, when:
 `Persist.loadWith { PersistOptions.defaults with DiscardUndecodable = true }` discards a record that
 fails with `DecodeFailed` and uses the fallback for its key. The other failures still fail the load.
 
-Keys beginning `$ranvier/` are reserved for the session's own records.
+The load takes an `IPersistKey list`, so value keys and collection keys of different types share one
+list: `Persist.loadAsync store [ count; note; todos ]`. Two keys with one store key raise
+`ArgumentException`, as does an empty key or one beginning `$ranvier/` (`Persist.ReservedPrefix`),
+which is reserved for the session's own records.
 
 ### Busting the store
 
 `PersistOptions.Buster` is a store-wide version. When the stored buster differs, every record of the
-load reads as absent and each key uses its fallback; the session's first save clears the store and
-writes the new buster, so a later load stays discarded.
+load reads as absent and each key uses its fallback. Each save of the session clears the store and
+writes the new buster, until one such save succeeds; a later load then reads the new buster and the
+records saved since. A save skips the clear when the store already holds the session's buster, so
+sessions busted to the same buster keep each other's saves.
 
 ```fsharp
 let! session = Persist.loadWith { PersistOptions.defaults with Buster = Some "2026-10" } store keys
@@ -94,6 +99,10 @@ the buster are separate store calls. Version 1 accepts this race; the next load 
 store then holds.
 
 ## Where persisted inputs belong
+
+A session serves one graph: its first persisted input attaches it to the current graph, and a
+persisted input made in another graph raises `InvalidOperationException`. So does a persisted input,
+or a `Persist.restore`, for a key the load was not given.
 
 A persisted input belongs at the root of the graph, or in a keyed factory with one declared key per
 row. One live persisted input holds a key: a second `Persist.signal` for a key whose first is still
@@ -149,7 +158,8 @@ Persist.track session modelKey (fun () -> app.Model)
 
 `Persist.restore` returns the key's last written value, else its stored value, else the fallback.
 `Persist.track` saves any tracked read after each flush that changes it, until the current owner is
-disposed.
+disposed. Its first value is saved only when it differs from the key's restored value; with nothing
+restored, the value at the call is not saved.
 
 ## Stores
 
@@ -162,8 +172,20 @@ disposed.
 `LocalStorageStateStore (prefix, storage)` takes another `IWebStorage`, the five Web Storage
 operations the store uses, in place of the browser's `localStorage`. Each
 store implements `IStateStore` (`LoadMany`, `SaveMany`, `DeleteMany`, `Clear`), and a custom store
-implements the same four members. `StoredRecord.ETag` is carried for stores that check one; the three
-stores ignore it.
+implements the same four members. A `StoredRecord` holds the `Key`, the codec `Version` its
+`Payload` was encoded at, and an `ETag` carried for stores that check one; the three stores ignore it.
+
+`MemoryStateStore.Records` lists the stored records, so a test can assert what a flush saved.
+`PersistCodec.encode codec key value` builds the record a session would save, and
+`PersistCodec.restore codec record` migrates and decodes one into `Ok value` or `Error` with a
+`PersistFailure`, as the load does:
+
+```fsharp
+let store = MemoryStateStore ()
+let codec = PersistCodec.ofJournal countCodec
+do! (store :> IStateStore).SaveMany [ PersistCodec.encode codec "count" 41 ]
+let restored = PersistCodec.restore codec store.Records.Head // Ok 41
+```
 
 ## Journal position
 
