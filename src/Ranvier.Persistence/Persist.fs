@@ -286,9 +286,24 @@ type PersistSession
             busterPending <- false
             PersistTask.completed ())
 
+    // The Seq of the last entry other than a Flush recorded through the session's journal wrapper.
+    let mutable journaled: int option = None
+
     let drainDirty () =
         if dirty.Count > 0 then
             let records = dirty.Values |> Seq.choose id |> List.ofSeq
+
+            let records =
+                match journaled with
+                | Some seq ->
+                    {
+                        Key = PersistReserved.positionKey
+                        Version = 1
+                        Payload = string seq
+                        ETag = None
+                    }
+                    :: records
+                | None -> records
 
             let deleted =
                 dirty
@@ -313,6 +328,23 @@ type PersistSession
     /// The journal position stored under <c>$ranvier/position</c> at load, or <c>None</c> when the store holds none.
     /// </summary>
     member _.Position = position
+
+    /// <summary>
+    /// A journal that records every entry in <c>inner</c>. Each save of the session then also stores, under
+    /// <c>$ranvier/position</c> in the same <c>SaveMany</c>, the <c>Seq</c> of the last entry other than a
+    /// <c>Flush</c> recorded before the save: the saved records include every input up to it. The graph's
+    /// <c>GraphOptions</c> take the wrapper as their journal.
+    /// </summary>
+    member _.Journal(inner: IInputJournal) : IInputJournal =
+        { new IInputJournal with
+            member _.Stream = inner.Stream
+
+            member _.Record entry =
+                inner.Record entry
+
+                if entry.Kind <> JournalEntryKind.Flush then
+                    journaled <- Some entry.Seq
+        }
 
     /// <summary>
     /// A task that completes once every save started before the call has completed. It faults with the exception of
