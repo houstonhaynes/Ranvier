@@ -724,7 +724,8 @@ module Persist =
     /// session published under <c>key</c>, else its restored value, or failed with the failure; with neither it starts
     /// pending. A restored failure is a <c>PersistedFailure</c> carrying the stored message. The restored status is
     /// published inside <c>Journal.derived</c>, so it records no journal entry, and every reader of the source sees it.
-    /// After each flush that changes the source's status, the status is saved to the session's store.
+    /// After each flush that changes the source's status, the status is saved to the session's store; a return to
+    /// pending deletes the record.
     /// </summary>
     /// <remarks>Register the source with <c>Journal.keySource</c> under <c>key</c> to journal its later settles.</remarks>
     /// <exception cref="T:System.InvalidOperationException">

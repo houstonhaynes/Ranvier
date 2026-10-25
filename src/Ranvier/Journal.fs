@@ -383,6 +383,11 @@ module Journal =
     /// run is <c>effect</c>, other work is <c>work</c>, each followed by its quoted name when it has one. Before the first
     /// entry it lists the works started so far. Empty for a graph with no journal.
     /// </summary>
+    /// <example>
+    /// <code lang="fsharp">
+    /// Journal.setupWorksOf graph // [| "effect"; "work \"initial\"" |]
+    /// </code>
+    /// </example>
     let setupWorksOf (graph: Graph) : string array =
         let recorder = graph.Journal
 

@@ -210,8 +210,20 @@ key.
 
 ```fsharp
 let results = Persist.sourceKey "results" (PersistCodec.ofJournal resultsCodec)
+let! session = Persist.loadAsync store [ results ]
 let source = Journal.keySource "results" resultsCodec (Persist.source session results)
 ```
+
+- `Persist.sourceKey key codec` raises `ArgumentException` on an empty key or one beginning with
+  `$ranvier/`. The record's version is the codec's, and the codec's migrations apply to the stored
+  value.
+- `Persist.source session key` makes the source in the current graph and owner: settled with the
+  restored value, failed with the restored failure, or pending when the key has no record. The
+  restored status is published inside `Journal.derived`, so it records no journal entry.
+- After each flush that changes the source's status, the new status is saved to the store; a
+  return to pending deletes the record.
+- Register the source with `Journal.keySource` under the same key, so the journal records its later
+  settles and failures and a restore can replay them.
 
 ## What is not stored
 

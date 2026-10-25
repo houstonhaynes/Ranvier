@@ -266,7 +266,8 @@ begin with the recorded setup work
 ```
 
 `Journal.setupWorksOf graph` lists a graph's setup work descriptions in start order, such as
-`[| "effect"; "work \"initial\"" |]`.
+`[| "effect"; "work \"initial\"" |]`, and is empty for a graph with no journal. Compare it with the
+description list in the exception to find the setup work the target added or reordered.
 
 A setup work is told apart from another by its kind and its name. Unnamed works of one kind, such as
 two effects or two `Journal.work` calls without `Journal.name`, have equal descriptions, and a
