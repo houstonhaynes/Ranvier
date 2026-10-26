@@ -297,6 +297,10 @@ let prefix (note: string) (response: string) =
             | null -> response
             | text ->
                 first.["text"] <- JsonValue.Create (note + "\n" + text.GetValue<string>())
+                // A client may show structured content in place of the text, which would hide the note.
+                body.AsObject().Remove "structuredContent"
+                |> ignore
+
                 node.ToJsonString ()
         | _ -> response
 
