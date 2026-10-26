@@ -154,6 +154,41 @@ jobs:
       - name: Pack the traced adapter
         run: dotnet pack adapters/Ranvier.Persistence.KurrentDB -c Release -p:RanvierTrace=true --no-build
 
+  equinox:
+    name: Equinox FsCodec sample
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      kurrentdb:
+        image: docker.kurrent.io/kurrent-latest/kurrentdb@sha256:e5c9d59716174a4a47f9d54d6ce45aaaca48114b7ee668135aeb9f16934d74c8
+        env:
+          KURRENTDB_INSECURE: "true"
+          KURRENTDB_CLUSTER_SIZE: "1"
+        ports:
+          - 2113:2113
+        options: >-
+          --health-cmd "curl --fail --silent http://localhost:2113/health/live"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 24
+    env:
+      RANVIER_EQUINOX_CONNECTION: esdb://localhost:2113?tls=false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Test the sample against KurrentDB
+        run: dotnet test tests/Ranvier.Persistence.Equinox.Tests -c Release
+      - name: Run the persisted signal round trip
+        run: dotnet run --project samples/Ranvier.Persistence.Equinox -c Release --no-build -- ci-round-trip
+      - name: Test the sample with traced persistence
+        run: dotnet test tests/Ranvier.Persistence.Equinox.Tests -c Release -p:RanvierTrace=true
+      - name: Run the traced round trip
+        run: dotnet run --project samples/Ranvier.Persistence.Equinox -c Release -p:RanvierTrace=true --no-build -- ci-traced-round-trip
+
   # A NativeAOT publish over the library assemblies, Ranvier.Wire and Ranvier.Persistence included, rooted: any IL2xxx/IL3xxx warning fails
   # the publish, and the binary exits non-zero when an exception or a ToString text differs from the expected text,
   # with tracing on and off.
@@ -665,7 +700,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, marten, kurrentdb, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

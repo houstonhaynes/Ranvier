@@ -13,6 +13,7 @@ An `IStateStore` supplies memory, file, browser storage or an application-define
 
 For PostgreSQL, use the separate [Marten adapter](persistence-marten.md), with scoped records and optional ETag checks.
 For small snapshots in KurrentDB, use the [KurrentDB adapter](persistence-kurrentdb.md).
+The [Equinox/FsCodec sample](persistence-equinox.md) shows an event-sourced implementation over KurrentDB.
 
 ```fsharp
 open Ranvier

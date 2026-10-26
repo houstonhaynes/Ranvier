@@ -123,6 +123,7 @@ let theme =
                                 Menu.page "guide/persistence.md"
                                 Menu.page "guide/persistence-marten.md"
                                 Menu.page "guide/persistence-kurrentdb.md"
+                                Menu.page "guide/persistence-equinox.md"
                             ]
                         Menu.section "Ranvier.Mcp" [ Menu.page "guide/mcp.md"; Menu.page "guide/mcp-research.md" ]
                     ]
