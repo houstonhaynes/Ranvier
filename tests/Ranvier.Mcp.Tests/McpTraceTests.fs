@@ -39,7 +39,13 @@ let private startHost () =
             A = a
             Sum = sum
             Hidden = hidden
-            Adapter = new McpAdapter (exposure)
+            Adapter =
+                new McpAdapter (
+                    exposure,
+                    { McpAdapterOptions.Default with
+                        RawTraceTools = true
+                    }
+                )
         })
 
 let private connect () : Task<Session<App>> =

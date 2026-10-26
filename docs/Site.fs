@@ -118,7 +118,7 @@ let theme =
                         Menu.section "Ranvier.Query" [ Menu.page "guide/queries.md"; Menu.page "guide/query-navigation.md" ]
                         Menu.section "Ranvier.Elmish" [ Menu.page "guide/elmish.md" ]
                         Menu.section "Ranvier.Persistence" [ Menu.page "guide/persistence.md" ]
-                        Menu.section "Ranvier.Mcp" [ Menu.page "guide/mcp.md" ]
+                        Menu.section "Ranvier.Mcp" [ Menu.page "guide/mcp.md"; Menu.page "guide/mcp-research.md" ]
                     ]
                 Menu.section
                     "Reference"
