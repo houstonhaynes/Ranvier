@@ -31,9 +31,10 @@ test("the chart's path and the ring's stroke change with every sample", async ({
   const ring = ".ring-value";
   const first = [await attribute(page, line, "d"), await attribute(page, ring, "stroke-dasharray")];
   await page.clock.runFor(1000);
+  await page.click("button.pause");
   await page.clock.runFor(150);
   const moving = [await attribute(page, line, "d"), await attribute(page, ring, "stroke-dasharray")];
-  await page.clock.runFor(650);
+  await page.clock.runFor(850);
   const settled = [await attribute(page, line, "d"), await attribute(page, ring, "stroke-dasharray")];
   await page.clock.runFor(50);
   const still = await attribute(page, line, "d");
@@ -90,6 +91,6 @@ test("pause stops the samples, and reconnect dims the metrics until the next sam
   await expect(page.locator(".metrics")).toHaveAttribute("data-refreshing", "true");
   await page.clock.runFor(1000);
   await expect(page.locator(".metrics")).not.toHaveAttribute("data-refreshing", "true");
-  await expect(page.locator(".chart .note")).toHaveText("1 of 24");
+  await expect(page.locator(".chart .note")).toHaveText("3 of 24");
   expect(await page.evaluate(() => window.__motion.subscribers())).toBe(1);
 });

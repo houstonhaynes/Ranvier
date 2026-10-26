@@ -93,6 +93,11 @@ let private gaugesFollow queued (clock: Clock) =
 
 let private chartMorphsAndRingDraws queued (clock: Clock) =
     let graph, target, page = mounted queued
+
+    let run clock frame total =
+        run clock frame total
+        page.Mount.Flush ()
+
     push graph page (sampleAt 1)
     let line = find target ".chart-line"
     let ring = find target ".ring-value"
@@ -191,7 +196,7 @@ let private reconnectRestarts queued (clock: Clock) =
             attributeOf (find target ".metrics") "data-refreshing", textOf (find target ".chart .note")
 
         close graph page
-        equal (("true", 1), (null, "1 of 24")) (refreshing, resumed))
+        equal (("true", 1), (null, "3 of 24")) (refreshing, resumed))
 
 let private counterRetargets queued (clock: Clock) =
     let graph, target, page = mounted queued
@@ -223,5 +228,5 @@ let cases: Case list =
         yield! modes "a sample mid-tween retargets the counter from the number shown" counterRetargets
         yield! modes "the CPU alert fades in on a spike and out after it" alertFades
         yield! modes "the details panel shows the latest sample and fades out when hidden" detailsToggle
-        yield! modes "reconnect restarts the stream: the content dims until the next sample, then starts over" reconnectRestarts
+        yield! modes "reconnect dims the content until the next sample, preserving history" reconnectRestarts
     ]

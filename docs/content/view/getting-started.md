@@ -8,14 +8,8 @@ which is the runnable reference for everything in this section.
 
 ## Project
 
-Reference `Ranvier.View.Dom`; it brings in `Ranvier.View` and `Ranvier`. The view packages are
-currently available from source. Clone the repository beside your application:
-
-```bash
-git clone https://github.com/shayanhabibi/Ranvier.git
-```
-
-With `Counter/` and `Ranvier/` in the same directory, use this `Counter/Counter.fsproj`.
+Reference `Ranvier.View.Dom`; it brings in `Ranvier.View` and `Ranvier`.
+Use this `Counter/Counter.fsproj`:
 Add the Xantham feed from [Installation](../guide/installation.md#views) to the application's
 `nuget.config` so the DOM type dependency restores.
 
@@ -29,7 +23,7 @@ Add the Xantham feed from [Installation](../guide/installation.md#views) to the 
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Ranvier/src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+    <PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
 </Project>

@@ -32,4 +32,5 @@ let outputs =
         output "story" "Story" "StoryPage.page" StoryPage.page
         output "physics" "Physics" "PhysicsPage.page" PhysicsPage.page
         output "routes" "Routes" "RoutesPage.page" RoutesPage.page
+        output "graphs" "Graphs" "GraphsPage.page" GraphsPage.page
     |]

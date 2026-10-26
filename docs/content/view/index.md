@@ -4,8 +4,8 @@ order: 1
 ---
 
 :::info Alpha
-The view projects use version `0.1.0-alpha.1`; their APIs may change. They are not currently
-published on nuget.org. Use [project references or local packages](../guide/installation.md#views).
+The view packages are published at `0.1.0-alpha.1`; their APIs may change.
+See [installation and the dependency feed](../guide/installation.md#views).
 :::
 
 Ranvier binds [signals](../guide/signals.fsx) and [memos](../guide/memos.md) to HTML. A **template

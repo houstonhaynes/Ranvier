@@ -132,5 +132,5 @@ let main args =
     | [||] -> ()
     | _ -> invalidArg "args" "Expected --write-pages, --write <story path>, or no arguments."
 
-    printfn "ok: all six page documents are deterministic; the story equals its Motion-free twin"
+    printfn "ok: all %d page documents are deterministic; the story equals its Motion-free twin" documents.Length
     0

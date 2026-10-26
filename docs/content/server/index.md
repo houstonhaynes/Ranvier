@@ -4,8 +4,8 @@ order: 1
 ---
 
 :::info Alpha
-`Server` lives in `Ranvier.View`; `Hydration` lives in `Ranvier.View.Dom`. These alpha projects
-are not currently published on nuget.org: use [project references or local packages](../guide/installation.md#views).
+`Server` lives in `Ranvier.View`; `Hydration` lives in `Ranvier.View.Dom`. Both packages are published
+at `0.1.0-alpha.1`; see [installation and the dependency feed](../guide/installation.md#views).
 `Ranvier.Wire` supplies state-transfer codecs.
 :::
 

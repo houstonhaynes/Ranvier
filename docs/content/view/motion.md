@@ -4,8 +4,8 @@ description: "Typed anime.js 4.5.0 bindings for Fable: parameters, values, eases
 ---
 
 :::info Alpha
-The animation projects use version `0.1.0-alpha.1`; their APIs may change. They are not currently
-published on nuget.org. Use [project references or local packages](../guide/installation.md#views).
+The animation packages are published at `0.1.0-alpha.1`; their APIs may change.
+See [installation and the dependency feed](../guide/installation.md#views).
 :::
 
 Ranvier animates with [anime.js](https://animejs.com) 4.5.0. anime is the engine; Ranvier supplies

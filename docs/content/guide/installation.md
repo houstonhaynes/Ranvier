@@ -30,10 +30,10 @@ Install `Ranvier` for F#, `Ranvier.CSharp` for C#, or `Ranvier.Elmish` for the M
 Versions are previews, so pass `--prerelease`.
 
 The guide describes the current source. The current versions are
-[`Ranvier` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier/0.1.0-preview.6),
-[`Ranvier.CSharp` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier.CSharp/0.1.0-preview.6),
-[`Ranvier.Elmish` 0.1.0-preview.5](https://www.nuget.org/packages/Ranvier.Elmish/0.1.0-preview.5), and
-[`Ranvier.Query` 0.1.0-preview.2](https://www.nuget.org/packages/Ranvier.Query/0.1.0-preview.2).
+[`Ranvier` 0.1.0-preview.7](https://www.nuget.org/packages/Ranvier/0.1.0-preview.7),
+[`Ranvier.CSharp` 0.1.0-preview.7](https://www.nuget.org/packages/Ranvier.CSharp/0.1.0-preview.7),
+[`Ranvier.Elmish` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier.Elmish/0.1.0-preview.6), and
+[`Ranvier.Query` 0.1.0-preview.3](https://www.nuget.org/packages/Ranvier.Query/0.1.0-preview.3).
 
 ::::::tabs
 :::::tab Core
@@ -49,7 +49,7 @@ dotnet add package Ranvier --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier" Version="0.1.0-preview.6" />
+<PackageReference Include="Ranvier" Version="0.1.0-preview.7" />
 ```
 
 :::
@@ -69,7 +69,7 @@ dotnet add package Ranvier.CSharp --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier.CSharp" Version="0.1.0-preview.6" />
+<PackageReference Include="Ranvier.CSharp" Version="0.1.0-preview.7" />
 ```
 :::
 ::::
@@ -89,7 +89,7 @@ dotnet add package Ranvier.Elmish --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier.Elmish" Version="0.1.0-preview.5" />
+<PackageReference Include="Ranvier.Elmish" Version="0.1.0-preview.6" />
 ```
 
 :::
@@ -106,9 +106,11 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The source builds four view packages at `0.1.0-alpha.1`, with matching dependency versions.
-These packages are not currently available on nuget.org. Use project references to this checkout,
-or pack it and restore from a local feed.
+The four view packages are published on NuGet at `0.1.0-alpha.1`, with matching dependency versions.
+
+```shell
+dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.1
+```
 
 | Package | Holds | Depends on |
 | --- | --- | --- |
@@ -121,8 +123,8 @@ A browser app references `Ranvier.View.Dom`; server or shared component code ref
 `Ranvier.View`. See [Views](../view/index.md) for setup.
 
 :::warning Additional dependency feed
-`Xantham.Fable.Core.TS` 0.2.1 comes from the Xantham Cloudsmith feed. Add it beside nuget.org and,
-if using locally packed view packages, your local feed. Map `Xantham.*` to Cloudsmith:
+`Xantham.Fable.Core.TS` 0.2.1 comes from the Xantham Cloudsmith feed. Add it beside nuget.org
+and map `Xantham.*` to Cloudsmith:
 
 
 ```xml
@@ -153,9 +155,8 @@ consumers restored from locally packed packages, so this path does not depend on
 build imports. See [Fable](../fable/index.md) for package details, available APIs and JavaScript
 timing and equality differences. The browser renderer is `Ranvier.View.Dom`.
 
-The published core and extension versions listed above lack those standalone Fable project files.
-For these source-package builds and the view packages, pack the current checkout and restore from
-a local feed. The [Fable guide](../fable/index.md#package-sources-and-ci) explains this distinction.
+The versions listed above and the view packages include standalone Fable project files.
+See [package sources and CI](../fable/index.md#package-sources-and-ci).
 
 ## Native AOT and trimming
 
@@ -173,5 +174,5 @@ overrides to keep useful diagnostic text after trimming.
 
 ## Traced packages
 
-Each package has a `.Traced` variant for diagnostics. See [Tracing](tracing.md#from-nuget) for
+Runtime libraries have a `.Traced` variant for diagnostics; `Ranvier.Analyzers` does not. See [Tracing](tracing.md#from-nuget) for
 switching between traced and untraced builds.

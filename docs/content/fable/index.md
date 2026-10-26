@@ -41,14 +41,13 @@ NuGet packages, traced and untraced. The package consumer check is
 `tests/check-package-compatibility.ps1 -CheckFable`. These checks validate the package build;
 availability of a particular version on NuGet is a separate release step.
 
-**Published core packages include Fable sources:** `Ranvier` and `Ranvier.CSharp` from
-`0.1.0-preview.6`, `Ranvier.Elmish` from `0.1.0-preview.5`, and `Ranvier.Query` from
-`0.1.0-preview.2`. Earlier previews lack the standalone project files. See
+**Published packages include standalone Fable projects:** `Ranvier` and `Ranvier.CSharp` from
+`0.1.0-preview.7`, `Ranvier.Elmish` from `0.1.0-preview.6`, and `Ranvier.Query` from
+`0.1.0-preview.3`. Use these versions or newer for standalone project files. See
 [Installation](../guide/installation.md#from-nuget).
 
-The view projects also pack Fable sources, but their `0.1.0-alpha.1` packages are not currently on
-nuget.org. Use [project references or local packages](../guide/installation.md#views); CI
-validates temporarily packed consumers.
+The view packages at `0.1.0-alpha.1` also include Fable sources and standalone projects.
+See [installation and the dependency feed](../guide/installation.md#views).
 
 ## Known differences from .NET
 

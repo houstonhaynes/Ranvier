@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <!-- The five Motion example pages, compiled with Fable (npm run compile) and bundled by Vite. -->
+    <!-- Shared Motion pages, compiled with Fable and bundled by Vite. -->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <OutputType>Library</OutputType>
@@ -16,12 +16,14 @@
         <Compile Include="src/StoryClient.fs" />
         <Compile Include="src/Physics.fs" />
         <Compile Include="src/Routes.fs" />
+        <Compile Include="src/Graphs.fs" />
         <Compile Include="src/PageLayout.fs" />
         <Compile Include="src/KanbanPage.fs" />
         <Compile Include="src/DashboardPage.fs" />
         <Compile Include="src/StoryPage.fs" />
         <Compile Include="src/PhysicsPage.fs" />
         <Compile Include="src/RoutesPage.fs" />
+        <Compile Include="src/GraphsPage.fs" />
     </ItemGroup>
 
     <ItemGroup>

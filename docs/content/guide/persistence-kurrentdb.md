@@ -8,8 +8,11 @@ Each mutation appends the full scope atomically. Reads fetch the latest snapshot
 
 ## Setup
 
-The .NET 10 adapter is available from source. Reference
-`adapters/Ranvier.Persistence.KurrentDB/Ranvier.Persistence.KurrentDB.fsproj`.
+Install the .NET 10 adapter from NuGet:
+
+```shell
+dotnet add package Ranvier.Persistence.KurrentDB --version 0.1.0-preview.1
+```
 
 ```fsharp
 open KurrentDB.Client

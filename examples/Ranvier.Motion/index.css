@@ -73,3 +73,4 @@
 .swatch.story { background: linear-gradient(135deg, var(--coral), var(--amber)); }
 .swatch.physics { background: linear-gradient(135deg, var(--mint), var(--amber)); }
 .swatch.routes { background: linear-gradient(135deg, var(--accent), var(--coral)); }
+.swatch.graphs { background: linear-gradient(135deg, var(--accent), var(--mint)); }

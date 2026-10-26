@@ -9,8 +9,11 @@ codecs and migrations.
 
 ## Setup
 
-The adapter is available from source. Add a project reference to
-`adapters/Ranvier.Persistence.Marten/Ranvier.Persistence.Marten.fsproj`.
+Install the .NET 10 adapter from NuGet:
+
+```shell
+dotnet add package Ranvier.Persistence.Marten --version 0.1.0-preview.1
+```
 
 ```fsharp
 open Marten

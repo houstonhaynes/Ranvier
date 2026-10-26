@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { expectNoErrors, openPage } from "./support.mjs";
 
-for (const name of ["kanban", "dashboard", "story", "physics", "routes"]) {
+for (const name of ["kanban", "dashboard", "story", "physics", "routes", "graphs"]) {
   test(`${name} arrives rendered and retains its server root through startup`, async ({ page, request }) => {
     const response = await request.get(`/${name}/`);
     expect(response.ok()).toBe(true);

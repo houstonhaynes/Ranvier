@@ -9,7 +9,7 @@ repository and published with the docs on GitHub Pages.
 | Example | Try it | What it demonstrates |
 | --- | --- | --- |
 | Playground | [Open playground](/Ranvier/examples/playground/index.html) | Reactive views, collections, boundaries, events and component lifetimes. |
-| Motion | [Open motion examples](/Ranvier/examples/motion/index.html) | Kanban, dashboard, story, physics and route transitions using anime.js. |
+| Motion | [Open motion examples](/Ranvier/examples/motion/index.html) | Kanban, dashboard, interactive graphs, story, physics and route transitions using anime.js. |
 | Server hydration | [Open hydration snapshot](/Ranvier/examples/hydration/index.html) | F#-rendered HTML and transferred state becoming interactive in the browser. |
 
 Start with the [browser editor](../view/getting-started.md) to edit a standard component and see its
