@@ -245,6 +245,6 @@ argument names. The exit code is 1 for a tool error.
 
 An agent reaches the tools through its shell, described in the project's `CLAUDE.md` or `AGENTS.md`, with no MCP
 server configured. The tool search before the first call goes, and a check after a fix runs in the same command as the
-build: `dotnet build ... && dotnet fsi --quiet tools/mcp-call.fsx ... dispatch '...'`. On the store task of
-`docs/.ai/research/2026-10-26-mcp-token-reduction.md` this took half the requests of the baseline without tools, and
-0.60× its tokens.
+build: `dotnet build ... && dotnet fsi --quiet tools/mcp-call.fsx ... dispatch '...'`. On the nine-file store task
+this took half the requests of the baseline without tools, and 0.60× its tokens; see
+[Research on agents and the MCP tools](mcp-research.md).
