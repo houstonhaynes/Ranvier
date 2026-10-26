@@ -17,6 +17,9 @@ Replay them into a matching graph in one of two modes:
 Journaling works in an untraced build. Traced diagnostic replay can also reproduce the trace;
 see [Diagnostic replay](#diagnostic-replay) for its conditions.
 
+For a complete example, [replay a production shop bug](shop-replay.md): capture overlapping async shipping
+requests in an untraced Release build, then reproduce the incident in a traced Debug build with zero live calls.
+
 ## Recording
 
 Pass an `IInputJournal` in the graph's options. `MemoryJournal` keeps the entries in a list:

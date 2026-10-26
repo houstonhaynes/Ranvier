@@ -82,6 +82,7 @@ doubled = 10
 - [Persisted inputs](persistence.md): restore signals and collections before building the graph.
 - [MCP inspection](mcp.md): expose selected values and messages from a running application.
 - [Input journal and replay](journal.md): record a graph's external inputs, and replay them to reproduce or re-enact a run.
+- [Replay a production shop bug](shop-replay.md): capture an async race untraced, then reproduce it offline with tracing.
 - [Signal maps](signal-maps.md): how to read the live graph maps beneath the examples, and how to write one.
 - [Troubleshooting](troubleshooting.md): each exception message and common symptom, with its cause and fix.
 - [Migrating from Elmish](elmish.md): an MVU model read through selector memos, one view at a time.

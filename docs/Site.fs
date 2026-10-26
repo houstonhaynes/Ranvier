@@ -110,7 +110,7 @@ let theme =
                                 Menu.page "guide/collection-views.fsx"
                                 Menu.page "guide/aggregates.fsx"
                             ]
-                        Menu.section "Recipes" [ Menu.page "guide/forms.md" ]
+                        Menu.section "Recipes" [ Menu.page "guide/forms.md"; Menu.page "guide/shop-replay.md" ]
                     ]
                 Menu.section
                     "Extensions"

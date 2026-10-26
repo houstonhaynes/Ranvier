@@ -15,6 +15,9 @@ that use Ranvier for real workflows: remote data, file processing, data repair a
 review. Each workflow runs as a console scenario that checks its own outcome, and all four open
 together as tabs of one Avalonia desktop workbench.
 
+The [shop replay recipe](shop-replay.md) adds a console example: save an async production incident and
+reproduce it in a traced development build, including the pending states and completion order.
+
 ## Workflows
 
 | Workflow | Core | Console | Desktop |
