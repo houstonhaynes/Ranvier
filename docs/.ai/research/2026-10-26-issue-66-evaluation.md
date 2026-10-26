@@ -25,7 +25,7 @@ Weighted by price with a warm first request, the MCP arms cost 1.23–1.31× the
 `2026-10-26-mcp-token-reduction.md`.
 The tools cannot beat a two-file read on a sample whose cause is visible in `Pricing.fs`. On a nine-file store task
 with no failing test, the same note measures the MCP arm at 0.72× the baseline's tokens, an interval that still reaches
-1.10 at five runs an arm.
+1.10 at five runs an arm, and the same tools called from the shell (`tools/mcp-call.fsx`) at 0.60× [0.52, 0.72].
 
 ## 2. What changed
 

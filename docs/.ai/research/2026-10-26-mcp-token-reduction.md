@@ -1,9 +1,14 @@
 # Reducing the token cost of the Ranvier MCP loop
 
 Date: 2026-10-26. Follows `2026-10-26-issue-66-evaluation.md` on `feat/220-mcp-detection-loop`; data in
-`Ranvier-lanes/eval-220` (runs w01–w15, d01–d08, h01–h10), the cache probes below, and `replay.py`.
+`Ranvier-lanes/eval-220` (runs w01–w15, d01–d08, h01–h10, e01–e12, c01–c08), the cache probes below, and `replay.py`.
 
 ## 1. Answer
+
+Calling the tools from the shell beats the MCP server. With `tools/mcp-call.fsx` described in `CLAUDE.md` and no
+MCP server, the store task cost 0.60× the baseline's input-equivalent tokens [0.52, 0.72] in half its requests, with
+every run passing; the interval excludes 1.0 at four runs an arm. On the cart task the shell client is at parity:
+1.09× [0.99, 1.21], against 1.17× for the MCP tools (section 6).
 
 On the store task, a nine-file sample with no failing test, the MCP arm cost 0.72× the baseline's input-equivalent
 tokens and took 0.63× its wall clock, with every run passing. With five runs an arm, the 95% intervals reach 1.10 and
@@ -109,12 +114,42 @@ fixed the comparer from the `cutoff:` line, which names the quote memo, the weig
 five baseline agents wrote a reproduction into the test project (`tests-changed` in their verdicts) and ran it; one
 MCP agent (h04) added a test after its fix.
 
-## 6. Correction to the #66 evaluation
+## 6. Round E: the tools from the shell
+
+`tools/mcp-call.fsx <app.dll> <tool> '<json>'` starts the build output, runs the MCP handshake, makes one call and
+prints the text, in about 1.7 s. The cli arms configure no MCP server; the workspace's `CLAUDE.md` gives the command,
+the server's instructions in prose, and two habits: run `--list` in the same command as the first reads, and check a
+fix in the same command as the build. The prompt's MCP sentence becomes "The store's diagnosis tools are described in
+CLAUDE.md." The hal arm is round D's MCP arm with `AlwaysLoad` on. Twenty runs, one at a time, interleaved, every run
+passing. Ratios of means over back-to-back pairs, with a bootstrap 95% interval:
+
+| Task | Arm | Runs | Median requests | Median tokens | Tokens | Requests | Wall clock |
+|---|---|---|---|---|---|---|---|
+| store | base | e01, e04, e07, e10 | 11.5 | 123,712 | 1 | 1 | 1 |
+| store | cli | e02, e05, e08, e11 | 6 | 74,248 | 0.60 [0.52, 0.72] | 0.51 [0.44, 0.63] | 0.81 [0.43, 1.66] |
+| store | MCP, `AlwaysLoad` | e03, e06, e09, e12 | 8.5 | 95,814 | 0.88 [0.57, 1.32] | 0.89 [0.56, 1.49] | 0.77 [0.38, 1.10] |
+| cart | base | c01, c03, c05, c07 | 6 | 59,980 | 1 | 1 | 1 |
+| cart | cli | c02, c04, c06, c08 | 6 | 67,104 | 1.09 [0.99, 1.21] | 0.96 [0.86, 1.10] | 1.29 [1.09, 1.46] |
+
+- The store cli runs share one shape: `--list`, read the seven modules, `explain shipping` with a reproducing
+  sequence, edit and build with the check chained, answer; e05 also ran a fuzz script. That is 5–7 requests, against
+  round D's 8 for the MCP arm, which spent one on the tool search and one on a separate live check.
+- No store cli run wrote a test. Three of four baseline runs and two of four `AlwaysLoad` runs did (`tests-changed`),
+  and those runs are the long ones: e09 took 18 requests.
+- `AlwaysLoad` removed the tool search in all four runs; with that spread, four runs cannot separate it from round D's
+  MCP arm.
+- On the cart task the cli arm reads both files as the baseline does, and adds the `--list` output (about 2.5k
+  characters) and `explain`; wall clock grows by the 1.7 s start of each call.
+
+The cli arm's `CLAUDE.md` asks for chained commands, which the MCP arm cannot follow, so the comparison measures the
+method, not the transport alone.
+
+## 7. Correction to the #66 evaluation
 
 The evaluation says `explain` named the comparer cutoff in 6 of 6 runs. The transcripts show 2 of 6 (w03, w06). In
 w09–w12 the last dispatched message left the total right, and `explain` reported only the history after the last run.
 
-## 7. Recommendations
+## 8. Recommendations
 
 1. Keep `AlwaysLoad` off by default.
 2. Keep `dispatch` text-only, and strip structured content wherever a text block carries the meaning.
@@ -122,6 +157,8 @@ w09–w12 the last dispatched message left the total right, and `explain` report
    output.
 4. Spend agent runs on tasks where reading the source does not reveal the cause. Run the store task at 8 or more runs an
    arm, and add #66's runtime-only and larger-codebase tasks, before applying the decision rule.
-5. A command-line client with instructions in `CLAUDE.md` would remove the tool-search request, about 5k of a run's
-   80k; it is not measured.
-6. A compiled supervisor would start in about 0.3 s instead of 1.75 s, once a session; not built.
+5. Offer agents the tools through the shell: `tools/mcp-call.fsx` and a `CLAUDE.md` section. It removes the tool
+   search and the separate live check, and it needs no supervisor. Keep the MCP server for clients without a shell.
+6. A compiled client would start in about 0.3 s instead of 1.7 s on each call; not built.
+7. Not measured: the cli arm at 8 or more runs, a cli arm without the chaining habits, and a project whose
+   `CLAUDE.md` holds other instructions too.

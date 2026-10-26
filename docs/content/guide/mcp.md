@@ -229,3 +229,22 @@ repeats the client's `initialize`, and dispatches again every message accepted s
 The tool result that follows a reload starts with a line naming the reload and the replay's final state. Resource
 subscriptions end at a reload. A reload waits until the assembly has kept its timestamp for half a second, which costs
 nothing when the build finished earlier; it then takes about 0.35 seconds for the cart sample.
+
+## Calling the tools from the shell
+
+`tools/mcp-call.fsx` calls one tool of the application's build output and prints the result's text:
+
+```bash
+dotnet fsi --quiet tools/mcp-call.fsx examples/Ranvier.Mcp.Sample/bin/Debug/net10.0/Ranvier.Mcp.Sample.dll explain '{"node": "total", "messages": [{"message": "add_item", "args": {"sku": "a", "unitPrice": 250, "quantity": 2}}]}'
+```
+
+Each call starts the application, runs the handshake, makes the call and stops the application, in about 1.7 seconds
+for the samples. Two calls share no state, so `explain {node, messages}` and `dispatch {messages}` carry the whole
+sequence; a rebuild needs no supervisor. `--list` prints the server's instructions and each tool's description and
+argument names. The exit code is 1 for a tool error.
+
+An agent reaches the tools through its shell, described in the project's `CLAUDE.md` or `AGENTS.md`, with no MCP
+server configured. The tool search before the first call goes, and a check after a fix runs in the same command as the
+build: `dotnet build ... && dotnet fsi --quiet tools/mcp-call.fsx ... dispatch '...'`. On the store task of
+`docs/.ai/research/2026-10-26-mcp-token-reduction.md` this took half the requests of the baseline without tools, and
+0.60× its tokens.
