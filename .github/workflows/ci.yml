@@ -228,8 +228,19 @@ jobs:
           node-version: '22'
       - name: Pack and dry-publish
         run: dotnet fsi build.fsx -- publish --dry-publish --skip-tests
+      - name: Pack persistence adapters
+        run: |
+          for project in adapters/*/*.fsproj; do
+            dotnet pack "$project" -c Release -p:RanvierTrace=false -o bin
+            dotnet pack "$project" -c Release -p:RanvierTrace=true -o bin
+          done
       - name: Check the packages
-        run: node .github/scripts/packages.cjs bin src tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj
+        run: node .github/scripts/packages.cjs bin src tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj --libraries adapters/*/*.fsproj
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: bin/*.nupkg
+          if-no-files-found: error
 
   format:
     name: Formatting

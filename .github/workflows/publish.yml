@@ -1,0 +1,135 @@
+name: Publish NuGet
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Validate and list the release without publishing
+        type: boolean
+        default: true
+  workflow_run:
+    workflows: [CI]
+    branches: [master]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nuget-publish
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  resolve:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+      run: ${{ steps.resolve.outputs.run }}
+      pack: ${{ steps.resolve.outputs.pack }}
+      publish: ${{ steps.resolve.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - id: resolve
+        uses: actions/github-script@v9
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        with:
+          script: |
+            const {trustedCI, artifactAvailable, resolveRelease} = require('./.github/scripts/release.cjs');
+            const run = context.payload.workflow_run;
+            const sha = run?.head_sha || context.sha;
+            let ci = run;
+            if (!ci) {
+              const result = await github.rest.actions.listWorkflowRuns({
+                ...context.repo, workflow_id: 'ci.yml', head_sha: sha, status: 'success', per_page: 100
+              });
+              ci = result.data.workflow_runs.find(r => trustedCI(r, process.env.GITHUB_REPOSITORY, sha));
+            }
+            const resolved = await resolveRelease({eventName: context.eventName, repository: process.env.GITHUB_REPOSITORY,
+              ref: context.ref, sha, run, dryRun: process.env.DRY_RUN === 'true'}, async () => Boolean(ci));
+            if (resolved.pack && !ci) throw new Error('No successful CI artifact for this exact revision; run CI first');
+            if (resolved.pack) {
+              const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: ci.id, per_page: 100});
+              const jobs = artifacts.some(a => a.name === 'nuget-packages' && !a.expired) ? []
+                : await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...context.repo, run_id: ci.id, per_page: 100});
+              resolved.pack = artifactAvailable(artifacts, jobs, context.eventName === 'workflow_run');
+            }
+            for (const [key, value] of Object.entries(resolved)) core.setOutput(key, String(value));
+            core.setOutput('run', String(ci?.id || ''));
+
+  prepare:
+    needs: resolve
+    if: needs.resolve.outputs.pack == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      pending: ${{ steps.plan.outputs.pending }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages
+          path: bin
+          run-id: ${{ needs.resolve.outputs.run }}
+          github-token: ${{ github.token }}
+      - name: Validate every package and plan unpublished versions
+        id: plan
+        run: node .github/scripts/release.cjs plan bin
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-release-plan
+          path: bin/release-plan.json
+
+  publish:
+    needs: [resolve, prepare]
+    if: needs.resolve.outputs.publish == 'true' && needs.prepare.outputs.pending != '0'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages
+          path: bin
+          run-id: ${{ needs.resolve.outputs.run }}
+          github-token: ${{ github.token }}
+      - name: Recheck packages before authentication
+        run: node .github/scripts/release.cjs plan bin
+      - name: Authenticate to NuGet with trusted publishing
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ vars.NUGET_USER || 'shayan.habibi' }}
+      - name: Publish missing versions in dependency order
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: node .github/scripts/release.cjs push bin
+      - name: Verify all released versions are indexed
+        run: node .github/scripts/release.cjs verify bin

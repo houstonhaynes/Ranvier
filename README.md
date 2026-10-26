@@ -108,6 +108,8 @@ dotnet fsi build.fsx -- --help
 | `bump` | Bumps the version of a project |
 | `docs` | Builds the Nacara site from `docs/docs.fsproj` (`--watch` to serve it) |
 
+For automated releases, see [Publishing packages](docs/releasing.md). CI also publishes the persistence adapters.
+
 Global flags: `--quick` skips restores and cleaning,
 `--format` formats before building, `--dry-format` checks formatting before building,
 `-c` picks the configuration (default `Release`).

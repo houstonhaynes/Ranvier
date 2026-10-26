@@ -179,3 +179,23 @@ test('an analyzer package holds its assembly under analyzers/dotnet/fs and its b
     'Ranvier.Analyzers: missing build/Ranvier.Analyzers.targets',
   ]);
 });
+
+test('additional adapter projects participate in the same package and dependency validation', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adapter-packages-'));
+  const src = path.join(dir, 'src'), bin = path.join(dir, 'bin');
+  try {
+    fs.mkdirSync(path.join(src, 'Lib'), { recursive: true });
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(src, 'Lib', 'Lib.fsproj'), project);
+    const adapter = path.join(dir, 'Adapter.fsproj');
+    fs.writeFileSync(adapter, project.replace(/>Lib(?=\.Traced<|<\/PackageId>)/g, '>Adapter'));
+    for (const id of ['Lib', 'Lib.Traced', 'Adapter', 'Adapter.Traced']) {
+      fs.writeFileSync(path.join(bin, `${id}.0.1.0-preview.2.nupkg`), nupkg(id));
+    }
+    assert.deepEqual(check(bin, src, [], [adapter]), []);
+    fs.rmSync(path.join(bin, 'Adapter.Traced.0.1.0-preview.2.nupkg'));
+    assert.deepEqual(check(bin, src, [], [adapter]), ['missing package Adapter.Traced.0.1.0-preview.2.nupkg']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -134,12 +134,16 @@ function siblingVersionProblems(projects) {
 
 // The problems of a package directory against the packable projects under src and the analyzer projects; empty when
 // it holds exactly the expected packages.
-function check(packagesDirectory, sourceDirectory, analyzerProjects = []) {
+function check(packagesDirectory, sourceDirectory, analyzerProjects = [], additionalProjects = []) {
   const projects = fs.readdirSync(sourceDirectory, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`)))
     .map(entry => ({ name: entry.name, xml: fs.readFileSync(path.join(sourceDirectory, entry.name, `${entry.name}.fsproj`), 'utf8') }))
     .filter(({ xml }) => property(xml, 'IsPackable') !== 'false')
     .map(({ name, xml }) => projectPackage(xml, name));
+  for (const file of additionalProjects) {
+    const xml = fs.readFileSync(file, 'utf8');
+    if (property(xml, 'IsPackable') !== 'false') projects.push(projectPackage(xml, path.basename(file, '.fsproj')));
+  }
   if (projects.length === 0) return [`no project under ${sourceDirectory}`];
   const problems = siblingVersionProblems(projects);
   const expected = expectedPackages(projects);
@@ -166,9 +170,12 @@ function check(packagesDirectory, sourceDirectory, analyzerProjects = []) {
 module.exports = { traceMarker, projectPackage, expectedPackages, zipEntries, dependencies, siblingVersionProblems, checkPackage, checkAnalyzerPackage, check };
 
 if (require.main === module) {
-  // node packages.cjs <packages directory> <src directory> [analyzer .fsproj ...]: exits non-zero listing each problem.
-  const [packagesDirectory = 'bin', sourceDirectory = 'src', ...analyzerProjects] = process.argv.slice(2);
-  const problems = check(packagesDirectory, sourceDirectory, analyzerProjects);
+// node packages.cjs <packages directory> <src directory> [analyzer .fsproj ...] [--libraries adapter .fsproj ...]
+  const [packagesDirectory = 'bin', sourceDirectory = 'src', ...rest] = process.argv.slice(2);
+  const separator = rest.indexOf('--libraries');
+  const analyzerProjects = separator < 0 ? rest : rest.slice(0, separator);
+  const additionalProjects = separator < 0 ? [] : rest.slice(separator + 1);
+  const problems = check(packagesDirectory, sourceDirectory, analyzerProjects, additionalProjects);
   for (const problem of problems) console.error(problem);
   if (problems.length > 0) process.exit(1);
   console.log(`Packages in ${packagesDirectory} match the projects in ${sourceDirectory}.`);

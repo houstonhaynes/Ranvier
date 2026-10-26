@@ -11,7 +11,7 @@
     <Description>The JSON wire codec of Ranvier's transports: the same wire text on .NET (including NativeAOT) and Fable, decoding that reports an error instead of raising, and depth and item limits.</Description>
     <PackageTags>json;codec;wire;rpc;fable;fsharp</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>0.1.0-preview.1</Version>
+    <Version>0.1.0-preview.2</Version>
     <AssemblyVersion>0.0.0.0</AssemblyVersion>
     <RanvierAotClean>true</RanvierAotClean>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
