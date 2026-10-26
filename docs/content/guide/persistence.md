@@ -12,6 +12,7 @@ each flush. Persist signals and keyed collections; memos and effects recompute f
 An `IStateStore` supplies memory, file, browser storage or an application-defined store.
 
 For PostgreSQL, use the separate [Marten adapter](persistence-marten.md), with scoped records and optional ETag checks.
+For small snapshots in KurrentDB, use the [KurrentDB adapter](persistence-kurrentdb.md).
 
 ```fsharp
 open Ranvier
