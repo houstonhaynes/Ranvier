@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="11.0.101-rc1.26425.128" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
     <PackageReference Include="Nacara.Core" Version="2.0.0-beta.6" />
     <PackageReference Include="Nacara.Plugin.Assets.Esbuild" Version="1.0.0-beta.1" />
   </ItemGroup>

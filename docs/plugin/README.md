@@ -82,9 +82,12 @@ site
       LiveExampleMetadata.nuget assets "Xantham.Fable.Core" "0.2.0" "net8.0" "Xantham.Fable.Core" ]
 ```
 
-The hook copies these exact restored DLLs into LiveExample's current reference directory as
-`.dll.txt` files and adds their names to the browser checker. It fails if metadata is missing or
-the upstream worker's reference-list format changes. Ordinary component and map fences need no hook.
+The hook prepares the restored packages as `.dll.txt` compiler references and adds their names to
+the standalone checker. During the site build, it expands compressed F# signature and optimization
+resources losslessly; expanding these resources in the browser otherwise delays the first check
+by roughly two minutes. Fable standalone compiles edited F# to JavaScript, using the preset's
+precompiled modules and inline expressions. The hook fails if metadata is missing or the upstream
+worker's reference-list format changes. Ordinary component and map fences need no hook.
 
 ## Checks
 

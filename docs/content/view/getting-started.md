@@ -191,8 +191,8 @@ Each click writes `Count`; the button's text node changes, and the button keeps 
 ## Try a component in the live editor
 
 Press **Run**, then click the rendered button. Change the starting value or the increment and run
-again to replace the preview. The first run on a page loads the compiler and checks the DOM type
-metadata; this can take 1–2 minutes. Later runs on the same page reuse the checker.
+again to replace the preview. The first run on a page loads the browser compiler. Later runs on
+the same page reuse the checker.
 
 ```fsharp live
 open global.Ranvier

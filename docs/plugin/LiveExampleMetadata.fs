@@ -3,9 +3,11 @@ module Nacara.Plugins.LiveExampleMetadata
 
 open System
 open System.IO
+open System.IO.Compression
 open System.Text.Json
 open System.Text.RegularExpressions
 open Nacara.Core
+open Mono.Cecil
 
 /// <summary>Finds a restored package DLL using the assets file's package path and filename casing.</summary>
 let nuget (assetsFile: string) (package: string) (version: string) (framework: string) (assembly: string) : string =
@@ -46,6 +48,44 @@ let nuget (assetsFile: string) (package: string) (version: string) (framework: s
             )
         ))
 
+let private standaloneBytes (path: string) =
+    let bytes = File.ReadAllBytes path
+    use input = new MemoryStream (bytes, false)
+    use assembly = AssemblyDefinition.ReadAssembly input
+
+    let resources =
+        assembly.MainModule.Resources
+        |> Seq.choose (function
+            | :? EmbeddedResource as resource when
+                [|
+                    "FSharpSignatureCompressedData."
+                    "FSharpSignatureCompressedDataB."
+                    "FSharpOptimizationCompressedData."
+                    "FSharpOptimizationCompressedDataB."
+                |]
+                |> Array.exists (fun prefix -> resource.Name.StartsWith (prefix, StringComparison.Ordinal))
+                ->
+                Some resource
+            | _ -> None)
+        |> Seq.toArray
+
+    if resources.Length = 0 then
+        bytes
+    else
+        for resource in resources do
+            let index = assembly.MainModule.Resources.IndexOf resource
+            use raw = resource.GetResourceStream ()
+            use decoder = new DeflateStream (raw, CompressionMode.Decompress)
+            use expanded = new MemoryStream ()
+            decoder.CopyTo expanded
+
+            assembly.MainModule.Resources[index] <-
+                EmbeddedResource (resource.Name.Replace ("CompressedData", "Data"), resource.Attributes, expanded.ToArray ())
+
+        use output = new MemoryStream ()
+        assembly.Write output
+        output.ToArray ()
+
 let private workerReferences =
     Regex (@"\[\s*""Browser\.Dom""\s*,\s*""Browser\.Blob""\s*,\s*""Browser\.Event""\s*,\s*""Browser\.WebStorage""\s*\]")
 
@@ -70,7 +110,7 @@ let private extendWorker (names: string list) (text: string) =
         + "]"
     )
 
-/// <summary>Copies DLLs beside LiveExample's checker references and adds their names to its browser worker.</summary>
+/// <summary>Prepares references for LiveExample's standalone checker and registers them with its browser worker.</summary>
 /// <remarks>Register after LiveExample. An empty list changes nothing; a missing DLL or changed worker layout fails the build.</remarks>
 let register (assemblies: string list) (site: Site) : Site =
     if assemblies.IsEmpty then
@@ -121,7 +161,7 @@ let register (assemblies: string list) (site: Site) : Site =
                         |> List.fold
                             (fun state (name, path) ->
                                 state
-                                |> Registry.asset (Asset.CopyFile (AbsolutePath.create path, RelativePath.create $"{directory}/{name}.dll.txt")))
+                                |> Registry.asset (Asset.WriteBytes (standaloneBytes path, RelativePath.create $"{directory}/{name}.dll.txt")))
                             registry
 
                     withReferences

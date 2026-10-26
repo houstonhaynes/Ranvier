@@ -1,8 +1,11 @@
 #r "nuget: Nacara.Core, 2.0.0-beta.6"
+#r "nuget: Mono.Cecil, 0.11.6"
 #load "../LiveExampleMetadata.fs"
 
 open System
 open System.IO
+open System.IO.Compression
+open Mono.Cecil
 open Nacara.Core
 open Nacara.Plugins
 
@@ -120,11 +123,67 @@ for source in references do
         ("metadata asset " + Path.GetFileName source)
         (registry.Assets
          |> List.exists (function
-             | CopyFile (file, destination) ->
-                 Path.GetFullPath (AbsolutePath.value file) = Path.GetFullPath source
-                 && (RelativePath.value destination).Replace('\\', '/') = expected
-                 && File.Exists source
+             | WriteBytes (bytes, destination) ->
+                 (RelativePath.value destination).Replace('\\', '/') = expected
+                 && bytes.Length > 0
              | _ -> false))
+
+    let bytes =
+        registry.Assets
+        |> List.pick (function
+            | WriteBytes (bytes, destination) when RelativePath.value destination = expected -> Some bytes
+            | _ -> None)
+
+    use original = AssemblyDefinition.ReadAssembly source
+    use input = new MemoryStream (bytes, false)
+    use prepared = AssemblyDefinition.ReadAssembly input
+    check "standalone reference preserves assembly identity" (prepared.Name.FullName = original.Name.FullName)
+    check "standalone reference preserves declared types" (prepared.MainModule.Types.Count = original.MainModule.Types.Count)
+
+    for resource in original.MainModule.Resources do
+        let name = resource.Name.Replace ("CompressedData", "Data")
+
+        let actual =
+            prepared.MainModule.Resources
+            |> Seq.find (fun item -> item.Name = name)
+            :?> EmbeddedResource
+
+        let original = resource :?> EmbeddedResource
+
+        let expected =
+            if resource.Name.Contains "CompressedData" then
+                use raw = original.GetResourceStream ()
+                use decoder = new DeflateStream (raw, CompressionMode.Decompress)
+                use expanded = new MemoryStream ()
+                decoder.CopyTo expanded
+                expanded.ToArray ()
+            else
+                original.GetResourceData ()
+
+        check
+            ("standalone reference preserves resource data "
+             + name)
+            (actual.GetResourceData () = expected)
+
+    check
+        "standalone reference contains no compressed F# metadata"
+        (prepared.MainModule.Resources
+         |> Seq.forall (fun item -> not (item.Name.Contains "CompressedData")))
+
+let plainSource = typeof<obj>.Assembly.Location
+
+let plainRegistry =
+    Site.create "plain metadata"
+    |> live
+    |> LiveExampleMetadata.register [ plainSource ]
+    |> fun site -> Registry.ofPlugins site.Plugins
+
+check
+    "reference without compressed F# metadata is byte-for-byte unchanged"
+    (plainRegistry.Assets
+     |> List.exists (function
+         | WriteBytes (bytes, _) -> bytes = File.ReadAllBytes plainSource
+         | _ -> false))
 
 let transform path text =
     registry.AssetTransforms.Head.Transform

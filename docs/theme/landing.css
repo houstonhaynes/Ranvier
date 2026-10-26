@@ -104,6 +104,25 @@ body:has(.nacara-layout--splash) { overflow-x: clip; }
   font-size: .75rem; color: var(--nacara-text-muted); }
 .rv-demo figcaption code { font-size: inherit; }
 
+/* ---- State list: one row per state; the active row is the state the dial shows ---- */
+.rv-statelist {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); min-width: 0;
+  border-top: 1px solid var(--nacara-border); }
+.rv-statelist__row {
+  position: relative; padding: 1rem .75rem; border-bottom: 1px solid var(--nacara-border); cursor: pointer; outline: none;
+  transition: background .18s ease-out; }
+.rv-statelist__row::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--rv-contour);
+  transform: scaleY(0); transform-origin: top; }
+.rv-statelist__row.is-active { background: color-mix(in oklab, var(--rv-contour) 10%, transparent); }
+.rv-statelist__row.is-active::before { transform: none; }
+.rv-statelist.is-cycling .rv-statelist__row.is-active::before {
+  animation: rv-statelist-progress var(--rv-dial-step, 2.4s) linear both; }
+@keyframes rv-statelist-progress { from { transform: scaleY(0); } }
+.rv-statelist__row:focus-visible { outline: 2px solid var(--rv-contour); outline-offset: -2px; }
+.rv-statelist__row strong { font-family: var(--rv-font-display); font-weight: 600; color: var(--nacara-heading); }
+.nacara-content .rv-statelist__row p { margin: .125rem 0 0; font-size: .875rem; line-height: 1.55; color: var(--nacara-text-muted); }
+
 /* ---- Trace showcase: the live map on a glow, then the questions the log answers ---- */
 .nacara-layout--splash .rv-map-card {
   margin: 0 0 2.5rem;

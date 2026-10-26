@@ -66,32 +66,190 @@ layout: splash
 
 ## States you can name
 
-A source starts pending. Settle it to publish a value, fail it to test recovery, then settle it again.
-The boundary turns pending and failed reads into display text.
+Every reader observes one of six states. The docs, the marks and the API use the same names. Hover a state to hold the map in it.
 
-```fsharp map code=collapsed
-let price = createAsyncSource<int> ()
-let total = createMemo (fun _ -> price.Value * 3)
-let view =
-    createBoundary
-        (fun _ -> "Loading…")
-        (fun ex _ -> "Unavailable: " + ex.Message)
-        (fun () -> sprintf "Total %d" total.Value)
+```fsharp ranvier setup
+open Fable.Core
+open Fable.Core.JsInterop
+open Ranvier.Anime
+open Ranvier.View
 
-controls [
-    button "Settle 4" (fun () -> price.Settle 4)
-    |> describe "The boundary displays Total 12."
-    |> expect "The boundary displays Total 12." (fun () -> view.Value = "Total 12")
-    button "Fail price" (fun () -> price.Fail (exn "feed offline"))
-    |> describe "The recovery displays the failure."
-    button "Settle 5" (fun () -> price.Settle 5)
-    |> describe "A successful read replaces the recovery with Total 15."
-]
+type DialState =
+    { Source: string
+      SourceClass: string
+      View: string
+      ViewClass: string
+      Flight: bool }
+
+let dialStates =
+    [|
+        { Source = ""; SourceClass = "is-pending"; View = ""; ViewClass = "is-pending"; Flight = true }
+        { Source = ""; SourceClass = "is-pending"; View = "Loading…"; ViewClass = "is-waiting"; Flight = true }
+        { Source = "4"; SourceClass = ""; View = "Total 12"; ViewClass = ""; Flight = false }
+        { Source = "4"; SourceClass = "is-pending"; View = "Total 12"; ViewClass = "is-pending"; Flight = true }
+        { Source = "error"; SourceClass = "is-failed"; View = "Total 12"; ViewClass = "is-failed"; Flight = false }
+        { Source = "error"; SourceClass = "is-failed"; View = "Unavailable"; ViewClass = ""; Flight = false }
+    |]
+
+let dialMarkup = """
+<svg class="rv-dial__map" viewBox="0 0 200 92" aria-hidden="true">
+  <path class="rv-map-edge" d="M62 48L136 48"/>
+  <g class="rv-map-node rv-map-node--async rv-dial__source">
+    <circle class="rv-map-node__flight" cx="40" cy="48" r="25"/>
+    <circle class="rv-map-node__shape" cx="40" cy="48" r="17"/>
+    <text class="rv-map-node__name" x="40" y="88">price</text>
+    <text class="rv-map-node__value" x="40" y="16"></text>
+  </g>
+  <g class="rv-map-node rv-map-node--memo rv-dial__view">
+    <rect class="rv-map-node__shape" x="137" y="33" width="46" height="30" rx="9"/>
+    <text class="rv-map-node__name" x="160" y="88">view</text>
+    <text class="rv-map-node__value" x="160" y="22"></text>
+  </g>
+  <circle class="rv-dial__dot" r="4.5"/>
+</svg>
+<div class="rv-statelist">
+  <div class="rv-statelist__row" tabindex="0"><strong>Pending</strong><p>No usable value yet. <code>TryValue</code> returns <code>Pending</code>, and the pending flag propagates to readers.</p></div>
+  <div class="rv-statelist__row" tabindex="0"><strong>Fallback</strong><p>A boundary shows its fallback while its body is pending. <code>IsWaiting</code> is true.</p></div>
+  <div class="rv-statelist__row" tabindex="0"><strong>Ready</strong><p>A settled value. <code>TryValue</code> returns <code>Ready</code>.</p></div>
+  <div class="rv-statelist__row" tabindex="0"><strong>Retained value</strong><p>Pending, but <code>Peek</code> still returns the last settled value.</p></div>
+  <div class="rv-statelist__row" tabindex="0"><strong>Failed</strong><p>A read raised. <code>TryValue</code> returns <code>Failed</code>.</p></div>
+  <div class="rv-statelist__row" tabindex="0"><strong>Recovered</strong><p>A boundary shows <code>recover ex last</code>. <code>Caught</code> holds the error until a re-run succeeds.</p></div>
+</div>
+"""
+
+let stateDial =
+    Component.define (fun _ () -> Reactive.policy ()) (fun t ->
+        t.div
+            [|
+                t.Attrs.className "rv-dial"
+                t.Unsafe.html (UnsafeHtml.Trust dialMarkup)
+                t.Hooks.lend (fun policy (native: TS.Dom.HTMLDivElement) ->
+                    let root: obj = native
+                    let window: obj = emitJsExpr () "window"
+                    let mutable step = 0
+                    let mutable timer = 0.
+                    let mutable hovering = false
+                    let mutable focused = false
+                    let mutable transitions: (unit -> unit) list = []
+                    let interval = 2400
+                    let reduced () = policy.Value = Reactive.Reduced
+                    let find (selector: string): obj = root?querySelector(selector)
+                    let el (element: obj): TS.Dom.Element = unbox element
+                    let keep (animation: #IRevertible) =
+                        transitions <- (fun () -> animation.revert ()) :: transitions
+                        animation
+                    let clear () =
+                        transitions |> List.iter (fun revert -> revert ())
+                        transitions <- []
+                        (find ".rv-dial__dot")?setAttribute("class", "rv-dial__dot") |> ignore
+                    let paint (node: obj) state value instant =
+                        for name in [| "is-pending"; "is-waiting"; "is-failed" |] do
+                            node?classList?toggle(name, name = state) |> ignore
+                        let label: obj = node?querySelector(".rv-map-node__value")
+                        if label?textContent <> value then
+                            label?textContent <- value
+                            if not instant then
+                                Anime.animate (el label, Anim (translateY = Value.fromTo (-6, 0), scale = Value.fromTo (0.7, 1), duration = 420, ease = Ease.outBackBy 2.))
+                                |> keep |> ignore
+                    let pulse () = Anim (scale = 1.14, duration = 220, alternate = true, loop = 1, ease = Ease.outQuad)
+                    let shake () = Anim (translateX = Value.keys (Array.map (fun (x: int) -> Value.op_Implicit x) [| -3; 3; -2; 2; 0 |]), duration = 400, ease = Ease.inOutSine)
+                    let travel tone =
+                        let along = Svg.motionPath (el (find ".rv-map-edge"))
+                        let dot = find ".rv-dial__dot"
+                        dot?setAttribute("class", $"rv-dial__dot is-moving {tone}") |> ignore
+                        Anime.animate (
+                            el dot,
+                            Anim (translateX = along.translateX, translateY = along.translateY, duration = 460, ease = Ease.inOutSine,
+                                  onComplete = fun _ -> dot?setAttribute("class", "rv-dial__dot") |> ignore))
+                        |> keep |> ignore
+                    let show n instant =
+                        clear ()
+                        step <- n
+                        let state = dialStates[n]
+                        let source = find ".rv-dial__source"
+                        let view = find ".rv-dial__view"
+                        let ring = find ".rv-dial__source .rv-map-node__flight"
+                        let rows: obj = root?querySelectorAll(".rv-statelist__row")
+                        for i in 0 .. (rows?length: int) - 1 do
+                            let row: obj = rows?item(i)
+                            row?classList?toggle("is-active", i = n) |> ignore
+                        paint source state.SourceClass state.Source instant
+                        ring?style?stroke <- (if n = 4 then "var(--rv-error)" else "")
+                        if instant then
+                            paint view state.ViewClass state.View true
+                            Utils.set (el ring, Anim (opacity = (if state.Flight then 1 else 0), scale = 1)) |> ignore
+                        else
+                            let sourceShape = el (find ".rv-dial__source .rv-map-node__shape")
+                            let viewShape = el (find ".rv-dial__view .rv-map-node__shape")
+                            let arrives = if n = 1 || n = 5 then 0. else 460.
+                            let sequence = Anime.timeline () |> keep
+                            if n = 4 then
+                                Anime.animate (el ring, Anim (opacity = Value.fromTo (1, 0), scale = Value.fromTo (1, 1.5), duration = 700, ease = Ease.outQuad)) |> keep |> ignore
+                            elif state.Flight then
+                                Utils.set (el ring, Anim (scale = 1)) |> ignore
+                                Anime.animate (el ring, Anim (opacity = 1, duration = 250)) |> keep |> ignore
+                            else
+                                Anime.animate (el ring, Anim (opacity = 0, duration = 250)) |> keep |> ignore
+                            match n with
+                            | 0 | 3 -> travel "rv-map-dot"
+                            | 2 ->
+                                sequence.add(sourceShape, pulse (), At.ms 0.).add(viewShape, pulse (), At.ms 460.) |> ignore
+                                travel "rv-map-dot rv-map-dot--bright"
+                            | 4 ->
+                                sequence.add(sourceShape, shake (), At.ms 0.).add(viewShape, shake (), At.ms 460.) |> ignore
+                                travel "rv-dial__dot--error"
+                            | 5 -> sequence.add (viewShape, pulse (), At.ms 0.) |> ignore
+                            | _ -> ()
+                            sequence.call ((fun _ -> if step = n then paint view state.ViewClass state.View false), At.ms arrives) |> ignore
+                    let stop () =
+                        window?clearInterval(timer) |> ignore
+                        timer <- 0.
+                        (find ".rv-statelist")?classList?remove("is-cycling") |> ignore
+                    let play () =
+                        stop ()
+                        if not (reduced ()) && not hovering && not focused then
+                            (find ".rv-statelist")?classList?add("is-cycling") |> ignore
+                            timer <- window?setInterval((fun () -> show ((step + 1) % dialStates.Length) false), interval)
+                    let hold (event: obj) =
+                        let row: obj = event?target?closest(".rv-statelist__row")
+                        if not (isNull row) then
+                            stop ()
+                            let rows: obj = root?querySelectorAll(".rv-statelist__row")
+                            for i in 0 .. (rows?length: int) - 1 do
+                                if obj.ReferenceEquals (rows?item(i), row) && i <> step then show i (reduced ())
+                    let list = find ".rv-statelist"
+                    let handlers: (string * (obj -> unit)) list =
+                        [ "mouseover", (fun event -> hovering <- true; hold event)
+                          "focusin", (fun event -> focused <- true; hold event)
+                          "click", hold
+                          "mouseleave", (fun _ -> hovering <- false; play ())
+                          "focusout", (fun event ->
+                              let next: obj = event?relatedTarget
+                              if isNull next || not (list?contains(next): bool) then focused <- false; play ()) ]
+                    for name, handler in handlers do list?addEventListener(name, handler) |> ignore
+                    root?style?setProperty("--rv-dial-step", $"{interval}ms") |> ignore
+                    let spin =
+                        if reduced () then
+                            show 2 true
+                            None
+                        else
+                            let rotation = Anime.animate (el (find ".rv-dial__source .rv-map-node__flight"), Anim (rotate = 360, duration = interval, loop = Loop.forever, ease = Ease.linear))
+                            show 0 true
+                            play ()
+                            Some rotation
+                    fun () ->
+                        stop ()
+                        clear ()
+                        spin |> Option.iter (fun animation -> animation.revert ())
+                        for name, handler in handlers do list?removeEventListener(name, handler) |> ignore)
+            |]
+            [||])
 ```
 
-`TryValue` returns `Pending`, `Ready value` or `Failed error`. A boundary can supply a fallback or
-recovery value; `IsWaiting` and `Caught` describe that boundary. During refresh, `Peek` can retain
-the previous value. [Async and pending](guide/async-and-pending.md) walks through each case.
+```fsharp ranvier show=output
+stateDial
+```
+
 
 ## Watch the graph think
 

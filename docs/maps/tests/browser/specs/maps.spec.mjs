@@ -4,7 +4,7 @@ import { test, expect, openMaps } from "./fixtures.mjs";
 const guide = "guide/signal-maps/";
 
 test("the live editor compiles a component and its click updates the DOM", async ({ page, problems }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(30_000);
   await page.goto("view/getting-started/");
   await page.getByRole("button", { name: "Run", exact: true }).click();
   const output = async () => {
@@ -13,7 +13,7 @@ test("the live editor compiles a component and its click updates the DOM", async
     }
     return undefined;
   };
-  await expect.poll(output, { timeout: 270_000, intervals: [1_000] }).toBeTruthy();
+  await expect.poll(output, { timeout: 20_000, intervals: [100] }).toBeTruthy();
   const frame = await output();
   await frame.getByRole("button", { name: "0", exact: true }).click();
   await expect(frame.getByRole("button", { name: "1", exact: true })).toBeVisible();
@@ -224,19 +224,42 @@ test("the map bundles start no Solid renderer", async () => {
   }
 });
 
-test("the landing page demonstrates pending, failure and recovery with Ranvier", async ({ page, problems }) => {
-  const maps = await openMaps(page, "");
-  const states = mapWith(page, maps, "Settle 4");
-  await states.getByRole("button", { name: "Settle 4", exact: true }).click();
-  await expect(states.locator(".rv-map__log")).toContainText("price");
-  await states.getByRole("button", { name: "Fail price", exact: true }).click();
-  await expect(states.locator(".rv-map-node.is-failed")).not.toHaveCount(0);
-  await states.getByRole("button", { name: "Settle 5", exact: true }).click();
-  await expect(states.locator(".rv-map-node.is-failed")).toHaveCount(0);
+test("the landing state dial holds all six states on hover and focus", async ({ page, problems }) => {
+  await page.goto("");
+  const dial = page.locator(".rv-dial");
+  const rows = dial.locator(".rv-statelist__row");
+  await expect(rows.locator("strong")).toHaveText(["Pending", "Fallback", "Ready", "Retained value", "Failed", "Recovered"]);
+  await rows.nth(4).hover();
+  await expect(rows.nth(4)).toHaveClass(/is-active/);
+  await expect(dial.locator(".rv-dial__source")).toHaveClass(/is-failed/);
+  await expect(dial.locator(".rv-dial__view .rv-map-node__value")).toHaveText("Total 12");
+  await rows.nth(5).focus();
+  await expect(dial.locator(".rv-dial__view .rv-map-node__value")).toHaveText("Unavailable");
+  await rows.nth(2).hover();
+  await rows.nth(5).hover();
+  await expect(dial.locator(".rv-dial__dot")).not.toHaveClass(/is-moving/);
+  await expect(dial.locator(".rv-statelist")).not.toHaveClass(/is-cycling/);
+  await page.mouse.move(0, 0);
+  await page.getByRole("link", { name: "Get started", exact: true }).focus();
+  await expect(dial.locator(".rv-statelist")).toHaveClass(/is-cycling/);
+});
+
+test("the landing state dial honours reduced motion and remains keyboard accessible", async ({ page, problems }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("");
+  const dial = page.locator(".rv-dial");
+  const rows = dial.locator(".rv-statelist__row");
+  await expect(rows.nth(2)).toHaveClass(/is-active/);
+  await expect(dial.locator(".rv-statelist")).not.toHaveClass(/is-cycling/);
+  await rows.nth(3).focus();
+  await expect(rows.nth(3)).toHaveClass(/is-active/);
+  await expect(dial.locator(".rv-dial__source .rv-map-node__value")).toHaveText("4");
+  await expect(dial.locator(".rv-dial__view .rv-map-node__value")).toHaveText("Total 12");
+  await expect(dial.locator(".rv-dial__dot")).not.toHaveClass(/is-moving/);
 });
 
 test("the editable example compiles and mounts its map on Run", async ({ page, problems }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(30_000);
   await page.goto(guide);
   await page.getByRole("button", { name: "Run" }).click();
   const output = async () => {
@@ -244,7 +267,7 @@ test("the editable example compiles and mounts its map on Run", async ({ page, p
       if (frame.url() === "about:srcdoc" && (await frame.locator(".rv-map-node").count().catch(() => 0)) > 0) return frame;
     return undefined;
   };
-  await expect.poll(output, { timeout: 270_000, intervals: [1_000] }).toBeTruthy();
+  await expect.poll(output, { timeout: 20_000, intervals: [100] }).toBeTruthy();
   const frame = await output();
   // The output pane may sit behind another tab; the press reaches the map either way.
   await frame.locator(".rv-map__button", { hasText: "Settle 4" }).dispatchEvent("click");
