@@ -121,7 +121,7 @@ let tests =
                 let! result = call session "dispatch" """{"message":"add","args":{"amount":3}}"""
                 Expect.isFalse (isError result) $"the dispatch succeeds: {textOf result}"
 
-                Expect.equal (structuredOf result) """{"version":2,"values":{"count":3,"label":"cart"}}""" "the snapshot after the flush"
+                Expect.stringContains (textOf result) "v2 count=3 label=\"cart\"" "the state after the flush"
 
                 Expect.stringContains (textOf result) "count 0→3" "the text names the changed value"
 
@@ -134,10 +134,8 @@ let tests =
                 let! unchanged =
                     call session "dispatch" """{"message":"rename","args":{"label":"cart"}}"""
 
-                Expect.equal
-                    (structuredOf unchanged)
-                    """{"version":2,"values":{"count":3,"label":"cart"}}"""
-                    "an update leaving the model equal publishes nothing"
+                Expect.stringContains (textOf unchanged) "no exposed value changed" "an update leaving the model equal changes nothing"
+                Expect.stringContains (textOf unchanged) "v2 " "an update leaving the model equal publishes nothing"
             }
 
             testTask "an unknown message, a decoder Error and malformed arguments are tool errors that leave the state unchanged" {

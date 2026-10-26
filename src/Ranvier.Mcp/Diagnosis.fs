@@ -226,6 +226,30 @@ type internal Diagnosis(graph: Graph, exposed: KeyValuePair<string, INode> list,
         |> List.filter (fun e -> e.Seq < seq)
         |> List.tryLast
 
+    /// The signals written by a dispatched message: the models of the exposed Mvus.
+    let models =
+        let written = HashSet<int>()
+
+        match journal with
+        | first :: _ ->
+            for e in events do
+                if
+                    e.Seq > first.Seq
+                    && e.Kind = TraceEventKind.Write
+                    && e.Flag = 1
+                then
+                    written.Add e.Node |> ignore
+        | [] -> ()
+
+        written
+
+    /// A node reading a dispatched model alone, such as <c>Mvu.Select</c>: it keeps its value by design when another
+    /// part of the model moves.
+    let selection (id: int) =
+        match sourcesOf id with
+        | [ source ] -> models.Contains source
+        | _ -> false
+
     let messageText (entry: DispatchRecord) =
         $"message {entry.Index} {entry.Message} {clip 60 entry.Args} (v{entry.Version})"
 
@@ -322,6 +346,33 @@ type internal Diagnosis(graph: Graph, exposed: KeyValuePair<string, INode> list,
 
         found
 
+    /// The latest run of `id` up to `until` that ended without moving after one of its sources moved, as
+    /// (RunStart seq, source, the source's move seq, its value).
+    let lastCutoff (until: int) (id: int) =
+        let reads = HashSet<int>(sourcesOf id)
+        let mutable moved = None
+        let mutable start = 0
+        let mutable found = None
+
+        for e in events do
+            if e.Seq <= until then
+                if
+                    reads.Contains e.Node
+                    && ((e.Kind = TraceEventKind.Write && e.Flag = 1)
+                        || e.Kind = TraceEventKind.Moved)
+                then
+                    moved <- Some (e.Node, e.Seq, e.Payload)
+                elif e.Node = id && e.Kind = TraceEventKind.RunStart then
+                    start <- e.Seq
+                elif e.Node = id && e.Kind = TraceEventKind.RunEnd then
+                    match moved with
+                    | Some (s, seq, payload) when e.Flag = 0 && seq < start -> found <- Some (start, s, seq, payload)
+                    | _ -> ()
+
+                    moved <- None
+
+        found
+
     let siteLine (id: int) =
         match snap.Nodes.TryFind id with
         | Some node ->
@@ -404,9 +455,10 @@ type internal Diagnosis(graph: Graph, exposed: KeyValuePair<string, INode> list,
             let downstreamSet = HashSet<int>(reach observersOf 8 id |> List.map fst)
             let moves = movesAfter after
 
-            // Upstream nodes that re-ran after the node's last run and kept their value.
+            // Upstream nodes that re-ran after the node's last run and kept their value; selections are left out.
             let cutoffs =
                 upstream
+                |> List.filter (selection >> not)
                 |> List.choose (fun u ->
                     unmovedRunAfter after u
                     |> Option.bind (fun start ->
@@ -461,6 +513,24 @@ type internal Diagnosis(graph: Graph, exposed: KeyValuePair<string, INode> list,
 
             if unread.Length > 3 then
                 line $"unread: +{unread.Length - 3} more changed nodes."
+
+            // Without a cutoff since the last run, the latest earlier ones: a defect seen before the last message.
+            let earlier =
+                if cutoffs.IsEmpty then
+                    upstream
+                    |> List.filter (selection >> not)
+                    |> List.choose (fun u ->
+                        lastCutoff after u
+                        |> Option.map (fun (start, s, seq, payload) -> u, start, s, seq, payload))
+                    |> List.truncate 2
+                else
+                    []
+
+            for u, start, s, seq, payload in earlier do
+                line
+                    $"earlier cutoff: {tag u} re-ran at #{start} after {tag s} moved to {clip 40 (TraceModel.valueText payload)} (#{seq}{byMessage seq}), and kept its value: its equality or comparer called the new result equal."
+
+                line (siteLine u)
 
             // With an unread change, the cutoffs share one line.
             if unread.IsEmpty then

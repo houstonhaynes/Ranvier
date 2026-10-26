@@ -25,7 +25,7 @@ let private byLabel =
 type private PricedApp = { Adapter: McpAdapter }
 
 /// A priced total over an <c>offer</c> memo whose comparer compares labels alone: the defect of #168's round 2.
-let private startPriced () =
+let private startPricedWith (options: McpAdapterOptions) =
     GraphHost.Start (fun _ ->
         let mvu =
             Mvu.create (900, 0) (fun (percent: int) (subtotal, _) -> subtotal, percent)
@@ -59,7 +59,13 @@ let private startPriced () =
 
         exposure |> Expose.node "total" total
         exposure.Start ()
-        { Adapter = new McpAdapter (exposure) })
+
+        {
+            Adapter = new McpAdapter (exposure, options)
+        })
+
+let private startPriced () =
+    startPricedWith McpAdapterOptions.Default
 
 type private WideApp =
     {
@@ -122,7 +128,7 @@ let tests =
                 Expect.stringContains lines[2] "discount 0→10" "the discount step names its change"
                 Expect.stringContains lines[2] "total 1200→1080" "the healthy total follows the discount"
                 Expect.stringContains lines[3] "v4 " "the final state carries the version"
-                Expect.stringContains (result.StructuredContent.Value.GetRawText ()) "\"version\":4" "the structured content is the final snapshot"
+                Expect.isFalse result.StructuredContent.HasValue "the step lines are the whole result"
             }
 
             testTask "dispatch stops at a rejected message and names its position" {
@@ -143,7 +149,7 @@ let tests =
             }
 
 #if RANVIER_TRACE
-            testTask "tools/list holds at most 6 tools, loads dispatch and explain always, and the server carries instructions" {
+            testTask "tools/list holds at most 6 tools, and the server carries instructions" {
                 use! session =
                     McpSession.connect (fun () -> GraphHost.Start (fun _ -> Cart.create true)) _.Adapter
 
@@ -169,16 +175,45 @@ let tests =
 
                 Expect.stringContains dispatch.Description "add_item {\"sku\": string" "dispatch describes each message's arguments"
 
-                for name in [ "dispatch"; "explain" ] do
-                    let tool = tools |> Seq.find (fun tool -> tool.Name = name)
-                    let meta = tool.ProtocolTool.Meta
-                    Expect.isNotNull meta $"{name} carries _meta"
-                    Expect.equal (meta["anthropic/alwaysLoad"].GetValue<bool>()) true $"{name} is always loaded"
+                for tool in tools do
+                    Expect.isNull tool.ProtocolTool.Meta $"{tool.Name} is loaded by tool search by default"
 
                 let instructions = session.Client.ServerInstructions
                 Expect.isNotNull instructions "the server carries instructions"
                 Expect.isLessThanOrEqual instructions.Length 1000 "the instructions are short"
                 Expect.stringContains instructions "explain" "the instructions name explain"
+            }
+
+            testTask "AlwaysLoad marks dispatch and explain as always loaded" {
+                use! session =
+                    McpSession.connect
+                        (fun () ->
+                            startPricedWith
+                                { McpAdapterOptions.Default with
+                                    AlwaysLoad = true
+                                })
+                        _.Adapter
+
+                let! tools = session.Client.ListToolsAsync ()
+
+                for name in [ "dispatch"; "explain" ] do
+                    let tool = tools |> Seq.find (fun tool -> tool.Name = name)
+                    let meta = tool.ProtocolTool.Meta
+                    Expect.isNotNull meta $"{name} carries _meta"
+                    Expect.equal (meta["anthropic/alwaysLoad"].GetValue<bool>()) true $"{name} is always loaded"
+            }
+
+            testTask "explain leaves out the cutoffs of selections over the dispatched model" {
+                use! session =
+                    McpSession.connect (fun () -> GraphHost.Start (fun _ -> Cart.create false)) _.Adapter
+
+                let! result =
+                    call session "explain" ("""{"node":"total",""" + cartScript.Substring 1)
+
+                let text = textOf result
+                Expect.isFalse (isError result) $"explain succeeds: {text}"
+                Expect.stringContains text "3 set_discount" "the messages were dispatched"
+                Expect.isFalse (text.Contains "cutoff: lines#") $"the lines selection is not a cutoff: {text}"
             }
 
             testTask "explain names the --defect total's line and the discount change it does not read, in at most 1,000 characters" {
@@ -215,6 +250,25 @@ let tests =
                 Expect.stringContains text "McpExplainTests.fs:" "the cutoff names the offer's site"
                 Expect.stringContains text "Percent = 10" "the offer kept the old percent"
                 Expect.stringContains text "comparer" "the cutoff names the comparer"
+            }
+
+            testTask "explain with messages dispatches them, and names a cutoff before the last run" {
+                use! session = McpSession.connect startPriced _.Adapter
+
+                // The last message moves the band, so the total is right again and the cutoff is history.
+                let! result =
+                    call
+                        session
+                        "explain"
+                        """{"node":"total","messages":[{"message":"set_discount","args":{"percent":10}},{"message":"set_discount","args":{"percent":15}},{"message":"set_discount","args":{"percent":30}}]}"""
+
+                let text = textOf result
+                Expect.isFalse (isError result) $"explain succeeds: {text}"
+                Expect.isLessThanOrEqual text.Length 1000 $"the answer is short: {text}"
+                Expect.stringContains text "3 set_discount" "the dispatched steps come first"
+                Expect.stringContains text "earlier cutoff: offer#" "the earlier cutoff names the offer memo"
+                Expect.stringContains text "message 2 set_discount" "the earlier cutoff names its message"
+                Expect.stringContains text "McpExplainTests.fs:" "the earlier cutoff names the offer's site"
             }
 
             testTask "graph, node and explain stay bounded on a 1,000-node graph, and node pages with a cursor" {

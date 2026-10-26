@@ -63,7 +63,8 @@ let tests =
                 for arguments in script do
                     let! result = call session "dispatch" arguments
                     Expect.isFalse (isError result) $"{arguments} is accepted: {textOf result}"
-                    let expected, total = totals (structuredOf result)
+                    let! snapshot = call session "snapshot" "{}"
+                    let expected, total = totals (textOf snapshot)
                     Expect.equal total expected $"the total after {arguments}"
             }
 
@@ -80,8 +81,9 @@ let tests =
             testTask "the --defect cart leaves the total stale after a discount change" {
                 use! session = connect true
                 let! _ = call session "dispatch" script[0]
-                let! result = call session "dispatch" script[2]
-                let expected, total = totals (structuredOf result)
+                let! _ = call session "dispatch" script[2]
+                let! snapshot = call session "snapshot" "{}"
+                let expected, total = totals (textOf snapshot)
                 Expect.equal (expected, total) (810, 900) "the total ignores the discount"
             }
 
