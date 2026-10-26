@@ -186,7 +186,10 @@ tool error that lists the exposed nodes.
 - `cutoff:` upstream nodes that re-ran after a source moved and kept their value, with the value kept, such as a memo
   whose comparer calls a new result equal. Without one since the node's last run, `earlier cutoff:` lines name the
   latest ones before it. A node that reads a dispatched model alone, such as an `Mvu.Select`, keeps its value by design
-  and is left out.
+  and is left out;
+- `comparer:` when no cutoff is reported, up to two upstream nodes whose creation line, or the line after it, names a
+  comparer (`createMemoWithComparer` and the other `...WithComparer` builders), with their values: the places a later
+  message can be cut off.
 
 Values are encoded without codecs, so a non-scalar value appears as its `ToString` text.
 
@@ -198,7 +201,8 @@ Values are encoded without codecs, so a non-scalar value appears as its `ToStrin
 | `SourceRoot` | the nearest directory holding `.git` at or above the current directory | the directory whose F# and C# files give a creation line's text |
 | `AlwaysLoad` | `false` | marks `dispatch` and `explain` with `_meta["anthropic/alwaysLoad"]`, so Claude Code loads them without a tool search |
 
-The server's instructions describe the reproduce, `explain`, fix loop. Always-loaded tools join the head of the
+The server's instructions make `explain {node, messages}` the first call of a diagnosis, then the fix of the named
+line. Always-loaded tools join the head of the
 prompt, so a session with `AlwaysLoad` starts with a cold prompt cache unless a session with the same tools ran within
 the cache lifetime: about 40,000 tokens written instead of read, against one tool-search request without it. An untraced
 build lists none of the traced tools, and calling one is an unknown-tool error.
@@ -223,4 +227,5 @@ while the server runs. `tools/mcp-supervise.fsx` serves the application from a c
 On each `tools/call`, when the output's assembly is newer than the running copy, the supervisor starts the new build,
 repeats the client's `initialize`, and dispatches again every message accepted so far, as one `dispatch {messages}`.
 The tool result that follows a reload starts with a line naming the reload and the replay's final state. Resource
-subscriptions end at a reload.
+subscriptions end at a reload. A reload waits until the assembly has kept its timestamp for half a second, which costs
+nothing when the build finished earlier; it then takes about 0.35 seconds for the cart sample.

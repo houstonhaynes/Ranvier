@@ -21,10 +21,11 @@ the MCP workflow cheaper than reading the source.
   (median calls at most the baseline's + 1, tokens at most 1.1×) is not met on this task.
 
 Tokens follow API requests in every arm: each request re-reads a 43–52k context, and MCP results add under 1 kB each.
-Weighted by price with a warm first request, the MCP arms cost 1.25× the baseline; see
+Weighted by price with a warm first request, the MCP arms cost 1.23–1.31× the baseline; see
 `2026-10-26-mcp-token-reduction.md`.
-The tools cannot beat a two-file read on a sample whose cause is visible in `Pricing.fs`; the comparison that can
-separate the workflows is #66's harder task set (no failing test at hand, a codebase too large to read).
+The tools cannot beat a two-file read on a sample whose cause is visible in `Pricing.fs`. On a nine-file store task
+with no failing test, the same note measures the MCP arm at 0.72× the baseline's tokens, an interval that still reaches
+1.10 at five runs an arm.
 
 ## 2. What changed
 
