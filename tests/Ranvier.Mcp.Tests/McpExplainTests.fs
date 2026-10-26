@@ -271,6 +271,31 @@ let tests =
                 Expect.stringContains text "McpExplainTests.fs:" "the earlier cutoff names the offer's site"
             }
 
+            testTask "explain names an upstream comparer before any cutoff" {
+                use! session = McpSession.connect startPriced _.Adapter
+
+                // The band moves from none to standard, so the offer moves and nothing has been cut off yet.
+                let! result =
+                    call session "explain" """{"node":"total","messages":[{"message":"set_discount","args":{"percent":10}}]}"""
+
+                let text = textOf result
+                Expect.isFalse (isError result) $"explain succeeds: {text}"
+                Expect.isLessThanOrEqual text.Length 1000 $"the answer is short: {text}"
+                Expect.isFalse (text.Contains "cutoff") $"no cutoff has happened: {text}"
+                Expect.stringContains text "comparer: offer#" "the comparer line names the offer memo"
+                Expect.stringContains text "McpExplainTests.fs:36: createMemoWithComparer byLabel" "the comparer line shows the comparer's line"
+            }
+
+            testTask "explain lists no comparer for a graph built without one" {
+                use! session =
+                    McpSession.connect (fun () -> GraphHost.Start (fun _ -> Cart.create false)) _.Adapter
+
+                let! result =
+                    call session "explain" ("""{"node":"total",""" + cartScript.Substring 1)
+
+                Expect.isFalse ((textOf result).Contains "comparer:") $"the cart has no comparer: {textOf result}"
+            }
+
             testTask "graph, node and explain stay bounded on a 1,000-node graph, and node pages with a cursor" {
                 use! session = McpSession.connect (fun () -> startWide 50 20) _.Adapter
                 do! session.Host.Invoke (fun app -> app.Input.Value <- 1)

@@ -769,7 +769,7 @@ type McpAdapter(exposure: Exposure, options: McpAdapterOptions) =
     let instructions =
         let traced =
 #if RANVIER_TRACE
-            " When an exposed value is wrong, call explain {node, messages} once, with the messages that reproduce it: it names the node's creation line and its text, what the node reads, the message behind its last run, why it has not re-run, upstream nodes that kept their value (comparer or equality cutoffs), and changed nodes it does not read. Then read and fix the named line. graph lists the exposed nodes; node {node, around} shows a node's neighbours."
+            " To find why an exposed value is wrong, make explain {node, messages} the first call, with the messages that reproduce it: it dispatches them, lists each step, and names the node's creation line and its text, what the node reads, the message behind its last run, why it has not re-run, upstream comparers and the cutoffs where they kept a value, and changed nodes it does not read. Then read and fix the named line. graph lists the exposed nodes; node {node, around} shows a node's neighbours."
 #else
             ""
 #endif

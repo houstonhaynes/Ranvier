@@ -86,6 +86,15 @@ type internal SourceLines(root: string) =
         lines site
         |> Option.map (fun (text, index) -> text[index].Trim())
 
+    /// <summary>The site's line and up to <c>count - 1</c> lines after it, trimmed, with their 1-based line numbers.</summary>
+    member _.Span(site: string, count: int) : (int * string) list =
+        match lines site with
+        | None -> []
+        | Some (text, index) ->
+            [
+                for i in index .. min (text.Length - 1) (index + count - 1) -> i + 1, text[i].Trim()
+            ]
+
     /// <summary>
     /// The name bound by a <c>let</c> on the site's line, or by the nearest <c>let</c> less indented than the site
     /// within the 4 lines above it.
@@ -546,6 +555,28 @@ type internal Diagnosis(graph: Graph, exposed: KeyValuePair<string, INode> list,
                     |> fun parts -> String.Join (", ", parts)
 
                 line $"also kept their value after a source moved: {kept}."
+
+            // Without any cutoff, the upstream nodes built with a comparer, which can keep a value on a later message.
+            // The creation call can follow the binding's line: `let offer =` above `createMemoWithComparer ...`.
+            let comparerLine (u: int) =
+                let site = snap.Nodes[u].Site
+
+                sources.Span (site, 2)
+                |> List.tryFind (fun (_, text) -> text.Contains "Comparer")
+                |> Option.map (fun (number, text) -> $"    {site.Substring (0, site.LastIndexOf ':')}:{number}: {clip 110 text}")
+
+            let compared =
+                if cutoffs.IsEmpty && earlier.IsEmpty then
+                    upstream
+                    |> List.filter (fun u -> not (selection u) && live u)
+                    |> List.choose (fun u -> comparerLine u |> Option.map (fun text -> u, text))
+                    |> List.truncate 2
+                else
+                    []
+
+            for u, text in compared do
+                line $"comparer: {tag u} = {value u}: a new value its comparer calls equal keeps this value and stops {name id} from re-running."
+                line text
 
         out.ToString().TrimEnd()
 
