@@ -13,13 +13,6 @@ the example if needed.
 Each entry links to the relevant guide. [Contracts](../concepts/contracts.md) covers threading,
 error recovery and ownership.
 
-:::details How the messages were checked
-
-Every exception entry was reproduced in F# Interactive, and its heading checked against the message
-the library throws.
-
-:::
-
 :::details Imports for the examples
 
 The examples open these namespaces:
@@ -76,7 +69,7 @@ the key is removed.
 
 :::
 
-See [Getting started](graph.fsx).
+See [Graphs](graph.fsx).
 
 ### &lt;operation&gt; ran on thread N, but this graph is owned by thread M. Marshal through Graph.Dispatch, or set GraphOptions.ThreadAffinity to Unchecked if affinity is guaranteed some other way.
 
@@ -114,8 +107,7 @@ temperature.Value
 
 :::
 
-`GraphOptions.ThreadAffinity = Unchecked` removes the check. Use it only when every write is already
-guaranteed to arrive on one thread.
+`GraphOptions.ThreadAffinity = Unchecked` removes the check. The host must serialize graph access.
 
 See [Async and pending](threading.md).
 
@@ -225,7 +217,7 @@ owningGraph.Run (fun () -> subscriptions.Value)
 
 :::
 
-See [Getting started](memos.md#pure-and-owning-memos).
+See [Pure and owning memos](memos.md#pure-and-owning-memos).
 
 ### A projection row's reader created an owned node: a memo, effect, async value, boundary, root, projection, lookup, selector or onCleanup.
 
@@ -461,7 +453,7 @@ watcher.Status, watcher.Error.Message
 
 :::
 
-See [Getting started](effects.md).
+See [Effects](effects.md).
 
 ### A lookup returns an old value
 
@@ -587,7 +579,7 @@ beforeReport, reportView.TryValue
 
 :::
 
-See [Getting started](memos.md#pure-and-owning-memos).
+See [Pure and owning memos](memos.md#pure-and-owning-memos).
 
 ### An effect did not run inside batch
 
@@ -625,4 +617,4 @@ runsInside.Value, effectRuns
 
 :::
 
-See [Getting started](batch.md).
+See [Batch](batch.md).

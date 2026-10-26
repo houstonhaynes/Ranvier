@@ -4,13 +4,17 @@ order: 1
 ---
 
 :::info Alpha
-`Server` is in the `Ranvier.View` package and `Hydration` in `Ranvier.View.Dom`, both alpha releases
-whose APIs may change. `Ranvier.Wire` holds the codecs for state transfer. See
-[Installation](../guide/installation.md#views).
+`Server` lives in `Ranvier.View`; `Hydration` lives in `Ranvier.View.Dom`. These alpha projects
+are not currently published on nuget.org: use [project references or local packages](../guide/installation.md#views).
+`Ranvier.Wire` supplies state-transfer codecs.
 :::
 
-A [template component](../view/components.md) renders to HTML on the server and becomes interactive
-in the browser without being rebuilt:
+A [template component](../view/components.md) renders HTML on the server; the browser runs setup
+again and adopts matching nodes to make them interactive.
+
+![Render a shared component on the server, transfer its props as JSON, then hydrate the same component in the browser.](/Ranvier/diagrams/view-server-hydration.svg)
+
+The three steps are:
 
 1. **Render.** `Server.render` runs the component's setup in a new graph, writes its template as HTML,
    and disposes the graph. It runs on .NET and under Fable.
@@ -40,6 +44,9 @@ let mounted = Hydration.hydrate graph None report Hydration.HydrationOptions.def
 - [Deployment](deployment.md): one component project compiled for the server and the client, and the
   document `Server.renderDocument` writes around it.
 - [Performance](performance.md): what the server and hydration benchmarks measure, and the figures.
+
+- [Page declarations](pages.md): generate the document and browser entry from a shared definition.
+- [F# HTTP backends](backends.md): serve the same page with Giraffe, Oxpecker or Suave.
 
 ## Server rendering and other hosts
 

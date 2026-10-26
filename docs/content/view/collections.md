@@ -2,11 +2,10 @@
 title: Lists and keyed rows
 ---
 
-A list renders one **row** per item of an array read from the instance. Rows are keyed: when the array
-changes, an item whose key is still present keeps its row, its DOM nodes and its state, and moves to
-its new position. New keys create rows; missing keys dispose theirs.
+Keyed rows preserve DOM and local state when items move. New keys create rows; missing keys dispose
+them. Choose `forEach` for replacement records, or `forEachFixed` for records holding signals.
 
-The samples use the opens from [Templates and bindings](templates.md).
+Use the opens from [Templates and bindings](templates.md).
 
 ## `forEachFixed`: a row per item
 
@@ -55,6 +54,9 @@ row's key. Writing a new array with `{ Player = "ada"; Points = 4 }` in place of
 `{ Player = "ada"; Points = 3 }` keeps Ada's row and re-runs its bindings. Use `forEach` for
 immutable items, and `forEachFixed` for items that hold their own signals.
 
+**Observe:** change Ada's points from 3 to 4, then reverse the array. Her existing row displays `4`
+and moves with her key; its element identity stays the same.
+
 ## Keys
 
 - Keys are compared with `=`. A key function must be pure.
@@ -70,9 +72,8 @@ A row's bindings receive the row's instance only. A row reads the enclosing inst
 the item itself, or through a signal or memo that the item or the definition holds. A read of the
 outer instance inside a row fails to compile (FS0041 through a text yield, FS0193 through a part).
 
-The annotations in the samples follow the [inference rule](sugar.md#the-inference-rule): the items
-reader reads a `Signal`, a class, and its parameter carries the annotation; the key lambda is annotated where the
-item's labels are also declared by a later record.
+Annotate readers of class members and ambiguous record labels; see the
+[inference rule](sugar.md#the-inference-rule).
 
 ## Server HTML
 

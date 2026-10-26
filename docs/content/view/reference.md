@@ -2,8 +2,8 @@
 title: API reference
 ---
 
-The view and server modules are outside the site's generated API reference. Their documentation
-comments are in the source; this index lists each module, by package, and the page that covers it.
+The site's generated API reference excludes view and server modules. Use the source links below
+for their documentation comments, and the linked guides for examples.
 
 ## `Ranvier.View`
 

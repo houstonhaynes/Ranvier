@@ -165,9 +165,6 @@ one target. `write` receives the target and the source's value. Use a binding in
 when the only job is to copy a single source into a target, such as a node property in a view.
 Use an effect when the work reads several sources or depends on what it reads.
 
-View renderers need this primitive to bind a node property directly to a signal or memo without
-an effect per binding.
-
 ```fsharp
 type Label () =
     member val Text = "" with get, set
@@ -177,18 +174,11 @@ let name = createSignal "Ada"
 bindSignal name label (fun target value -> target.Text <- value)
 ```
 
-The binding writes `"Ada"` on the next flush and again after every change to `name`. The contract:
+The binding writes `"Ada"` on the next flush and follows changes to `name`. Reads inside `write`
+are untracked; the callback must not create nodes or register cleanup. A pending or failed memo
+leaves the target unchanged. The current owner disposes the binding.
 
-- The source is the only dependency. Reads inside `write` are untracked.
-- The first write happens on the next flush. Every later change to the source writes again.
-- `write` must not create reactive nodes.
-- While a memo is pending or failed, the target keeps its last value. A recomputation to an equal
-  value writes nothing.
-- A throwing `write` leaves other queued work running, and the next change writes again.
-- The binding belongs to the current owner and is disposed with it; see
-  [Roots and owners](roots.md).
-
-See [Fixed-dependency bindings](bindings.md) for flush timing, equality and lifetime, and the
+See [Fixed-dependency bindings](bindings.md) for flush timing, equality, writer failures and lifetime, and the
 [binding benchmarks](../benchmarks/effects.md#bindingbenchmarks) for measurements and limitations.
 
 ## Failures

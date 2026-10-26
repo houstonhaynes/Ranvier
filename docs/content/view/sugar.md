@@ -2,16 +2,12 @@
 title: Sugar
 ---
 
-`open Ranvier.View.Sugar` brings in the vocabulary the other pages use: lowercase tags with
-computation-expression bodies, `Attrs`, `Props`, `Events` and `Hooks` as free values, control flow over
-views, and the declaration helpers `Component.template`, `Component.ofMembers` and `Component.ofClass`.
-Every form lowers to one `Component.define` call and the template builder's operations. A sugared
-component renders the same template tree and server HTML as its
-[explicit form](templates.md#the-explicit-form), and mounts the same resources.
+`open Ranvier.View.Sugar` supplies lowercase tags, `Attrs`, `Props`, `Events`, `Hooks`, control flow
+and component helpers. It produces the same template tree, server HTML and mounted resources as
+the [explicit builder](templates.md#the-explicit-form).
 
-This page is the tutorial-level summary. The full reference is the
-[view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md),
-which holds every form, its compile errors and its costs.
+The [view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md)
+contains the full vocabulary, diagnostics and costs.
 
 ## Opening the sugar
 
@@ -89,12 +85,8 @@ lambdas and mix with free tags, which suits a view that would otherwise need man
 | `render`, `renderOf`, `ComponentTag` | [Components](components.md#child-components) |
 | An `Mvu` per component | [Elmish components](elmish.md) |
 
-Each of those pages states the rules that apply to its forms: arm definitions are bound with `let`,
-the declaration helpers read `View` once, and a row reads only its own instance. The README's
-[Control flow](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#control-flow)
-and
-[Declaring components](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#declaring-components)
-sections collect them, with their compile errors.
+Bind definitions with `let`; declaration helpers read `View` once, and row bindings receive only
+the row instance. Follow the linked pages for examples and diagnostics.
 
 ## Costs
 

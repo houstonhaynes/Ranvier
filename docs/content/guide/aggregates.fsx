@@ -249,15 +249,6 @@ let noScores = scoreRows |> Projection.isEmpty
 (scoreCount.Value, noScores.Value) // (3, false)
 
 (**
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.length and isEmpty` tests, including `a row edit wakes no reader` and `isEmpty wakes its
-readers only when emptiness changes`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-*)
-
-(**
 ## Position
 
 `Projection.tryHead`, `tryLast` and `tryItem` read the key at a position with its value, and `None` when the position
@@ -281,17 +272,6 @@ let secondScore = scoreRows |> Projection.tryItem (fun () -> 1)
 (firstScore.Value, topScore.Value, secondScore.Value) // (Some (1, 40), Some (2, 75), Some (2, 75))
 
 (**
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.tryHead, tryLast and tryItem` tests, including `an edit off the head and the last key wakes
-no reader`, `appending a key after the head wakes no tryHead reader`, `a pending head row makes tryHead pending, and a
-failed head row raises its error` and `head raises one exception instance per memo, and a reader runs once per
-transition`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-*)
-
-(**
 ## Search
 
 `Projection.tryFind`, `tryFindKey` and `tryPick` return the first match in upstream order. Each owns a `filter` (or
@@ -307,15 +287,6 @@ let firstPass =
 firstPass.Value // Some 2
 
 (**
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.tryFind, tryFindKey and tryPick` tests, including `200 single edits at N=1000 make 200
-predicate calls` and `a pending predicate on the head makes the search pending; elsewhere it keeps membership`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-*)
-
-(**
 ## Averages
 
 `Projection.tryAverageBy` keeps a running sum and count, so a row edit costs O(1), and reads `None` while no value has
@@ -326,15 +297,6 @@ accept `float`, `float32` and `decimal`; `int` does not compile, as with `List.a
 let meanScore = scoreRows |> Projection.tryAverageBy float
 
 meanScore.Value // Some 58.33333333
-
-(**
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.tryAverageBy and averageBy` tests, including `an edit at N=1000 makes one addition` and
-`tryAverageBy over floats recovers from infinity and NaN`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-*)
 
 (**
 ## Least and greatest
@@ -352,28 +314,16 @@ let highest = scoreRows |> Projection.tryMaxBy id
 (lowest.Value, highest.Value) // (Some 40, Some 75)
 
 (**
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.tryMinBy and tryMaxBy` tests, including `removing a non-extreme row costs no comparison;
-removing the extreme re-folds once`, `among equal ranks the current result stays until its holder's row is removed or edited` and `NaN
-orders last: tryMaxBy holds NaN, tryMinBy skips it`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-*)
-
-(**
 ## Lifetime
 
 The aggregate belongs to the scope that created it. Disposing the aggregate, or that scope, disposes it with the views
 and folds it built; it stops observing the rows, and reads return the last state.
 
-:::details Tests covering this behaviour
+*)
 
-Pinned by the `Projection.foldGroup` tests, including `an edit at N=1000 makes one add and one subtract`, `sumBy over
-floats recovers from infinity and NaN` and `sumBy over floats reads zero once every row leaves`, and by the
-`Projection aggregate ownership` tests
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
+(**
+Behavior tests: [Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs).
+
 *)
 
 (*** hide ***)

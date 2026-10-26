@@ -2,10 +2,9 @@
 title: Hydration
 ---
 
-Hydration mounts a component over the HTML that `Server.render` wrote for it. The client runs every
-setup again and keeps the server's nodes: each binding writes its first value only where it differs from the
-server's node. Elements, text nodes and their identity stay as the server wrote
-them; the client adds listeners, hooks and browser-only properties.
+Hydration runs component setup in the browser and adopts the HTML from `Server.render`. It adds
+listeners, hooks and browser-only properties, and writes bound values only where they differ.
+Matching elements retain their identity.
 
 ## Hydrating a component
 
@@ -45,8 +44,8 @@ let start () : unit -> unit =
 [`Mounting.mount`](../view/lifetimes.md), with `options`, the definition and its props in place of
 `before` and `build`. It returns a `Mounted` that behaves as a mount with `SynchronousCommits`.
 
-- **Hydrate with the server's props.** The client's first values must equal the server's for the server
-  nodes to be kept. [State transfer](state-transfer.md) carries the props from the server render into
+- **Hydrate with the server's props.** Matching initial state preserves the intended first render.
+  Value differences update bindings; structural differences trigger the mismatch rules below. [State transfer](state-transfer.md) carries the props from the server render into
   the page; `stateId` and `counterProps` above are defined there.
 - **The root** is the first `<!--[r-->` child of `host` and its matching `<!--]-->`. Nodes outside that
   pair stay in place and outside the mount.
@@ -75,6 +74,9 @@ let start () : unit -> unit =
 
 Ids continue: `Setup.CreateId` returns the server's ids during hydration, and rows created afterwards
 continue their region's counter.
+
+To verify adoption, keep a reference to the server-rendered button before `hydrate`, then query it
+afterwards: it should be the same DOM object. Clicking it should increment the transferred count.
 
 ## Mismatches
 

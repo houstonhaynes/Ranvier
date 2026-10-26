@@ -2,12 +2,10 @@
 title: Conditional arms
 ---
 
-An **arm** is a component selected by a value of the instance. The region shows one arm at a time:
-when the selection changes to another arm, the previous arm's cleanups run, its nodes leave, and the
-new arm is set up in its place. When the selection keeps the same arm with a new payload, the arm
-stays mounted and its bindings read the new payload.
+An **arm** is a selected component. A different arm disposes the old instance and mounts the new
+one. The same arm keeps its nodes and state while its payload changes.
 
-The samples use the opens from [Templates and bindings](templates.md).
+Use the opens from [Templates and bindings](templates.md).
 
 ## `show` and `showElse`
 
@@ -89,6 +87,10 @@ definition stays the same. Use it when a new key must start with fresh setup sta
 whose form state must not carry over to the next page.
 
 ## `Arms.Match`: a plain match (opt-in)
+
+This experimental layer requires a Fable compiler plugin. The [browser editor](getting-started.md)
+supports standard components, `armOf` and `matchWith`; it cannot compile `Arms.Match` or other
+plugin-dependent view extensions. Use a local project for this section.
 
 `Arms.Match` takes an ordinary F# `match` over a union, with pattern variables, nested patterns, guards and
 or-patterns, and builds the same arms as `armOf` and `matchWith`: the same server HTML, hashes and hydration, on .NET
@@ -194,49 +196,11 @@ publish servers with `-p:PublishReadyToRun=true` to bring it to about 7 ms. Trim
 `matchWith` with `armOf`; `Arms.Match` carries `RequiresUnreferencedCode` and `RequiresDynamicCode`, so a trimmed
 publish warns at each call.
 
-**Cost in the browser.** In Chromium a site runs within a few percent of the same view written with `matchWith`. The
-figures are paired median ratios over the `matchWith` twin, each sample paired with the twin's sample of the same
-process and round, at 1,000 rows. The gate pools the committed runs whose recorded source hashes match the measured
-sources and that built the bundle they measured: twelve runs of 45 pairs, on a shared machine at 12-96 % CPU load.
-The measured sources are the Arms.Match lowering, the keyed-rows benchmark and its fixtures; a change to the core or
-the view libraries leaves the pool unchanged:
-
-| Operation | pooled median (95 % interval) | budget |
-|---|---|---|
-| Create | 1.006 (0.993-1.018) | 1.05 |
-| Switch every row to another arm | 1.011 (0.999-1.022) | 1.04 |
-| Update every row's payload | 1.033 (1.010-1.060) | 1.07 |
-| Clear | 0.991 (0.957-1.020) | 1.05 |
-
-The budgets are fixed. The target was 1.05 on every operation; the switch budget of 1.04 and the payload budget of
-1.07 are a concession, as the lowered code is indistinguishable in these timings from the same shape written by hand.
-An operation passes when its pooled median is within budget. Every pooled interval lies below its budget. Each run's
-median varies more than the pool:
-
-| Run | Create | Switch | Payload | Clear |
-|---|---|---|---|---|
-| 22d86d44, 1 | 0.957 | 0.975 | 1.040 | 1.000 |
-| 22d86d44, 2 | 1.087 | 1.015 | 1.074 | 0.985 |
-| 22d86d44, 3 | 0.999 | 1.050 | 1.149 | 0.964 |
-| 22d86d44, 4 | 1.024 | 1.003 | 0.994 | 0.955 |
-| 22d86d44, 5 | 1.002 | 1.018 | 1.013 | 1.035 |
-| 22d86d44, 6 | 0.977 | 1.051 | 1.017 | 1.015 |
-| 2dc2835b, 1 | 1.009 | 1.005 | 1.094 | 0.970 |
-| 2dc2835b, 2 | 0.983 | 1.016 | 1.024 | 1.004 |
-| 2dc2835b, 3 | 1.014 | 0.975 | 0.955 | 1.119 |
-| 2dc2835b, 4 | 0.992 | 1.012 | 1.033 | 0.983 |
-| 2dc2835b, 5 | 0.993 | 1.014 | 0.970 | 0.863 |
-| 2dc2835b, 6 | 1.046 | 0.998 | 1.048 | 1.040 |
-
-The five runs at da6d32e6 stay in the repository and out of the pool: four of them served a bundle they did not build,
-and the benchmark script has changed since. The earlier runs 8ee10018, 299ab276, fccc740c, dc8b3d5b, 5369d6a0 and
-4d00179e also stay out. Each was measured on an earlier benchmark script and an earlier Fable plugin; 8ee10018,
-299ab276 and fccc740c also on an earlier `Site.fs` and `Lower.fs`.
-A later change to the lowering, the benchmark or its fixtures takes every run out of the pool, and the gate fails until
-runs are recorded on the new sources; CI runs the gate only for a change to the lowering, its benchmark or its runs. A
-core change that slows Arms.Match shows in the gate once the lowering changes or a run is recorded. The retained heap is 1.2 % above the twin's per row, after create and after a switch. The runs, their
-load readings and the gate are in the
-[research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-arms-match.md#chromium).
+**Browser measurements.** The committed Chromium runs compare `Arms.Match` with an equivalent
+`matchWith` view at 1,000 rows. Their pooled medians meet the fixed creation, switch, payload-update
+and clear budgets. These are fixture measurements, not application guarantees. The
+[research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-arms-match.md#chromium)
+keeps the ratios, intervals, source hashes, excluded runs and gate rules.
 
 ### AM005
 

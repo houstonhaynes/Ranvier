@@ -4,8 +4,8 @@ description: "Typed anime.js 4.5.0 bindings for Fable: parameters, values, eases
 ---
 
 :::info Alpha
-The animation packages are alpha releases, version 0.1.0-alpha.1; their APIs may change. See
-[Installation](../guide/installation.md#views).
+The animation projects use version `0.1.0-alpha.1`; their APIs may change. They are not currently
+published on nuget.org. Use [project references or local packages](../guide/installation.md#views).
 :::
 
 Ranvier animates with [anime.js](https://animejs.com) 4.5.0. anime is the engine; Ranvier supplies
@@ -17,14 +17,14 @@ of lists and arms.
 | `Fable.Ranvier.Anime` | `Ranvier.Anime` | the bindings, `Reactive` (owners and signals) and `Testing` (a manual clock) | `Ranvier` |
 | `Ranvier.View.Anime` | `Ranvier.View.Anime` | the `Motion.*` template parts | `Ranvier.View` and `Fable.Ranvier.Anime` |
 
-Code outside the view, such as a Partas.Solid component, references the bindings alone. Install the
-JavaScript package beside them:
+Use `Ranvier.View.Anime` for template motion, or `Fable.Ranvier.Anime` to animate an element
+directly. Install the JavaScript engine:
 
 ```shell
 npm install animejs@4.5.0
 ```
 
-This page covers the bindings. [Owning and driving animations](motion-reactive.md) covers
+[Owning and driving animations](motion-reactive.md) covers
 `Reactive`, [Motion parts](motion-parts.md) the template parts, and
 [Testing and costs](motion-testing.md) the manual clock and the bundle sizes.
 
@@ -38,7 +38,8 @@ let reveal (card: TS.Dom.Element) =
     Anime.animate (card, Anim (x = 100, opacity = Value.fromTo (0, 1), duration = 400, ease = Ease.outQuart))
 ```
 
-The call compiles to the call written by hand:
+The card moves to `x = 100` and fades from opacity 0 to 1 over 400 ms with `outQuart` easing.
+The emitted JavaScript is:
 
 ```js
 animate(card, { x: 100, opacity: [0, 1], duration: 400, ease: "outQuart" });

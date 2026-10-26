@@ -30,10 +30,7 @@ collections' `Rows`. They reject the fixed factory results of `createProjectionO
 
 *)
 type Todo = { Id: int; Title: string }
-(**
 
-
-*)
 let catalogue =
     createSignal [ { Id = 1; Title = "a" }; { Id = 2; Title = "bb" }; { Id = 3; Title = "ccc" } ]
 
@@ -138,21 +135,6 @@ describe its pass, not its rows.
 
 :::
 
-:::details Tests covering this behaviour
-
-Pinned by `a throwing predicate excludes the key, and Get and TryGet raise its error`, `a pending predicate keeps
-membership; a never-settled key is only in PendingKeys`, `an effect reading Keys and Get runs exactly once per write`,
-`sorts ascending, and equal sort keys keep upstream order`, `sortByDescending sorts largest first, and equal sort
-keys keep upstream order`, `sortByDescending orders NaN last, across updates`, `ties keep upstream order at 40 keys,
-across reorder and removal`, `NaN sort keys sort after every other key, across updates`, `None sorts before Some,
-across updates`, `a pass whose sort keys and upstream order are unchanged does not re-sort` and
-`a pending sort key keeps its last settled sort key; a never-settled key is only in PendingKeys`, `a pending chooser
-keeps membership; a never-settled key is only in PendingKeys`, `a throwing chooser excludes the key, and Get and TryGet
-raise its error`, and the
-`chained pending` tests
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-
 ### Create nodes per mapped row
 
 `Projection.mapWith` is the factory form of `map`: its mapping runs once per key with the key and a tracked read of the
@@ -206,14 +188,6 @@ An inner view is disposed once its group is empty: a reader holding it sees empt
 
 :::
 
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.mapWith` and `Projection.groupBy` tests, including `a never-settled key is in UngroupedKeys,
-in upstream order, until it settles and joins its group` and `filter then groupBy lists the keys the filter holds out
-in UngroupedKeys`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-
 ### Split rows
 
 `Projection.partition` returns the keys whose value satisfies a predicate and the rest, as two views over one
@@ -232,13 +206,6 @@ let shortTitles, longerTitles =
 ([|2|], [|1; 3|])
 ```
 
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.partition` tests, including `200 single edits at N=1000 make 200 predicate calls across
-both halves` and `a pending predicate keeps the last side; a never-settled key is pending in both`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-
 ### Distinct rows
 
 `Projection.distinctBy` keeps the first key for each distinct value of a function, in upstream order, under that
@@ -256,14 +223,6 @@ oneTitlePerLength.Keys
 ```text
 [|1; 2|]
 ```
-
-:::details Tests covering this behaviour
-
-Pinned by the `Projection.distinctBy` tests, including `a key reader sees a hand-over as Removed and Added`, and
-`distinctBy keys follow the law while values fail and recover`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs),
-[Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs)).
-:::
 
 ### Aggregate each group
 
@@ -284,13 +243,6 @@ let titleCountByLength =
 ```text
 [(2, 2); (1, 1)]
 ```
-
-:::details Tests covering this behaviour
-
-Pinned by the `Grouping.aggregate` tests, including `an edit within a group runs only that group's aggregate` and `an
-emptied group's aggregate is disposed, and a returning group gets a new one`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
 
 ### Page through rows
 
@@ -324,16 +276,14 @@ creates and disposes at most d rows, and a write to a row outside the window wak
 
 :::
 
-:::details Tests covering this behaviour
-
-Pinned by `take, skip and sub select positions and clamp counts as List.truncate and a clamped skip do`, `a key that
-stays in a shifted window keeps its row` and `a write outside the window wakes no reader`
-([Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs)).
-:::
-
 To fold the values of a projection into one value, such as a total or a count, see [Aggregates](aggregates.fsx).
 
 *)
+(**
+Behavior tests: [Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs), [Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs).
+
+*)
+
 (*** hide ***)
 active.Dispose ()
 graph.Dispose ()

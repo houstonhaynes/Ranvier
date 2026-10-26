@@ -106,6 +106,9 @@ The playground's [`tests/`](https://github.com/shayanhabibi/Ranvier/tree/master/
 directory runs this setup for the whole view layer, with Chromium checks through Playwright for focus,
 caret and layout behaviour that jsdom does not model.
 
+Use jsdom for DOM bindings and node identity; use the twin for fast .NET interaction checks.
+Keep layout, focus and browser integration checks in Chromium.
+
 ## Twin checks on .NET
 
 Reference `experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj` from a .NET test project. The twin

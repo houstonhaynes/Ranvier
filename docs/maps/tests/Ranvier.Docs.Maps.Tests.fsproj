@@ -16,6 +16,7 @@
         <Compile Include="ControlTests.fs" />
         <Compile Include="SceneViewTests.fs" />
         <Compile Include="PageTests.fs" />
+        <Compile Include="FenceScannerTests.fs" />
         <Compile Include="ControlBarTests.fs" />
         <Compile Include="WorkspaceTests.fs" />
         <Compile Include="Main.fs" />

@@ -2,12 +2,11 @@
 title: Performance
 ---
 
-This page states what the view and server benchmarks measure and what their results mean for an app.
-The figures come from one machine (AMD Ryzen 9 9900X, Windows 11) at one point in the code's development;
-rerun the benchmarks before relying on a number.
-The raw data and method are in the repository's research notes:
-[server HTML and hydration](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-19-server-html-hydration.md)
-and its [result files](https://github.com/shayanhabibi/Ranvier/tree/master/docs/research/framework-performance/investigation/server-html).
+These fixture measurements come from one AMD Ryzen 9 9900X / Windows 11 machine and one revision.
+Use them to identify costs, then rerun against your application. The
+[research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-19-server-html-hydration.md)
+and [raw results](https://github.com/shayanhabibi/Ranvier/tree/master/docs/research/framework-performance/investigation/server-html)
+record the method and data.
 
 ## The fixtures
 

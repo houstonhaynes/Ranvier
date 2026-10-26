@@ -1,8 +1,14 @@
 # Ranvier.View
 
-Template components for [Ranvier](https://www.nuget.org/packages/Ranvier), on .NET and under Fable: typed templates, the view sugar, keyed lists, arms and boundaries, and `Server.render`, which writes a component as HTML. The browser side is the companion package [Ranvier.View.Dom](https://www.nuget.org/packages/Ranvier.View.Dom): `Mounting.mount` and `Hydration.hydrate` take the components of this package unchanged, and its `Generated.Html` module holds the authored layer that some samples below alias. A server, or code shared between server and browser, references this package alone.
+Typed F# components for [Ranvier](https://www.nuget.org/packages/Ranvier), on .NET and under Fable.
+Templates support keyed lists, conditional arms, boundaries and server HTML through `Server.render`.
+The companion [Ranvier.View.Dom](../Ranvier.View.Dom/README.md) mounts the same components in a browser
+or hydrates their server HTML. Server-only and shared component code references `Ranvier.View` alone;
+the explicit browser authoring examples below also use `Ranvier.View.Dom.Generated.Html`.
 
-The view packages are on nuget.org. They depend on `Xantham.Fable.Core.TS` 0.2.1, which only the Xantham Cloudsmith feed serves, so a consumer adds that feed (temporary, until the package is on nuget.org). In `nuget.config`:
+The view projects are packable, but `Ranvier.View` and `Ranvier.View.Dom` were absent from nuget.org
+when checked on 2026-10-26. Use source project references for now. Their `Xantham.Fable.Core.TS` 0.2.1
+dependency requires the Xantham Cloudsmith feed. Add it in `nuget.config`:
 
 ```xml
 <packageSources>
@@ -23,7 +29,12 @@ The [installation guide](https://shayanhabibi.github.io/Ranvier/guide/installati
 
 ## View sugar
 
-`Ranvier.View.Sugar` is the short spelling of the template path: free lowercase tags, control flow over views, and component declarations that keep setup and view together. Every form lowers to one `Component.define` call and the `TemplateBuilder` operations, so the explicit form is the documented equivalent of each, and `Server.render` here and `Mounting.mount` and `Hydration.hydrate` in Ranvier.View.Dom accept the result unchanged on .NET and under Fable. The design and its measurements are in the [view sugar v2 spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md).
+`Ranvier.View.Sugar` provides lowercase tags, reactive control flow and component declarations
+that keep setup beside the view. Each declaration lowers to one `Component.define` call and
+`TemplateBuilder` operations. The result works with server rendering, browser mounting and hydration.
+Start with the [view guide](https://shayanhabibi.github.io/Ranvier/view/); the
+[design spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md)
+records the rationale and measurements.
 
 ## Opening the sugar
 
@@ -49,14 +60,17 @@ let templated = Component.template (fun _ () -> ()) (div () { "template" })
 
 **Scope rules.** Two rules hold in every file that opens the sugar:
 
-- **A file uses either the sugar or `Generated.Html.Authoring`.** Both declare `Attrs` and `Props`, and the later `open` decides which one a short name reaches. With `Authoring` opened after the sugar, `div (Attrs.className "x") { }` fails with FS0041 "No overloads match for method 'div`1'". With `Authoring` opened before the sugar, the file compiles, and the sugar's `Attrs` and `Props` shadow `Authoring`'s, which become unreachable by their short names.
-- **A local value named like a tag shadows the tag.** `let p = "note"` followed by `p () { "x" }` fails with FS0003. One-letter tags (`a`, `b`, `i`, `p`, `q`, `s`, `u`) meet this most often; a one-letter lambda parameter shadows the tag only inside its own body.
+- **Use either Sugar or `Generated.Html.Authoring` in one file.** Both declare `Attrs` and `Props`;
+  the later `open` shadows the earlier names. Opening `Authoring` last can make Sugar tags fail
+  with FS0041. Use qualified names or a module alias when combining the APIs.
+- **Local values shadow tags.** `let p = "note"` makes `p () { "x" }` fail with FS0003.
+  Watch one-letter tags (`a`, `b`, `i`, `p`, `q`, `s`, `u`), especially in lambda parameters.
 
 ## Tags
 
 Each of the 112 HTML tags is a generic class named by its raw lowercase tag name: `div`, `span`, `input`, `select`, `template`, `a`. Two names take a trailing apostrophe:
 
-- **`base'`**, because `base` is an F# keyword. Written without the apostrophe inside a body, `head () { base () }` is a parse error reported as FS0583, FS0604 and FS0010 twice; as a binding, `let tag = base ()`, it is a single FS0010.
+- **`base'`**, because `base` is an F# keyword; omitting the apostrophe causes a parse error.
 - **`option'`**, because a generic `option<'i>` would shadow FSharp.Core's `'T option`.
 
 A tag takes its parts in parentheses, `div ()` or `div (Attrs.className "x", Events.onClick handler)`, and its children in braces. `Attrs`, `Props`, `Events` and `Hooks` carry every generated member: `Attrs.className`, `Attrs.data`, `Attrs.aria`, `Attrs.attribute`, `Props.Input.value`, `Props.Button.disabled`, `Events.onClick`, `Events.onInput`, `Hooks.mounted`. An element-specific member is checked against its tag: `span (Props.Input.value "x")` fails with FS0041.

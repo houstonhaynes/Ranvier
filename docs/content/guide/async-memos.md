@@ -250,7 +250,7 @@ query may repair.
 :::details Compare policies with other .NET libraries
 
 The following names describe related scheduling choices in
-[R3](https://github.com/Cysharp/R3#asyncawait-support) and
+[R3](https://github.com/Cysharp/R3#interoperability-with-asyncawait) and
 [SignalsDotnet](https://github.com/fedeAlterio/SignalsDotnet). They are scheduling parallels, not
 interchangeable APIs or identical state semantics: stream operators and computed signals do not share
 Ranvier's demand-driven flights, `Previous.Settled` or propagating pending channel.
@@ -292,16 +292,15 @@ control when requests start, and choose the flight policy separately to handle r
 
 :::details Cancellation costs
 
-Cancellation costs one `CancellationTokenSource` per flight under `CancelPrevious`: each launch cancels
-and disposes the superseded flight's source and allocates the next. Under `KeepLatest` and `Queue`,
-overlapping flights share one source. Under `FinishCurrent`, `Drop` and `DropWhilePending` flights
-never overlap, and each flight
-allocates one source, disposed without being cancelled when the flight settles. A change during
-a flight allocates nothing. It is disposed, without being cancelled, once every flight that
-holds it has settled, and the next flight allocates another; disposing the memo cancels it. A body
-that ignores its token pays that allocation and a `Cancel` with no registered callbacks. A body that registers on the
-token, as `HttpClient` does, also pays for the callbacks the `Cancel` runs. The token
-belongs to the async memo alone: signals, memos and effects carry none, and their reads take no token.
+- `CancelPrevious` allocates a `CancellationTokenSource` per launch, cancelling and disposing the
+  previous source.
+- `KeepLatest` and `Queue` share a source across overlapping flights. It is disposed without
+  cancellation once all flights using it settle; the next flight allocates another.
+- `FinishCurrent`, `Drop` and `DropWhilePending` allocate one source per non-overlapping flight,
+  disposed without cancellation at settlement. A change during the flight allocates nothing.
+
+Disposing the memo cancels its live source. Cancellation also runs registered callbacks, including
+those installed by I/O APIs. Signals, memos and effects carry no cancellation token.
 
 :::
 
@@ -475,12 +474,6 @@ first bind that suspends. IcedTasks targets .NET only; a body shared with Fable 
 A disposed async memo reads as `Failed` with an `ObjectDisposedException`. Its readers are woken once to see the failure.
 :::
 
-
-:::warning Expecting a read after an `await` to be tracked
-
-A signal read after an `await` that suspends
-does not start a new flight when it changes. Read it before the first `await`.
-:::
 
 ## Performance
 

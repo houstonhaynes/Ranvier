@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="238" viewBox="0 0 900 238" role="img" aria-labelledby="title desc">
+  <title id="title">From a signal write to a DOM update</title>
+  <desc id="desc">Writing Count from 2 to 3 reruns the instance render effect. It reads the label and count, compares with the DOM, and changes only the button text. Static structure remains in place.</desc>
+  <rect width="900" height="238" rx="16" fill="#f3f6fb"/>
+  <g font-family="system-ui,sans-serif" fill="#16243a">
+    <text x="28" y="36" font-size="20" font-weight="700">One effect per instance; only changed values are written</text>
+    <g fill="#fff" stroke="#8cabc8" stroke-width="2">
+      <rect x="28" y="66" width="224" height="112" rx="12"/>
+      <rect x="332" y="66" width="232" height="112" rx="12"/>
+      <rect x="644" y="66" width="228" height="112" rx="12"/>
+    </g>
+    <g font-size="17" text-anchor="middle">
+      <text x="140" y="97" font-weight="700">Write signal</text><text x="140" y="129">Count: 2 → 3</text><text x="140" y="155">Click handler</text>
+      <text x="448" y="97" font-weight="700">Read bindings</text><text x="448" y="129">Label: “Clicks”</text><text x="448" y="155">Count: 3</text>
+      <text x="758" y="97" font-weight="700">Compare and write</text><text x="758" y="129">Label unchanged</text><text x="758" y="155">Button text: “3”</text>
+    </g>
+    <text x="28" y="213" font-size="16">The existing button stays mounted. An isolated binding can use its own effect.</text>
+  </g>
+  <g stroke="#3668a5" stroke-width="3" fill="none"><path d="M264 122h52m-10-8 10 8-10 8"/><path d="M576 122h52m-10-8 10 8-10 8"/></g>
+</svg>

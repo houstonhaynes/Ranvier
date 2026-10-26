@@ -7,97 +7,58 @@ order: 6
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-This page lists what the current source provides and what is being considered. Package builds and CI
-coverage are described separately from the version a particular application has installed. The candidates
-are not a schedule: an item may change shape, move, or be dropped.
+The guide describes current source. See [Installation](../guide/installation.md) for published
+versions and local builds. Exploratory items below have no delivery schedule.
 
 ## Implemented in current source
 
-These are implemented and covered by tests.
-
-- **Reactive core.** Signals, memos, effects and owners, with automatic dependency tracking, height-ordered
-  updates and an equality cutoff. See [Getting started](../guide/getting-started.md).
-- **Per-node equality.** Typed comparers for signals, memos, split effects and boundaries, overriding
-  the graph's default value cutoff. See [Equality](../guide/equality.md#per-node-comparers).
-- **Fixed-dependency bindings.** `bindSignal` and `bindMemo` copy one declared source into a target, with
-  batching and owner disposal. Use an effect when the dependencies must change. See
+- **Reactive graph:** signals, lazy memos, effects, equality cutoffs and fixed-source bindings.
+  See [Getting started](../guide/getting-started.md), [Equality](../guide/equality.md) and
   [Bindings](../guide/bindings.md).
-- **Reverse acquisition teardown.** Cleanups and child nodes are released together in reverse acquisition
-  order, including before an owning computation re-runs. See [Cleanup](../guide/cleanup.md).
-- **Pending channel and boundaries.** A propagating "not ready" status, with `createSuspense`,
-  `createErrorBoundary` and `createBoundary` to decide what to show in the meantime. See
-  [Suspension](suspension.md).
-- **Async memos.** `createAsync` with the `CancelPrevious`, `KeepLatest`, `Queue`, `FinishCurrent`, `Drop` and `DropWhilePending` flight policies, set for the graph or, through `createAsyncWithPolicy` and `createOwningAsyncWithPolicy`, for one async memo, and the
-  previous value passed to each flight. See [Async and pending](../guide/async-and-pending.md).
-- **Debounce and throttle.** `debounce`, `throttleFirst`, `throttleLast` and `throttle` control publication
-  before downstream work starts. They compose with flight policies and support injected clocks for tests.
-  See [Debounce and throttle](../guide/timing.md).
-- **Threading, failure and ownership contracts.** Thread affinity checks, dispatch from other threads, and
-  `ManualDispatcher` for deterministic tests. See [Contracts](contracts.md).
-- **Keyed collections.** Projections, index projections, lookups and selectors, with `filter`, `map`,
-  `sortBy`, `groupBy`, slicing and fold views. See [Collections](../guide/collections.fsx) and
-  [Aggregates](../guide/aggregates.fsx).
-- **Trace log.** A traced build that records why each node ran. See [Tracing](../guide/tracing.md).
-- **C# package.** `Ranvier.CSharp` with delegate-based factories, `Tracing`, `ReactiveBindings` for
-  `INotifyPropertyChanged` and `INotifyDataErrorInfo`, and `ReactiveCommand`, an `ICommand` whose `CanExecute`
-  and busy state come from graph nodes. `AsObservableCollection` raises `Add`, `Remove`,
-  `Move` and `Replace` changes after population; initial population and reset recovery use `Reset`.
-  Value-only updates consume settled-value deltas. Previous values reach C# through a seed or
-  `SettledOr`/`TrySettled`, without `ValueOption`. See [C#](../guide/csharp.md).
-- **Native AOT and trimming.** CI publishes traced and untraced smoke applications over the four packages
-  under .NET 10 for `linux-x64`, and a trim or AOT warning fails the publish. This covers that
-  configuration, not every deployment target. See [Installation](../guide/installation.md#native-aot-and-trimming).
-- **F# application patterns.** `createEditable` and `createDraft` for values seeded from upstream and edited
-  locally, and forms as records of signals. See [Editable values and forms](../guide/forms.md).
-- **MVU bridge.** The `Ranvier.Elmish` package: `Mvu`, which reads an Elmish-style model through selector memos. See
-  [Migrating from Elmish](../guide/elmish.md).
-- **Editable keyed collections.** `createKeyedCollection` provides direct row edits in insertion order,
-  with batched `Edit` callbacks and the existing projection operators. See
-  [Direct edits](../guide/collection-updates.fsx#direct-edits).
-- **Projection change readers.** `NewKeyReader` reports membership and order; `NewValueReader` also
-  reports unequal settled row values. Readers have independent bounded cursors and return a reset
-  on their first read or after overflow. `KeysVersion` versions the key array, and `ChangedSince` returns
-  the window of positions the latest keyed pass changed. See
-  [Reading changes](../guide/projections.fsx#reading-changes).
-- **Serialised thread affinity.** `ThreadAffinity.Serialised` admits one thread at a time on the construction
-  context, for hosts such as Blazor Server. See [Serialised hosts](contracts.md#serialised-hosts) and
-  [Blazor Server](../guide/blazor-server.md).
-- **Failure provenance.** `ErrorOrigin` on a failed node and `CaughtFrom` on an error boundary report the node a
-  failure originated in. See [Finding where a failure came from](contracts.md#finding-where-a-failure-came-from).
-- **Projection construction and reconciliation.** Memo-free row factories through `createProjectionOnce`,
-  an opt-in create-before-remove pass, and prefix/suffix trimming with a full-visit path for changes that
-  cannot trim. The costs and ordering contracts are described in [Projections](../guide/projections.fsx).
-- **Shared queries and mutations.** `Ranvier.Query` provides acquired query leases, explicit loading,
-  retained data during refresh, and mutation receipts reconciled across loaded queries. See
-  [Queries and mutations](../guide/queries.md) and [Dictionary navigation](../guide/query-navigation.md).
-- **Fable target and package consumers.** The core and extension packages include standalone Fable source
-  projects in package builds. CI runs traced/untraced compatibility checks and compiles consumers from
-  built packages. Fable omits .NET thread/inbox/continuation bookkeeping and uses direct slot references;
-  the .NET implementations are preserved. See [Fable (JavaScript) target](../fable/index.md).
-- **Stream memos.** `createStream` publishes a stream's latest item and `createStreamFold` folds its
-  items into a state. Both restart when the values read by `start` change. `StreamSource.create`,
-  `ofAsyncEnumerable`, `ofObservable`, `ofChannel` and `ofAsyncIterable` build the sources; C# uses
-  `Stream`, `StreamFold` and `StreamSources`. See [Streams](../guide/streams.md).
+- **Ownership:** roots and owning computations dispose children and cleanups in reverse acquisition
+  order. [Contracts](contracts.md) covers lifetime, failure propagation and thread access.
+- **Async state:** pending propagation, boundaries, async sources, task flights with per-node
+  policies and restarting stream memos. [Async and pending](../guide/async-and-pending.md)
+  links the individual APIs. [Timed values](../guide/timing.md) control admission independently.
+- **Collections:** keyed and index projections, direct edits, lookups, selectors, views and aggregates.
+  Change readers have bounded independent cursors and reset recovery. See
+  [Collections](../guide/collections.fsx) and [Aggregates](../guide/aggregates.fsx) for contracts and costs.
+- **Editable state:** [editable values](../guide/editable.md), [drafts](../guide/drafts.md) and
+  [forms](../guide/forms.md), plus an [MVU bridge](../guide/elmish.md) over selector memos.
+- **Remote data:** [Ranvier.Query](../guide/queries.md) shares acquired query leases, retains refresh
+  data and reconciles mutation receipts across loaded queries.
+- **Persistence and replay:** [persisted inputs](../guide/persistence.md) restore signals and
+  collections; the [input journal](../guide/journal.md) records external inputs for diagnostic
+  replay and re-enactment. Read the restore limitations before combining snapshots and journal tails.
+- **Diagnostics:** [tracing](../guide/tracing.md) records node creation, causal runs, pending work
+  and failure provenance, with bounded-log checkpoints and export.
+- **C# integration:** delegate factories, XAML property/error bindings, commands and observable
+  collections. See [C#](../guide/csharp.md).
+- **Views:** shared templates support DOM mounting, server HTML and hydration, with motion and
+  testing helpers. See [Views](../view/index.md), [Server rendering](../server/index.md) and
+  [Testing views](../view/testing.md).
+- **Fable and deployment:** local package builds include standalone Fable source projects; CI
+  checks packed consumers. The core, C#, Elmish and Query packages have traced/untraced .NET 10
+  `linux-x64` trim/AOT smoke checks. See [Installation](../guide/installation.md) for scope and
+  [Fable](../fable/index.md) for target differences.
+
+## Experimental source
+
+[Ranvier.Mcp](../guide/mcp.md) exposes selected values and authorised Elmish messages from a
+running graph. It is a source experiment and is not packed; traced provenance queries can inspect
+the whole graph.
 
 ## Under consideration
 
-None of these is available. Each one is an open question about whether and how it fits.
-
-- **More incremental collection views.** Map membership consumes upstream key deltas. Filter, sort,
-  grouping and some aggregate membership paths still scan keys; further delta processing remains
-  under consideration.
-- **Additional async adapters.** An F# `Async<'T>` adapter remains exploratory; its lifetime and
-  restart contracts are not shipped. See [The async graph](async-graph.md#not-implemented).
-- **Reusable lenses and prisms.** Deep write paths can be expressed in application code today; reusable
-  focus values over collections remain under consideration.
-- **Event-sourcing adapters for traced builds.** Adapters or hooks that write the trace log to an
-  event store, keeping its replay ([#65](https://github.com/shayanhabibi/Ranvier/issues/65)).
-- **Persistent graph state.** Storage adapters, such as Redis or PostgreSQL, that keep a graph's state
-  ([#68](https://github.com/shayanhabibi/Ranvier/issues/68)).
-- **Traced and untraced primitives in one build.** Generated variants of each primitive, so a branch of a
-  graph can pay for tracing while the rest runs untraced
+- **Further collection incrementality:** filter, sort, grouping and some aggregate membership
+  paths still scan keys.
+- **An F# `Async<'T>` adapter:** cold-workflow lifetime and restart contracts remain exploratory.
+  See [The async graph](async-graph.md#not-implemented).
+- **Reusable lenses and prisms:** application code can express deep writes; reusable focus paths
+  over collections remain open.
+- **Additional storage adapters:** persistence supplies memory, file and browser local-storage
+  stores; database-backed stores remain an extension point.
+- **Mixed traced/untraced primitives:** let individual graph branches pay for tracing
   ([#69](https://github.com/shayanhabibi/Ranvier/issues/69)).
-- **MCP tooling.** An MCP server that reads and writes a graph's nodes, with an Elmish variant limited to
-  dispatching messages ([#66](https://github.com/shayanhabibi/Ranvier/issues/66)).
 
-The [Ecosystem](ecosystem.md) page lists the current gaps these items address.
+See [Ecosystem](ecosystem.md) for collection tradeoffs and host integrations.

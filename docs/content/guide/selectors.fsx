@@ -24,10 +24,6 @@ the previous and the next key.
 *)
 let selected = createSignal 1
 let isSelected = createSelector (fun () -> selected.Value)
-(**
-
-
-*)
 selected.Value <- 3
 [ for k in 1..4 -> k, isSelected.Get k ]
 (**
@@ -35,13 +31,6 @@ selected.Value <- 3
 ```text
 [(1, false); (2, false); (3, true); (4, false)]
 ```
-
-:::details Tests covering this behaviour
-
-Pinned by `createSelector reports membership and wakes only the two ends` and
-`only the affected keys are recomputed`
-([Lookups.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lookups.fs)).
-:::
 
 Move the selection from 1 to 2. Only those two membership values change; the reader for
 key 3 stays quiet.
@@ -67,6 +56,11 @@ controls [
 ```
 
 *)
+(**
+Behavior tests: [Lookups.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lookups.fs).
+
+*)
+
 (*** hide ***)
 active.Dispose ()
 graph.Dispose ()

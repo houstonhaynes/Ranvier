@@ -1,6 +1,16 @@
 # Ranvier.View.Anime
 
-Motion parts for `Ranvier.View` templates. `Ranvier.View.Anime` animates the elements of a sugar template with [anime.js](https://animejs.com) 4.5.0 through the typed bindings of the `Fable.Ranvier.Anime` package. Each `Motion.*` function returns a `Part<'native, 'inst>`, given to a tag beside its attributes and events. Every part creates its anime objects once the element is placed, and the instance's disposal reverts them. Enter and exit follow the region passes of lists and arms, FLIP follows the reflow of a list's container, and signals drive the reactive parts. The server omits every part, so a portable template with motion renders the same HTML as its twin without it. The design is in the [motion spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-21-motion-design.md); the runtime seam the parts use is in the [seam note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md).
+Motion parts for `Ranvier.View` templates, using typed [anime.js](https://animejs.com) 4.5.0 bindings.
+Add a `Motion.*` part to a Sugar tag beside its attributes and events. It creates anime objects when
+the element is placed and normally reverts them on disposal; [exits](#enter-and-exit-rules) preserve
+the current visual state until the leaving animation finishes.
+
+Enter and exit follow list and arm updates; FLIP animates container reflow; reactive parts follow
+signals. The server omits all motion parts, so the template renders the same HTML with or without them.
+See the [motion guide](https://shayanhabibi.github.io/Ranvier/view/motion/) for application use, the
+[design spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-21-motion-design.md)
+for rationale, and the [seam note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md)
+for the runtime hooks.
 
 Install the JavaScript package beside it:
 

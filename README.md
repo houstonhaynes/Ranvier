@@ -22,7 +22,9 @@
 
 ## Overview
 
-Ranvier builds a graph of signals (settable sources), memos (derived values, recomputed on read once something they read has changed) and effects (side effects the scheduler runs after a change). Async sources carry an explicit Pending state, and boundaries decide where a pending or failed read stops.
+Ranvier connects signals, memos and effects in a reactive graph. Signals hold writable state;
+memos derive values and recompute on demand after their inputs change; effects run side effects
+after changes. Async sources carry an explicit Pending state, and boundaries handle pending or failed reads.
 
 From F#, through `Ranvier`:
 
@@ -56,7 +58,7 @@ graph.Run(() =>
 });
 ```
 
-Read the full documentation at **https://shayanhabibi.github.io/Ranvier/**.
+Read the [full documentation](https://shayanhabibi.github.io/Ranvier/).
 
 ## Features
 
@@ -66,6 +68,7 @@ Read the full documentation at **https://shayanhabibi.github.io/Ranvier/**.
 - [Debounce and throttle](docs/content/guide/timing.md) control when captured values reach downstream readers and async requests.
 - [Collections](docs/content/guide/collections.fsx) provide editable keyed sources, per-row projections, change readers, views and aggregates.
 - [Queries and mutations](docs/content/guide/queries.md) share acquired remote data, retain accepted data during refresh, and reconcile loaded queries in one batch.
+- [Views](docs/content/view/index.md) use typed F# components for browser rendering, server HTML and hydration. The [installation guide](docs/content/guide/installation.md#views) explains their current source and feed requirements.
 - [Fable](docs/content/fable/index.md) compiles the same model to JavaScript. Package builds include standalone Fable source projects, and CI checks package consumers. The guide documents target differences.
 
 ## Examples
@@ -83,7 +86,7 @@ See [Examples](docs/content/guide/examples.md) in the guide for each workflow an
 
 ## Origin
 
-Ranvier began as experiments in a repository called [Partas.Signals](https://github.com/shayanhabibi/Partas.Signals).
+Ranvier began as experiments in a repository called Partas.Signals.
 
 ## Build CLI
 

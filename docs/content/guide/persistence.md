@@ -7,10 +7,9 @@ order: 26
 Preview — `Ranvier.Persistence` is pre-release; its APIs and stored record format may change.
 :::
 
-`Ranvier.Persistence` keeps a graph's inputs across a restart or a page reload. A persisted signal
-or keyed collection is read from an `IStateStore` before the graph is built, starts from the stored
-value, and is saved back after each flush that changes it. Derived nodes are not stored: memos and
-effects recompute from the restored inputs, as they do on any first run.
+`Ranvier.Persistence` restores input state before building a graph, then saves changes after
+each flush. Persist signals and keyed collections; memos and effects recompute from those inputs.
+An `IStateStore` supplies memory, file, browser storage or an application-defined store.
 
 ```fsharp
 open Ranvier

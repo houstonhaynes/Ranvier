@@ -4,7 +4,7 @@ from oglib import *
 SECTIONS = [
     ("guide", "GUIDE", "Build with signals", "Installation, collections, async boundaries and troubleshooting.", "side"),
     ("concepts", "CONCEPTS", "How the graph works", "Signals, memos, effects and the async graph behind them.", "end"),
-    ("fable", "FABLE", "The JavaScript target", "The same reactive graph under Fable. Planned.", "side"),
+    ("fable", "FABLE", "The JavaScript target", "Compile reactive models and browser views from F#.", "side"),
     ("benchmarks", "BENCHMARKS", "Measured per commit", "BenchmarkDotNet suites and instruction counts.", "side"),
 ]
 

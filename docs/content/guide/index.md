@@ -41,40 +41,19 @@ doubled = 2
 doubled = 10
 ```
 
-## What you get
+## Choose a starting point
 
-:::note Signals, memos and effects
-Readers see consistent values as changes propagate. An equal result stops propagation at that node.
-:::
-
-:::note Owners and cleanup
-Every memo, effect and binding belongs to a scope. Dispose the scope to release its nodes and cleanups
-together in reverse acquisition order.
-:::
-
-:::tip Pending axis
-`AsyncSource` and async memos report pending state alongside their values. Flight policies control
-what happens when inputs change during a request.
-:::
-
-:::tip Boundaries
-A Suspense boundary supplies a fallback while its body is pending. An ErrorBoundary supplies a
-recovered value when its body fails. Both handle dependencies read directly or through memos.
-:::
-
-:::note Keyed and index projections
-Per-row reactive values over a collection, keyed by identity or by position.
-:::
-
-
-:::note Lookups and selectors
-Lookups derive a value for each key you read. Selectors report which key is selected, triggering
-the readers of the previous and new selection.
-:::
-
-:::tip Thread-affinity guard
-Dispatchers move work from other threads onto the graph thread.
-:::
+- **Derived state:** [Signals](signals.fsx), [Memos](memos.md), [Effects](effects.md) and
+  [Bindings](bindings.md) connect writable state to cached calculations and external targets.
+- **Async work:** [Async and pending](async-and-pending.md) covers requests, streams, loading,
+  errors and dispatch. [Boundaries](boundaries.md) supply values while a request is unavailable.
+- **Collections:** [Projections](projections.fsx) preserve rows by key;
+  [direct edits](collection-updates.fsx#direct-edits) update them without replacing the source list.
+- **UI:** [Views](../view/index.md) and [Server rendering](../server/index.md) share templates
+  across browser DOM, server HTML and hydration. [C# bindings](csharp.md#binding-to-xaml) connect
+  native XAML view models to the graph.
+- **Lifetime:** [Roots](roots.md) and [Cleanup](cleanup.md) stop computations and subscriptions
+  when their owner ends.
 
 ## Targets
 
@@ -100,6 +79,8 @@ Dispatchers move work from other threads onto the graph thread.
 - [Aggregates](aggregates.fsx): totals, counts and folds over collection rows.
 - [Forms](forms.md): records of reactive fields and batched resets.
 - [Tracing](tracing.md): why a node ran or did not run, where it was created, and the graph as it stands.
+- [Persisted inputs](persistence.md): restore signals and collections before building the graph.
+- [MCP inspection](mcp.md): expose selected values and messages from a running application.
 - [Input journal and replay](journal.md): record a graph's external inputs, and replay them to reproduce or re-enact a run.
 - [Signal maps](signal-maps.md): how to read the live graph maps beneath the examples, and how to write one.
 - [Troubleshooting](troubleshooting.md): each exception message and common symptom, with its cause and fix.
@@ -108,26 +89,8 @@ Dispatchers move work from other threads onto the graph thread.
 - [C#](csharp.md): C# factories, XAML bindings and reactive commands.
 - [Views](../view/index.md) and [Server rendering](../server/index.md): template components for the browser DOM, server HTML and hydration, in the alpha `Ranvier.View` packages.
 
-## Status
+## Source and package status
 
-:::details Implementation status and planned features
-
-| Area | Status |
-| --- | --- |
-| Core graph (signal, memo, effect, owners, batching) | Implemented and tested. |
-| Fixed-dependency bindings | `bindSignal` and `bindMemo` provide owned, untracked writes from one declared source; see [Bindings](bindings.md). |
-| Debounce and throttle | Implemented with eager capture, timed publication and injectable clocks; see [Timing](timing.md). |
-| Per-node typed comparers | Implemented for signals, memos, split effects and boundaries; see [Equality](equality.md). |
-| Editable keyed collections and value readers | Implemented, with direct row edits and bounded change cursors; see [Direct edits](collection-updates.fsx#direct-edits) and [Reading changes](projections.fsx#reading-changes). |
-| Async and boundaries | Implemented. A pending `.Value` read throws `NotReadyException`; `TryValue` reads without throwing. |
-| Per-node flight policies | Implemented: `createAsyncWithPolicy` and `createOwningAsyncWithPolicy` override the graph's policy for one async memo; see [Async memos](async-memos.md#flight-policy). |
-| Stream memos (`createStream`, `createStreamFold`) | Implemented and tested; see [Streams](streams.md). |
-| Projections, lookups and selectors | Implemented, including memo-free factory rows, opt-in create-first passes and trimmed reconciliation; see [Projections](projections.fsx). |
-| Fable/JavaScript | Implemented; package builds contain standalone Fable source projects. CI checks repository tests and packed consumers. See [Fable (JavaScript) target](../fable/index.md). |
-| Collection combinators (`Projection.filter`, `choose`, `map`, `mapWith`, `sortBy`, `groupBy`) | Implemented and tested, including pending and error behaviour; see [Collections](collection-views.fsx). |
-| Editable values (`createEditable`, `createDraft`) and the MVU bridge (`Mvu`, in the `Ranvier.Elmish` package) | Implemented and tested; see [Editable values and forms](forms.md) and [Migrating from Elmish](elmish.md). |
-| Shared remote queries and mutations | Implemented in `Ranvier.Query`, with acquired leases, retained refresh data and atomic reconciliation; see [Queries and mutations](queries.md). |
-| Input journal and replay (`GraphOptions.Journal`, `Journal.replay`, `Mvu.journal`) | Implemented and tested in both builds, with diagnostic replay and re-enactment; restore from a stored snapshot waits on #68, and a snapshot followed by a tail replay on #197. See [Input journal and replay](journal.md). |
-| Reusable lens and prism values for deep writes | Not implemented; they wait on a need for reusable focus paths over collections. |
-
-:::
+The guide describes the current source. [Installation](installation.md) distinguishes published
+previews from local package builds. [Roadmap](../concepts/roadmap.md) lists implemented areas and
+ideas under consideration.

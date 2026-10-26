@@ -12,4 +12,4 @@ Dispose the model's session when the application closes.
 
 On `ReconciliationFailed`, the server has already saved the word. Show a refresh
 action for stale queries rather than resubmitting that write to repair the cache.
-See `docs/content/guide/query-navigation.md` for the ownership and command flow.
+See [query navigation](../../docs/content/guide/query-navigation.md) for the ownership and command flow.

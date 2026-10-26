@@ -3,9 +3,9 @@ title: Owning and driving animations
 description: "Ranvier.Anime.Reactive: animations reverted by owners, playback as memos, signals that seek and drive, and the reduced-motion policy."
 ---
 
-`Ranvier.Anime.Reactive` ties anime objects to Ranvier's ownership tree and signals. It depends on
-the core alone, so code outside the view uses it as the [Motion parts](motion-parts.md) do. The
-samples use the opens of [Animation](motion.md#animating-an-element) and `open global.Ranvier`.
+`Ranvier.Anime.Reactive` connects anime objects to owners and signals. It works with the core
+without the view layer. Use the opens from [Animation](motion.md#animating-an-element) plus
+`open global.Ranvier`.
 
 ```fsharp
 open global.Ranvier
@@ -26,9 +26,9 @@ let animatePanel (panel: TS.Dom.Element) (bar: TS.Dom.Element) (level: Signal<fl
     Reactive.drive (fun () -> level.Value) fill "scaleX"
 ```
 
-Called inside a root or an instance's setup, `animatePanel` creates four objects owned by the
-current owner: the fade, its playback memos, the effect, and the animatable with its driving effect.
-Disposing the owner reverts the fade and the animatable and disposes the effects.
+The panel fades from transparent to opaque over 600 ms; completion sets `shown` to `true`.
+Changing `level` sends the bar towards its new scale. Disposing the owner restores both elements
+and stops the reactive work.
 
 ## `own`
 

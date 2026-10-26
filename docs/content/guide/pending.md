@@ -2,7 +2,10 @@
 title: Pending and failures
 ---
 
-Examples using tasks import the .NET types and construct a graph with a manual dispatcher:
+A pending read waits for data; a failed read reports an exception. Both states propagate through
+dependent computations until a [boundary](boundaries.md) supplies a display value.
+
+The examples use a manual dispatcher:
 
 ```fsharp
 open System
@@ -150,9 +153,8 @@ beforeSettle, List.ofSeq log
 :::
 ::::
 
-A reader that suspended re-runs from the start of its body when the source settles, not from the
-read that suspended. See
-[Re-running versus resuming](../concepts/suspension.md#re-running-versus-resuming) for the reasoning.
+[Why bodies re-run from the start](../concepts/suspension.md#re-running-versus-resuming)
+explains how this keeps reads consistent.
 
 ## Failures
 

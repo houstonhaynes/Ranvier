@@ -4,17 +4,15 @@ order: 1
 ---
 
 :::info Alpha
-The view packages are alpha releases, version 0.1.0-alpha.1; their APIs may change. See
-[Installation](../guide/installation.md#views) for the packages and their package source.
+The view projects use version `0.1.0-alpha.1`; their APIs may change. They are not currently
+published on nuget.org. Use [project references or local packages](../guide/installation.md#views).
 :::
 
-Ranvier's view layer renders [signals](../guide/signals.fsx), [memos](../guide/memos.md) and
-[effects](../guide/effects.md) as HTML. A view is a **template component**: a template built once
-per definition, and a setup function that runs once per mounted instance. Each dynamic part of the
-template reads the instance and writes one DOM node, attribute or property when the values it reads
-change; the rest of the tree stays in place.
+Ranvier binds [signals](../guide/signals.fsx) and [memos](../guide/memos.md) to HTML. A **template
+component** has a template built once and setup run once per instance. Reactive reads update bound
+text, attributes and properties while the surrounding DOM stays in place.
 
-The same component definition renders in three places:
+One definition supports three paths:
 
 * **In the browser**, compiled with [Fable](../fable/index.md), mounted into a DOM element.
 * **On the server**, on .NET or under Node, rendered to an HTML string. See [Server rendering](../server/index.md).
@@ -47,9 +45,9 @@ type Counter =
 let counter = Component.ofMembers<Counter, _> ()
 ```
 
-`Create` runs once per instance and returns the instance record. `View` is the template: each
-`fun c -> ...` inside it is a binding that reads the instance. A click writes the signal, and the
-render effect writes the button's text.
+With `{ Start = 2; Label = "Clicks" }`, the component shows `Clicks` and a button labelled `2`.
+Clicking changes it to `3`. `Create` owns the count; `View` binds it to the button.
+Try this in the [browser editor](getting-started.md).
 
 ## Layers and status
 
@@ -89,3 +87,5 @@ render effect writes the button's text.
 
 The [Server](../server/index.md) section covers `Server.render`, hydration, state transfer,
 deployment and performance.
+
+[Native views](native.md) describes the in-development WebCore host and its current limits.

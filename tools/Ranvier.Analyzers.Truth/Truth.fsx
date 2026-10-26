@@ -1,7 +1,6 @@
-// The external facts the analyzers rely on: Fable's inlining of module-mutable snapshots (RAN001), the Fable
-// precompile failure on generated union testers (RAN002), and the MSBuild integration of RanvierAnalyze. Exits
-// non-zero when a fact no longer holds: retire or rescope the rule that describes it. Run from any directory:
-// dotnet fsi tools/Ranvier.Analyzers.Truth/Truth.fsx
+// Verifies legacy/current compiler behavior for RAN001/RAN002 and RanvierAnalyze build integration.
+// A changed compiler fact requires reviewing the corresponding analyzer's scope.
+// Run: dotnet fsi tools/Ranvier.Analyzers.Truth/Truth.fsx
 open System
 open System.Diagnostics
 open System.IO
@@ -33,13 +32,13 @@ let check (name: string) (holds: bool) (detail: string) =
         failures.Add name
         printfn "FAIL %s\n%s" name detail
 
-let inlining () =
-    let target = Path.Combine (output, "inlining")
+let inlining (compiler: string list) label directory expectInlined =
+    let target = Path.Combine (output, directory)
 
     let code, log =
-        dotnet
-            [
-                "fickl"
+        dotnet (
+            compiler
+            @ [
                 "tools/Ranvier.Analyzers.Truth/Inlining"
                 "-c"
                 "Release"
@@ -49,6 +48,7 @@ let inlining () =
                 "-o"
                 target
             ]
+        )
 
     let js =
         if code = 0 then
@@ -56,15 +56,34 @@ let inlining () =
         else
             ""
 
-    check "Fickl compiles the inlining fixture" (code = 0) log
+    check $"{label} compiles the inlining fixture" (code = 0) log
 
-    check
-        "RAN001: Fickl Release inlines each single-use snapshot (snapshot, closure, tuple)"
-        (Regex.Matches(js, Regex.Escape "childSetups() - childSetups()").Count
-         >= 3)
-        js
+    let inlined =
+        Regex.Matches(js, Regex.Escape "childSetups() - childSetups()").Count
+        >= 3
 
-    check "RAN001: Fickl keeps a let mutable snapshot" (js.Contains "let held = childSetups()") js
+    check $"RAN001: {label} Release snapshot inlining matches its verified compiler behavior" (code = 0 && inlined = expectInlined) js
+
+    check $"RAN001: {label} keeps a let mutable snapshot" (js.Contains "let held = childSetups()") js
+
+    if code = 0 && not expectInlined then
+        File.WriteAllText (Path.Combine (target, "package.json"), """{"type":"module"}""")
+        let probe = Uri(Path.Combine (target, "Probe.js")).AbsoluteUri
+
+        let script =
+            $"import {{ snapshot, closure, tupled, kept }} from '{probe}'; const actual = [snapshot(), closure()(), tupled(), kept()]; if (JSON.stringify(actual) !== '[1,1,2,1]') throw new Error(JSON.stringify(actual));"
+
+        let info =
+            ProcessStartInfo ("node", WorkingDirectory = root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false)
+
+        for argument in [ "--input-type=module"; "-e"; script ] do
+            info.ArgumentList.Add argument
+
+        use proc = Process.Start info
+        let out = proc.StandardOutput.ReadToEndAsync ()
+        let err = proc.StandardError.ReadToEndAsync ()
+        proc.WaitForExit ()
+        check $"{label} preserves snapshot, closure, tuple and mutable values at runtime" (proc.ExitCode = 0) (out.Result + err.Result)
 
 /// Precompiles the fixture project `name` with `compiler` (the arguments that start the compiler); the exit code and
 /// the log.
@@ -167,7 +186,8 @@ let build () =
     check "an error-promoted RAN001 fails the build" (strict <> 0 && strictLog.Contains "error RAN001") strictLog
 
 dotnet [ "tool"; "restore" ] |> ignore
-inlining ()
+inlining fable518 "Fable 5.18" "inlining-fable518" true
+inlining fickl "Fickl" "inlining" false
 precompile ()
 build ()
 

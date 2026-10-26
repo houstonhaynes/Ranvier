@@ -7,8 +7,8 @@ order: 2
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-This page describes how a computation handles a value that has not arrived: what the graph records, how
-the reading computation stops, where the channel ends, and how failures use the same path.
+A pending read stops the current computation and records what it is waiting on. When that source
+settles, the computation starts again. Boundaries supply display values while it waits.
 
 ## The problem
 
@@ -27,7 +27,7 @@ know to run the memo again when `user` settles.
 
 *Implemented.*
 
-Every node reports a `Status`, a flags enum that is separate from the node's dirty state:
+Every node reports `Status` flags for readiness, failure and stale work:
 
 | Flag | Meaning |
 | --- | --- |
@@ -101,7 +101,7 @@ controls [
 ]
 ```
 
-### Two ways to read
+### Three ways to read
 
 - `.Value` is the transparent read. It returns the value, raises `NotReadyException` while the node is
   Pending, and raises the recorded error while it is Failed. It works from inside any helper.
@@ -110,8 +110,8 @@ controls [
 - `Peek` is an untracked read of the last settled value. It never suspends. On an async memo it returns the
   value held from before the current flight. These docs call that value the **retained value**.
 
-The engine itself uses the non-throwing path when it traverses the graph. The only reads that throw are
-`.Value` reads of pending sources inside user bodies.
+The engine traverses the graph through the non-throwing path. User code reading a pending `.Value`
+raises `NotReadyException`, including a top-level read outside a computation.
 
 A body that catches `NotReadyException` in its own `try ... with` is still Pending, whatever it returns. The
 graph records the pending read itself, not only the exception. The one exception is a read inside
@@ -191,15 +191,9 @@ Take a memo `c = s + a`, where `a` is an async value computed from `s`:
 | 2 | `s` is written to `2`. A new flight for `a` starts. | Pending, no value published | Pending, still holding `s = 1` |
 | 3 | `a` settles with `20`, the result for `s = 2`. | `c` re-reads both values: **22** | `c` adds the held `1` to `20`: **21** |
 
-The graph only ever held `(s = 1, a = 10)` or `(s = 2, a = 20)`. The value `21` combines an old `s` with a
-new `a`. This was reproduced in code, not just reasoned about. Conditional bodies fail the same way. If a
-condition changes while a branch is suspended, a resumed body publishes the branch the condition no longer
-selects.
-
-Resuming could be made correct by recording a version for every read before the pause and re-running
-whenever any version changed. At that point the saving is the cost of re-reading a few signals minus the
-cost of comparing a few versions, which is close to zero for typical small bodies. It would also run the
-prefix's side effects a different number of times than Solid does.
+`21` combines the old `s` with the new `a`. Conditional bodies have the same problem: a condition
+may change while its selected branch is pending. Re-running reads both the condition and its inputs
+again. A correct resume mechanism would need to validate earlier reads and restart when they changed.
 
 ## Boundaries
 
@@ -285,18 +279,17 @@ controls [
 ]
 ```
 
-Recovery is driven by re-reads, and no reset call exists. A failed async source can be settled later, which
-clears its Error flag. An error boundary shows `recover ex last` while its body fails, and shows the body's value
-again once a source the body read changes and the re-run succeeds. A throwing effect does not stop a flush:
-every effect queued behind it still runs, and the failure is recorded on that effect's `Status` and `Error`.
+A failed source recovers at its next `Settle`. A failed computation re-runs when a tracked input
+changes; a successful run clears the error. Re-reading an unchanged failed node serves its stored
+failure. An error boundary shows `recover ex last` until its body succeeds.
+
+A throwing effect records its `Status` and `Error`; later effects in the flush still run.
 
 [Contracts](contracts.md#error-recovery) lists where an exception from each kind of callback lands.
 
 ## State labels
 
-These docs use the following plain-text labels for what a reader can observe. Where the interface shows a
-state mark, the mark follows the same names. A mark identifies a state; it does not describe event order or
-API behaviour.
+The examples and signal maps use these state labels:
 
 | Label | What the reader sees |
 | --- | --- |
@@ -313,6 +306,5 @@ API behaviour.
 
 - **Real-world throw counts.** The estimate that a settle involves a handful of throws has not been measured
   in a real application.
-- **Solid's later pending-channel changes.** Parts of Solid 2.0's signal core, such as transitions,
-  optimistic lanes and the pending/error classification module, have not been reviewed in full. Full
-  behavioural parity may need them.
+- **Additional async features.** Transitions and optimistic lanes remain outside the implemented
+  pending-channel model. Ranvier does not promise behavioral parity with Solid.

@@ -69,11 +69,11 @@ source that [`nuget.config`](nuget.config) maps to its id, or among the packages
 naming them. `--dry-publish` lists what a push would accept and refuse, and the feed that satisfies each external
 dependency.
 
-The view packages (`Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and `Fable.Ranvier.Anime`, with their
-`.Traced` twins) publish to nuget.org. Their `Xantham.Fable.Core.TS` 0.2.1 dependency is served by the Xantham
-Cloudsmith feed, which `nuget.config` maps for `Xantham.*`, so the publish check accepts it there. Consumers add that
-feed; see the [installation guide](docs/content/guide/installation.md#views). The arrangement is temporary and ends
-when `Xantham.Fable.Core.TS` is on nuget.org.
+The view projects (`Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and `Fable.Ranvier.Anime`, with their
+`.Traced` twins) are packable, but their untraced package IDs were absent from nuget.org when checked on 2026-10-26.
+Use source project references until published packages are available. Their `Xantham.Fable.Core.TS` 0.2.1 dependency
+comes from the Xantham Cloudsmith feed, which `nuget.config` maps for `Xantham.*`; the publish check accepts it there.
+Consumers need that feed too; see the [installation guide](docs/content/guide/installation.md#views).
 
 ## Checks on a pull request
 

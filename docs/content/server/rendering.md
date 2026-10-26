@@ -2,9 +2,8 @@
 title: Rendering
 ---
 
-`Ranvier.View.Server` renders a template component to HTML. It compiles for .NET and Fable
-and depends on the DOM types only, which compile on .NET. The samples use the opens from
-[Templates and bindings](../view/templates.md).
+`Ranvier.View.Server` renders template components to HTML on .NET or under Fable. It needs DOM
+types, but no browser document. Use the opens from [Templates and bindings](../view/templates.md).
 
 ## A render is one request
 
@@ -14,6 +13,7 @@ let options = { Server.Options.defaults with Policy = Omit }
 let html = Server.render options counter { Start = 0; Label = "Clicks" }
 ```
 
+The counter starts at `0`; its click handler is omitted from HTML and attached during hydration.
 Each call to `Server.render options definition props`:
 
 1. creates a new [graph](../guide/graph.fsx) from `options.GraphOptions`, with one root owner for the

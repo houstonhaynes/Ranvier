@@ -7,8 +7,6 @@ A record of reactive fields lets each edit update only the readers of that field
 
 ## A form as a record of signals
 
-A record of reactive fields lets each edit update the readers of that field alone.
-
 :::details A two-field person form
 
 Both fields use drafts so that upstream reloads preserve local edits. The helpers collect a

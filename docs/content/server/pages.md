@@ -2,9 +2,8 @@
 title: Page declarations
 ---
 
-`Page.Definition` keeps a component, its initial props, document shell and state codec together. The server renders
-that declaration; a generated F# browser entry hydrates the same declaration. Applications do not need a handwritten
-HTML shell or a JavaScript file that imports and calls `start`.
+`Page.Definition` groups a component, initial props, document shell and optional state codec.
+The server renders it; a generated F# entry hydrates it in the browser.
 
 Try the [hosted browser examples](../examples/index.md), including a hydration snapshot and
 instructions for running its F# backend locally.
@@ -47,6 +46,9 @@ again. With a codec, browser startup requires the embedded state and reports mis
 substituting another initial value. The codec is an explicit pair of functions, so Ranvier.View does not require a
 particular serialization package.
 
+For the declaration above, `Page.render` produces a counter starting at `0` plus its encoded props.
+The generated browser entry reads that state and attaches the same counter's interactions.
+
 ## Generate and compile
 
 The build integration writes the result of `renderPage ()` as HTML and `clientSource` as `CounterEntry.fs`, then
@@ -77,11 +79,10 @@ and regenerates after source edits before reloading. Missing output and renderin
 a switch to an empty client-mounted page. Hash routing applies the browser fragment after hydrating the server's
 initial route, because fragments are not sent to the server.
 
-The main `examples/Fable.Ranvier.Playground` uses the same generation and development helper. Its shared
-`Playground.fs` declaration produces the document and browser entry; ordinary panels are server-rendered and
-hydrated. Its scheduling panel retains an explicit mount to demonstrate commit modes and remounting. The generated
-entry also connects the page handle to the playground's F# test controls. See its [README](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Fable.Ranvier.Playground/README.md)
-for the build commands and the deliberate manual test fixtures.
+The playground uses the same helper: ordinary panels hydrate; the scheduling panel mounts
+explicitly to demonstrate commit modes. Its generated entry also connects the F# test controls.
+See the [playground README](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Fable.Ranvier.Playground/README.md)
+for commands and manual fixtures.
 
 The [lower-level deployment example](deployment.md) remains useful for applications that manage their own document
 shell or browser lifecycle.

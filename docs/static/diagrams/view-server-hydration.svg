@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="306" viewBox="0 0 900 306" role="img" aria-labelledby="title desc">
+  <title id="title">Render, transfer, hydrate</title>
+  <desc id="desc">A shared component and initial props feed a server render. The response contains HTML and encoded props. The browser decodes those props, runs setup again, adopts matching DOM nodes and attaches interactions. The server request graph is disposed; the client mount remains live.</desc>
+  <rect width="900" height="306" rx="16" fill="#f3f6fb"/>
+  <g font-family="system-ui,sans-serif" fill="#16243a">
+    <text x="28" y="36" font-size="20" font-weight="700">One component definition, two setup runs</text>
+    <g stroke="#8cabc8" stroke-width="2" fill="#fff"><rect x="28" y="64" width="244" height="174" rx="12"/><rect x="332" y="64" width="236" height="174" rx="12"/><rect x="628" y="64" width="244" height="174" rx="12"/></g>
+    <g font-size="17" text-anchor="middle">
+      <text x="150" y="97" font-weight="700">1 · Server render</text><text x="150" y="132">Props → setup → HTML</text><text x="150" y="166">Count starts at 2</text><text x="150" y="211">Dispose request graph</text>
+      <text x="450" y="97" font-weight="700">2 · Response</text><text x="450" y="132">HTML with markers</text><text x="450" y="166">JSON initial props</text><text x="450" y="211">Browser bundle</text>
+      <text x="750" y="97" font-weight="700">3 · Browser hydrate</text><text x="750" y="132">Decode props → setup</text><text x="750" y="166">Adopt matching nodes</text><text x="750" y="211">Attach clicks and hooks</text>
+    </g>
+    <text x="28" y="275" font-size="16">After hydration: clicking updates the client count. Server state is not kept alive by the page.</text>
+  </g>
+  <g stroke="#3668a5" stroke-width="3" fill="none"><path d="M282 150h38m-10-8 10 8-10 8"/><path d="M578 150h38m-10-8 10 8-10 8"/></g>
+</svg>

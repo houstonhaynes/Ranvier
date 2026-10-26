@@ -2,9 +2,8 @@
 title: Other authoring layers
 ---
 
-Template components are the authoring form that renders on the server and hydrates. Two other layers
-build DOM in the browser: **authored views**, which construct each instance's DOM during mounting, and
-**`Fable.Ranvier`**, a small library of DOM helpers.
+Use template components for shared server rendering and hydration. **Authored views** build DOM per
+instance; **`Fable.Ranvier`** provides a smaller proof-of-concept helper layer.
 
 ## Authored views
 
@@ -37,6 +36,9 @@ let rowsView (rows: Signal<(int * string) array>) : Program.View =
                 Html.div [| Attr.idStatic ("row-" + string (fst (current ()))) |] [| reactiveText (fun () -> snd (current ())) |])
         |]
 ```
+
+With an initial row `(1, "Alpha")`, the example shows **Add row** and `Alpha`. Clicking the button
+adds `Item 2`; existing keyed rows stay mounted.
 
 | Function | Meaning |
 | --- | --- |

@@ -7,8 +7,8 @@ order: 1
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-These pages cover the design behind Ranvier: the model it uses and the reasons for it, as well as the
-alternatives that were considered and rejected. The guide pages cover how to use it.
+Understand dependency tracking, pending state and ownership here. For API walkthroughs, start
+with the [guide](../guide/index.md).
 
 Ranvier is a fine-grained reactive computation library for .NET, written in F#. It provides a dependency graph
 of **signals** (settable sources), **memos** (cached derived values) and **effects** (side effects that re-run
@@ -17,9 +17,8 @@ it read during its last run. Derived values update in height order, so a computa
 of old and new inputs. An equality cutoff stops propagation when a recomputed value is equal to the previous
 one.
 
-Many libraries already provide that layer. Ranvier adds a **pending channel**: a value that has not arrived
-yet is tracked as a status of its own. It is not a special value and not a flag you check by hand. The model
-follows Solid 2.0's async-aware signals.
+The **pending channel** carries a value's not-ready status through dependent reads to a boundary.
+A memo can use ordinary value expressions while the graph tracks loading state:
 
 ```fsharp
 open Ranvier
@@ -51,14 +50,8 @@ graph marks it Pending until the source settles.
   System.Reactive, Fable.Ripple and Solid, and when one of those is the better choice.
 - [Roadmap](roadmap.md) lists implemented features, package-build coverage and ideas under consideration.
 
-## Implemented and exploratory material
+## Reading design notes
 
-The research behind these pages included designs that were measured and then rejected, as well as ideas
-that are still open. Each page labels its material as one of the following:
-
-- **Implemented**: behaviour the current code provides and its tests cover.
-- **Considered and rejected**: an alternative that was evaluated, with the reason it was dropped.
-- **Exploratory**: a direction under consideration. Nothing in this category is available to use.
-
-Measurements quoted in these pages come from a single machine with a Stopwatch harness. Treat them as the
-scale of a cost, not as benchmark results. They do not compare Ranvier with any other library.
+**Implemented** describes current behavior; **considered and rejected** explains an evaluated
+alternative; **exploratory** marks ideas unavailable to use. Stopwatch measurements describe
+one machine and one path, rather than application performance or comparisons with other libraries.

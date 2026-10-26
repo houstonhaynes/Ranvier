@@ -10,10 +10,12 @@ Tracing is a compile-time switch. `RanvierTrace=true` compiles the per-graph eve
 what the traced build costs against the untraced build of the same source, and the budget that
 later instrumentation changes are held to.
 
-Every figure comes from the baseline at `f48a3a7`, recorded on 2026-10-24 on an AMD Ryzen 9
+Baseline figures come from `f48a3a7`, recorded on 2026-10-24 on an AMD Ryzen 9
 9900X under Windows 11 with .NET 10.0.13, Node.js 26.7.0 (fickl 0.5.3, fable-library-js 2.9.0)
 and Chromium 156. The raw results, the methodology and the machine are in
 [`docs/.ai/benchmarks/tracing/f48a3a7`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/f48a3a7/README.md).
+The checkpoint and incremental-read follow-ups below cite their separate `b786373` measurements.
+These are historical runs; upgrading the compiler or runtime requires a new comparison.
 
 ## Reproducing
 

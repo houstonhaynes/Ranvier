@@ -743,32 +743,12 @@ Ship against the untraced `Ranvier` package.
 
 :::
 
-## How the zero-cost claim is checked
+## Verification
 
-:::details Verification gates for trace changes
-
-The repository provides `tools/verify-trace.fsx` to check trace changes:
-
-- The untraced Release IL references no trace type and equals the IL of the merge base, method by
-  method, with closure line numbers and the checkout's path ignored. The packed DLL's public surface equals a committed baseline plus `Trace.named`,
-  `Trace.label` and the timed-value members in `docs/.ai/debounce-throttle-api-additions.txt`.
-- A sample using `Trace.named` or `Trace.label` compiles to the same IL as the sample without it.
-- A lint checks the hook sites and `#if RANVIER_TRACE` blocks in the engine sources.
-- The untraced Fable output imports nothing from the trace module.
-- A sample dump is byte-identical over five runs.
-- For each counter-bench scenario, the log's run, edge, observer and flush counts equal the
-  library's own counters, and the edges folded from the log equal the live graph.
-- With elevated rights, the counter bench shows equal allocations and instruction counts between
-  the merge base and the change.
-
-The merge base is taken with the branch the change targets: the base branch of the current branch's
-open pull request, or `master` when there is none. `--base <ref>` names another, for example
-`dotnet fsi tools/verify-trace.fsx --base origin/integration/issues`. The base is built in a
-temporary git worktree, and the pack step writes its intermediate files outside the repository.
-
-CI also runs the test suite traced, and publishes the NativeAOT smoke application traced and untraced.
-
-:::
+`tools/verify-trace.fsx` checks untraced IL, label overhead, Fable imports, deterministic sample
+dumps and agreement between trace events and graph counters. Its optional counter run compares
+allocations and instruction counts. CI also runs the traced suite and traced/untraced Native AOT
+smoke applications. See [trace benchmarks](../benchmarks/index.md) for measurements and methodology.
 
 ## Next
 

@@ -2,15 +2,19 @@
 title: Deployment
 ---
 
-A server-rendered app compiles one set of component files twice: on .NET for the server, and with Fable
-for the browser. This page assembles the counter from [Getting started](../view/getting-started.md)
-into three projects, an ASP.NET Core server that renders the page and serves the client bundle, and a
-Fable client that hydrates it.
+Compile shared components twice: .NET renders the page; Fable builds the browser code that
+hydrates it. This guide connects the [counter](../view/getting-started.md), a shared codec and an
+ASP.NET Core endpoint.
 
-For generated HTML and browser startup from a shared F# declaration, see [Page declarations](pages.md).
-The example below shows the lower-level rendering and hydration calls.
+Use [Page declarations](pages.md) to generate the document and browser entry from one declaration.
+Use the calls below when the application manages those pieces itself.
 
 ## Projects
+
+Place this example under `examples/CounterApp` in a Ranvier checkout so the project references below
+resolve. For a standalone application, pack the view projects into a local feed as described in
+[Installation](../guide/installation.md#views), then replace the view project references with local
+package references.
 
 ```text
 Shared/   Shared.fsproj   Counter.fs, Shared.fs
@@ -39,7 +43,7 @@ The `Ranvier.View` package holds `Server` and every template type; `Ranvier.View
     <Compile Include="Shared.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Ranvier.View" Version="0.1.0-alpha.1" />
+    <ProjectReference Include="../../../src/Ranvier.View/Ranvier.View.fsproj" />
     <PackageReference Include="Ranvier.Wire" Version="0.1.0-preview.1" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
@@ -74,14 +78,15 @@ The `Ranvier.View` package holds `Server` and every template type; `Ranvier.View
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Shared/Shared.fsproj" />
-    <PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
+    <ProjectReference Include="../../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
 </Project>
 ```
 
-The view packages are on nuget.org; the app's `nuget.config` adds the temporary Xantham Cloudsmith feed
-for their `Xantham.Fable.Core.TS` dependency, as [Installation](../guide/installation.md#views) shows.
+The checkout's `nuget.config` supplies the temporary Xantham Cloudsmith feed for
+`Xantham.Fable.Core.TS`. Preserve that feed when moving the example outside the checkout; see
+[Installation](../guide/installation.md#views).
 
 ## The page
 

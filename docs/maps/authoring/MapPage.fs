@@ -16,6 +16,8 @@ type PageCellKind =
     | Render of name: string
     /// <summary>A <c>map</c> fence's generated scenario and its flags.</summary>
     | Map of MapFenceOutput * MapFlags
+    /// <summary>A cell displayed as source without a rendered preview or browser entry.</summary>
+    | CodeOnly of PageCellKind
 
 /// <summary>A component fence of a documentation page.</summary>
 type PageCell =
@@ -83,7 +85,8 @@ module MapPage =
         unit.Cells
         |> List.filter (fun cell ->
             match cell.Kind with
-            | PageCellKind.Declarations -> false
+            | PageCellKind.Declarations
+            | PageCellKind.CodeOnly _ -> false
             | _ -> true)
 
     /// <summary>The module of a page's cells, with a page definition per rendered cell.</summary>
@@ -152,46 +155,60 @@ module MapPage =
         add $"module %s{moduleName key}"
         add ""
         add "open Ranvier"
-        add "open Ranvier.Docs.Maps"
+
+        if
+            cells
+            |> List.exists (fun cell ->
+                match cell.Kind with
+                | PageCellKind.Map _
+                | PageCellKind.CodeOnly (PageCellKind.Map _) -> true
+                | _ -> false)
+        then
+            add "open Ranvier.Docs.Maps"
 
         for cell in cells do
             blamed <- Some cell
             add ""
 
-            match cell.Kind with
-            | PageCellKind.Declarations -> code 0 cell
-            | PageCellKind.Expression ->
-                pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> ="
-                code 4 cell
-            | PageCellKind.Render name ->
-                code 0 cell
-                add ""
-                pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> = %s{name}"
-            | PageCellKind.Map (output, _) ->
-                let start = lines.Count
+            let rec compileCell kind =
+                match kind with
+                | PageCellKind.CodeOnly inner -> compileCell inner
+                | PageCellKind.Declarations -> code 0 cell
+                | PageCellKind.Expression ->
+                    pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> ="
+                    code 4 cell
+                | PageCellKind.Render name ->
+                    code 0 cell
+                    add ""
+                    pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> = %s{name}"
+                | PageCellKind.Map (output, _) ->
+                    let start = lines.Count
 
-                for s in output.Spans do
-                    spans.Add
-                        { s with
-                            Generated = start + s.Generated
-                            Body =
-                                if s.Indent = Int32.MaxValue then
-                                    cell.Line - 1
-                                else
-                                    cell.Line + s.Body - 1
-                        }
+                    for s in output.Spans do
+                        spans.Add
+                            { s with
+                                Generated = start + s.Generated
+                                Body =
+                                    if s.Indent = Int32.MaxValue then
+                                        cell.Line - 1
+                                    else
+                                        cell.Line + s.Body - 1
+                            }
 
-                for line in output.Code.Split '\n' do
-                    add (line.TrimEnd '\r')
+                    for line in output.Code.Split '\n' do
+                        add (line.TrimEnd '\r')
 
-                add ""
-                pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> = %s{output.Render}"
+                    add ""
+                    pinned cell $"let %s{componentName cell.Id}: Ranvier.View.Template.Component<unit> = %s{output.Render}"
+
+            compileCell cell.Kind
 
         for cell in cells do
             blamed <- Some cell
 
             match cell.Kind with
-            | PageCellKind.Declarations -> ()
+            | PageCellKind.Declarations
+            | PageCellKind.CodeOnly _ -> ()
             | _ ->
                 let host = hostId key cell.Id
                 add ""
@@ -257,29 +274,6 @@ module MapPage =
         let id = WebUtility.HtmlEncode cell
 
         $"<%s{tag} class=\"rv-map-host%s{modifier}\" id=\"%s{WebUtility.HtmlEncode (hostId key cell)}\" data-ranvier-map-page=\"%s{page}\" data-ranvier-map-cell=\"%s{id}\"></%s{tag}>"
-
-    let private card =
-        Regex ("<div class=\"partas-solid-card partas-solid-card--[A-Za-z0-9_-]+\">", RegexOptions.Compiled)
-
-    let private placeholder =
-        Regex (
-            "<(?<tag>div|span) class=\"partas-solid(?<inline> partas-solid--inline)?\" data-partas-page=\"(?<page>[^\"]+)\" data-partas-cell=\"(?<cell>[^\"]+)\"></(?:div|span)>",
-            RegexOptions.Compiled
-        )
-
-    /// <summary>Replaces the fence scanner's cards and placeholders with map cards and hosts.</summary>
-    let hosts (body: string) =
-        let body = card.Replace (body, "<div class=\"rv-map-card\">")
-
-        placeholder.Replace (
-            body,
-            MatchEvaluator (fun matched ->
-                let inline' =
-                    matched.Groups["tag"].Value = "span"
-                    || matched.Groups["inline"].Success
-
-                host inline' (WebUtility.HtmlDecode matched.Groups["page"].Value) (WebUtility.HtmlDecode matched.Groups["cell"].Value))
-        )
 
     let private literal (text: string) =
         "\""

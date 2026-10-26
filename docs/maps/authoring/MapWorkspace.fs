@@ -229,8 +229,8 @@ module MapWorkspace =
             IsError = true
         }
 
-    /// <summary>The files whose change requires a rebuild: the map libraries and every source project they reference.</summary>
-    let private inputs (repository: string) =
+    /// <summary>Fingerprints project sources, linked files, references and repository build configuration.</summary>
+    let internal inputs (repository: string) (project: string) =
         let skip (path: string) =
             let parts = path.Split ([| '\\'; '/' |])
 
@@ -239,9 +239,54 @@ module MapWorkspace =
                 part = "bin"
                 || part = "obj"
                 || part = "node_modules"
-                || part = "tests")
+                || part = ".git"
+                || part = ".nacara"
+                || part = "dist"
+                || part = "generated")
 
-        [ Path.Combine (repository, "docs", "maps"); Path.Combine (repository, "src") ]
+        let projects = Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let linked = Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+
+        let rec collect (project: string) =
+            let project = Path.GetFullPath project
+
+            if projects.Add project && File.Exists project then
+                let root = Path.GetDirectoryName project
+                let document = System.Xml.Linq.XDocument.Load project
+
+                for element in document.Descendants () do
+                    if List.contains element.Name.LocalName [ "Compile"; "ProjectReference"; "Import" ] then
+                        let name =
+                            if element.Name.LocalName = "Import" then
+                                "Project"
+                            else
+                                "Include"
+
+                        let attribute = element.Attribute (System.Xml.Linq.XName.Get name)
+
+                        if
+                            not (isNull attribute)
+                            && attribute.Value.IndexOfAny ([| '$'; '*'; '?' |]) < 0
+                        then
+                            let path =
+                                Path.GetFullPath (Path.Combine (root, attribute.Value.Replace ('\\', Path.DirectorySeparatorChar)))
+
+                            if File.Exists path then
+                                linked.Add path |> ignore
+
+                                if
+                                    element.Name.LocalName = "ProjectReference"
+                                    || element.Name.LocalName = "Import"
+                                then
+                                    collect path
+
+        collect project
+
+        [
+            yield Path.Combine (repository, "docs", "maps")
+            yield Path.Combine (repository, "src")
+            yield! projects |> Seq.map Path.GetDirectoryName
+        ]
         |> List.filter Directory.Exists
         |> List.collect (fun directory ->
             Directory.EnumerateFiles (directory, "*", SearchOption.AllDirectories)
@@ -252,6 +297,26 @@ module MapWorkspace =
                     || path.EndsWith ".props"
                     || path.EndsWith ".targets"))
             |> List.ofSeq)
+        |> fun files ->
+            [
+                yield! files
+                yield! linked
+                yield! projects
+                for name in
+                    [
+                        "Directory.Build.props"
+                        "Directory.Build.targets"
+                        "Directory.Packages.props"
+                        "nuget.config"
+                        "global.json"
+                        ".config/dotnet-tools.json"
+                    ] do
+                    let path = Path.Combine (repository, name)
+
+                    if File.Exists path then
+                        yield path
+            ]
+        |> List.distinct
         |> List.sort
         |> List.map (fun path ->
             let info = FileInfo path
@@ -337,7 +402,7 @@ module MapWorkspace =
                 packageJson options.Packages
                 string options.Minify
                 shared
-                inputs options.Repository
+                inputs options.Repository options.MapsProject
             ]
             |> String.concat "\n\u0000"
             |> hash

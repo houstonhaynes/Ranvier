@@ -19,7 +19,7 @@ and how to write one.
 
 Use **Example code** to expand or collapse a map's code. The graph and its controls stay visible.
 Authors can choose the initial state and cap the code area's height; taller code scrolls, including
-any F#/JSX tabs. These disclosures work with keyboard controls and with JavaScript disabled.
+long listings. These disclosures work with keyboard controls and with JavaScript disabled.
 
 ## Reading a map
 

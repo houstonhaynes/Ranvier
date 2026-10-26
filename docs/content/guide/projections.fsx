@@ -337,10 +337,8 @@ With `CreateFirst`, a factory failure fails and rolls back the pass.
 when consumers need those APIs. `Keys` and key readers remain available for membership and order.
 :::
 
-These contracts are covered by the `create-first` and `memo-free` tests in
-[Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs).
-The pass's reuse and fallback cases are covered in
-[TrimmedPass.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/TrimmedPass.fs).
+Behavior tests: [Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs)
+and [TrimmedPass.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/TrimmedPass.fs).
 
 ## Index projections
 
@@ -367,12 +365,9 @@ slots.Keys, slots.Get 0
 
 ## Pending and failed rows
 
-`Keys` can be available while individual rows are still pending. Handle loading at the row or
-collection level with a boundary.
-
-A row whose value is pending raises `NotReadyException` from `Get` and `TryGet`, which a suspense
-boundary catches. The key set resolves independently of the rows' values, so `Keys` is available while
-rows are still in flight. A failed row re-raises its reader's exception from `Get`.
+`Keys` resolves independently of row values, so membership can be available while rows are pending.
+A pending row raises `NotReadyException` from `Get` and `TryGet`; a failed row re-raises its reader's
+exception. Use a boundary around each row or the whole collection to handle unavailable values.
 
 :::details Pending summaries, snapshots and read costs
 

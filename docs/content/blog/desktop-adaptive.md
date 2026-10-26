@@ -294,7 +294,7 @@ Set a WPF view's `DataContext` to that instance:
 
 Install `Ranvier.CSharp --prerelease` and create the graph/view model on the GUI thread. Dispose the view model when its window closes, and the graph when its owning window or application exits.
 
-For Adaptive, use your UI stack's adapter or bridge callbacks to `INotifyPropertyChanged`. [Navs.Avalonia](https://angelmunoz.github.io/Navs/Navs-Avalonia.html#Adaptive-Data) demonstrates desktop views and shared state; its binding helpers belong to Navs.
+For Adaptive, use your UI stack's adapter or bridge callbacks to `INotifyPropertyChanged`.
 
 See the [C# binding guide](../guide/csharp.md#binding-to-xaml) for loading, errors and commands.
 
@@ -385,7 +385,8 @@ The difference is how you express the dependency. Adaptive also supports dynamic
 
 ## Performance can justify a switch
 
-You may prefer Adaptive's APIs and still choose Ranvier if it performs better on the work your app does. The reverse is equally valid: compare the workload, then choose the engine.
+Compare the workload your app performs before choosing an engine. API preference alone does not
+establish a performance advantage.
 
 Useful desktop measurements include:
 
@@ -396,7 +397,8 @@ Useful desktop measurements include:
 
 Keep the inputs, derived calculations and displayed output equivalent. Test realistic sizes and update patterns, including single-field edits, batches and collection changes.
 
-A counter teaches the API; a benchmark must exercise the path you are choosing between. Ranvier's [benchmarks](../benchmarks/index.md) document its measured scenarios; use a comparison of your own workload to establish a switching benefit.
+Ranvier's [benchmarks](../benchmarks/index.md) document their measured scenarios. Use your own
+workload to establish whether switching improves the outcomes above.
 
 ## Lists: compare the actual collection path
 
@@ -435,7 +437,10 @@ The trade-offs depend on your operators:
 - **Ranvier:** keyed rows, delta readers and ownership, with some membership paths still scanning keys and changed sort ranks using a full sort.
 - **Either:** measure your edit/filter/sort/aggregate workload; deltas do not make every operation proportional to changed rows.
 
-As of `2ce4b7d` (2026-10-16), keyed snapshot projections trim unchanged prefixes and suffixes and take a full visit when no trim is possible (#55/#56). This improves those measured list paths while retaining the scans and full-sort costs above. #57 also removes redundant work from the generated Fable core; its timings concern Node experiments, not desktop .NET performance. The [projection benchmark follow-ups](../benchmarks/projections.md#keyed-pass-follow-ups) and [counter caveats](../benchmarks/counters.md#fable-core-follow-up) keep the measurements tied to their source versions.
+The [projection follow-ups](../benchmarks/projections.md#keyed-pass-follow-ups) record prefix/suffix
+trimming and full-visit fallback at `2ce4b7d` (2026-10-16), with their measured costs and limitations.
+The later CI charts track subsequent changes. The [Fable core timings](../benchmarks/counters.md#fable-core-follow-up)
+concern Node experiments and do not establish desktop .NET performance.
 
 See [collection bindings](../guide/csharp.md#editable-keyed-collections), [reader contracts](../guide/projections.fsx#reading-changes) and [current costs](../concepts/ecosystem.md). The [collection maps](../guide/signal-maps.md#collections) show per-row propagation.
 
@@ -559,7 +564,9 @@ Choose lifetimes explicitly:
 
 ## What to learn from Adaptive's guides
 
-Adaptive's [official tutorial](https://fsprojects.github.io/FSharp.Data.Adaptive/) teaches inputs, derivation, transactions, reads, collections and dynamic branches. [Navs.Avalonia's examples](https://angelmunoz.github.io/Navs/Navs-Avalonia.html#Adaptive-Data) add the desktop host and binding layer.
+Adaptive's [official tutorial](https://fsprojects.github.io/FSharp.Data.Adaptive/) teaches inputs,
+derivation, transactions, reads, collections and dynamic branches. Add your desktop framework's
+binding and lifetime conventions when applying those examples to a window.
 
 Try this progression in your own app:
 
@@ -579,4 +586,4 @@ Try this progression in your own app:
 - **Owned consumers, XAML adapters and propagating async state:** try Ranvier in one real screen.
 - **A small form with little derived work:** ordinary MVVM may already be enough.
 
-For Ranvier, start with one GUI-thread graph, activate it during setup, and dispose it at exit. Add child roots when views need shorter lifetimes, then test a real async operation and list before expanding adoption.
+Start with the complete counter above, then test one real list and async workflow before expanding adoption.

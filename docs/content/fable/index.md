@@ -7,9 +7,8 @@ order: 1
 
 **Status: Implemented, with Fable sources included in package builds.** Ranvier compiles with Fable and runs its shared test suite against the compiled engine under Node.js. CI also tests consumers of the packed sources. This page lists the platform differences, including cases where evaluation timing or equality differs.
 
-## Intent
-
-Ranvier is native .NET first and Fable second. The engine is written so that it can be compiled to JavaScript with [Fable](https://fable.io), with the .NET build remaining the reference. Where the two targets must differ, the difference is kept in a small number of platform-specific places rather than spread through the engine.
+The .NET build is the reference implementation. [Fable](https://fable.io) compiles the same engine
+to JavaScript; the differences below matter when sharing code between targets.
 
 ## Current state
 
@@ -42,12 +41,14 @@ NuGet packages, traced and untraced. The package consumer check is
 `tests/check-package-compatibility.ps1 -CheckFable`. These checks validate the package build;
 availability of a particular version on NuGet is a separate release step.
 
-**Packages ship the Fable sources.** `Ranvier` and `Ranvier.CSharp` from `0.1.0-preview.6`,
-`Ranvier.Elmish` from `0.1.0-preview.5` and `Ranvier.Query` from `0.1.0-preview.2` contain the
-standalone Fable project files, as do the view packages (`Ranvier.View`, `Ranvier.View.Dom`,
-`Ranvier.View.Anime` and `Fable.Ranvier.Anime`) from their first version, `0.1.0-alpha.1`. See [Installation](../guide/installation.md#from-nuget) for the package
-links. Earlier previews do not contain them; use a current version, a local package feed, or a repository
-project reference. The CI consumer script packs temporary packages and demonstrates the local-feed path.
+**Published core packages include Fable sources:** `Ranvier` and `Ranvier.CSharp` from
+`0.1.0-preview.6`, `Ranvier.Elmish` from `0.1.0-preview.5`, and `Ranvier.Query` from
+`0.1.0-preview.2`. Earlier previews lack the standalone project files. See
+[Installation](../guide/installation.md#from-nuget).
+
+The view projects also pack Fable sources, but their `0.1.0-alpha.1` packages are not currently on
+nuget.org. Use [project references or local packages](../guide/installation.md#views); CI
+validates temporarily packed consumers.
 
 ## Known differences from .NET
 
@@ -118,7 +119,8 @@ graph.Run (fun () ->
     count.Value <- 5)
 ```
 
-The snippet uses only functions that exist on both targets, which is the style to follow in code meant to compile under Fable.
+On both targets the effect prints `2`, then `10`. These creation functions work on both targets;
+the public memo constructors do not.
 
 - `Projection.AsObservableCollection`, since `ObservableCollection` is a .NET collection type.
 - `Trace.dump`, which writes a file, and `TraceModel.parseDump`. `Trace.dumpText` gives the same text.
@@ -127,6 +129,10 @@ The snippet uses only functions that exist on both targets, which is the style t
 
 ## UI integration
 
-The Fable target supplies the reactive engine, Elmish bridge and query layer. It does not include a
-browser DOM renderer or a framework-specific view adapter. Build those integrations on the public
-primitives, including [fixed-dependency bindings](../guide/bindings.md).
+Use [Ranvier.View](../view/index.md) for template components and `Ranvier.View.Dom` for browser
+mounting, hydration and document-head ownership. The [getting-started guide](../view/getting-started.md)
+includes a browser editor for standard components. Compiler-plugin extensions such as `Arms.Match`
+require a local build.
+
+For another UI toolkit, build an adapter on the public primitives, including
+[fixed-dependency bindings](../guide/bindings.md).

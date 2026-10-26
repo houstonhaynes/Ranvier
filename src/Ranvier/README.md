@@ -4,9 +4,9 @@ Fine-grained reactive computation for .NET and Fable.
 
 > **Preview.** Ranvier is pre-release. Its APIs may change before the first release.
 
-Ranvier builds a graph of signals (settable sources), memos (derived values, recomputed on read once something they
-read has changed) and effects (side effects the scheduler runs after a change). Async sources carry an explicit Pending
-state, and boundaries decide where a pending or failed read stops.
+Ranvier connects signals, memos and effects in a reactive graph. Signals hold writable state;
+memos derive values and recompute on demand after their inputs change; effects run side effects
+after changes. Async sources carry an explicit Pending state, and boundaries handle pending or failed reads.
 
 ```fsharp
 open Ranvier

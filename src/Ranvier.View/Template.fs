@@ -52,7 +52,7 @@ type PortableProperty =
 /// <summary>The ECMAScript Number::toString form of <c>value</c>, identical on .NET and under Fable.</summary>
 let internal numberText (value: float) : string =
 #if FABLE_COMPILER
-    string value
+    Fable.Core.JsInterop.emitJsExpr value "String($0)"
 #else
     Native.numberText value
 #endif

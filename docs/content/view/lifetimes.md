@@ -2,9 +2,8 @@
 title: Mounts and lifetimes
 ---
 
-A **mount** is a view placed in a DOM element: its nodes, its instances' owners, effects and
-listeners, and a handle that disposes all of them. Mounting runs in the browser under Fable; the
-functions are in `Ranvier.View.Dom.Mounting`.
+A **mount** owns a DOM region, its component instances, effects and listeners. Its handle disposes
+them together. Mounting runs under Fable through `Ranvier.View.Dom.Mounting`.
 
 ## Mounting a component
 
@@ -48,6 +47,8 @@ children of `host` stay in place.
 | `MoveBefore (parent, before)` | Moves an attached mount's nodes to another position. |
 
 Disposing the graph also disposes every mount on it.
+
+Calling `mounted.Dispose ()` removes the counter and its listeners. Unrelated host children remain.
 
 ## Instances and owners
 

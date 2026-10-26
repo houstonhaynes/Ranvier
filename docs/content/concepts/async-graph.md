@@ -7,9 +7,9 @@ order: 3
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-This page covers how asynchronous work fits into a synchronous, re-runnable dependency graph on .NET. It
-explains where tasks enter the graph, what happens to superseded requests, which thread owns the graph, and
-what changes on JavaScript through Fable. [Suspension](suspension.md) covers the pending channel itself.
+Async bodies return tasks; the graph tracks their synchronous reads and publishes completions on
+the graph thread. Flight policies decide what happens when inputs change during a request.
+[Suspension](suspension.md) explains how pending state reaches readers.
 
 ## Async as a property of every computation
 
@@ -95,9 +95,8 @@ SignalsDotnet and CommunityToolkit.Mvvm.
 - a coalescing policy that publishes the finished flight's result before the trailing run (SignalsDotnet
   `ScheduleNext`, R3 `ThrottleFirstLast`); `FinishCurrent` keeps the memo pending until the trailing run settles
 
-Debounce and throttle are implemented as [timed values](../guide/timing.md), with eager capture and delayed
-publication. Read a timed value from an async memo to control when requests start, and choose its flight
-policy separately. They are no longer exploratory flight-policy proposals.
+[Timed values](../guide/timing.md) capture eagerly and delay publication. Read one from an async
+memo to control request admission, independently of the flight policy.
 
 ## Threads and dispatch
 
@@ -125,13 +124,9 @@ completions back to it.
 | `Some (ManualDispatcher ())` | The inbox fills and is drained when the owning thread calls `graph.Pump ()`. |
 | `Some (ImmediateDispatcher ())` | Drains on the thread that posted. Under `Guarded`, an off-thread drain raises and the work stays queued. |
 
-A console app, server or test usually has no `SynchronizationContext`, so it gets `ManualDispatcher`. An
-off-thread settle is then visible only after `graph.Pump ()`. A missing pump produces a stall, which is easy
-to diagnose, where the alternative is a race, which is not. The same behaviour makes async code
-deterministic in tests: the test decides when each flight settles.
-
-A message queue belongs at this boundary, one message per drain. It does not belong between nodes. Inside the
-graph, a write settles synchronously before the next line runs.
+Without a `SynchronizationContext`, an off-thread settle remains queued until `graph.Pump ()`.
+Tests can use that delay to assert state before and after delivery. Once inside the graph, writes
+propagate synchronously.
 
 [Contracts](contracts.md#threading) lists which operations each thread may call and where each kind of work runs.
 
@@ -211,13 +206,12 @@ differences include:
   builds on one target and not on the other.
 - **Threads.** A Fable graph runs in one JavaScript execution context and ignores the .NET dispatcher machinery.
 
-The Fable target is implemented; see [Fable (JavaScript) target](../fable/index.md). On the browser, Solid's own signals (through Partas.Solid) are the natural choice for
-rendering in Partas.Solid applications. Ranvier can also serve other consumers of a shared .NET/Fable model. See
-[Ecosystem](ecosystem.md).
+Compile browser applications with [Fable](../fable/index.md) and render them with
+[Ranvier.View.Dom](../view/getting-started.md). Server and browser components share the same
+[Ranvier.View templates](../view/templates.md).
 
 ## Outside the scope of the core
 
-Ranvier is a reactive core, not a UI framework. It has no DOM layer and no template compiler. In Solid, a
-compiler that extracts templates provides the fine-grained DOM performance, and that is a separate and much
-larger body of work than the graph. On native .NET hosts such as Avalonia, WPF, MAUI and Blazor, the host
-toolkit does the rendering, so that work does not arise.
+The `Ranvier` package owns reactive computation. [Ranvier.View](../view/index.md) adds reusable
+templates, browser mounting, server HTML and hydration. Each binding updates the DOM part that
+reads it. Native hosts such as Avalonia, WPF, MAUI and Blazor render through their own toolkits.

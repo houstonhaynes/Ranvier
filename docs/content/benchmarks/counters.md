@@ -115,6 +115,20 @@ inconclusive.
 
 ## Reading the charts
 
+### Interactive chart controls
+
+On the topic pages, **Library comparison** compares engines at a selected commit; **Trends** follows
+each scenario across recorded commits, with one panel per Ranvier variant. Choose instructions,
+cycles, allocated bytes, branch misses or x64 CPU time with the Metric control. Runtime and metric
+selections carry between tabs; the site remembers the last selected tab across benchmark pages.
+
+Trend lines default to change since their first record, with changes of at least 5% shown in bold.
+Pinned versions of other libraries help reveal run-to-run variation. The shaded band spans the
+lowest and highest of the five processes behind each median; it is not a confidence interval.
+A ▲ marks a commit where Ranvier's library counters changed; select it to inspect the counters.
+
+### Comparison limits
+
 - **Engines differ in semantics.** R3 pushes each write straight to its subscribers, without
   batching or glitch-free ordering. FSharp.Data.Adaptive disposal removes callback subscriptions
   only.

@@ -6,12 +6,11 @@ order: 2
 > **Preview** — Ranvier is pre-release; its APIs may change.
 
 ## CI instruction counts
-The Library comparison tab compares retired instructions per operation across engines for the latest CI measurement; the Trends tab follows each scenario across commits. The tab last chosen opens on every benchmark page, and the runtime and metric carry over between tabs.
-Choose a runtime, metric or recorded commit, filter scenarios by name, and toggle libraries in the legend.
-
-The trend panels follow each scenario across every recorded commit, one panel per Ranvier variant.
-By default each line shows its change since its first record; libraries other than Ranvier are pinned
-versions, so their lines mark the run-to-run noise floor. A change since the first record of 5 % or more is set in bold. The Metric control switches between instructions, cycles, allocated bytes, branch misses and CPU time on x64. The shaded band spans the lowest and highest of the five processes behind each median, and a ▲ under the axis marks a commit at which the Ranvier variant’s library counters changed; the readout lists those counters.
+**Library comparison** shows the latest recorded engine measurements; **Trends** follows scenarios
+across commits. Choose a runtime, metric or commit, filter scenarios, and toggle libraries in the
+legend. The site remembers your tab; runtime and metric selections carry between tabs.
+See [chart controls and uncertainty](counters.md#interactive-chart-controls) for bands, relative values
+and library-counter markers.
 
 <div data-perf-tabs data-perf-data="signals"><p role="status">Loading recorded measurements…</p></div>
 <link rel="stylesheet" href="/Ranvier/benchmarks/perf-charts.css">

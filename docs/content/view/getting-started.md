@@ -8,9 +8,16 @@ which is the runnable reference for everything in this section.
 
 ## Project
 
-Reference the `Ranvier.View.Dom` package; it brings in `Ranvier.View` and `Ranvier`. The view packages
-are on nuget.org and need the temporary Xantham Cloudsmith feed;
-[Installation](../guide/installation.md#views) shows the `nuget.config`.
+Reference `Ranvier.View.Dom`; it brings in `Ranvier.View` and `Ranvier`. The view packages are
+currently available from source. Clone the repository beside your application:
+
+```bash
+git clone https://github.com/shayanhabibi/Ranvier.git
+```
+
+With `Counter/` and `Ranvier/` in the same directory, use this `Counter/Counter.fsproj`.
+Add the Xantham feed from [Installation](../guide/installation.md#views) to the application's
+`nuget.config` so the DOM type dependency restores.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -22,17 +29,17 @@ are on nuget.org and need the temporary Xantham Cloudsmith feed;
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
+    <ProjectReference Include="../Ranvier/src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
 </Project>
 ```
 
-Install Fable 5.18.0 as a local tool:
+Install the compiler as a local tool. These docs use Fickl 0.6.9, a Fable compiler fork:
 
 ```bash
 dotnet new tool-manifest
-dotnet tool install fable --version 5.18.0
+dotnet tool install fickl --version 0.6.9
 ```
 
 ## The component
@@ -157,7 +164,7 @@ Compile the project to JavaScript and serve it with any bundler. With Vite:
 
 ```bash
 npm install --save-dev vite
-dotnet fable Counter.fsproj --outDir generated
+dotnet fickl Counter.fsproj --outDir generated
 npx vite
 ```
 
@@ -180,6 +187,34 @@ if (import.meta.hot) import.meta.hot.dispose(() => dispose());
 ```
 
 Each click writes `Count`; the button's text node changes, and the button keeps its identity.
+
+## Try a component in the live editor
+
+Press **Run**, then click the rendered button. Change the starting value or the increment and run
+again to replace the preview. The first run on a page loads the compiler and checks the DOM type
+metadata; this can take 1–2 minutes. Later runs on the same page reuse the checker.
+
+```fsharp live
+open global.Ranvier
+open Ranvier.View
+
+let counter =
+    Component.define
+        (fun _ () -> createSignal 0)
+        (fun t ->
+            t.button
+                [| t.Events.onClick (fun (count: Signal<int>) _ -> count.Value <- count.Value + 1) |]
+                [| t.text (fun (count: Signal<int>) -> string count.Value) |])
+
+let mounted = Ranvier.Docs.Maps.MapMount.body counter
+```
+
+`MapMount.body` is the docs' preview helper: it creates a graph, mounts the component into the
+editor's output and returns a disposable handle. Your application uses `Mounting.mount` as above.
+
+The editor supports ordinary Ranvier.View components and DOM bindings. Packages requiring a
+compiler plugin, including `Ranvier.View.Arms` and its `Arms.With` / `Arms.Match` forms, are excluded.
+Use the [standard conditional arms](arms.md) in the editor, or a local project for plugin forms.
 
 ## Next
 

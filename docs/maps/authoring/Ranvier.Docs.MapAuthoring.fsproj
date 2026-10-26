@@ -8,9 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Ranvier.Docs.Maps.Tests" />
         <Compile Include="MapFence.fs" />
         <Compile Include="MapCode.fs" />
         <Compile Include="MapPage.fs" />
+        <Compile Include="FenceScanner.fs" />
         <Compile Include="MapWorkspace.fs" />
     </ItemGroup>
 

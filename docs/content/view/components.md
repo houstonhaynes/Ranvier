@@ -2,10 +2,9 @@
 title: Components
 ---
 
-A component is a `Component<'props>`: a **setup** function `Setup -> 'props -> 'inst` that runs once
-per instance, and a **template** over `'inst` built once per definition. Every declaration style
-below produces this value with one call to `Component.define`. Components of every style mount, render
-on the server and hydrate the same way, and mix freely in one tree.
+A `Component<'props>` pairs **setup** (`Setup -> 'props -> 'inst`, once per instance) with a
+**template** (once per definition). All four declaration styles below compose, mount, render and
+hydrate the same way.
 
 The samples share this props record and these opens:
 
@@ -25,10 +24,6 @@ type CounterProps = { Start: int; Caption: string }
 | 2 | `Component.template setup view` | Small and one-off components. | None when the instance is a record. |
 | 3 | A class with a constructor and a static `View`, `Component.ofClass` | Constructor-style setup and private members. | Every instance lambda. |
 | 4 | `Component.define setup (fun t -> ...)` | Templates that need `t.` members, or top-down typing. | None inside `t.` members. |
-
-The README's
-[Declaring components](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#declaring-components)
-section is the reference for each style, with the same counter written four ways.
 
 ### Record with `Create` and `View`
 
@@ -68,7 +63,8 @@ let badge =
         (span (Attrs.className "badge") { fun label -> label })
 ```
 
-The view argument is evaluated once, where the definition is bound.
+The view is built once. Rendering `badge` with `"New"` produces `<span class="badge">New</span>`;
+each mounted badge gets its own setup result.
 
 ### Class with a constructor
 
@@ -193,8 +189,7 @@ let panel = Component.ofMembers<Panel, _> ()
 
 ### A component as a tag
 
-A four-line class over `ComponentTag` gives a component a tag of its own, which takes either a props
-reader or fixed props:
+`ComponentTag` gives a component a tag accepting fixed props or a props reader:
 
 ```fsharp
 type badgeOf<'i> private (label: 'i -> string, primary: unit) =

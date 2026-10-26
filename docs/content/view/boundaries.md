@@ -2,13 +2,12 @@
 title: Boundaries
 ---
 
-A view boundary shows a **pending view** until every binding, row and arm under its content has read
-a value, then reveals the content in one insertion. A failure under the content replaces it with an
-**error view**. The reads are the core's [pending reads](../guide/pending.md): an
-[async source](../guide/async-sources.md) or [async memo](../guide/async-memos.md) that has no value
-yet throws `NotReadyException`, and the boundary records the wait.
+A boundary shows a **pending view** until its content has values, then reveals that content together.
+A failure replaces the content with an **error view**. Pending reads come from an
+[async source](../guide/async-sources.md) or [async memo](../guide/async-memos.md) throwing
+`NotReadyException`; see [pending reads](../guide/pending.md).
 
-The samples use the opens from [Templates and bindings](templates.md).
+Use the opens from [Templates and bindings](templates.md).
 
 ## A boundary
 
@@ -52,6 +51,13 @@ let profileView (store: ProfileStore) =
   shown during that wait: a refetch keeps the previous data, arms and rows on screen.
 - The content receives the status as its props. Data the content shows comes from state the content's
   definition can reach, such as the store captured above. Build the definitions once.
+
+### Follow the example
+
+1. With no name available, the section displays `Loading…`.
+2. Settle the name as `Ada`: the article replaces the pending view.
+3. During a later pending read, the article stays visible and gets `data-refreshing="true"`.
+4. A failure shows its message and **Retry**; retry starts fresh content setup.
 
 ## Where failures go
 

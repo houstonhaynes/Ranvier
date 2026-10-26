@@ -5,10 +5,8 @@ description: Deterministic animation tests on a manual anime clock under jsdom a
 
 ## A manual clock under jsdom
 
-anime reads time from `Date.now` and ticks on `requestAnimationFrame`. It captures both, and
-evaluates whether it runs in a browser, when `animejs` is first imported. A Node test
-sets the DOM globals and mocks `Date` **before** a dynamic `import ()` of anything importing
-`animejs`:
+Install DOM globals and mock `Date` **before importing anime**: it captures `Date.now`,
+`requestAnimationFrame` and browser detection at import time. Then load the compiled F# checks:
 
 ```js
 import test, { mock } from "node:test";
@@ -26,8 +24,7 @@ const { checks } = await import("./generated/Checks.js");
 for (const [name, check] of checks) test(name, () => check(ms => mock.timers.tick(ms)));
 ```
 
-The F# checks, compiled with Fable, switch the engine to manual ticks and step it after each advance
-of the mocked clock:
+Each F# check advances mocked time, ticks the engine and asserts the resulting style:
 
 ```fsharp
 open Fable.Core

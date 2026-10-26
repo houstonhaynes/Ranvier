@@ -2,7 +2,7 @@
 title: Troubleshooting views
 ---
 
-Each entry gives a message or symptom, its cause and the fix. Compile errors of the sugar are listed in
+Find the message or symptom below, then apply its fix. For sugar-specific diagnostics, see
 [Sugar](sugar.md) and the
 [view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md).
 

@@ -2,9 +2,8 @@
 title: Elmish components
 ---
 
-A component can run its own Elmish loop. Its setup creates an [`Mvu`](../guide/elmish.md), the
-instance holds the loop's `Dispatch` and the selector memos its template reads, and the loop is
-disposed with the instance. Components that each own a loop nest through two channels:
+Create an [`Mvu`](../guide/elmish.md) in component setup and keep its dispatch and selectors in the
+instance. Disposal stops the loop. Nest independent loops with two channels:
 
 - **Props down.** The parent passes the child a memo or reader over its own model.
 - **Callbacks up.** The child keeps its own `Msg` type and reports to the parent through a callback in
@@ -91,8 +90,12 @@ type Page =
 let page = Component.ofMembers<Page, _> ()
 ```
 
-The child receives `CurrentStep`, a selector memo. A parent message that leaves `Step` unchanged, such
-as `StepperReported`, leaves the child's bindings unread: the memo's equality cutoff stops propagation there.
+**Try it:** click **Add** to reach total 1 and report 1. Click **Bigger steps**, then **Add**: total
+and report become 3. **Clear** resets the child only; the parent keeps its last report. Hiding and
+showing the child resets its total to 0.
+
+`CurrentStep` cuts off unchanged `Step` values, so `StepperReported` does not re-run the child's
+bindings through that selector.
 
 ## Lifetime
 

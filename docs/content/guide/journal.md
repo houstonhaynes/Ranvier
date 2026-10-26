@@ -8,11 +8,14 @@ Preview — Ranvier is pre-release; its APIs may change. The input journal is a 
 format and replay rules may change before the first release.
 :::
 
-An input journal records a graph's external inputs as they arrive: signal writes, async-source
-settles and failures, and MVU messages. `Journal.replay` applies a recorded journal to a fresh graph,
-either to reproduce the run (diagnostic replay) or to run it again with live async work
-(re-enactment). The journal works in the untraced build; under a traced build a diagnostic replay
-also reproduces the trace.
+Record external signal writes, async-source outcomes and MVU messages with an input journal.
+Replay them into a matching graph in one of two modes:
+
+- **Diagnostic:** apply recorded outcomes to reproduce the run.
+- **Re-enactment:** re-run attributed async work and use its new outcomes.
+
+Journaling works in an untraced build. Traced diagnostic replay can also reproduce the trace;
+see [Diagnostic replay](#diagnostic-replay) for its conditions.
 
 ## Recording
 

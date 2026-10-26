@@ -26,6 +26,37 @@ let tests =
     <| testList
         "MapWorkspace"
         [
+            test "custom example sources and compiler pins invalidate the cache" {
+                let directory =
+                    Path.Combine (
+                        Path.GetTempPath (),
+                        "ranvier-cache-"
+                        + System.Guid.NewGuid().ToString "N"
+                    )
+
+                let examples = Path.Combine (directory, "examples")
+                Directory.CreateDirectory examples |> ignore
+
+                Directory.CreateDirectory (Path.Combine (directory, ".config"))
+                |> ignore
+
+                let project = Path.Combine (examples, "Examples.fsproj")
+                let source = Path.Combine (examples, "Counter.fs")
+                let tools = Path.Combine (directory, ".config", "dotnet-tools.json")
+
+                try
+                    File.WriteAllText (project, "<Project><ItemGroup><Compile Include=\"Counter.fs\" /></ItemGroup></Project>")
+                    File.WriteAllText (source, "module Counter\nlet initial = 0")
+                    File.WriteAllText (tools, "old")
+                    let initial = MapWorkspace.inputs directory project
+                    File.WriteAllText (source, "module Counter\nlet initial = 100")
+                    let changed = MapWorkspace.inputs directory project
+                    Expect.notEqual changed initial "custom sources outside src/docs/maps are tracked"
+                    File.WriteAllText (tools, "new compiler version")
+                    Expect.notEqual (MapWorkspace.inputs directory project) changed "tool manifest is tracked"
+                finally
+                    Directory.Delete (directory, true)
+            }
             test "a page that fails to compile or render is left out, and the other pages still build" {
                 let esbuild =
                     match Nacara.Plugins.Internal.EsbuildBinary.resolve () with

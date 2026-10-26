@@ -21,10 +21,8 @@ Choose the package for your language, then continue with [Getting started](getti
 Applications on .NET 8 and .NET 9 use the `netstandard2.1` build. That build omits
 `TimedClock.ofTimeProvider` and carries no trimming or Native AOT annotations.
 
-:::tip Prefer .NET 10
-The [pending-throw measurements](../concepts/suspension.md#what-a-throw-costs) document runtime-specific
-exception costs. They are measurements of that path, not a guarantee of faster application workloads.
-:::
+For runtime-specific suspension costs, see the
+[pending-throw measurements](../concepts/suspension.md#what-a-throw-costs).
 
 ## From NuGet
 
@@ -108,8 +106,9 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The view layer ships as four packages that share one version, `0.1.0-alpha.1`. Each depends on the
-others it needs at exactly that version.
+The source builds four view packages at `0.1.0-alpha.1`, with matching dependency versions.
+These packages are not currently available on nuget.org. Use project references to this checkout,
+or pack it and restore from a local feed.
 
 | Package | Holds | Depends on |
 | --- | --- | --- |
@@ -118,19 +117,13 @@ others it needs at exactly that version.
 | `Ranvier.View.Anime` | Motion parts for templates over anime.js | `Ranvier.View`, `Fable.Ranvier.Anime` |
 | `Fable.Ranvier.Anime` | Typed anime.js 4.5 bindings | `Ranvier`, `Xantham.Fable.Core.TS` |
 
-A browser app references `Ranvier.View.Dom`; a server, or code shared between server and client,
-references `Ranvier.View`. See [Views](../view/index.md).
+A browser app references `Ranvier.View.Dom`; server or shared component code references
+`Ranvier.View`. See [Views](../view/index.md) for setup.
 
-```xml
-<PackageReference Include="Ranvier.View.Dom" Version="0.1.0-alpha.1" />
-```
+:::warning Additional dependency feed
+`Xantham.Fable.Core.TS` 0.2.1 comes from the Xantham Cloudsmith feed. Add it beside nuget.org and,
+if using locally packed view packages, your local feed. Map `Xantham.*` to Cloudsmith:
 
-:::warning Temporary: the Xantham feed
-The view packages are on nuget.org. Their dependency `Xantham.Fable.Core.TS` 0.2.1 is served by the Xantham
-Cloudsmith feed and is not on nuget.org, so a consumer adds that feed. The requirement ends when
-`Xantham.Fable.Core.TS` 0.2.1 or later is on nuget.org.
-
-The application's `nuget.config` adds the Xantham feed beside nuget.org and maps `Xantham.*` to it:
 
 ```xml
 <configuration>
@@ -160,9 +153,9 @@ consumers restored from locally packed packages, so this path does not depend on
 build imports. See [Fable](../fable/index.md) for package details, available APIs and JavaScript
 timing and equality differences. The browser renderer is `Ranvier.View.Dom`.
 
-The published versions listed above do not contain those standalone Fable project files. Until a
-release includes the packaging fix, build packages from the current checkout and restore them from a
-local feed. The [Fable guide](../fable/index.md#package-sources-and-ci) explains this distinction.
+The published core and extension versions listed above lack those standalone Fable project files.
+For these source-package builds and the view packages, pack the current checkout and restore from
+a local feed. The [Fable guide](../fable/index.md#package-sources-and-ci) explains this distinction.
 
 ## Native AOT and trimming
 
@@ -182,7 +175,3 @@ overrides to keep useful diagnostic text after trimming.
 
 Each package has a `.Traced` variant for diagnostics. See [Tracing](tracing.md#from-nuget) for
 switching between traced and untraced builds.
-
-## Next
-
-Continue with [Getting started](getting-started.md).

@@ -195,7 +195,7 @@ the memo runs the body at that read, and that run is the re-run: the memo holds 
 `compute` receives the value the memo last published. Use it to accumulate a total, keep a running
 maximum, or reuse part of a previous result.
 
-Its type is `'T voption -> 'T`:
+The callback has type `'T voption -> 'T`:
 
 - `ValueNone` on the first run.
 - `ValueSome previous` after a value has been published. This is the same value `Peek` returns.
@@ -322,12 +322,9 @@ On .NET the previous-value argument uses a struct option. Under Fable, option re
 depends on the value: null and nested option values can require wrappers, so passing a generic
 previous value is not an allocation-free guarantee across targets.
 
-The matched September 28 reports at `cdef427` and `dd533de` measured a write through four memos
-at 1,889 → 1,928 retired instructions on .NET (+2.0%) and 3,405 → 3,566 under Node (+4.7%).
-Both differences lie within the reports' 5% noise threshold, with no meaningful measured
-per-operation allocation increase. This historical comparison supports retaining the feature;
-it does not establish zero cost or measure current `master`. See the
-[counter methodology and follow-up](../benchmarks/counters.md#fable-core-follow-up).
+Historical measurements found changes within the reports' 5% noise threshold for a four-memo
+chain. See the [counter methodology and follow-up](../benchmarks/counters.md#fable-core-follow-up)
+for commits, instruction counts and allocation measurements.
 :::
 
 :::tip Accumulate in a memo

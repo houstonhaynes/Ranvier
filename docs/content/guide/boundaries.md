@@ -2,7 +2,10 @@
 title: Boundaries
 ---
 
-Examples using tasks import the .NET types and construct a graph with a manual dispatcher:
+A boundary replaces a pending or failed body with a value your application can display.
+Its body re-runs from the start when a dependency changes.
+
+The examples use a manual dispatcher:
 
 ```fsharp
 open System
@@ -17,11 +20,7 @@ let newGraph () =
 When a completion arrives from another thread, pump the graph on its owning thread. See
 [Threading and dispatch](threading.md) and the `pumpUntil` helper in [Testing async state](testing.md).
 
-A boundary supplies a value when its body is pending or fails. Its readers see that fallback or
-recovered value instead of the state it handles. Choose the value to suit your UI or computation.
-
-The body always re-runs from the start. The suspended read linked its edge before throwing, so the
-source settling wakes the boundary.
+Readers see the fallback or recovered value for the channel the boundary handles:
 
 | Constructor | Pending body | Failed body |
 |-------------|--------------|-------------|

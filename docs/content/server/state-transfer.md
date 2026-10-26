@@ -2,9 +2,9 @@
 title: State transfer
 ---
 
-The client hydrates with the props the server rendered with. The server writes them into the page as
-JSON in a `<script type="application/json">` element, and the client reads that element before it
-hydrates. `Ranvier.Wire` encodes and decodes the JSON with the same text on .NET and under Fable.
+Encode the server's initial props in a `<script type="application/json">` element. Decode them
+before hydration so the client starts from the same data. `Ranvier.Wire` shares a JSON contract
+between .NET and Fable.
 
 ## A codec shared by both sides
 
@@ -40,12 +40,13 @@ Server.stateScript stateId (counterProps.Encode props)
 ```
 
 ```html
-<script type="application/json" id="counter-props">{"start":2,"label":"</script>"}</script>
+<script type="application/json" id="counter-props">{"start":2,"label":"\u003c/script>"}</script>
 ```
 
 `Server.stateScript id json` escapes the id as an attribute and writes every `<`, U+2028 and U+2029 in
 the JSON as its six-character escape. The element's text then runs to its own end tag, and
-`JSON.parse` of its `textContent` returns the value the JSON encodes, whatever strings it holds.
+`JSON.parse` of its `textContent` restores the original value. The escaped sample decodes to
+`{ Start = 2; Label = "</script>" }`, without closing the state element early.
 
 ## Reading the state
 

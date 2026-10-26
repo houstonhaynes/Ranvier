@@ -2,9 +2,8 @@
 title: Document head
 ---
 
-A component can own entries in the document's `<head>`: the title, `meta` elements and `link`
-elements. An entry is shown once its instance is placed and withdrawn when the instance is disposed,
-so the head follows whichever components are mounted.
+Components own document titles, `meta` and `link` entries. Placement activates an entry; disposal
+withdraws it, restoring any earlier live entry with the same key.
 
 Head entries are `t.Document` members, written inside `Component.define`; free tags mix with them in
 the same body. The sample uses the opens from [Templates and bindings](templates.md).
@@ -21,6 +20,9 @@ let articlePage =
             h1 () { fun a -> a.Title.Value }
         })
 ```
+
+Changing `Title` to `Waves` updates both the heading and document title (`Waves · Journal`).
+The description and canonical URL stay fixed.
 
 ## Entries and keys
 

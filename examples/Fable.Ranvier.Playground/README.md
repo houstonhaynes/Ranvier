@@ -18,7 +18,7 @@ repository's view sources. Add and reverse keyed rows to exercise reconciliation
 
 ## Run
 
-Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fickl 0.5.3 (a Fable fork) in its
+Prerequisites: .NET 10 SDK, Node.js 26 or newer, npm. The repository pins Fickl 0.6.9 (a Fable fork) in its
 local .NET tool manifest.
 
 From the repository root:
@@ -105,12 +105,13 @@ their manual setup is part of those tests. Benchmark entries compare particular 
 forms, so their explicit variants remain intact. New ordinary demos use shared page declarations and
 modern Sugar components; see [the contributor guide](../../CONTRIBUTING.md#examples-and-playgrounds).
 
-## PoC limits
+## Legacy PoC fixtures
 
-The fixtures under tests/ that exercise src/Fable.Ranvier (DomChecks.fs, ScheduledChecks.fs,
-scheduled.html) cover that library: HTML with a static child structure, synchronous state and
+The fixtures under `tests/` that exercise `src/Fable.Ranvier` (`DomChecks.fs`, `ScheduledChecks.fs`,
+`scheduled.html`) cover that earlier library: HTML with a static child structure, synchronous state and
 optional microtask DOM writes. The queue adds overhead; reduced mutation counts are not a measured
-overall speedup. There is no JSX, SSR, hydration or SVG.
+overall speedup. That library has no JSX, server rendering, hydration or SVG; the main playground
+uses `Ranvier.View.Dom` for its server-rendered and hydrated components.
 The runtime is Ranvier, not Solid; Solid 2's split effects inspired the binding approach.
 Pending/error values retain the last successful binding output rather than automatically creating
 a loading/error view. See the library README for its ownership and property-setter contracts.

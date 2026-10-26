@@ -2,7 +2,7 @@
 /// The <c>map</c> fence: a plain F# scenario rewritten into a live or replayed signal map. The <c>ranvier</c> fence: a
 /// Ranvier.View component. Both are rendered on the server and hydrated in the page.
 /// </summary>
-module Docs.Maps
+module Nacara.Plugins.RanvierExamples
 
 open System.Collections.Generic
 open Nacara.Core
@@ -10,21 +10,21 @@ open Nacara.Plugins
 open Nacara.Plugins.Internal
 open Ranvier.Docs.Maps.Authoring
 
-let private spans (spans: MapSpan list) : SolidLineSpan list =
-    spans
-    |> List.map (fun s ->
-        {
-            Generated = s.Generated
-            Length = s.Length
-            Body = s.Body
-            Indent = s.Indent
-        })
+/// <summary>The project that provides component types and the repository used by generated builds.</summary>
+type Options =
+    {
+        Project: string
+        Repository: string
+        Packages: (string * string) list
+    }
 
-/// <summary>The word that marks an <c>fsharp</c> fence as a Ranvier component.</summary>
-let private fenceToken = "ranvier"
-
-/// <summary>The word that marks an <c>fsharp</c> fence as a signal map scenario.</summary>
-let private mapToken = "map"
+/// <summary>Uses a project relative to the Nacara root, with its parent as the repository.</summary>
+let defaults =
+    {
+        Project = "maps/Ranvier.Docs.Maps.fsproj"
+        Repository = ".."
+        Packages = []
+    }
 
 /// <summary>What the fence transform leaves on a page for the compile hook.</summary>
 let private dataKey = "ranvier-maps"
@@ -39,100 +39,34 @@ type private Compiled() =
     member val Scripts: Map<string, string> = Map.empty with get, set
     member val Messages: WorkspaceMessage list = [] with get, set
 
-let private cellOf (maps: Dictionary<string, MapFenceOutput * MapFlags>) (cell: SolidCell) : Result<PageCell, string> =
-    let kind =
-        match cell.Kind with
-        | SolidCellKind.Transformed _ ->
-            match maps.TryGetValue cell.Id with
-            | true, (output, flags) -> Ok (PageCellKind.Map (output, flags))
-            | _ -> Error "a transformed fence has no map"
-        | SolidCellKind.Expression -> Ok PageCellKind.Expression
-        | SolidCellKind.Declarations (Some name) -> Ok (PageCellKind.Render name)
-        | SolidCellKind.Declarations None
-        | SolidCellKind.Setup -> Ok PageCellKind.Declarations
-        | SolidCellKind.Use _ -> Error "a ranvier component renders from a fence, not from a code span"
-
-    kind
-    |> Result.map (fun kind ->
-        {
-            Id = cell.Id
-            Kind = kind
-            Code = cell.Code
-            Line = cell.Line
-        })
-
-let private validId = System.Text.RegularExpressions.Regex "^[A-Za-z0-9_-]+$"
-
-/// <summary>Rewrites a page's component fences into cards and hosts, and keeps the page's module on the page.</summary>
 let private transformPage (context: TransformContext) (page: Page) =
-    if
-        not (page.Body.Contains fenceToken)
-        && not (page.Body.Contains mapToken)
-    then
+    let hash =
+        System.Security.Cryptography.SHA256.HashData (System.Text.Encoding.UTF8.GetBytes (string page.Id))
+
+    let key =
+        "p"
+        + (System.Convert.ToHexString hash).Substring(0, 10).ToLowerInvariant()
+
+    let scan = FenceScanner.scan key page.Body
+
+    for line, problem in scan.Problems do
+        let diagnostic = Diagnostic.error "fence" problem
+
+        context.Diagnostics.Add (
+            match page.SourceFile with
+            | Some file ->
+                diagnostic
+                |> Diagnostic.at file (page.BodyLine + line - 1) 1
+            | None -> diagnostic
+        )
+
+    if scan.Cells.IsEmpty then
         page
     else
-        let key = SolidGenerate.pageKey page.Id
-        let maps = Dictionary<string, MapFenceOutput * MapFlags>()
+        let unit =
+            MapPage.unit key (page.SourceFile |> Option.map AbsolutePath.value) page.BodyLine scan.Cells
 
-        // Compiles a map fence's scenario and keeps its output and flags for the cell.
-        let transform (input: SolidTransformInput) =
-            match MapFlags.parse input.Flags, MapFence.compile input.CellId input.Flags input.Code with
-            | Ok flags, Ok output ->
-                maps[input.CellId] <- (output, flags)
-
-                SolidTransformOutput.Compiled
-                    {
-                        Code = output.Code
-                        Render = output.Render
-                        Spans = spans output.Spans
-                    }
-            | _, Error problems -> SolidTransformOutput.Rejected problems
-            | Error problem, _ -> SolidTransformOutput.Rejected [ 0, problem ]
-
-        let scan = SolidScan.scanWith [ mapToken, transform ] fenceToken false key page.Body
-
-        if scan.Cells.IsEmpty then
-            page
-        else
-            let report line problem =
-                let diagnostic = Diagnostic.error "fence" problem
-
-                match page.SourceFile with
-                | Some file ->
-                    context.Diagnostics.Add (
-                        diagnostic
-                        |> Diagnostic.at file (page.BodyLine + line - 1) 1
-                    )
-                | None -> context.Diagnostics.Add diagnostic
-
-            for line, problem in scan.Problems do
-                report line problem
-
-            let names = HashSet<string>()
-
-            let cells =
-                scan.Cells
-                |> List.choose (fun cell ->
-                    if not (validId.IsMatch cell.Id) then
-                        report (cell.Line - 1) $"id=%s{cell.Id} must hold only letters, digits, '_' and '-'"
-                        None
-                    elif not (names.Add (MapPage.componentName cell.Id)) then
-                        report (cell.Line - 1) $"id=%s{cell.Id} names the same generated module value as an earlier cell; '-' reads as '_'"
-                        None
-                    else
-                        match cellOf maps cell with
-                        | Ok cell -> Some cell
-                        | Error problem ->
-                            report (cell.Line - 1) problem
-                            None)
-
-            let unit =
-                MapPage.unit key (page.SourceFile |> Option.map AbsolutePath.value) page.BodyLine cells
-
-            { page with
-                Body = MapPage.hosts scan.Body
-            }
-                .WithData(dataKey, unit)
+        { page with Body = scan.Body }.WithData(dataKey, unit)
 
 let private report (context: HookContext) (message: WorkspaceMessage) =
     // Under watch an error is a warning, and the broken cell's host stays empty.
@@ -159,7 +93,7 @@ let private report (context: HookContext) (message: WorkspaceMessage) =
 
     context.Diagnostics.Add diagnostic
 
-let private compileAll (compiled: Compiled) (context: HookContext) =
+let private compileAll (options: Options) (compiled: Compiled) (context: HookContext) =
     let units =
         context.Pages
         |> List.choose (fun page -> page.TryData<PageUnit> dataKey)
@@ -184,11 +118,11 @@ let private compileAll (compiled: Compiled) (context: HookContext) =
                 MapWorkspace.build
                     {
                         Workspace = System.IO.Path.Combine (root, ".nacara", "ranvier-maps")
-                        MapsProject = System.IO.Path.Combine (root, "maps", "Ranvier.Docs.Maps.fsproj")
-                        Repository = System.IO.Path.GetFullPath (System.IO.Path.Combine (root, ".."))
+                        MapsProject = System.IO.Path.GetFullPath (System.IO.Path.Combine (root, options.Project))
+                        Repository = System.IO.Path.GetFullPath (System.IO.Path.Combine (root, options.Repository))
                         Esbuild = esbuild
                         Minify = not context.IsWatch
-                        Packages = [ "animejs", "4.5.0" ]
+                        Packages = options.Packages
                         Log = fun line -> Log.info $"ranvier maps: %s{line}"
                     }
                     units
@@ -212,14 +146,11 @@ let private compileAll (compiled: Compiled) (context: HookContext) =
             if started.ElapsedMilliseconds > 1000L then
                 Log.info $"ranvier maps: %d{units.Length} page(s) in %d{started.ElapsedMilliseconds}ms"
 
-let private compiled = Compiled ()
+/// <summary>Registers server-rendered component and map fences, compilation diagnostics and client hydration.</summary>
+/// <remarks>Register after HTML minification to preserve hydration markers. Build state belongs to this registration.</remarks>
+let registerWith (options: Options) =
+    let compiled = Compiled ()
 
-/// <summary>
-/// Compiles <c>fsharp map</c> and <c>fsharp ranvier</c> fences into server-rendered, hydrated components, and wraps each
-/// map card's code in a native disclosure before HTML minification.
-/// </summary>
-/// <remarks>Register <c>hydrate</c> after HTML minification.</remarks>
-let components =
     Site.plugin
         { new IPlugin with
             member _.Name = "ranvier-maps"
@@ -234,7 +165,7 @@ let components =
                             Transform = transformPage
                         }
 
-                // First in line: the fences are rewritten before the markdown renderer and the Solid scanner run.
+                // Rewrite fences before Markdown turns them into highlighted code.
                 let transforms =
                     List.last registry.Transforms
                     :: List.take (registry.Transforms.Length - 1) registry.Transforms
@@ -242,7 +173,7 @@ let components =
                 { registry with
                     Transforms = transforms
                 }
-                |> Registry.onPagesRouted (compileAll compiled)
+                |> Registry.onPagesRouted (compileAll options compiled)
                 |> Registry.onBuildComplete (fun context -> compiled.Messages |> List.iter (report context))
                 |> Registry.assetTransform
                     {
@@ -255,16 +186,6 @@ let components =
                                 else
                                     context.Content
                     }
-        }
-
-/// <summary>Fills each map host with its server HTML and adds the page's bundle, after HTML minification.</summary>
-let hydrate =
-    Site.plugin
-        { new IPlugin with
-            member _.Name = "ranvier-maps-hydrate"
-
-            member _.Configure registry =
-                registry
                 |> Registry.assetTransform
                     {
                         Name = "ranvier-maps-hydrate"
@@ -280,3 +201,7 @@ let hydrate =
                                     context.Content
                     }
         }
+
+/// <summary>Registers component and map fences with the default project layout.</summary>
+let register site =
+    registerWith defaults site

@@ -1,6 +1,9 @@
 # Ranvier.View.Dom
 
-The browser renderer for [Ranvier.View](https://www.nuget.org/packages/Ranvier.View) components, compiled with Fable. `Mounting.mount` builds a component into a DOM element, and `Hydration.hydrate` adopts the HTML that `Server.render` wrote for it. Both accept any component of `Ranvier.View`, sugar declarations included.
+The browser renderer for [Ranvier.View](../Ranvier.View/README.md) components, compiled with Fable.
+`Mounting.mount` builds a component into a DOM element; `Hydration.hydrate` adopts its server HTML.
+Both accept the same typed components, including Sugar declarations. See the
+[installation guide](https://shayanhabibi.github.io/Ranvier/guide/installation/#views) for current source and feed requirements.
 
 ```fsharp
 open Fable.Core
@@ -32,7 +35,12 @@ let start () : unit -> unit =
 
 `counter` is the sugar component of the [getting started guide](https://shayanhabibi.github.io/Ranvier/view/getting-started/). The guide covers [mounts and commit modes](https://shayanhabibi.github.io/Ranvier/view/lifetimes/) and [hydration](https://shayanhabibi.github.io/Ranvier/server/hydration/).
 
-## View authoring
+## Explicit browser authoring
+
+For new components, use the [Sugar syntax](../Ranvier.View/README.md#view-sugar) shared by server and
+browser. The APIs below expose the browser operations directly and remain useful for custom adapters
+and representation-specific work. Keep their `Generated.Html.Authoring` imports separate from Sugar;
+both expose names such as `Attrs` and `Props`.
 
 Open `Ranvier.View.Dom.Generated.Html.Authoring` for overloaded modifier helpers. The initial curated surface contains ten attributes and four live properties. Each accepts a fixed value, a `unit -> 'T` reader, `Signal<'T>`, or `Memo<'T>`, with native element constraints preserved. String and ARIA attributes also accept optional values/sources; `None` removes the attribute. The explicit helpers of `Generated.Html` cover the rest of the generated surface.
 
@@ -90,6 +98,9 @@ The authoring functions and generated bound constructors are inline. Fable expan
 
 Run `Program.run view context.Backend` inside the existing `Mounting` callback, or pass `Program.run view` to `Representation.Html.render` for a snapshot. Browser properties and listeners require the snapshot renderer's explicit `Omit` policy.
 
-Static text and attributes create no reactive observers; mounted updates target explicit bindings. Static definition hoisting, prepared DOM templates and compiler specialization remain later browser optimisation work. Server pre-rendering and hydration are separate follow-ons. The Program functions construct each instance's DOM during mounting.
+Static text and attributes create no reactive observers; mounted updates target explicit bindings.
+The Program functions construct each instance's DOM during mounting. Use `Ranvier.View` templates
+when sharing components with server rendering and hydration; the
+[server guide](https://shayanhabibi.github.io/Ranvier/server/) covers that path.
 
 `Program.View` is a backend delegate that Fable emits as a plain JavaScript function. Its nominal type lets saved views compile without extra type annotations. Modifiers are typed functions applied through the shared backend. Fable reuses the erased modifier array; .NET unwraps typed modifiers into a function array. Generated Program constructors inline directly into this path. Static property writes apply directly; browser hooks retain their owned cleanup.

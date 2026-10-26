@@ -2,12 +2,10 @@
 title: Events and hooks
 ---
 
-Events and hooks are the parts of a template that run code in the browser: event handlers, code that
-runs once an element is placed, references to elements, and elements handed to other libraries. All of
-them are browser-only; see [Browser-only parts](../server/rendering.md#browser-only-parts) for what the
-server does with them.
+Events handle browser input. Hooks run after placement, expose element references, or hand an
+element to another library. They are [browser-only parts](../server/rendering.md#browser-only-parts).
 
-The samples use the opens from [Templates and bindings](templates.md).
+Use the opens from [Templates and bindings](templates.md).
 
 ## Handlers
 
@@ -42,6 +40,9 @@ let basket =
   is disposed.
 - A handler that throws under a [boundary](boundaries.md) shows the boundary's error view; outside
   every boundary the exception goes to the mount's `report`.
+
+Starting from zero, **Add** increases `Items` by 1 and `Total` by 2.50 in one batch.
+Double-clicking the span resets only `Items`; it leaves `Total` unchanged.
 
 ## Event delegation
 

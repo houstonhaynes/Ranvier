@@ -272,31 +272,6 @@ controls [ button \"Add\" (fun () -> count.Value <- 2) ]"
                 Expect.equal (MapPage.rendered page |> List.map _.Id) [ "c2" ] "rendered cells"
             }
 
-            test "the scanner's placeholders become map hosts and cards" {
-                let body =
-                    String.concat
-                        "\n"
-                        [
-                            "<div class=\"partas-solid-card partas-solid-card--map\">"
-                            ""
-                            "<div class=\"partas-solid\" data-partas-page=\"p0123456789\" data-partas-cell=\"c1\"></div>"
-                            ""
-                            "</div>"
-                            "<div class=\"partas-solid partas-solid--inline\" data-partas-page=\"p0123456789\" data-partas-cell=\"c2\"></div>"
-                        ]
-
-                let rewritten = MapPage.hosts body
-                Expect.isFalse (rewritten.Contains "partas-solid") "the Solid loader claims nothing"
-                Expect.stringContains rewritten "<div class=\"rv-map-card\">" "the card"
-
-                Expect.stringContains
-                    rewritten
-                    "<div class=\"rv-map-host\" id=\"rvm-p0123456789-c1\" data-ranvier-map-page=\"p0123456789\" data-ranvier-map-cell=\"c1\"></div>"
-                    "the host"
-
-                Expect.stringContains rewritten "class=\"rv-map-host rv-map-host--inline\" id=\"rvm-p0123456789-c2\"" "an inline host"
-            }
-
             test "the exporter lists every page definition and each page's entry imports its cells" {
                 let first = unit' [ fixtureCell "c1"; fixtureCell "c2" ]
                 let program = MapPage.exporter [ first ]

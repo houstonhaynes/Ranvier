@@ -3,11 +3,10 @@ title: Motion parts
 description: Template parts that animate elements on placement, on entering and leaving lists and arms, on reorder, and from signals.
 ---
 
-`Ranvier.View.Anime` animates the elements of a sugar template. Each `Motion.*` function returns a
-part, given to a tag beside its attributes and events. A part creates its anime objects once the
-element is placed, and the instance's disposal reverts them. The
-[Motion parts reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Anime/README.md)
-documents every part with a sample; this page covers the rules they share.
+`Ranvier.View.Anime` adds `Motion.*` parts beside a tag's attributes and events. They start anime
+objects after placement and clean them up with the instance. The
+[reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Anime/README.md)
+has every part; this page explains their shared lifecycle.
 
 ```fsharp
 open global.Ranvier
@@ -48,6 +47,10 @@ let taskList =
             div (Attrs.className "progress", Motion.follow "scaleX" (AnimatableParams (duration = 400)) (fun l -> l.Done.Value)) { () }
         })
 ```
+
+In this example, initial tasks appear without an enter animation. Adding a task fades and raises
+its row into place; removing it fades the retired row out. Reordering runs FLIP, and changing `Done`
+animates the progress element's `scaleX`.
 
 `Motion` requires qualified access: `Motion.exit` shadows FSharp.Core's `exit` when `Motion` is opened.
 

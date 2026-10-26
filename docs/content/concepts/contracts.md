@@ -7,10 +7,8 @@ order: 4
 **Preview.** Ranvier is pre-release; its APIs may change.
 :::
 
-This page states three contracts that users of other reactive libraries tend to learn from bug reports:
-which threads may touch a graph, what a failure does to the nodes that read it, and who owns a node created
-inside a computation. The test suite covers each statement. The guide pages linked from each section show
-the APIs in use.
+These contracts define which threads may access a graph, how failures reach readers and how
+owners dispose nodes. Each section links to a guide with examples.
 
 ## Threading
 
@@ -272,7 +270,7 @@ run: an owning memo first read by an effect keeps its nodes when the effect re-r
 | `createProjection`, `createProjectionWith`, `createProjectionWithOptions`, `createProjectionOnce`, the index forms, and the views built on a projection | Current owner | With the owner, or by `Dispose`. Each key's scope is disposed when the key leaves. |
 | `debounce`, `throttleFirst`, `throttleLast`, `throttle`, and their `With` forms | Current owner | With the owner, or by `Dispose`, cancelling timing and detaching dependencies. |
 | `createKeyedCollection` | Current owner | With the owner, or by `Dispose`. Its row nodes are retired when their key leaves. |
-| `NewKeyReader`, `NewValueReader` | Caller-managed reader handle | By `Dispose`; readers also stop following a disposed projection. Value readers release shared row observation when the last reader detaches. |
+| `NewKeyReader`, `NewValueReader` | Current owner; disposable reader handle | By owner teardown or `Dispose`; readers also stop following a disposed projection. Value readers release shared row observation when the last reader detaches. |
 | `AsObservableCollection ()` | Current owner | The collection stops following when the owner re-runs or is disposed, or when the projection is disposed. |
 | `createLookup`, `createSelector` | Current owner | With the owner, or by `Dispose`. |
 | `createRoot` | Current owner | With the owner, or by `owner.Dispose ()`. |

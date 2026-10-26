@@ -1,7 +1,11 @@
 # Fable.Ranvier DOM PoC
 
-Experimental browser DOM helpers using Ranvier and Xantham.Fable.Core.TS 0.1.0. Construct HTML
+Experimental browser DOM helpers using Ranvier and Xantham.Fable.Core.TS 0.2.1. Construct HTML
 nodes with ordinary F# functions; connect individual bindings to Ranvier's split effects.
+
+For new applications, start with [Ranvier.View.Dom](../Ranvier.View.Dom/README.md), which adds
+typed components, keyed regions, server rendering and hydration. This PoC remains for its focused
+binding and scheduling experiments.
 
 ```fsharp
 open Fable.Core.TS.Dom

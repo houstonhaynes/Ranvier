@@ -168,12 +168,8 @@ page owners, independent drafts, Back/Home, and a save completing after Back.
 Use `Acquire` for ambient ownership or `AcquireOwned` for explicit page ownership;
 final release evicts the entry. Trace history can retain published values.
 
-[Measured local cost](../benchmarks/queries.md): **0.48–0.69 µs and 1,976 extra bytes**
-per three-query commit at 10/1,000 previews, for atomic publication and request
-retirement. At 10,000 previews, timing intervals overlap. IO, acquisition, mutation
-tasks/queue, and rendering are excluded.
+The [query benchmarks](../benchmarks/queries.md) isolate commit publication and request retirement,
+excluding I/O, acquisition, mutation tasks and rendering.
 
-A shared Elmish cache can provide the same data sharing with less bookkeeping.
-Query centralizes that lifecycle; it does not make record fields or list patches
-incremental. Changed-record selectors still run; list rebuilding and family-wide
-predicate invalidation remain linear.
+Query centralizes cache lifetime and reconciliation. Changed-record selectors still run;
+list rebuilding and family-wide predicate invalidation remain linear.

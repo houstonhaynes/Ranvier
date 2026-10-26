@@ -211,7 +211,7 @@ check
          missingLog
          "Site.fs"
          12
-         (Some 13)
+         (Some 18)
          "This construct is deprecated. Arms.Match needs the Ranvier.View.Arms Fable plugin; import Ranvier.View.Arms.targets in the project compiled by Fable.")
     missingLog
 

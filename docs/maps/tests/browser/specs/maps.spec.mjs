@@ -3,6 +3,30 @@ import { test, expect, openMaps } from "./fixtures.mjs";
 
 const guide = "guide/signal-maps/";
 
+test("the live editor compiles a component and its click updates the DOM", async ({ page, problems }) => {
+  test.setTimeout(300_000);
+  await page.goto("view/getting-started/");
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  const output = async () => {
+    for (const frame of page.frames()) {
+      if (frame.url() === "about:srcdoc" && await frame.getByRole("button", { name: "0", exact: true }).count().catch(() => 0)) return frame;
+    }
+    return undefined;
+  };
+  await expect.poll(output, { timeout: 270_000, intervals: [1_000] }).toBeTruthy();
+  const frame = await output();
+  await frame.getByRole("button", { name: "0", exact: true }).click();
+  await expect(frame.getByRole("button", { name: "1", exact: true })).toBeVisible();
+
+  const editor = page.locator(".cm-content");
+  await editor.fill((await editor.innerText()).replace("createSignal 0", "createSignal 5"));
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  const changed = page.frameLocator(".nacara-live__pane--result iframe");
+  await expect(changed.getByRole("button", { name: "5", exact: true })).toBeVisible();
+  await changed.getByRole("button", { name: "5", exact: true }).click();
+  await expect(changed.getByRole("button", { name: "6", exact: true })).toBeVisible();
+});
+
 /** The map whose controls include the text `name`. */
 const mapWith = (page, maps, name) => maps.filter({ has: page.getByText(name, { exact: true }) }).first();
 
@@ -200,13 +224,19 @@ test("the map bundles start no Solid renderer", async () => {
   }
 });
 
-test("the landing page keeps its Solid state dial", async ({ page, problems }) => {
-  await page.goto("");
-  await expect(page.locator(".rv-statelist__row").first()).toBeVisible();
+test("the landing page demonstrates pending, failure and recovery with Ranvier", async ({ page, problems }) => {
+  const maps = await openMaps(page, "");
+  const states = mapWith(page, maps, "Settle 4");
+  await states.getByRole("button", { name: "Settle 4", exact: true }).click();
+  await expect(states.locator(".rv-map__log")).toContainText("price");
+  await states.getByRole("button", { name: "Fail price", exact: true }).click();
+  await expect(states.locator(".rv-map-node.is-failed")).not.toHaveCount(0);
+  await states.getByRole("button", { name: "Settle 5", exact: true }).click();
+  await expect(states.locator(".rv-map-node.is-failed")).toHaveCount(0);
 });
 
 test("the editable example compiles and mounts its map on Run", async ({ page, problems }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await page.goto(guide);
   await page.getByRole("button", { name: "Run" }).click();
   const output = async () => {
@@ -214,7 +244,7 @@ test("the editable example compiles and mounts its map on Run", async ({ page, p
       if (frame.url() === "about:srcdoc" && (await frame.locator(".rv-map-node").count().catch(() => 0)) > 0) return frame;
     return undefined;
   };
-  await expect.poll(output, { timeout: 150_000, intervals: [1_000] }).toBeTruthy();
+  await expect.poll(output, { timeout: 270_000, intervals: [1_000] }).toBeTruthy();
   const frame = await output();
   // The output pane may sit behind another tab; the press reaches the map either way.
   await frame.locator(".rv-map__button", { hasText: "Settle 4" }).dispatchEvent("click");

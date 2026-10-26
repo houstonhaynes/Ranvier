@@ -126,6 +126,7 @@ let theme =
                         Menu.page "guide/tracing.md"
                         Menu.page "guide/journal.md"
                         Menu.page "guide/signal-maps.md"
+                        Menu.page "guide/nacara.md"
                         Menu.page "guide/troubleshooting.md"
                     ]
             ]
@@ -166,6 +167,7 @@ let theme =
                         Menu.page "view/lifetimes.md"
                         Menu.page "view/elmish.md"
                         Menu.page "view/testing.md"
+                        Menu.page "view/native.md"
                     ]
                 Menu.section "Reference" [ Menu.page "view/troubleshooting.md"; Menu.page "view/reference.md" ]
             ]
@@ -263,24 +265,19 @@ let theme =
         )
     )
 
-/// Live Partas.Solid components on the pages (the landing page's animated state mark), compiled
-/// against the Partas.Solid 3 build committed under feed/. The generated project inherits
-/// docs/nuget.config, whose partas-local source serves it.
-let private solidExamples (options: SolidExamplesOptions) =
-    options
-    |> SolidExamples.partasVersion "3.0.0-local.e08ad85"
-    |> SolidExamples.npm "animejs" "4.5.0"
-    |> SolidExamples.project "../src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
-    |> SolidExamples.property "RanvierTrace" "true"
-    |> SolidExamples.targetFramework "net10.0"
-
 /// The og card of each section, keyed by the path segment that names it, with the card's alt text.
 let private ogCards =
     [
+        "native", "native", "Native Ranvier deployment through WebCore, in development"
+        "nacara", "nacara", "Runnable Ranvier documentation: components, signal maps and editable examples"
         "async-and-pending", "async", "Async and pending: boundary states along a nerve fibre"
         "tracing", "tracing", "Tracing: a cause chain traced back along a nerve fibre"
         "signal-maps", "signal-maps", "Signal maps: a traced graph drawn live, a write travelling its edges"
         "timing", "timing", "Debounce and throttle: capture changes now, admit them after quiet or at a fixed deadline"
+        "view", "view", "Ranvier.View: templates, events and bindings over a reactive graph"
+        "server", "server", "Ranvier server rendering: render HTML, transfer state and hydrate"
+        "examples", "examples", "Runnable Ranvier views, motion and hydration examples"
+        "analyzers", "analyzers", "Ranvier analyzers: diagnostics for reactive state, lifetimes and views"
         "guide", "guide", "Ranvier guide: build with signals"
         "concepts", "concepts", "Ranvier concepts: how the graph works"
         "fable", "fable", "Ranvier on Fable: the JavaScript target"
@@ -362,7 +359,6 @@ let site =
     |> FSharpApi.register apiOptions
     |> LinkValidator.register
     |> browserExamples
-    |> SolidExamples.registerWith solidExamples
     |> LiveExample.registerWith (
         LiveExample.preset (
             LiveExamplePreset.create "maps"
@@ -374,6 +370,21 @@ let site =
             |> LiveExamplePreset.asDefault
         )
     )
+    |> LiveExampleMetadata.register
+        [
+            LiveExampleMetadata.nuget
+                (Path.Combine (__SOURCE_DIRECTORY__, "obj", "project.assets.json"))
+                "Xantham.Fable.Core.TS"
+                "0.2.1"
+                "net8.0"
+                "Xantham.Fable.Core.TS"
+            LiveExampleMetadata.nuget
+                (Path.Combine (__SOURCE_DIRECTORY__, "obj", "project.assets.json"))
+                "Xantham.Fable.Core"
+                "0.2.0"
+                "net8.0"
+                "Xantham.Fable.Core"
+        ]
     |> OgImage.registerWith ogImages
     |> AgentFriendly.registerWith (
         AgentFriendly.summary "Fine-grained reactive computation for .NET, with a Fable target"
@@ -382,9 +393,11 @@ let site =
     )
     |> LightningCss.register
     |> Esbuild.register
-    |> Maps.components
     |> Nuglify.minifyHtml
-    |> Maps.hydrate
+    |> RanvierExamples.registerWith
+        { RanvierExamples.defaults with
+            Packages = [ "animejs", "4.5.0" ]
+        }
     |> Versions.register versions
     |> Theme.register theme
     |> Site.collection (Theme.docs theme "content")

@@ -3,11 +3,10 @@ title: F# HTTP backends
 description: Serve the same Ranvier page with Giraffe, Oxpecker or Suave.
 ---
 
-The [hydration example](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration)
-uses Giraffe for its HTTP server. The Oxpecker and Suave companion sources below serve the same
-shared page and browser bundle. The component, codec and hydration entry stay in
-`examples/Ranvier.Hydration`; each adapter translates the request into props and sends the
-rendered document as HTML.
+Giraffe, Oxpecker and Suave can serve the same Ranvier component, codec and browser bundle. Each
+handler reads query values, builds props and returns `HydrationPage.render props` as HTML. The
+[complete hydration example](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration)
+uses Giraffe; companion projects below use Oxpecker and Suave.
 
 ## Build the shared browser bundle
 

@@ -20,8 +20,8 @@ let newGraph () =
     new Graph ({ GraphOptions.Default with Dispatcher = Some (ManualDispatcher () :> IGraphDispatcher) })
 ```
 
-When a completion arrives from another thread, pump the graph on its owning thread. See the `pumpUntil`
-helper in [Async memos](async-memos.md) and [Work on other threads](testing.md#work-on-other-threads).
+With manual dispatch, pump on the owning thread to apply off-thread completions. See
+[Work on other threads](testing.md#work-on-other-threads) for a deterministic test.
 
 Under the default `Guarded` affinity, the constructing thread owns the graph. Use
 `graph.Dispatch` for work from another thread. Async completions already use it.
@@ -46,8 +46,8 @@ to wake that thread. With a manual dispatcher, call `graph.Pump ()` to apply que
 
 :::
 
-`ThreadAffinity = Unchecked` removes the guard. Use it only when every write is known to arrive on
-one thread. `ThreadAffinity = Serialised` suits a host that runs its work one item at a time on a
+`ThreadAffinity = Unchecked` removes the guard; the host must allow only one thread at a time
+to touch the graph. `ThreadAffinity = Serialised` suits a host that runs its work one item at a time on a
 synchronisation context but on varying threads, such as a Blazor Server circuit; see
 [Blazor Server](blazor-server.md).
 

@@ -73,10 +73,6 @@ let home = createMemo (fun _ -> owner.Value.Home)
 let city = createMemo (fun _ -> home.Value.City)
 let zip = createMemo (fun _ -> home.Value.Zip)
 let theme = createMemo (fun _ -> store.Value.Theme)
-(**
-
-
-*)
 Signal.update store (fun s -> { s with Owner.Home.City = "Oslo" })
 city.Value, zip.Value
 (**
@@ -114,10 +110,6 @@ let rename id title =
             { s with Items = items })
 
 let storeTitles = createProjection _.Id _.Title (fun () -> store.Value.Items)
-(**
-
-
-*)
 rename 2 "Review it twice"
 storeTitles.Get 2
 (**
@@ -187,10 +179,7 @@ let wrapped =
     createMemo (fun _ ->
         store.Value.Items
         |> List.tryFind (fun t -> t.Id = 2))
-(**
 
-
-*)
 let secondRuns = ref 0
 let wrappedRuns = ref 0
 
@@ -201,10 +190,7 @@ createEffect (fun () ->
 createEffect (fun () ->
     wrapped.Value |> ignore
     wrappedRuns.Value <- wrappedRuns.Value + 1)
-(**
 
-
-*)
 Signal.update store (fun s -> { s with Theme = "light" })
 secondRuns.Value, wrappedRuns.Value
 (**
@@ -227,13 +213,6 @@ Inside a `createMemo` body or a projection's `map` it raises
 `createProjectionWith` factory.
 :::
 
-:::details Tests covering this behaviour
-
-Pinned by `a record-path write re-runs only the readers on the path`, `a keyed write wakes only the written
-projection row` and `createOptionMemo: an unrelated root write wakes no dependent and calls no Equals`
-([Lenses.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lenses.fs)).
-:::
-
 ## Planned and out of scope
 
 Reusable lens
@@ -241,6 +220,11 @@ and prism values for deep writes wait on a need for reusable focus paths over co
 remain out of scope.
 
 *)
+(**
+Behavior tests: [Lenses.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lenses.fs).
+
+*)
+
 (*** hide ***)
 active.Dispose ()
 graph.Dispose ()
