@@ -9,22 +9,31 @@ test("the live editor compiles a component and its click updates the DOM", async
   await page.getByRole("button", { name: "Run", exact: true }).click();
   const output = async () => {
     for (const frame of page.frames()) {
-      if (frame.url() === "about:srcdoc" && await frame.getByRole("button", { name: "0", exact: true }).count().catch(() => 0)) return frame;
+      if (frame.url() === "about:srcdoc" && await frame.getByRole("button", { name: "Add a cup", exact: true }).count().catch(() => 0)) return frame;
     }
     return undefined;
   };
   await expect.poll(output, { timeout: 20_000, intervals: [100] }).toBeTruthy();
   const frame = await output();
-  await frame.getByRole("button", { name: "0", exact: true }).click();
-  await expect(frame.getByRole("button", { name: "1", exact: true })).toBeVisible();
+  await expect(frame.getByText("0 cups", { exact: true })).toBeVisible();
+  await expect(frame.getByRole("button", { name: "Reset", exact: true })).toBeDisabled();
+  await frame.getByRole("button", { name: "Add a cup", exact: true }).click();
+  await expect(frame.getByText("1 cup", { exact: true })).toBeVisible();
+  await expect(frame.getByText("$4", { exact: true })).toBeVisible();
+  await frame.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(frame.getByText("0 cups", { exact: true })).toBeVisible();
+  await expect(frame.getByText("$0", { exact: true })).toBeVisible();
 
   const editor = page.locator(".cm-content");
-  await editor.fill((await editor.innerText()).replace("createSignal 0", "createSignal 5"));
+  await editor.fill((await editor.innerText()).replace("createSignal 0", "createSignal 5").replace("let price = 4", "let price = 6"));
   await page.getByRole("button", { name: "Run", exact: true }).click();
   const changed = page.frameLocator(".nacara-live__pane--result iframe");
-  await expect(changed.getByRole("button", { name: "5", exact: true })).toBeVisible();
-  await changed.getByRole("button", { name: "5", exact: true }).click();
-  await expect(changed.getByRole("button", { name: "6", exact: true })).toBeVisible();
+  await expect(changed.getByText("5 cups", { exact: true })).toBeVisible();
+  await expect(changed.getByText("$30", { exact: true })).toBeVisible();
+  await expect(changed.getByText("Freshly brewed. $6 a cup.", { exact: true })).toBeVisible();
+  await changed.getByRole("button", { name: "Add a cup", exact: true }).click();
+  await expect(changed.getByText("6 cups", { exact: true })).toBeVisible();
+  await expect(changed.getByText("$36", { exact: true })).toBeVisible();
 });
 
 /** The map whose controls include the text `name`. */

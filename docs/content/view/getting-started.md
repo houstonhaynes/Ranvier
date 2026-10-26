@@ -190,23 +190,54 @@ Each click writes `Count`; the button's text node changes, and the button keeps 
 
 ## Try a component in the live editor
 
-Press **Run**, then click the rendered button. Change the starting value or the increment and run
-again to replace the preview. The first run on a page loads the browser compiler. Later runs on
-the same page reuse the checker.
+Press **Run**, then add a cup: one signal updates the quantity and a memo calculates the total.
+Reset clears the cart. Try changing the price from `4` to `6`, the starting quantity, or the inline
+styles, then run again. The first run loads the browser compiler; later runs reuse the checker.
 
 ```fsharp live
 open global.Ranvier
 open Ranvier.View
+open Ranvier.View.Sugar
 
-let counter =
-    Component.define
-        (fun _ () -> createSignal 0)
-        (fun t ->
-            t.button
-                [| t.Events.onClick (fun (count: Signal<int>) _ -> count.Value <- count.Value + 1) |]
-                [| t.text (fun (count: Signal<int>) -> string count.Value) |])
+let price = 4
 
-let mounted = Ranvier.Docs.Maps.MapMount.body counter
+type CoffeeCart =
+    { Count: Signal<int>
+      Total: Memo<int> }
+
+    static member Create(_: Setup, _: unit) =
+        let count = createSignal 0
+        { Count = count; Total = createMemo (fun _ -> count.Value * price) }
+
+    static member View =
+        div (Attrs.attribute ("style", "max-width:320px;padding:16px;border-radius:18px;background:#172b26;color:#f3faf5;font-family:system-ui;line-height:1.3")) {
+            p (Attrs.attribute ("style", "margin:0;color:#a4d7b8;font-size:12px;letter-spacing:2px")) { "THE REACTIVE CAFÉ" }
+            h2 (Attrs.attribute ("style", "margin:6px 0 3px;font-size:22px;color:inherit")) { "Coffee for the crew" }
+            p (Attrs.attribute ("style", "margin:0 0 8px;color:#c6d9ce;font-size:13px")) { sprintf "Freshly brewed. $%d a cup." price }
+            div (Attrs.attribute ("style", "display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px")) {
+                span () { fun c -> sprintf "%d %s" c.Count.Value (if c.Count.Value = 1 then "cup" else "cups") }
+                strong (Attrs.attribute ("style", "font-size:28px"), Attrs.aria ("live", "polite")) {
+                    fun c -> sprintf "$%d" c.Total.Value
+                }
+            }
+            div (Attrs.attribute ("style", "display:flex;gap:10px")) {
+                button (
+                    Attrs.attribute ("type", "button"),
+                    Attrs.attribute ("style", "padding:8px 14px;border:0;border-radius:10px;background:#b9f3ce;color:#172b26;font:inherit;cursor:pointer"),
+                    Events.onClick (fun c _ -> c.Count.Value <- c.Count.Value + 1)
+                ) { "Add a cup" }
+                button (
+                    Attrs.attribute ("type", "button"),
+                    Attrs.attribute ("style", "padding:8px 14px;border:1px solid #729783;border-radius:10px;background:transparent;color:inherit;font:inherit;cursor:pointer"),
+                    Props.Button.disabled (fun c -> c.Count.Value = 0),
+                    Events.onClick (fun c _ -> c.Count.Value <- 0)
+                ) { "Reset" }
+            }
+        }
+
+let coffeeCart = Component.ofMembers<CoffeeCart, _> ()
+
+let mounted = Ranvier.Docs.Maps.MapMount.body coffeeCart
 ```
 
 `MapMount.body` is the docs' preview helper: it creates a graph, mounts the component into the
