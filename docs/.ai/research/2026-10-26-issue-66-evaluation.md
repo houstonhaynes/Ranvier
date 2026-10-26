@@ -8,9 +8,10 @@ Date: 2026-10-26. Branch `feat/220-mcp-detection-loop`, from `origin/master` at 
 On #168's round-2 task, the redesigned surface turns the MCP tools into a working diagnosis loop, and does not make
 the MCP workflow cheaper than reading the source.
 
-- `explain {node: total}` named the defect in one call in every run that served it (6 of 6): the `offerOf` memo at
-  `Pricing.fs:23` re-ran after the discount moved, and kept `{ Label = "standard"; Percent = 10 }`. No run of the old
-  surface called `why` or `why_not`.
+- `explain {node: total}` named the defect in 2 of 6 runs (w03, w06): the `offerOf` memo at `Pricing.fs:23` re-ran
+  after the discount moved, and kept `{ Label = "standard"; Percent = 10 }`. In the other 4, the last dispatched message
+  moved the discount into another band, the total was right again, and `explain` reported only the history after the
+  total's last run. No run of the old surface called `why` or `why_not`. (Corrected: an earlier version said 6 of 6.)
 - The supervisor removed the server's lock on the build output. Every old-surface run that rebuilt (3 of 3) hit the lock
   and fell back to a Release build or a scratch output folder; the new-surface runs rebuilt in place, and the round-B
   runs checked the fix live after the reload (3 of 3).
@@ -20,6 +21,8 @@ the MCP workflow cheaper than reading the source.
   (median calls at most the baseline's + 1, tokens at most 1.1×) is not met on this task.
 
 Tokens follow API requests in every arm: each request re-reads a 43–52k context, and MCP results add under 1 kB each.
+Weighted by price with a warm first request, the MCP arms cost 1.25× the baseline; see
+`2026-10-26-mcp-token-reduction.md`.
 The tools cannot beat a two-file read on a sample whose cause is visible in `Pricing.fs`; the comparison that can
 separate the workflows is #66's harder task set (no failing test at hand, a codebase too large to read).
 
@@ -96,10 +99,12 @@ Every fix was in the comparer: three compare the percentage as well, five use st
 
 ## 5. Findings
 
-1. **One `explain` call gives the cause.** In every new-arm run the `explain` answer held the `cutoff:` line naming
-   `offerOf#5`, its site and the kept offer, and the next step was the edit or a read of `Pricing.fs`. The answer also
-   held a second cutoff, `lines#2` kept its value after the model changed, which is a selection doing its job; the
-   answer lists cutoffs nearest first, and no run followed the second one.
+1. **One `explain` call gives the cause when the defect is the latest change.** In w03 and w06 the `explain` answer
+   held the `cutoff:` line naming `offerOf#5`, its site and the kept offer, and the next step was the edit or a read of
+   `Pricing.fs`. The answer also held a second cutoff, `lines#2` kept its value after the model changed, which is a
+   selection doing its job. In w09–w12 the answer held no cutoff, and the agents found the comparer by dispatching again
+   and reading `Pricing.fs`. `2026-10-26-mcp-token-reduction.md` adds `earlier cutoff:` lines and leaves selections
+   out.
 2. **The old surface's lock shapes the run.** Each old-arm run that rebuilt reported the locked Debug DLL and built to
    another output. One old-arm run (w02) called no MCP tool at all. With tool search on, two old-arm runs spent a
    `ToolSearch` call before their first `dispatch`; `alwaysLoad` removed that call in the new arm.

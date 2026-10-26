@@ -146,8 +146,8 @@ for each value whose encoding changed. The adapter pins MCP protocol `2025-11-25
 `dispatch` is listed only when messages are exposed, and its input schema enumerates them. Each decoder runs on the
 graph thread, and the messages run in order, each after the previous one's effects. A step reads
 `2 set_discount {"percent":10} → v3: discount 0→10`, and the last line holds every exposed value. The `snapshot` and
-`wait_version` results are the JSON document as text and as structured content; `dispatch`'s structured content is the
-final snapshot.
+`wait_version` results are the JSON document as text and as structured content. `dispatch` returns text alone: Claude
+Code shows a model the structured content in place of the text, which would hide the step lines.
 
 A rejected call is a tool result with `isError: true` and the reason as text:
 
@@ -166,7 +166,7 @@ trace log on the graph thread and answers in compact text:
 
 | Tool | Arguments | Answer |
 |---|---|---|
-| `explain` | `node` | why the node holds its value, in at most a few lines |
+| `explain` | `node`; `messages`, as in `dispatch` | the dispatched steps, then why the node holds its value, in at most a few lines |
 | `graph` | none | node counts by kind, the exposed nodes, and the nodes the last message moved; at most 2,000 characters |
 | `node` | `node`; `around` (0 to 2 hops, default 1); `detail` (`brief` or `full`); `limit` (default 25); `cursor` | the node and its sources and observers within `around` hops, one line each; at most 4,000 characters a page |
 
@@ -184,7 +184,9 @@ tool error that lists the exposed nodes.
 - `unread:` nodes related to it that changed after its last run and that it does not read, such as a value read with
   `Peek`;
 - `cutoff:` upstream nodes that re-ran after a source moved and kept their value, with the value kept, such as a memo
-  whose comparer calls a new result equal.
+  whose comparer calls a new result equal. Without one since the node's last run, `earlier cutoff:` lines name the
+  latest ones before it. A node that reads a dispatched model alone, such as an `Mvu.Select`, keeps its value by design
+  and is left out.
 
 Values are encoded without codecs, so a non-scalar value appears as its `ToString` text.
 
@@ -194,10 +196,12 @@ Values are encoded without codecs, so a non-scalar value appears as its `ToStrin
 |---|---|---|
 | `RawTraceTools` | `false` | also lists `trace_state`, `trace_lookup`, `why`, `why_not` and `waiting_on`, which return `TraceJson` documents; `trace_state` grows with the graph without bound |
 | `SourceRoot` | the nearest directory holding `.git` at or above the current directory | the directory whose F# and C# files give a creation line's text |
+| `AlwaysLoad` | `false` | marks `dispatch` and `explain` with `_meta["anthropic/alwaysLoad"]`, so Claude Code loads them without a tool search |
 
-The server's instructions describe the reproduce, `explain`, fix loop. `dispatch` and `explain` carry
-`_meta["anthropic/alwaysLoad"]`, so a client that defers MCP tools loads them at once. An untraced build lists none of
-the traced tools, and calling one is an unknown-tool error.
+The server's instructions describe the reproduce, `explain`, fix loop. Always-loaded tools join the head of the
+prompt, so a session with `AlwaysLoad` starts with a cold prompt cache unless a session with the same tools ran within
+the cache lifetime: about 40,000 tokens written instead of read, against one tool-search request without it. An untraced
+build lists none of the traced tools, and calling one is an unknown-tool error.
 
 ## Serving across rebuilds
 
