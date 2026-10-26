@@ -84,6 +84,41 @@ jobs:
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1
 
+  marten:
+    name: Marten store adapter
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: ranvier-tests
+          POSTGRES_DB: ranvier
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ranvier"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      RANVIER_MARTEN_CONNECTION: Host=localhost;Port=5432;Database=ranvier;Username=postgres;Password=ranvier-tests
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Test the adapter against PostgreSQL
+        run: dotnet test tests/Ranvier.Persistence.Marten.Tests -c Release
+      - name: Pack the adapter
+        run: dotnet pack adapters/Ranvier.Persistence.Marten -c Release --no-build
+      - name: Test the adapter with traced persistence
+        run: dotnet test tests/Ranvier.Persistence.Marten.Tests -c Release -p:RanvierTrace=true
+      - name: Pack the traced adapter
+        run: dotnet pack adapters/Ranvier.Persistence.Marten -c Release -p:RanvierTrace=true --no-build
+
   # A NativeAOT publish over the library assemblies, Ranvier.Wire and Ranvier.Persistence included, rooted: any IL2xxx/IL3xxx warning fails
   # the publish, and the binary exits non-zero when an exception or a ToString text differs from the expected text,
   # with tracing on and off.
@@ -595,7 +630,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, marten, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

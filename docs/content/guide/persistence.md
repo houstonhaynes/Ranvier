@@ -11,6 +11,8 @@ Preview — `Ranvier.Persistence` is pre-release; its APIs and stored record for
 each flush. Persist signals and keyed collections; memos and effects recompute from those inputs.
 An `IStateStore` supplies memory, file, browser storage or an application-defined store.
 
+For PostgreSQL, use the separate [Marten adapter](persistence-marten.md), with scoped records and optional ETag checks.
+
 ```fsharp
 open Ranvier
 open Ranvier.Persistence

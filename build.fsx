@@ -69,6 +69,8 @@ module Spec =
     let testProjects =
         projects
         |> List.filter _.RelativePath.StartsWith("tests")
+        |> List.filter (fun project ->
+            not ((System.IO.File.ReadAllText project.Path).Contains "<RanvierIntegrationTest>true</RanvierIntegrationTest>"))
 
     /// The signal map model reads the trace log, so its tests compile only in a traced build.
     let mapsTests = "docs/maps/tests"
