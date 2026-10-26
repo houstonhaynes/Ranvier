@@ -12,7 +12,7 @@ and `Ranvier.Analyzers`. Samples, experiments and projects with `IsPackable=fals
 3. After successful `master` CI, publishing examines that run's package artifacts. Documentation-only CI is skipped.
    The workflow validates all artifacts and dependency feeds, lists missing NuGet versions, authenticates
    and pushes those versions in dependency order. Existing versions remain unchanged.
-4. Check `Publish NuGet` for the release plan and confirmation that all versions are indexed on nuget.org.
+4. Check `Publish NuGet` for the release plan and successful uploads. The workflow completes when NuGet accepts the pushes.
 
 Ordinary source edits do not mint new versions. Release them by bumping the relevant project versions.
 NuGet package IDs and versions are immutable once published.
@@ -24,7 +24,7 @@ CI artifacts and inspect the plan without authentication or publishing. Disable 
 The selected revision must have successful CI with an unexpired `nuget-packages` artifact.
 
 A retry publishes versions still missing from NuGet. A failed dependency-feed query fails the release;
-it is not treated as evidence that a package is absent. The workflow verifies registry indexing after pushing.
+it is not treated as evidence that a package is absent.
 
 ## NuGet trusted publishing
 

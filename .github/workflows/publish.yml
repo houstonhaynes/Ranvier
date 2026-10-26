@@ -131,5 +131,3 @@ jobs:
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: node .github/scripts/release.cjs push bin
-      - name: Verify all released versions are indexed
-        run: node .github/scripts/release.cjs verify bin

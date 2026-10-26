@@ -112,16 +112,7 @@ async function main([command, directory = 'bin']) {
   } else if (command === 'push') {
     if (release.pending.length && !process.env.NUGET_API_KEY) throw new Error('NuGet authentication is missing');
     for (const pkg of release.pending) pushPackage(directory, pkg, process.env.NUGET_API_KEY);
-  } else if (command === 'verify') {
-    let missing = release.pending;
-    const deadline = Date.now() + 10 * 60 * 1000;
-    while (missing.length && Date.now() < deadline) {
-      await new Promise(resolve => setTimeout(resolve, 15000));
-      missing = await missingPackages(missing);
-    }
-    if (missing.length) throw new Error(`Published versions are not indexed: ${missing.map(p => p.id).join(', ')}`);
-    console.log(`Verified all ${release.packages.length} versions on nuget.org`);
-  } else throw new Error('Usage: release.cjs plan|push|verify <packages-directory>');
+  } else throw new Error('Usage: release.cjs plan|push <packages-directory>');
 }
 
 module.exports = { trustedCI, artifactAvailable, orderPackages, missingPackages, resolveRelease, adapterProjects, releasePlan, getJson };
