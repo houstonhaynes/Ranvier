@@ -38,11 +38,12 @@ let log (text: string) =
 let stamp () =
     File.GetLastWriteTimeUtc app
 
-/// Waits until the build output's app.dll has kept its stamp for half a second, up to 60 seconds.
+/// Waits until the build output's app.dll has kept its stamp for half a second, up to 60 seconds; a stamp older than
+/// half a second returns at once.
 let settled () =
     let deadline = DateTime.UtcNow.AddSeconds 60.0
     let mutable last = stamp ()
-    let mutable quiet = DateTime.UtcNow
+    let mutable quiet = last
 
     while DateTime.UtcNow - quiet < TimeSpan.FromMilliseconds 500.0
           && DateTime.UtcNow < deadline do
@@ -319,7 +320,7 @@ let announce (response: string) =
         body["instructions"] <-
             JsonValue.Create (
                 given
-                + "The server reloads the application after a rebuild: run dotnet build or dotnet test as usual, and the next tool call serves the new build with every dispatched message replayed, so a fix can be checked live without a restart."
+                + "The server reloads the application after a rebuild: the next tool call serves the new build with every dispatched message replayed."
             )
 
         node.ToJsonString ()
