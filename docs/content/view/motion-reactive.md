@@ -79,6 +79,24 @@ value, so a range input bound to the signal seeks the timeline.
 `read ()`, once with the current value and then whenever it changes, with the property's duration and ease. The animation starts from
 the property's current value, so a change while a previous one plays continues from where it is.
 
+## Typed CSS variables
+
+Use `Motion.followCss variable parameters read` as a view attribute to animate a typed custom
+property. The reader returns a numeric CSS token such as `Css.px target.Value`; use the existing
+`AnimatableProp(duration = 300., ease = Ease.outQuart)` for timing. The first value is set immediately,
+and subsequent changes animate from the current value. The part participates in Motion's exit
+lifecycle and restores the original inline value and priority on ordinary disposal.
+
+For code with direct element access, `Reactive.driveCss read element variable parameters` owns
+the same animation through the current Ranvier owner. `Anim.With(variable, start, finish)` and
+`Anim.With(variable, frames)` also work with `Motion.on`, enters and timelines. Each endpoint keeps
+the custom property's grammar marker; numeric tokens in an animation must share a unit suffix.
+
+Let [typed CSS expressions](css.md#numeric-expressions) consume the variable. The browser updates
+every dependent declaration, including pseudo-elements, as Anime writes the variable. Frames
+bypass signals. Compound expressions are CSS inputs rather than numeric animation endpoints.
+See the [complete component example](https://github.com/shayanhabibi/Ranvier/blob/master/docs/samples/css-anime/Example.fs).
+
 ## `policy`
 
 ```fsharp

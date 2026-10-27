@@ -373,6 +373,10 @@ module CustomProperty =
 
 /// <summary>Unambiguous entry points used by generated shared-runtime bindings on .NET and Fable.</summary>
 module RuntimeApi =
+    /// <summary>Returns the magnitude and unit suffix of a numeric token; compound expressions and unchecked text return <c>None</c>.</summary>
+    let tryNumericValue (value: Value<'syntax>) =
+        value.Numeric
+
     /// <summary>Creates a typed custom-property handle from a validated dashed identifier.</summary>
     let createCustomProperty name : CustomProperty<'syntax> =
         CustomProperty.create name

@@ -14,10 +14,12 @@
         <Compile Include="Fixtures.fs" />
         <Compile Include="Surface.fs" />
         <Compile Include="AnimeChecks.fs" />
+        <Compile Include="CssChecks.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
+        <ProjectReference Include="..\..\src\Ranvier.Css\Ranvier.Css.fsproj" />
     </ItemGroup>
 
 </Project>

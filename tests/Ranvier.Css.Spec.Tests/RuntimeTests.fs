@@ -8,6 +8,15 @@ let tests =
     testList
         "CSS compiler runtime"
         [
+            testCase "numeric token metadata is retained through grammar copies"
+            <| fun _ ->
+                let literal: Value<unit> = Generated.number 12.5 "px"
+                Expect.equal (RuntimeApi.tryNumericValue literal) (Some (12.5, "px")) "Literal"
+                Expect.equal (RuntimeApi.tryNumericValue (Generated.copy literal: Value<obj>)) (Some (12.5, "px")) "Copy"
+
+                for text in [ "12px"; "calc(2px + 3px)"; "var(--gap)"; "auto" ] do
+                    let value: Value<unit> = Value.unsafeFromTokens text
+                    Expect.isNone (RuntimeApi.tryNumericValue value) "Text has no numeric-token provenance"
             testCase "generated dynamic slots use their spec-derived keyword registry"
             <| fun _ ->
                 let style =

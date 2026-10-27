@@ -14,7 +14,7 @@ const surface = read(new URL("Surface.js", generated));
 const body = name => compact(new RegExp(`export function ${name}\\([^)]*\\) \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(fixtures)[1]);
 
 test("the erased binding files emit no module and the others are emitted", () => {
-  assert.deepEqual(readdirSync(bindings).sort(), ["Params.js", "Reactive.js", "Testing.js"]);
+  assert.deepEqual(readdirSync(bindings).sort(), ["Css.js", "Params.js", "Reactive.js", "Testing.js"]);
 });
 
 test("no bindings module or fixture holds a currying or object-construction helper", () => {

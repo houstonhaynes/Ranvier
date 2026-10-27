@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
+    <ProjectReference Include="../../../src/Ranvier.Css.View/Ranvier.Css.View.fsproj" />
+    <ProjectReference Include="../../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+    <Compile Include="Example.fs" />
+  </ItemGroup>
+</Project>

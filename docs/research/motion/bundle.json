@@ -2,25 +2,25 @@
   "glue": {
     "presence": {
       "motion": {
-        "raw": 243627,
-        "gzip": 73699
+        "raw": 255867,
+        "gzip": 76855
       },
       "handWritten": {
-        "raw": 241787,
-        "gzip": 72980
+        "raw": 254034,
+        "gzip": 76166
       },
-      "deltaGzip": 719,
+      "deltaGzip": 689,
       "budgetGzip": 900,
       "withinBudget": true
     },
     "flip": {
       "motion": {
-        "raw": 271886,
-        "gzip": 81597
+        "raw": 284193,
+        "gzip": 84748
       },
       "handWritten": {
-        "raw": 269585,
-        "gzip": 81008
+        "raw": 281893,
+        "gzip": 84159
       },
       "deltaGzip": 589,
       "budgetGzip": 600,
@@ -126,6 +126,7 @@
   },
   "helpers": {
     "src/Ranvier.View.Anime/Motion.js": 0,
+    "src/Fable.Ranvier.Anime/Css.js": 0,
     "src/Fable.Ranvier.Anime/Params.js": 0,
     "src/Fable.Ranvier.Anime/Reactive.js": 0,
     "src/Fable.Ranvier.Anime/Testing.js": 0

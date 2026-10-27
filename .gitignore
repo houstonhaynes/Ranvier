@@ -35,6 +35,7 @@ node_modules/
 
 # Fable test harness output
 /dist/
+/fable/Ranvier.Anime.Tests/generated-types/
 
 # Releases
 artifacts/

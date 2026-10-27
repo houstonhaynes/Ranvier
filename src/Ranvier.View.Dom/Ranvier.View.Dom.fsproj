@@ -15,7 +15,7 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
         <!-- Shares its version with Ranvier.View (see Ranvier.View.fsproj). -->
-        <Version>0.1.0-alpha.2</Version>
+        <Version>0.1.0-alpha.3</Version>
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
         <RanvierExactSiblingVersions>true</RanvierExactSiblingVersions>
     </PropertyGroup>

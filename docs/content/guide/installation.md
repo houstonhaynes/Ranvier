@@ -106,10 +106,10 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The four view packages share version `0.1.0-alpha.2`, with matching dependency versions.
+The four view packages share version `0.1.0-alpha.3`, with matching dependency versions.
 
 ```shell
-dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.2
+dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.3
 ```
 
 | Package | Holds | Depends on |

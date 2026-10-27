@@ -15,7 +15,7 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
         <!-- Shares its version with Ranvier.View (see src/Ranvier.View/Ranvier.View.fsproj). -->
-        <Version>0.1.0-alpha.2</Version>
+        <Version>0.1.0-alpha.3</Version>
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
         <RanvierExactSiblingVersions>true</RanvierExactSiblingVersions>
     </PropertyGroup>
@@ -25,6 +25,7 @@
         <Compile Include="Tickables.fs" />
         <Compile Include="Params.fs" />
         <Compile Include="Anime.fs" />
+        <Compile Include="Css.fs" />
         <Compile Include="Reactive.fs" />
         <Compile Include="Testing.fs" />
         <None Include="README.md" Pack="true" PackagePath="\" />
@@ -33,6 +34,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Ranvier\Ranvier.fsproj" />
+        <ProjectReference Include="..\Ranvier.Css\Ranvier.Css.fsproj" />
+        <InternalsVisibleTo Include="Ranvier.View.Anime" />
     </ItemGroup>
 
     <ItemGroup>

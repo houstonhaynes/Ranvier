@@ -20,6 +20,12 @@ let private document: Document = jsNative
 [<Emit("$0.style.getPropertyValue($1)")>]
 let private styleOf (element: obj) (property: string) : string = jsNative
 
+[<Emit("$0.style.getPropertyPriority($1)")>]
+let private priorityOf (element: obj) (property: string) : string = jsNative
+
+[<Emit("$0.style.setProperty($1, $2, $3)")>]
+let private setStyle (element: obj) (property: string) (value: string) (priority: string) : unit = jsNative
+
 [<Emit("$0.getAttribute($1)")>]
 let private attributeOf (element: obj) (name: string) : string = jsNative
 
@@ -205,6 +211,77 @@ let private onRevertsOnDisposal (clock: Clock) =
     let running = styleOf element "opacity"
     mounted.Dispose ()
     equal ("0.75", "") (running, styleOf element "opacity")
+
+let private typedCssOnReverts queued (clock: Clock) =
+    use graph = new Graph ()
+    let target = host ()
+
+    let gap: Ranvier.Css.CustomProperty<unit> =
+        Ranvier.Css.CustomProperty.create "--gap"
+
+    let px value : Ranvier.Css.Value<unit> =
+        Ranvier.Css.Generated.number value "px"
+
+    let view =
+        Component.template
+            (fun _ () -> ())
+            (div (
+                Attrs.className "user-class",
+                Motion.on (fun _ node -> Anime.animate (node, Anim(duration = 1000, ease = Ease.linear).With(gap, px 0., px 100.)))
+            ) {
+                "typed"
+            })
+
+    let mounted = mountIn queued graph target (Component.render view ())
+    let element = find target "div"
+    advance clock 0.
+    advance clock 488.
+    equal "50px" (styleOf element "--gap")
+    equal "user-class" (attributeOf element "class")
+    mounted.Dispose ()
+    equal "" (styleOf element "--gap")
+
+let private typedCssFollow queued (clock: Clock) =
+    use graph = new Graph ()
+    let target = host ()
+
+    let gap: Ranvier.Css.CustomProperty<unit> =
+        Ranvier.Css.CustomProperty.create "--gap"
+
+    let px value : Ranvier.Css.Value<unit> =
+        Ranvier.Css.Generated.number value "px"
+
+    let state = graph.Run (fun () -> Api.createSignal 0.)
+
+    let existing =
+        Hooks.motion (
+            System.Func<_, _, _, _>(fun _ node _ ->
+                setStyle (box node) "--gap" "calc(1px + 2px)" "important"
+                fun () -> ())
+        )
+
+    let view =
+        Component.template
+            (fun _ (value: Signal<float>) -> value)
+            (div (
+                Attrs.className "user-class",
+                existing,
+                Motion.followCss gap (AnimatableProp (duration = 1000., ease = Ease.linear)) (fun (value: Signal<float>) -> px value.Value)
+            ) {
+                "typed"
+            })
+
+    let mounted = mountIn queued graph target (Component.render view state)
+    let element = find target "div"
+    equal "0px" (styleOf element "--gap")
+    write graph mounted (fun () -> state.Value <- 100.)
+    advance clock 0.
+    advance clock 488.
+    equal "50px" (styleOf element "--gap")
+    equal "user-class" (attributeOf element "class")
+    mounted.Dispose ()
+    equal "calc(1px + 2px)" (styleOf element "--gap")
+    equal "important" (priorityOf element "--gap")
 
 let private pausedWhenExitFollows (view: Component<Rows>) queued (clock: Clock) =
     use graph = new Graph ()
@@ -1384,6 +1461,8 @@ let cases: (string * (Clock -> unit)) array =
     Array.concat
         [
             modes "enter reads its values at 0, half and end, and first-pass rows stay still" enterValues
+            modes "typed CSS variables use Motion ownership and preserve user classes" typedCssOnReverts
+            modes "typed CSS variables follow reactive values through Motion attributes" typedCssFollow
             modes "exit removes the row's node at the tick its animation completes" exitRemovesAtCompletion
             [|
                 "on reverts its animation when the instance is disposed", onRevertsOnDisposal

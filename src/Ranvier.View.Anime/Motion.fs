@@ -471,6 +471,55 @@ module Motion =
                 owning (box node) (settle context animatable))
         )
 
+    /// <summary>Sets a typed numeric CSS custom property immediately, then animates each reader change from its current value.</summary>
+    /// <param name="property">The typed custom property consumed by CSS declarations and expressions.</param>
+    /// <param name="parameters">Animation timing; each reader value supplies the same unit suffix.</param>
+    /// <param name="read">A reactive reader returning numeric tokens of the property's grammar marker.</param>
+    /// <remarks>The part pauses during an exit and restores the original inline value and priority on ordinary disposal.</remarks>
+    /// <exception cref="T:System.ArgumentException">A reader value lacks numeric token metadata or changes its unit suffix.</exception>
+    let followCss
+        (property: Ranvier.Css.CustomProperty<'syntax>)
+        (parameters: AnimatableProp)
+        (read: 'inst -> Ranvier.Css.Value<'syntax>)
+        : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let initial = read inst
+                let suffix = CssAnimationRuntime.unitOf initial
+                let name = Ranvier.Css.RuntimeApi.customPropertyName property
+                let restore = CssAnimationRuntime.capture (elementOf node) name
+                let settings = CssAnimationRuntime.withUnit parameters suffix
+                let seed = Utils.set (targetsOf node, Anim().With(property, initial))
+
+                let animatable =
+                    Anime.animatable (targetsOf node, AnimatableParams().With(name, settings))
+
+                let first = ref true
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    CssAnimationRuntime.requireUnit suffix value
+
+                    let number, _ =
+                        Ranvier.Css.RuntimeApi.tryNumericValue value
+                        |> Option.get
+
+                    animatable.set (name, number)
+
+                    if first.Value then
+                        first.Value <- false
+                        completeProperty animatable name)
+
+                let release () =
+                    if context.ExitPending () then
+                        pauseIfPlayable animatable
+                    else
+                        animatable.revert ()
+                        seed.revert ()
+                        restore ()
+
+                owning (box node) release)
+        )
+
     /// <summary>
     /// Replays <c>play</c> with <c>read</c>'s value whenever it changes; anime's default composition replaces the running
     /// animation's tweens of the same properties. The first value is played to its end at once.
