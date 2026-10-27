@@ -345,6 +345,7 @@ let tests =
         testList
             "KurrentDB state store"
             [
+                RetryTests.tests
                 StoreConformance.suite "shared" create
                 testList "optimistic" (OptimisticStoreConformance.optimisticStoreCases create)
                 testList "KurrentDB" cases

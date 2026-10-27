@@ -25,6 +25,9 @@ jobs:
       docs: ${{ steps.classify.outputs.docs }}
       arms: ${{ steps.classify.outputs.arms }}
       armsRuns: ${{ steps.classify.outputs.armsRuns }}
+      marten: ${{ steps.classify.outputs.marten }}
+      kurrentdb: ${{ steps.classify.outputs.kurrentdb }}
+      equinox: ${{ steps.classify.outputs.equinox }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - run: node --test .github/scripts/*.test.cjs
+      - run: node --test .github/scripts/*.test.cjs tools/Ranvier.Css.Generate/compiler-rejections.test.mjs
 
   dotnet:
     name: .NET tests
@@ -62,15 +65,53 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
       - name: Test Ranvier.Tests
         run: dotnet test tests/Ranvier.Tests -c Release
       - name: Test Ranvier.CSharp.Tests
         run: dotnet test tests/Ranvier.CSharp.Tests -c Release
       - name: Test Ranvier.Wire.Tests
         run: dotnet test tests/Ranvier.Wire.Tests -c Release
+      - name: Test Ranvier.Persistence.Tests
+        run: dotnet test tests/Ranvier.Persistence.Tests -c Release
+      # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.
+      - name: Check the vendored Thoth.Json
+        shell: pwsh
+        run: ./src/Ranvier.Wire/Vendor/Thoth.Json/refresh.ps1 -Check
+      # The trace log and its queries compile in only with RanvierTrace, and their tests with them.
+      - name: Test Ranvier.Tests, traced
+        run: dotnet test tests/Ranvier.Tests -c Release -p:RanvierTrace=true
+      # The signal map model reads the trace log, so its tests compile only in a traced build.
+      - name: Test Ranvier.Docs.Maps.Tests, traced
+        run: dotnet test docs/maps/tests -c Release -p:RanvierTrace=true
+      - name: Check package compatibility
+        shell: pwsh
+        run: ./tests/check-package-compatibility.ps1
+
+  css-bindings:
+    name: CSS specifications and type safety
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/Ranvier.Css.Generate/package-lock.json
       - name: Install pinned CSS specifications
         run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
       - name: Fetch and verify individual CSS specifications
@@ -79,6 +120,31 @@ jobs:
         run: dotnet test tests/Ranvier.Css.Spec.Tests -c Release
       - name: Compile generated CSS bindings and check type safety
         run: node tools/Ranvier.Css.Generate/verify-bindings.mjs
+
+  css-assets:
+    name: CSS extraction and utilities
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            tools/Ranvier.Css.Generate/package-lock.json
+            tools/Ranvier.Css.Import/package-lock.json
+      - name: Install pinned CSS specifications
+        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
       - name: Check CSS extraction, modules and server output
         run: node tools/Ranvier.Css.Generate/verify-assets.mjs
       - name: Build automatic utility extraction fixture
@@ -97,8 +163,33 @@ jobs:
         run: npm ci --prefix tools/Ranvier.Css.Import --ignore-scripts
       - name: Test the CSS source importer
         run: node --test tools/Ranvier.Css.Import/import.test.mjs
+      - name: Build the CSS specification generator
+        run: dotnet build tools/Ranvier.Css.Generate -c Release
       - name: Compile imported F# and check CSS round trips
         run: node tools/Ranvier.Css.Import/verify-import.mjs
+
+  css-browser:
+    name: CSS browser behavior
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/Ranvier.Css.Generate/package-lock.json
+      - name: Install pinned CSS specifications
+        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
       - name: Compile CSS reactive browser checks
         run: |
           dotnet tool restore
@@ -109,26 +200,11 @@ jobs:
         run: |
           npm exec --prefix tools/Ranvier.Css.Generate -- playwright install --with-deps chromium
           node tools/Ranvier.Css.Generate/verify-chromium.mjs
-      - name: Test Ranvier.Persistence.Tests
-        run: dotnet test tests/Ranvier.Persistence.Tests -c Release
-      # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.
-      - name: Check the vendored Thoth.Json
-        shell: pwsh
-        run: ./src/Ranvier.Wire/Vendor/Thoth.Json/refresh.ps1 -Check
-      # The trace log and its queries compile in only with RanvierTrace, and their tests with them.
-      - name: Test Ranvier.Tests, traced
-        run: dotnet test tests/Ranvier.Tests -c Release -p:RanvierTrace=true
-      # The signal map model reads the trace log, so its tests compile only in a traced build.
-      - name: Test Ranvier.Docs.Maps.Tests, traced
-        run: dotnet test docs/maps/tests -c Release -p:RanvierTrace=true
-      - name: Check package compatibility
-        shell: pwsh
-        run: ./tests/check-package-compatibility.ps1
 
   marten:
     name: Marten store adapter
     needs: changes
-    if: needs.changes.outputs.docs != 'true'
+    if: needs.changes.outputs.marten == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -163,7 +239,7 @@ jobs:
   kurrentdb:
     name: KurrentDB store adapter
     needs: changes
-    if: needs.changes.outputs.docs != 'true'
+    if: needs.changes.outputs.kurrentdb == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -198,7 +274,7 @@ jobs:
   equinox:
     name: Equinox FsCodec sample
     needs: changes
-    if: needs.changes.outputs.docs != 'true'
+    if: needs.changes.outputs.equinox == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -756,7 +832,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, css-bindings, css-assets, css-browser, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

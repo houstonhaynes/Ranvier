@@ -68,8 +68,8 @@ test('a master push is classified by its diff against the parent', () => {
     const root = commit('src/Core.fs');
     const docs = commit('docs/guide.md');
     const code = commit('src/Core.fs');
-    assert.equal(classify(root, docs), 'docs=true\narms=false\narmsRuns=false');
-    assert.equal(classify(docs, code), 'docs=false\narms=false\narmsRuns=false');
+    assert.equal(classify(root, docs), 'docs=true\narms=false\narmsRuns=false\nmarten=false\nkurrentdb=false\nequinox=false');
+    assert.equal(classify(docs, code), 'docs=false\narms=false\narmsRuns=false\nmarten=true\nkurrentdb=true\nequinox=true');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

@@ -10,6 +10,7 @@
     <Compile Include="../Ranvier.Persistence.Tests/Support.fs" Link="Support.fs" />
     <Compile Include="../Ranvier.Persistence.Tests/StoreConformance.fs" Link="StoreConformance.fs" />
     <Compile Include="../Ranvier.Persistence.Tests/OptimisticStoreConformance.fs" Link="OptimisticStoreConformance.fs" />
+    <Compile Include="RetryTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Main.fs" />
     <PackageReference Include="Expecto" Version="11.0.0-alpha8" />

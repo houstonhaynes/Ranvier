@@ -21,7 +21,8 @@ The adapter owns each scope's `ranvier-state-v1-` stream.
 - A loaded ETag supports conditional saves. A changed or absent record raises `KurrentDBStateConflictException`;
   reload after successful saves for new tokens. Unrelated records retain their ETags.
 - A missing ETag permits an unconditional insert or replacement. `PersistSession` currently writes this way.
-- A mutation attempts up to 32 appends against fresh snapshots on stream conflicts; other failures propagate.
+- A mutation attempts up to 32 appends on stream conflicts, waiting 1–50 ms between attempts before reading a fresh snapshot.
+  Other failures propagate.
 - Delete and clear remove current records within the scope. Historical snapshot events remain.
 - Reserve the stream for this adapter. External writes, physical deletion and age-based expiry can invalidate state.
 

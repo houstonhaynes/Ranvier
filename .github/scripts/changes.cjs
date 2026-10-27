@@ -13,7 +13,32 @@ const docsPatterns = [
 // True when every path is documentation; an empty or missing list is false, so unknown diffs run everything.
 function docsOnly(paths) {
   const files = (paths ?? []).map(p => p.trim()).filter(Boolean);
-  return files.length > 0 && files.every(file => docsPatterns.some(pattern => pattern.test(file)));
+  return files.length > 0 && files.every(file => !compiledCssDocs.test(file) && docsPatterns.some(pattern => pattern.test(file)));
+}
+
+const compiledCssDocs = /^docs\/(?:samples\/css(?:\/|-anime\/)|content\/view\/css(?:\.md$|-))/;
+const servicePaths = {
+  marten: /^(?:adapters|tests)\/Ranvier\.Persistence\.Marten(?:\.Tests)?\//,
+  kurrentdb: /^(?:adapters|tests)\/Ranvier\.Persistence\.KurrentDB(?:\.Tests)?\//,
+  equinox: /^(?:samples|tests)\/Ranvier\.Persistence\.Equinox(?:\.Tests)?\//,
+};
+const uiPaths = [
+  /^src\/(?:Ranvier\.Css(?:\.[^/]+)?|Ranvier\.View(?:\.[^/]+)?|Fable\.Ranvier\.Anime)\//,
+  /^tools\/Ranvier\.(?:Css\.[^/]+|Dom\.Generate)\//,
+  /^tests\/Ranvier\.(?:Css\.[^/]+|View\.[^/]+)\//,
+  /^fable\//,
+  /^examples\/(?:Ranvier\.Css\.[^/]+|Ranvier\.Motion|Ranvier\.Hydration|Fable\.Ranvier\.Playground)\//,
+  compiledCssDocs,
+];
+
+function servicesFor(paths, eventName) {
+  const files = (paths ?? []).map(p => p.trim()).filter(Boolean);
+  const docs = docsOnly(files);
+  const shared = files.some(file => !docsOnly([file]) &&
+    !Object.values(servicePaths).some(pattern => pattern.test(file)) && !uiPaths.some(pattern => pattern.test(file)));
+  const full = eventName !== 'pull_request' || files.length === 0 || shared;
+  return Object.fromEntries(Object.entries(servicePaths).map(([name, own]) =>
+    [name, !docs && (full || files.some(file => own.test(file)))]));
 }
 
 // Paths the Arms.Match job builds or measures: the view and core sources it compiles, the Playground's tests and
@@ -73,7 +98,7 @@ function range({ eventName, before, after, base, head }) {
   return null;
 }
 
-module.exports = { docsOnly, armsAffected, armsRunsAffected, classify, range };
+module.exports = { docsOnly, armsAffected, armsRunsAffected, classify, range, servicesFor };
 
 if (require.main === module) {
   // node changes.cjs <event> <from> <to>: prints docs, arms and armsRuns, each true or false, for $GITHUB_OUTPUT.
@@ -81,14 +106,16 @@ if (require.main === module) {
   const [eventName, from, to] = process.argv.slice(2);
   const r = range(eventName === 'pull_request' ? { eventName, base: from, head: to } : { eventName, before: from, after: to });
   let docs = false, arms = true, armsRuns = true;
+  let paths;
   if (r) {
     const base = eventName === 'pull_request'
       ? execFileSync('git', ['merge-base', r.from, r.to], { encoding: 'utf8' }).trim()
       : r.from;
-    const paths = execFileSync('git', ['diff', '--name-only', '--no-renames', base, r.to], { encoding: 'utf8' }).split('\n');
+    paths = execFileSync('git', ['diff', '--name-only', '--no-renames', base, r.to], { encoding: 'utf8' }).split('\n');
     ({ docs, arms, armsRuns } = classify(paths));
   }
   console.log(`docs=${docs}`);
   console.log(`arms=${arms}`);
   console.log(`armsRuns=${armsRuns}`);
+  for (const [name, selected] of Object.entries(servicesFor(paths, eventName))) console.log(`${name}=${selected}`);
 }

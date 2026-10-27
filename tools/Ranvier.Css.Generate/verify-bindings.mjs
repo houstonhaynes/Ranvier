@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { assertCompilerRejections, rejectionProject } from './compiler-rejections.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(directory, '../..');
@@ -17,10 +18,10 @@ dotnet(['run', '--project', directory, '-c', 'Release', '--', '--specs-dir', pat
   '--bindings', path.join(output, 'Css.Generated.fs'), '--output', path.join(output, 'model.json'), '--runtime', '--strict']);
 const generated = await fs.readFile(path.join(output, 'Css.Generated.fs'), 'utf8');
 const committed = await fs.readFile(path.join(root, 'src/Ranvier.Css.Bindings/Generated/Css.fs'), 'utf8');
-if (generated !== committed) throw new Error('Generated CSS bindings are stale; regenerate the library source with --runtime.');
+if (generated.replaceAll('\r\n', '\n') !== committed.replaceAll('\r\n', '\n')) throw new Error('Generated CSS bindings are stale; regenerate the library source with --runtime.');
 const manifestText = await fs.readFile(path.join(output, 'Css.Generated.manifest.json'), 'utf8');
 const committedManifest = await fs.readFile(path.join(root, 'src/Ranvier.Css.Bindings/Generated/Css.manifest.json'), 'utf8');
-if (manifestText !== committedManifest) throw new Error('Generated CSS binding manifest is stale.');
+if (manifestText.replaceAll('\r\n', '\n') !== committedManifest.replaceAll('\r\n', '\n')) throw new Error('Generated CSS binding manifest is stale.');
 const corpusManifest = JSON.parse(manifestText);
 const propertyCount = corpusManifest.definitions.filter(item => item.kind === 'Property').length;
 if ((generated.match(/let reactive \(/g) ?? []).length !== propertyCount) throw new Error('Reactive helpers do not cover every property.');
@@ -106,28 +107,47 @@ await fs.mkdir(consumer, { recursive: true });
 await fs.writeFile(path.join(consumer, 'Consumer.fsproj'), `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><WarningsAsErrors>44</WarningsAsErrors></PropertyGroup><ItemGroup><ProjectReference Include="${bindingsProject}"/><Compile Include="Consumer.fs"/></ItemGroup></Project>`);
 await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet width = Css.width (Css.px 42.0)\nlet reactive = Css.width (fun (value:float) -> Css.px value)\n`);
 dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release']);
-await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer
-open Ranvier.Css.Generated
-let invalidWidth = Css.TypeAngle.deg 90.0 |> Css.PropertyWidth.fromBoxSize
-`);
-if (!dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false).includes('FS0001')) throw new Error('Expected a type mismatch for angle as width.');
-for (const expression of ['Css.width (Css.deg 90.0)', 'Css.width Css.block', 'Css.width "42px"', 'Css.width (fun (_:float) -> Css.deg 90.0)', 'Css.width (fun (_:float) -> Css.initial)', 'Css.width (Css.deg 10.0 + Css.deg 5.0)', 'Css.width (Css.px 1.0 * Css.px 2.0)', 'Css.width (Css.number 0.0 + Css.number 1.0)', 'Css.width (Css.number 1.0 + Css.percent 50.0)']) {
-  await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet invalid = ${expression}\n`);
-  const log = dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false);
-  if (!log.includes('FS0041')) throw new Error(`Expected an overload rejection for ${expression}: ${log}`);
-}
-for (const expression of ['Css.px 1.0 + Css.deg 1.0', 'Css.sin (Css.px 1.0)', 'Css.pow(Css.px 1.0, Css.px 2.0)', 'Css.width Css.intrinsicSize', 'Css.padding (Css.calcSize(Css.intrinsicKeyword "auto", Css.intrinsicSize))', 'Css.interpolationProgress Css.intrinsicSize', 'Css.intrinsic (Css.anglePercent 10.0 / Css.anglePercent 5.0)', 'Css.variable(Css.lengthVariable "--gap", fallback=Css.deg 90.0)', 'Css.angle (Css.px 1.0 + Css.px 2.0)', 'Css.length Css.intrinsicSize', 'Css.number (Css.percent 10.0 / Css.percent 5.0)']) {
-  await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet invalid = ${expression}\n`);
-  dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false);
-}
 const manifest = JSON.parse(await fs.readFile(path.join(output, 'Css.Generated.manifest.json'), 'utf8'));
 const obsolete = manifest.definitions.find(item => item.obsolete && item.moduleName.includes('_Obsolete_'));
 if (!obsolete) throw new Error('No archived definition generated.');
-await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer
-open Ranvier.Css.Generated
-let obsoleteUrl = Css.${obsolete.moduleName}.specUrl
-`);
-if (!dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false).includes('FS0044')) throw new Error('Expected an obsolete API warning.');
+const rejectionCases = [
+  { name: 'AngleAsWidth', namespace: 'Ranvier.Css.Generated', expression: 'Css.TypeAngle.deg 90.0 |> Css.PropertyWidth.fromBoxSize', code: 'FS0001' },
+  ...[
+    ['WidthAngle', 'Css.width (Css.deg 90.0)'],
+    ['WidthBlock', 'Css.width Css.block'],
+    ['WidthString', 'Css.width "42px"'],
+    ['ReactiveWidthAngle', 'Css.width (fun (_:float) -> Css.deg 90.0)'],
+    ['ReactiveWidthGlobal', 'Css.width (fun (_:float) -> Css.initial)'],
+    ['WidthAngleSum', 'Css.width (Css.deg 10.0 + Css.deg 5.0)'],
+    ['WidthLengthProduct', 'Css.width (Css.px 1.0 * Css.px 2.0)'],
+    ['WidthNumberSum', 'Css.width (Css.number 0.0 + Css.number 1.0)'],
+    ['WidthNumberPercentageSum', 'Css.width (Css.number 1.0 + Css.percent 50.0)'],
+  ].map(([name, expression]) => ({ name, expression, code: 'FS0041' })),
+  ...[
+    ['LengthAngleSum', 'Css.px 1.0 + Css.deg 1.0', 'FS0043'],
+    ['SineLength', 'Css.sin (Css.px 1.0)', 'FS0041'],
+    ['PowerLength', 'Css.pow(Css.px 1.0, Css.px 2.0)', 'FS0041'],
+    ['WidthIntrinsic', 'Css.width Css.intrinsicSize', 'FS0041'],
+    ['PaddingIntrinsic', 'Css.padding (Css.calcSize(Css.intrinsicKeyword "auto", Css.intrinsicSize))', 'FS0041'],
+    ['ProgressIntrinsic', 'Css.interpolationProgress Css.intrinsicSize', 'FS0041'],
+    ['IntrinsicAngleRatio', 'Css.intrinsic (Css.anglePercent 10.0 / Css.anglePercent 5.0)', 'FS0041'],
+    ['VariableAngleFallback', 'Css.variable(Css.lengthVariable "--gap", fallback=Css.deg 90.0)', 'FS0041'],
+    ['AngleLengthSum', 'Css.angle (Css.px 1.0 + Css.px 2.0)', 'FS0193'],
+    ['LengthIntrinsic', 'Css.length Css.intrinsicSize', 'FS0193'],
+    ['NumberPercentageRatio', 'Css.number (Css.percent 10.0 / Css.percent 5.0)', 'FS0041'],
+  ].map(([name, expression, code]) => ({ name, expression, code })),
+  { name: 'ArchivedApi', namespace: 'Ranvier.Css.Generated', expression: `Css.${obsolete.moduleName}.specUrl`, code: 'FS0044' },
+];
+const negatives = path.join(consumer, 'negative');
+await fs.mkdir(negatives, { recursive: true });
+await fs.writeFile(path.join(negatives, 'Negative.fsproj'), rejectionProject(bindingsProject, rejectionCases));
+for (const item of rejectionCases) {
+  await fs.writeFile(path.join(negatives, `${item.name}.fs`), `module ${item.name}\nopen ${item.namespace ?? 'Ranvier.Css'}\nlet invalid = ${item.expression}\n`);
+}
+const rejectionLog = dotnet(['build', path.join(negatives, 'Negative.fsproj'), '-c', 'Release'], false);
+await fs.writeFile(path.join(output, 'compiler-rejections.log'), rejectionLog);
+assertCompilerRejections(rejectionCases, rejectionLog);
+console.log(`All ${rejectionCases.length} invalid consumers report their expected compiler diagnostics in one build.`);
 const fixture = path.join(output, 'fixture');
 await fs.mkdir(fixture, { recursive: true });
 const feature = (name, syntax) => ({ name, href: `https://example.test/${name}`, ...(syntax ? { syntax } : {}) });

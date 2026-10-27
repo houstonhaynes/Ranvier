@@ -145,22 +145,14 @@ type KurrentDBStateStore
         }
 
     let mutate apply =
-        task {
-            let mutable committed = false
-            let mutable attempts = 0
-
-            while not committed do
+        SnapshotRetry.run (fun attempts -> Task.Delay (min 50 (attempts * attempts))) (fun () ->
+            task {
                 let! expected, rows = read ()
                 apply rows
                 let data = EventData (Uuid.NewUuid (), eventType, encodeRows rows.Values)
-                attempts <- attempts + 1
-
-                try
-                    let! _ = client.AppendToStreamAsync (stream, expected, [ data ])
-                    committed <- true
-                with :? WrongExpectedVersionException when attempts < 32 ->
-                    ()
-        }
+                let! _ = client.AppendToStreamAsync (stream, expected, [ data ])
+                return ()
+            })
 
     let validateText name (value: string) =
         if isNull value then
