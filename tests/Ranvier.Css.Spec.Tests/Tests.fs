@@ -433,6 +433,7 @@ let tests =
         "CSS specs"
         ([
             ResolutionTests.tests
+            NumericSemanticsTests.tests
             SpecSourcesTests.tests
             GenerationTests.tests
             RuntimeTests.tests

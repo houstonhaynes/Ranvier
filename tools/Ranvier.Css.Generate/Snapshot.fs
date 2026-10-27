@@ -163,6 +163,7 @@ module Snapshot =
                             "missing", integer missing
                         ]
                     "features", arrayNode features
+                    "numericSemantics", NumericProjection.rulesMetadata ()
                 ]
 
         result.ToJsonString(JsonSerializerOptions (WriteIndented = true)).Replace("\r\n", "\n")

@@ -670,6 +670,9 @@ module Generation =
                                         targetRoot.Children[0]
 
                                 pending.Enqueue (targetPlan, Set.add tag visited, convert, guards)
+                        | ReferenceTarget.Primitive _ ->
+                            if not (values.ContainsKey tag) then
+                                values.Add (tag, (convert "value", guards))
                         | _ -> ()
                     | Some (GrammarExpression.Literal token) when Regex.IsMatch (token, "^[A-Za-z_-][A-Za-z0-9_-]*$") ->
                         if not (keywords.ContainsKey token) then
@@ -1078,6 +1081,19 @@ module Generation =
                             opaqueCount = opaque.Length
                             unresolvedCount = unresolved.Length
                             definitions = entries.ToArray ()
+                            primitiveTerminals =
+                                resolution.References
+                                |> List.choose (fun reference ->
+                                    match reference.Target with
+                                    | ReferenceTarget.Primitive production ->
+                                        Some
+                                            {|
+                                                marker = targetTag reference.Reference reference.Target
+                                                production = production
+                                            |}
+                                    | _ -> None)
+                                |> List.distinct
+                                |> List.sortBy (fun terminal -> terminal.marker, terminal.production)
                             references = issues
                             recursiveComponents =
                                 resolution.Cycles
@@ -1087,6 +1103,7 @@ module Generation =
                     )
                     .Replace("\r\n", "\n")
                 + "\n"
+                |> NumericProjection.enrich
 
             Ok
                 {

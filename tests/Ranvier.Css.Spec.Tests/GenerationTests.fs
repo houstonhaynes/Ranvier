@@ -25,6 +25,144 @@ let tests =
     testList
         "CSS binding generation"
         [
+            testCase "numeric contexts retain primitive fallbacks and leave unknown dimensions unclassified"
+            <| fun _ ->
+                let json =
+                    """{"properties":[{"name":"measure","href":"https://example.test/measure","syntax":"<length>"},{"name":"opaque","href":"https://example.test/opaque","syntax":"<dimension>"},{"name":"future","href":"https://example.test/future","syntax":"<future-type>"}],"types":[],"functions":[],"selectors":[],"atrules":[]}"""
+
+                let input =
+                    Webref.consume "fallbacks" (Encoding.UTF8.GetBytes json)
+                    |> Result.toOption
+                    |> Option.get
+
+                let output = generate input
+                use manifest = JsonDocument.Parse output.Manifest
+                let properties = NumericProjection.derive manifest.RootElement
+
+                let contexts name =
+                    properties
+                    |> List.find (fun property -> property.Name = name)
+                    |> _.Contexts
+
+                Expect.equal ((contexts "measure").Length) 1 "Resolved lexical fallbacks retain known numeric semantics"
+                Expect.isEmpty (contexts "opaque") "A generic dimension cannot imply length"
+                Expect.isEmpty (contexts "future") "Unknown numeric semantics stay unknown"
+            testCase "numeric contexts follow whole-value conversion paths and explicit percentage bases"
+            <| fun _ ->
+                let json =
+                    """{"properties":[{"name":"width","href":"https://example.test/width","syntax":"<length-percentage [0,100]>"},{"name":"opacity","href":"https://example.test/opacity","syntax":"<number> | <percentage>"},{"name":"z-index","href":"https://example.test/z-index","syntax":"auto | <integer>"},{"name":"pair","href":"https://example.test/pair","syntax":"<length> <length>"},{"name":"color","href":"https://example.test/color","syntax":"rgb(<number>)"}],"types":[{"name":"length-percentage","href":"https://example.test/mixed","syntax":"<length> | <percentage>"},{"name":"length","href":"https://example.test/length"},{"name":"number","href":"https://example.test/number"},{"name":"percentage","href":"https://example.test/percentage"},{"name":"integer","href":"https://example.test/integer","syntax":"<number-token>"},{"name":"number-token","href":"https://example.test/token"}],"functions":[],"selectors":[],"atrules":[]}"""
+
+                let input =
+                    Webref.consume "numeric-contexts" (Encoding.UTF8.GetBytes json)
+                    |> Result.toOption
+                    |> Option.get
+
+                let output = generate input
+                use manifest = JsonDocument.Parse output.Manifest
+                let semantics = manifest.RootElement.GetProperty "numericSemantics"
+                Expect.equal (semantics.GetProperty("schemaVersion").GetInt32()) 1 "Independent semantic schema"
+
+                use snapshot = JsonDocument.Parse (Snapshot.toJson input)
+                let rules = snapshot.RootElement.GetProperty "numericSemantics"
+
+                Expect.equal
+                    (rules.GetProperty("functions").GetArrayLength())
+                    NumericSemantics.functionPolicies.Length
+                    "The exported domain includes executable function policies"
+
+                Expect.equal
+                    (rules.GetProperty("operators").GetArrayLength())
+                    NumericSemantics.operatorPolicies.Length
+                    "The exported domain includes arithmetic rules"
+
+                let contexts name =
+                    semantics.GetProperty("properties").EnumerateArray()
+                    |> Seq.find (fun property -> property.GetProperty("name").GetString() = name)
+                    |> fun property ->
+                        property.GetProperty("contexts").EnumerateArray()
+                        |> Seq.toList
+
+                let width = contexts "width"
+
+                let mixed =
+                    width
+                    |> List.find (fun context -> context.GetProperty("production").GetString() = "length-percentage")
+
+                Expect.equal (mixed.GetProperty("percentageBasis").GetString()) "length" "Explicit mixed production resolves percentages"
+                let mixedRange = mixed.GetProperty("ranges")[0]
+                Expect.equal (mixedRange.GetProperty("maximum").GetProperty("value").GetString()) "100" "Bounds retained"
+
+                for context in width do
+                    Expect.equal
+                        (context.GetProperty("percentageBasis").GetString())
+                        "length"
+                        "The percentage basis applies throughout the property's calculations"
+
+                for context in contexts "opacity" do
+                    Expect.equal
+                        (context.GetProperty("percentageBasis").ValueKind)
+                        JsonValueKind.Null
+                        "Independent alternatives cannot authorize mixed arithmetic"
+
+                let integer = contexts "z-index" |> List.exactlyOne
+
+                Expect.equal
+                    (integer.GetProperty("integerRounding").GetString())
+                    "nearest-ties-positive-infinity"
+                    "Calculations round at the integer sink"
+
+                Expect.isEmpty (contexts "pair") "A descendant dimension cannot satisfy required siblings"
+                Expect.isEmpty (contexts "color") "Function arguments cannot become whole-property calculations"
+
+                let projected = NumericProjection.derive manifest.RootElement
+
+                let property name =
+                    projected
+                    |> List.find (fun property -> property.Name = name)
+
+                let mixedLength = NumericSemantics.percentage (Some NumericDimension.Length)
+
+                Expect.isTrue
+                    ((property "width").Contexts
+                     |> List.exists (fun context -> NumericProjection.accepts context mixedLength))
+                    "Width accepts a length-relative percentage result"
+
+                Expect.isFalse
+                    ((property "opacity").Contexts
+                     |> List.exists (fun context -> NumericProjection.accepts context mixedLength))
+                    "Opacity rejects a length percentage hint"
+
+                let percent = NumericSemantics.percentage None
+
+                let canceledPercent =
+                    NumericSemantics.divide percent percent
+                    |> Result.toOption
+                    |> Option.get
+
+                Expect.isTrue
+                    ((property "opacity").Contexts
+                     |> List.exists (fun context -> NumericProjection.accepts context canceledPercent))
+                    "Number results retain the property's ordinary percentage context"
+
+                let shared =
+                    RuntimeGeneration.generate "NumericTest.Generated" input
+                    |> Result.toOption
+                    |> Option.get
+
+                use sharedManifest = JsonDocument.Parse shared.Manifest
+
+                Expect.equal
+                    (sharedManifest.RootElement.GetProperty("numericSemantics").GetRawText())
+                    (semantics.GetRawText ())
+                    "Both generators share semantic metadata"
+
+                Expect.equal
+                    output
+                    (generate
+                        { input with
+                            Features = List.rev input.Features
+                        })
+                    "Semantic output is deterministic"
             testCase "sugar fills provably empty optional sequence components through canonical factories"
             <| fun _ ->
                 let json =

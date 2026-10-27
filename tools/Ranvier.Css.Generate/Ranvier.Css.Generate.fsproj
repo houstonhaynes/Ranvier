@@ -7,10 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Model.fs" />
+    <Compile Include="NumericSemantics.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="Webref.fs" />
     <Compile Include="SpecSources.fs" />
     <Compile Include="Resolution.fs" />
+    <Compile Include="NumericProjection.fs" />
     <Compile Include="Generation.fs" />
     <Compile Include="SugarGeneration.fs" />
     <Compile Include="RuntimeGeneration.fs" />
