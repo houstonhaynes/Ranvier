@@ -1047,7 +1047,7 @@ let generate compilerRoot policyRoot packageRoot output (templateOutput: string 
                         "render"
                         "boundary"
                     ]
-                "AttributeBuilder", set [ "attribute"; "data"; "aria" ]
+                "AttributeBuilder", set [ "attribute"; "data"; "aria"; "composableClass" ]
                 "PropertyBuilder", set [ "propertyStatic"; "propertyWith"; "propertyFrom" ]
                 "EventBuilder", set [ "on" ]
             ]

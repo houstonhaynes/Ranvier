@@ -68,6 +68,47 @@ jobs:
         run: dotnet test tests/Ranvier.CSharp.Tests -c Release
       - name: Test Ranvier.Wire.Tests
         run: dotnet test tests/Ranvier.Wire.Tests -c Release
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install pinned CSS specifications
+        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
+      - name: Fetch and verify individual CSS specifications
+        run: node tools/Ranvier.Css.Generate/fetch-specs.mjs
+      - name: Test CSS specification model and bindings
+        run: dotnet test tests/Ranvier.Css.Spec.Tests -c Release
+      - name: Compile generated CSS bindings and check type safety
+        run: node tools/Ranvier.Css.Generate/verify-bindings.mjs
+      - name: Check CSS extraction, modules and server output
+        run: node tools/Ranvier.Css.Generate/verify-assets.mjs
+      - name: Build automatic utility extraction fixture
+        run: dotnet build tests/Ranvier.Css.Compile.Tests/Fixtures/App/App.fsproj -c Release
+      - name: Test automatic composite utility extraction
+        run: dotnet test tests/Ranvier.Css.Compile.Tests/Ranvier.Css.Compile.Tests.fsproj -c Release
+      - name: Check the composite utility example
+        run: |
+          dotnet build examples/Ranvier.Css.Utilities.Example -c Release
+          dotnet run --project tools/Ranvier.Css.Compile -c Release -- --project examples/Ranvier.Css.Utilities.Example/Ranvier.Css.Utilities.Example.fsproj --output examples/Ranvier.Css.Utilities.Example/out --single app.css --no-content-hash --public-path .
+          dotnet run --project examples/Ranvier.Css.Utilities.Example -c Release
+          node tools/Ranvier.Css.Generate/verify-utilities.mjs
+      - name: Compile and extract the CSS documentation examples
+        run: node docs/samples/css/verify.mjs
+      - name: Install the CSS source importer
+        run: npm ci --prefix tools/Ranvier.Css.Import --ignore-scripts
+      - name: Test the CSS source importer
+        run: node --test tools/Ranvier.Css.Import/import.test.mjs
+      - name: Compile imported F# and check CSS round trips
+        run: node tools/Ranvier.Css.Import/verify-import.mjs
+      - name: Compile CSS reactive browser checks
+        run: |
+          dotnet tool restore
+          dotnet fickl tests/Ranvier.Css.Browser.Tests/Ranvier.Css.Browser.Tests.fsproj -o tools/Ranvier.Css.Generate/out/browser -c Release
+      - name: Check reactive CSS mount, updates, disposal and SSR identity
+        run: node tools/Ranvier.Css.Generate/verify-browser.mjs
+      - name: Check native CSS behavior in Chromium
+        run: |
+          npm exec --prefix tools/Ranvier.Css.Generate -- playwright install --with-deps chromium
+          node tools/Ranvier.Css.Generate/verify-chromium.mjs
       - name: Test Ranvier.Persistence.Tests
         run: dotnet test tests/Ranvier.Persistence.Tests -c Release
       # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.

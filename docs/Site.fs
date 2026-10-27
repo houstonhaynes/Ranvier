@@ -158,6 +158,9 @@ let theme =
                         Menu.page "view/events.md"
                         Menu.page "view/document-head.md"
                         Menu.page "view/sugar.md"
+                        Menu.page "view/css.md"
+                        Menu.page "view/css-utilities.md"
+                        Menu.page "view/css-build.md"
                         Menu.page "view/authored.md"
                     ]
                 Menu.section

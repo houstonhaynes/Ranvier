@@ -1656,6 +1656,7 @@ type Component<'props> internal (setup: Func<Setup, obj, obj>, root: TemplateNod
         writer.Embed (scope, this, props)
 
 /// <summary>One part of an element in a template for instances of type <c>'inst</c>.</summary>
+/// <remarks>Composable class parts merge with other class sources in source order, preserving distinct, case-sensitive tokens.</remarks>
 [<NoEquality; NoComparison>]
 type Part<'native, 'inst> =
     internal
@@ -1664,6 +1665,7 @@ type Part<'native, 'inst> =
     | DynamicPart of Slot
     | EventPart of string * Func<obj, obj, unit>
     | PlacedPart of PlacedKind * Func<obj, obj, obj, obj>
+    | ComposableClass of Part<'native, 'inst>
     | NoPart
 
 /// <summary>A template subtree for instances of type <c>'inst</c>.</summary>
@@ -1698,6 +1700,119 @@ let private portable (html: PropertySerialization) (write: 'native -> 'value -> 
 
 let private nodeOf (TemplateView node) = node
 
+type private ClassContribution =
+    | FixedClass of string option
+    | ReadClass of Func<obj, string option>
+
+let private classContribution part =
+    match part with
+    | StaticAttribute ("class", value) -> Some (FixedClass (Some value))
+    | DynamicPart {
+                      Target = AttributeTarget "class"
+                      Read = read
+                  } -> Some (ReadClass (Func<obj, string option>(fun instance -> unbox (read.Invoke instance))))
+    | StaticProperty ({ Html = AsAttribute ("class", encode) }, value) -> Some (FixedClass (encode.Invoke value))
+    | DynamicPart {
+                      Target = PropertyTarget { Html = AsAttribute ("class", encode) }
+                      Read = read
+                  } -> Some (ReadClass (Func<obj, string option>(fun instance -> encode.Invoke (read.Invoke instance))))
+    | _ -> None
+
+let private mergeClassValues (values: string option array) =
+    let seen = System.Collections.Generic.HashSet<string>()
+    let tokens = ResizeArray<string>()
+    let mutable present = false
+
+    for value in values do
+        match value with
+        | Some text when not (isNull text) ->
+            present <- true
+
+            for token in text.Split ([| ' '; '\t'; '\n'; '\r'; '\012' |], StringSplitOptions.RemoveEmptyEntries) do
+                if seen.Add token then
+                    tokens.Add token
+        | _ -> ()
+
+    if present then Some (String.Join (" ", tokens)) else None
+
+let private mergeClassParts (parts: Part<'native, 'inst> array) =
+    let composable =
+        parts
+        |> Array.exists (function
+            | ComposableClass _ -> true
+            | _ -> false)
+
+    let parts =
+        if composable then
+            parts
+            |> Array.map (function
+                | ComposableClass part -> part
+                | part -> part)
+        else
+            parts
+
+    let isClass =
+        function
+        | StaticAttribute ("class", _)
+        | DynamicPart { Target = AttributeTarget "class" }
+        | StaticProperty ({ Html = AsAttribute ("class", _) }, _)
+        | DynamicPart {
+                          Target = PropertyTarget { Html = AsAttribute ("class", _) }
+                      } -> true
+        | _ -> false
+
+    if
+        not composable
+        || (parts |> Array.filter isClass).Length < 2
+    then
+        parts
+    else
+        let classes = parts |> Array.map classContribution
+        let contributions = classes |> Array.choose id
+
+        let combined =
+            if
+                contributions
+                |> Array.forall (function
+                    | FixedClass _ -> true
+                    | _ -> false)
+            then
+                let values =
+                    contributions
+                    |> Array.map (function
+                        | FixedClass value -> value
+                        | _ -> None)
+
+                match mergeClassValues values with
+                | Some value -> StaticAttribute ("class", value)
+                | None -> NoPart
+            else
+                DynamicPart
+                    {
+                        Target = AttributeTarget "class"
+                        Mode = RenderMode
+                        Read =
+                            Func<obj, obj>(fun instance ->
+                                contributions
+                                |> Array.map (function
+                                    | FixedClass value -> value
+                                    | ReadClass read -> read.Invoke instance)
+                                |> mergeClassValues
+                                |> box)
+                        Same = primitiveSame
+                    }
+
+        let mutable emitted = false
+
+        parts
+        |> Array.mapi (fun index part ->
+            match classes[index] with
+            | None -> part
+            | Some _ when emitted -> NoPart
+            | Some _ ->
+                emitted <- true
+                combined)
+
 let private elementNode tag (parts: Part<'native, 'inst> array) (children: TemplateView<'inst> array) =
     name tag |> ignore
     let attributes = ResizeArray ()
@@ -1706,7 +1821,7 @@ let private elementNode tag (parts: Part<'native, 'inst> array) (children: Templ
     let events = ResizeArray ()
     let placed = ResizeArray ()
 
-    for part in parts do
+    for part in mergeClassParts parts do
         match part with
         | StaticAttribute (name, value) ->
             validateAttribute name
@@ -1715,6 +1830,7 @@ let private elementNode tag (parts: Part<'native, 'inst> array) (children: Templ
         | DynamicPart slot -> slots.Add slot
         | EventPart (name, handler) -> events.Add (name, handler)
         | PlacedPart (kind, hook) -> placed.Add (kind, hook)
+        | ComposableClass _ -> invalidOp "A composable class part must wrap a class attribute or reflected class property."
         | NoPart -> ()
 
     let rawContents =
@@ -1882,6 +1998,18 @@ module internal TemplateParts =
 /// <summary>Attribute parts: a value is static, a reader or source is dynamic.</summary>
 [<Sealed>]
 type AttributeBuilder<'inst> internal () =
+    /// <summary>Marks a class attribute or reflected class property for ordered merging with the element's other class sources.</summary>
+    /// <exception cref="T:System.ArgumentException">The part does not write a class attribute or reflected class property.</exception>
+    member _.composableClass(part: Part<'native, 'inst>) : Part<'native, 'inst> =
+        match part with
+        | StaticAttribute ("class", _)
+        | DynamicPart { Target = AttributeTarget "class" }
+        | StaticProperty ({ Html = AsAttribute ("class", _) }, _)
+        | DynamicPart {
+                          Target = PropertyTarget { Html = AsAttribute ("class", _) }
+                      } -> ComposableClass part
+        | _ -> invalidArg "part" "Expected a class attribute or reflected class property."
+
     member _.attribute(name: string, value: string) : Part<'native, 'inst> =
         TemplateParts.attribute name value
 

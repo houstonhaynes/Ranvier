@@ -106,10 +106,10 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The four view packages are published on NuGet at `0.1.0-alpha.1`, with matching dependency versions.
+The four view packages share version `0.1.0-alpha.2`, with matching dependency versions.
 
 ```shell
-dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.1
+dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.2
 ```
 
 | Package | Holds | Depends on |
@@ -144,6 +144,22 @@ and map `Xantham.*` to Cloudsmith:
 </configuration>
 ```
 :::
+
+## Typed CSS
+
+Install the generated properties and the view adapter together:
+
+```shell
+dotnet add package Ranvier.Css.Bindings --version 0.1.0-alpha.1
+dotnet add package Ranvier.Css.View --version 0.1.0-alpha.1
+```
+
+Both depend on `Ranvier.Css`. The view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later
+so generated classes merge with user classes. These three CSS libraries target .NET 8 and
+.NET 10 and include Fable sources and standalone source projects. `Ranvier.Css.Build` is the
+separate .NET 10 asset compiler library. The source-project extractor remains a repository tool.
+See [typed CSS](../view/css.md), [composite utilities](../view/css-utilities.md) and
+[extracting CSS](../view/css-build.md).
 
 ## Fable
 

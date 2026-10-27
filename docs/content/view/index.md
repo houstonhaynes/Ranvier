@@ -4,7 +4,7 @@ order: 1
 ---
 
 :::info Alpha
-The view packages are published at `0.1.0-alpha.1`; their APIs may change.
+The view packages share version `0.1.0-alpha.2`; their APIs may change.
 See [installation and the dependency feed](../guide/installation.md#views).
 :::
 
@@ -65,6 +65,9 @@ Try this in the [browser editor](getting-started.md).
 
 ## Pages
 
+- [Typed CSS](css.md): generated property helpers, reactive values and preserved user classes.
+- [Composite CSS utilities](css-utilities.md): reusable breakpoints, compositions and application conditions.
+- [Extracting and serving CSS](css-build.md): static extraction, CSS Modules and single-file output.
 - [Getting started](getting-started.md): a counter, from project setup to a mounted DOM tree.
 - [Templates and bindings](templates.md): elements, text, attributes, properties and how bindings re-run.
 - [Components](components.md): the four declaration styles, setup, ids and child components.

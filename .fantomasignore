@@ -1,5 +1,6 @@
 src/Ranvier.View.Dom/Generated/
 src/Ranvier.View/Generated/
+src/Ranvier.Css.Bindings/Generated/
 src/Ranvier.Wire/Vendor/
 # The docs samples keep the layout of the pages they are copied from.
 docs/samples/
