@@ -55,6 +55,8 @@ module internal SugarGeneration =
 
         let source = StringBuilder ()
         let primitiveMetadata = ResizeArray<obj>()
+        let numericPrimitives = ResizeArray<obj>()
+        let numericProperties = NumericProjection.derive manifest
 
         let line (text: string) =
             source.Append(text).Append('\n') |> ignore
@@ -135,6 +137,10 @@ module internal SugarGeneration =
                |> String.concat ".")
         )
 
+        line (NumericRuntimeGeneration.source ())
+        line (NumericValueGeneration.types ())
+        line (ContextualNumericGeneration.types ())
+        line (NumericSugarGeneration.overloadTypes numericProperties)
         line "/// <summary>Nominal keyword markers accepted only by properties whose grammars include the keyword.</summary>"
         line "module CssKeywords ="
 
@@ -192,7 +198,11 @@ module internal SugarGeneration =
                 let primitive = (text "name" item).Trim('<', '>')
 
                 let proposed =
-                    if methodName = "create" || methodName = "value" then
+                    if
+                        methodName = "create"
+                        || methodName = "value"
+                        || (primitive = "integer" && methodName = "fromInt")
+                    then
                         if primitive = "string" then
                             "text"
                         else
@@ -234,17 +244,120 @@ module internal SugarGeneration =
                 line "    /// <summary>Constructs a typed CSS primitive using the canonical value constructor.</summary>"
                 obsolete item
 
+                let rawCall =
+                    call
+                    + (if helper.GetProperty("takesValue").GetBoolean() then
+                           " value"
+                       else
+                           "")
+
+                let numeric =
+                    if
+                        parameters.Contains "float"
+                        || parameters.Contains "int"
+                        || (primitive = "zero" && parameters = "")
+                    then
+                        NumericRuntimeGeneration.primitive primitive
+                    else
+                        None
+
+                let body =
+                    match numeric with
+                    | Some (unit, hint) ->
+                        let unitName =
+                            if primitive = "percentage" then
+                                "%"
+                            elif
+                                primitive = "number"
+                                || primitive = "integer"
+                                || primitive = "zero"
+                            then
+                                ""
+                            else
+                                text "methodName" helper
+
+                        let production =
+                            match primitive with
+                            | "zero"
+                            | "number-token" -> "number"
+                            | "percentage-token" -> "percentage"
+                            | name -> name
+
+                        let argument =
+                            if parameters = "" then "0.0"
+                            elif parameters.Contains "int" then "(float value)"
+                            else "value"
+
+                        numericPrimitives.Add (
+                            box
+                                {|
+                                    memberName = methodName
+                                    production = production
+                                    unitName = unitName
+                                    argumentType =
+                                        (if parameters = "" then "none"
+                                         elif parameters.Contains "int" then "int"
+                                         else "float")
+                                    hint = (if primitive = "percentage" then "percentage" else "plain")
+                                    basis = (null: string)
+                                    marker = text "marker" item
+                                |}
+                        )
+
+                        "NumericFactory.value<"
+                        + unit
+                        + ", _, "
+                        + hint
+                        + "> ("
+                        + rawCall
+                        + ") (global.Ranvier.Css.CalculationRuntime.literal "
+                        + literal production
+                        + " "
+                        + literal unitName
+                        + " "
+                        + argument
+                        + ")"
+                    | None -> rawCall
+
                 line (
                     "    static member inline "
                     + quoted methodName
                     + (if parameters = "" then "" else " " + parameters)
                     + " = "
-                    + call
-                    + (if helper.GetProperty("takesValue").GetBoolean() then
-                           " value"
-                       else
-                           "")
+                    + body
                 )
+
+        for dimension in
+            NumericSemantics.dimensions
+            |> List.filter ((<>) NumericDimension.Percent) do
+            let basis = string dimension |> _.ToLowerInvariant()
+            let memberName = reserve (basis + "Percent") ("numeric-basis:" + basis)
+            line "    /// <summary>Constructs a percentage with an explicit dimension basis for compound arithmetic.</summary>"
+
+            line (
+                "    static member ``"
+                + memberName
+                + "`` (value: float) = NumericFactory.expression<CalculationUnits."
+                + basis
+                + ", CalculationPercentBasis<CalculationUnits."
+                + basis
+                + ">> (global.Ranvier.Css.CalculationRuntime.literal "
+                + literal (basis + "-percentage")
+                + " \"%\" value)"
+            )
+
+            numericPrimitives.Add (
+                box
+                    {|
+                        memberName = memberName
+                        production = basis + "-percentage"
+                        unitName = "%"
+                        argumentType = "float"
+                        hint = "basis"
+                        basis = basis
+                        marker = (null: string)
+                    |}
+            )
 
         for token in tokens do
             line (
@@ -262,6 +375,46 @@ module internal SugarGeneration =
                 + literal token
             )
 
+        line "/// <summary>Unified numeric functions, opened automatically alongside the existing CSS helpers.</summary>"
+        line "[<AutoOpen>]"
+        line "module CssCalculations ="
+        line "    type Css with"
+
+        NumericSugarGeneration.functionMembers().Split('\n')
+        |> Array.iter (fun memberLine ->
+            if memberLine <> "" then
+                line ("    " + memberLine))
+
+        (NumericValueGeneration.members canonical manifest).Split('\n')
+        |> Array.iter (fun memberLine ->
+            if memberLine <> "" then
+                line ("    " + memberLine))
+
+        ContextualNumericGeneration.members().Split('\n')
+        |> Array.iter (fun memberLine ->
+            if memberLine <> "" then
+                line ("    " + memberLine))
+
+        NumericVariableGeneration.members canonical manifest
+        |> fun members ->
+            members.Split ('\n')
+            |> Array.iter (fun memberLine ->
+                if memberLine <> "" then
+                    line ("    " + memberLine))
+
+        let numericMarkers =
+            current
+            |> List.choose (fun item ->
+                if
+                    text "kind" item = "Type"
+                    && item.GetProperty("scopes").GetArrayLength() = 0
+                then
+                    NumericRuntimeGeneration.primitive (text "name" item)
+                    |> Option.map (fun shape -> text "marker" item, shape)
+                else
+                    None)
+            |> Map.ofList
+
         for item in properties do
             line "/// <summary>Unified overloads for one specification property; opened automatically with the CSS namespace.</summary>"
             line "[<AutoOpen>]"
@@ -269,6 +422,11 @@ module internal SugarGeneration =
             line "    type Css with"
             memberIndent <- "        "
             let propertyName = propertyNames[text "moduleName" item]
+            line (ContextualNumericGeneration.propertyMembers canonical propertyName item manifest)
+
+            numericProperties
+            |> List.tryFind (fun property -> property.ModuleName = text "moduleName" item)
+            |> Option.iter (fun property -> line (NumericSugarGeneration.propertyMembers propertyName canonical property))
 
             let declaration =
                 canonical
@@ -316,6 +474,31 @@ module internal SugarGeneration =
                      + body
                      + ")")
                     true
+
+                match numericMarkers.TryFind (text "marker" conversion) with
+                | Some (unit, hint) ->
+                    let numericInput =
+                        "NumericValue<"
+                        + unit
+                        + ", "
+                        + canonical
+                        + "Markers."
+                        + text "marker" conversion
+                        + ", "
+                        + hint
+                        + ">"
+
+                    emit
+                        ("read: 'instance -> " + numericInput)
+                        ("global.Ranvier.Css.Style.dynamicWithKeywords "
+                         + canonical
+                         + "cssWideKeywords "
+                         + literal (text "name" item)
+                         + " (fun instance -> let value = read instance in "
+                         + body
+                         + ")")
+                        true
+                | None -> ()
 
             let propertyKeywords =
                 item.GetProperty("ergonomicKeywords").EnumerateArray()
@@ -401,4 +584,37 @@ module internal SugarGeneration =
                             |})
                 |}
 
-        source.ToString (), sugar
+        let numericRuntime =
+            JsonSerializer.SerializeToElement
+                {|
+                    schemaVersion = 1
+                    namespaceName = authoringNamespace
+                    primitiveType = "Css"
+                    expressionType = "CalculationExpression"
+                    primitiveHelpers = numericPrimitives.ToArray ()
+                    functionHelpers = NumericSugarGeneration.functionMetadata ()
+                    contextual =
+                        {|
+                            helpers = ContextualNumericGeneration.metadata ()
+                            sinks = ContextualNumericGeneration.sinkMetadata manifest
+                        |}
+                    variableSources = NumericVariableGeneration.metadata manifest
+                    valueAdapters = NumericValueGeneration.metadata manifest
+                    constantHelpers =
+                        [
+                            for name in NumericSemantics.constants do
+                                let memberName =
+                                    match name with
+                                    | "-infinity" -> "negativeInfinity"
+                                    | "NaN" -> "nan"
+                                    | value -> value
+
+                                yield
+                                    {|
+                                        memberName = memberName
+                                        name = name
+                                    |}
+                        ]
+                |}
+
+        source.ToString (), sugar, numericRuntime

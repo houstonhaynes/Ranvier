@@ -16,6 +16,7 @@
     <ProjectReference Include="../../src/Ranvier.Css.View/Ranvier.Css.View.fsproj" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="NumericSemanticsTests.fs" />
+    <Compile Include="CalculationTests.fs" />
     <Compile Include="SpecSourcesTests.fs" />
     <Compile Include="GenerationTests.fs" />
     <Compile Include="RuntimeTests.fs" />

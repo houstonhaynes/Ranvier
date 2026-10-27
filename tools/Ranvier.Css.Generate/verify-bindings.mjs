@@ -26,8 +26,10 @@ const propertyCount = corpusManifest.definitions.filter(item => item.kind === 'P
 if ((generated.match(/let reactive \(/g) ?? []).length !== propertyCount) throw new Error('Reactive helpers do not cover every property.');
 if (!corpusManifest.cssWideKeywords.includes('revert-rule') || !generated.includes('globalRevertRule')) throw new Error('Latest CSS-wide keywords are missing.');
 const runtimeProject = path.join(root, 'src/Ranvier.Css/Ranvier.Css.fsproj');
+const bindingsProject = path.join(root, 'src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj');
 const project = `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><GenerateProgramFile>false</GenerateProgramFile><EnableDefaultCompileItems>false</EnableDefaultCompileItems><NoWarn>3390</NoWarn></PropertyGroup><ItemGroup><ProjectReference Include="${runtimeProject}"/><Compile Include="Css.Generated.fs"/><Compile Include="Smoke.fs"/></ItemGroup></Project>`;
-await fs.writeFile(path.join(output, 'Checks.fsproj'), project);
+const corpusProject = `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><GenerateProgramFile>false</GenerateProgramFile><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup><ItemGroup><ProjectReference Include="${bindingsProject}"/><Compile Include="Smoke.fs"/></ItemGroup></Project>`;
+await fs.writeFile(path.join(output, 'Checks.fsproj'), corpusProject);
 await fs.writeFile(path.join(output, 'Smoke.fs'), `module Checks
 open Ranvier.Css.Generated
 module Short =
@@ -38,6 +40,49 @@ module Short =
         if Declaration.render (Css.width Css.auto) <> "width: auto;" then failwith "Short keyword."
         if Declaration.render (Css.display Css.block) <> "display: block;" then failwith "Short display keyword."
         if Declaration.render (Css.color Css.red) <> "color: red;" then failwith "Short color keyword."
+        let expression = Css.rem 2.0 + Css.px 8.0
+        if Declaration.render (Css.width expression) <> "width: calc(2rem + 8px);" then failwith "Unified arithmetic."
+        if Declaration.render (Css.width (Css.percent 100.0 - Css.rem 2.0)) <> "width: calc(100% - 2rem);" then failwith "Mixed percentage arithmetic."
+        if Declaration.render (Css.width (Css.px 2.0 * Css.px 3.0 / Css.px 4.0)) <> "width: calc(2px * 3px / 4px);" then failwith "Compound dimension cancellation."
+        if Declaration.render (Css.width (Css.calc(Css.px 2.0 * Css.px 3.0) / Css.px 4.0)) <> "width: calc(calc(2px * 3px) / 4px);" then failwith "Nested calc grouping."
+        if Declaration.render (Css.opacity (Css.px 2.0 / Css.px 4.0)) <> "opacity: calc(2px / 4px);" then failwith "Unitless ratio."
+        if Declaration.render (Css.zIndex (Css.number 1.5 + Css.number 1.0)) <> "z-index: calc(1.5 + 1);" then failwith "Integer destination defers rounding."
+        if Declaration.render (Css.zIndex (Css.integer 3)) <> "z-index: 3;" then failwith "Typed integer helper."
+        if Declaration.render (Css.rotate (Css.angle (Css.deg 30.0 + Css.deg 15.0))) <> "rotate: calc(30deg + 15deg);" then failwith "Canonical angle expression bridge."
+        if Declaration.render (Css.zIndex (Css.integer (Css.number 1.5 + Css.number 1.0))) <> "z-index: calc(1.5 + 1);" then failwith "Canonical integer expression bridge."
+        if Declaration.render (Css.width (Css.min [Css.px 42.0; Css.px 80.0])) <> "width: min(42px, 80px);" then failwith "Typed min."
+        if Declaration.render (Css.width (Css.min(Css.percent 100.0, Css.rem 60.0))) <> "width: min(100%, 60rem);" then failwith "Mixed min."
+        let mixedList = [Css.lengthPercentage (Css.percent 100.0); Css.lengthPercentage (Css.rem 60.0)]
+        if Declaration.render (Css.width (Css.min mixedList)) <> "width: min(100%, 60rem);" then failwith "Mixed min list."
+        if Declaration.render (Css.width (Css.clamp(Css.px 10.0, Css.px 42.0, Css.px 80.0))) <> "width: clamp(10px, 42px, 80px);" then failwith "Typed clamp."
+        if Declaration.render (Css.width (Css.clamp(Css.px 42.0))) <> "width: clamp(none, 42px, none);" then failwith "Open clamp bounds."
+        if Declaration.render (Css.width (Css.clamp(Css.px 42.0, Some(Css.px 10.0), None))) <> "width: clamp(10px, 42px, none);" then failwith "Inferred optional bounds."
+        if Declaration.render (Css.opacity (Css.sin Css.pi)) <> "opacity: sin(pi);" then failwith "Calculation constant."
+        if Declaration.render (Css.opacity (Css.sin (Css.deg 90.0))) <> "opacity: sin(90deg);" then failwith "Angle trig overload."
+        if Declaration.render (Css.width (Css.round(Css.px 42.0, Css.px 5.0))) <> "width: round(nearest, 42px, 5px);" then failwith "Typed round."
+        if Declaration.render (Css.opacity (Css.progress(Css.px 42.0, Css.px 0.0, Css.px 100.0))) <> "opacity: progress(42px, 0px, 100px);" then failwith "Progress."
+        if Declaration.render (Css.width (Css.random(Css.px 2.0, Css.px 8.0))) <> "width: random(2px, 8px);" then failwith "Random."
+        if Declaration.render (Css.width (Css.calcMix [Css.px 10.0, Some 25.0; Css.px 20.0, Some 75.0])) <> "width: calc-mix(10px 25%, 20px 75%);" then failwith "Weighted numeric mix."
+        if Declaration.render (Css.zIndex (Css.siblingIndex())) <> "z-index: sibling-index();" then failwith "Sibling index."
+        let gap = Css.lengthVariable "--gap"
+        if Declaration.render (Css.width (Css.variable(gap, fallback=Css.px 8.0) + Css.rem 1.0)) <> "width: calc(var(--gap, 8px) + 1rem);" then failwith "Typed numeric variable."
+        let intrinsic = Css.calcSize(Css.intrinsicKeyword "auto", Css.intrinsicSize + Css.px 16.0)
+        if Declaration.render (Css.width intrinsic) <> "width: calc-size(auto, size + 16px);" then failwith "Intrinsic sizing."
+        let fit = Css.calcSize(Css.intrinsicFitContent(Css.px 100.0), Css.intrinsicSize)
+        if Declaration.render (Css.width fit) <> "width: calc-size(fit-content(100px), size);" then failwith "Inline function basis admission."
+        try
+            Css.maxWidth (Css.calcSize(Css.intrinsicKeyword "none", Css.intrinsicSize)) |> ignore
+            failwith "Intrinsic none must be rejected."
+        with :? System.ArgumentException -> ()
+        let stops = [Css.interpolationStop(Css.interpolationPosition(Css.percent 0.0), Css.px 100.0); Css.interpolationStop(Css.interpolationPosition(Css.percent 100.0), Css.px 200.0)]
+        let interpolation = Css.calcInterpolate(Css.interpolationProgress(Css.percent 50.0), stops)
+        if not ((Declaration.render (Css.width interpolation)).Contains("calc-interpolate(")) then failwith "Structured interpolation."
+        let calculated = styled { Css.width (fun (value:float) -> Css.px value + Css.rem 2.0) }
+        if not ((Style.renderVariables 84.0 calculated).Contains("calc(84px + 2rem)")) then failwith "Calculated reactive reader."
+        let literal = Css.px 42.0
+        let sameMarker (value: Value<'syntax>) : Value<'syntax> = global.Ranvier.Css.Generated.copy value
+        let copied = sameMarker literal
+        if not (literal.Equals copied && copied.Equals literal && literal.GetHashCode() = copied.GetHashCode()) then failwith "Canonical value equality."
         let style = styled { Css.width (fun (value:float) -> Css.px value) }
         if not ((Style.renderVariables 84.0 style).Contains("84px")) then failwith "Short reader."
 [<EntryPoint>]
@@ -58,7 +103,7 @@ console.log(dotnet(['run', '--project', path.join(output, 'Checks.fsproj'), '-c'
 console.log('Complete corpus bindings compile and serialize width correctly.');
 const consumer = path.join(output, 'consumer');
 await fs.mkdir(consumer, { recursive: true });
-await fs.writeFile(path.join(consumer, 'Consumer.fsproj'), `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><WarningsAsErrors>44</WarningsAsErrors></PropertyGroup><ItemGroup><ProjectReference Include="${runtimeProject}"/><Reference Include="Checks"><HintPath>../bin/Release/net10.0/Checks.dll</HintPath></Reference><Compile Include="Consumer.fs"/></ItemGroup></Project>`);
+await fs.writeFile(path.join(consumer, 'Consumer.fsproj'), `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><WarningsAsErrors>44</WarningsAsErrors></PropertyGroup><ItemGroup><ProjectReference Include="${bindingsProject}"/><Compile Include="Consumer.fs"/></ItemGroup></Project>`);
 await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet width = Css.width (Css.px 42.0)\nlet reactive = Css.width (fun (value:float) -> Css.px value)\n`);
 dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release']);
 await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer
@@ -66,10 +111,14 @@ open Ranvier.Css.Generated
 let invalidWidth = Css.TypeAngle.deg 90.0 |> Css.PropertyWidth.fromBoxSize
 `);
 if (!dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false).includes('FS0001')) throw new Error('Expected a type mismatch for angle as width.');
-for (const expression of ['Css.width (Css.deg 90.0)', 'Css.width Css.block', 'Css.width "42px"', 'Css.width (fun (_:float) -> Css.deg 90.0)', 'Css.width (fun (_:float) -> Css.initial)']) {
+for (const expression of ['Css.width (Css.deg 90.0)', 'Css.width Css.block', 'Css.width "42px"', 'Css.width (fun (_:float) -> Css.deg 90.0)', 'Css.width (fun (_:float) -> Css.initial)', 'Css.width (Css.deg 10.0 + Css.deg 5.0)', 'Css.width (Css.px 1.0 * Css.px 2.0)', 'Css.width (Css.number 0.0 + Css.number 1.0)', 'Css.width (Css.number 1.0 + Css.percent 50.0)']) {
   await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet invalid = ${expression}\n`);
   const log = dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false);
   if (!log.includes('FS0041')) throw new Error(`Expected an overload rejection for ${expression}: ${log}`);
+}
+for (const expression of ['Css.px 1.0 + Css.deg 1.0', 'Css.sin (Css.px 1.0)', 'Css.pow(Css.px 1.0, Css.px 2.0)', 'Css.width Css.intrinsicSize', 'Css.padding (Css.calcSize(Css.intrinsicKeyword "auto", Css.intrinsicSize))', 'Css.interpolationProgress Css.intrinsicSize', 'Css.intrinsic (Css.anglePercent 10.0 / Css.anglePercent 5.0)', 'Css.variable(Css.lengthVariable "--gap", fallback=Css.deg 90.0)', 'Css.angle (Css.px 1.0 + Css.px 2.0)', 'Css.length Css.intrinsicSize', 'Css.number (Css.percent 10.0 / Css.percent 5.0)']) {
+  await fs.writeFile(path.join(consumer, 'Consumer.fs'), `module Consumer\nopen Ranvier.Css\nlet invalid = ${expression}\n`);
+  dotnet(['build', path.join(consumer, 'Consumer.fsproj'), '-c', 'Release'], false);
 }
 const manifest = JSON.parse(await fs.readFile(path.join(output, 'Css.Generated.manifest.json'), 'utf8'));
 const obsolete = manifest.definitions.find(item => item.obsolete && item.moduleName.includes('_Obsolete_'));

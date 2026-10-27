@@ -80,6 +80,51 @@ let cssText () =
 
 /// <summary>Executes a real DOM mount, reactive update, and disposal under both template commit modes.</summary>
 let run () =
+    let calculatedWidth =
+        Css.width (Css.percent 100. - Css.rem 2.)
+        |> Declaration.render
+
+    if calculatedWidth <> "width: calc(100% - 2rem);" then
+        failwith "Portable expression serialization changed."
+
+    let minimum =
+        Css.width (Css.min (Css.percent 100., Css.px 960.))
+        |> Declaration.render
+
+    if minimum <> "width: min(100%, 960px);" then
+        failwith "Portable mixed-function typing changed."
+
+    let canonicalAngle =
+        Css.rotate (Css.angle (Css.deg 30. + Css.deg 15.))
+        |> Declaration.render
+
+    if canonicalAngle <> "rotate: calc(30deg + 15deg);" then
+        failwith "Portable canonical angle bridge changed."
+
+    for actual, expected in
+        [
+            RuntimeApi.renderValue (Css.number (Css.number 1. + Css.number 2.)), "calc(1 + 2)"
+            RuntimeApi.renderValue (Css.integer (Css.number 1.5)), "calc(1.5)"
+            RuntimeApi.renderValue (Css.lengthPercentage (Css.px 10. + Css.percent 50.)), "calc(10px + 50%)"
+        ] do
+        if actual <> expected then
+            failwith "Portable canonical numeric value bridge changed."
+
+    let gap = Css.lengthVariable "--portable-gap"
+
+    let reference =
+        Css.width (
+            Css.variable (gap, fallback = Css.px 8.)
+            + Css.px 2.
+        )
+        |> Declaration.render
+
+    if
+        reference
+        <> "width: calc(var(--portable-gap, 8px) + 2px);"
+    then
+        failwith "Portable variable fallback changed."
+
     for number, expected in
         [
             0.0, "0"
@@ -113,7 +158,7 @@ let run () =
                 yield
                     Css.width (fun (current: Signal<float>) ->
                         reads <- reads + 1
-                        Css.px current.Value)
+                        Css.px current.Value + Css.px 2.)
             }
 
         let definition =
@@ -134,24 +179,30 @@ let run () =
         let element = find host ("." + style.Definition.ClassName)
         let variable = "--" + style.Definition.ClassName + "-1"
 
-        if variableValue element variable <> "42px" then
+        if
+            variableValue element variable
+            <> "calc(42px + 2px)"
+        then
             failwith "Initial CSS variable is missing."
 
         if
             browserEngine ()
-            && computedWidth element <> "42px"
+            && computedWidth element <> "44px"
         then
             failwith "Native CSS did not resolve the initial variable."
 
         graph.Run (fun () -> signal.Value <- 84.0)
         mounted.Flush ()
 
-        if variableValue element variable <> "84px" then
+        if
+            variableValue element variable
+            <> "calc(84px + 2px)"
+        then
             failwith "Signal update did not update the CSS variable."
 
         if
             browserEngine ()
-            && computedWidth element <> "84px"
+            && computedWidth element <> "86px"
         then
             failwith "Native CSS did not resolve the updated variable."
 

@@ -7,17 +7,24 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Model.fs" />
-    <Compile Include="NumericSemantics.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="Webref.fs" />
     <Compile Include="SpecSources.fs" />
     <Compile Include="Resolution.fs" />
     <Compile Include="NumericProjection.fs" />
     <Compile Include="Generation.fs" />
+    <Compile Include="NumericRuntimeGeneration.fs" />
+    <Compile Include="NumericSugarGeneration.fs" />
+    <Compile Include="ContextualNumericGeneration.fs" />
+    <Compile Include="NumericVariableGeneration.fs" />
+    <Compile Include="NumericValueGeneration.fs" />
     <Compile Include="SugarGeneration.fs" />
     <Compile Include="RuntimeGeneration.fs" />
     <Compile Include="Snapshot.fs" />
     <Compile Include="Pipeline.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ranvier.Css/Ranvier.Css.fsproj" />
   </ItemGroup>
 </Project>

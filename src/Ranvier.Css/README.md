@@ -2,7 +2,7 @@
 
 `Ranvier.Css` provides portable values, ordered declarations, a stylesheet tree, deterministic component classes and reactive custom-property slots. `Ranvier.Css.Bindings` contains the ordinary generated F# source for every definition in the pinned CSS corpus. `Ranvier.Css.View` connects those styles to Ranvier templates. `Ranvier.Css.Build` is the separate .NET asset compiler.
 
-Install `Ranvier.Css.Bindings` and `Ranvier.Css.View` from NuGet with `--prerelease`, or reference their projects from a checkout. The CSS packages start at `0.1.0-alpha.1`; the view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later for class contribution merging. The runtime, bindings and view adapter include Fable sources. `Ranvier.Css.Build` is .NET-only. Applications compile their normal F# references; the specification generator is a library-maintenance tool, not an application build prerequisite.
+Install `Ranvier.Css.Bindings` and `Ranvier.Css.View` from NuGet with `--prerelease`, or reference their projects from a checkout. The CSS numeric expression helpers are available in `0.1.0-alpha.2`; the view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later for class contribution merging. The runtime, bindings and view adapter include Fable sources. `Ranvier.Css.Build` is .NET-only. Applications compile their normal F# references; the specification generator is a library-maintenance tool, not an application build prerequisite.
 
 Read the [typed CSS guide](https://shayanhabibi.github.io/Ranvier/view/css/), [composite utility examples](https://shayanhabibi.github.io/Ranvier/view/css-utilities/) and [asset extraction guide](https://shayanhabibi.github.io/Ranvier/view/css-build/).
 

@@ -311,15 +311,20 @@ module Generation =
             match value with
             | Value(_,Some(number,unitName)) ->
                 let convert endpointUnit =
-                    if endpointUnit = "" || endpointUnit = unitName then number
+                    if endpointUnit = "" || System.String.Equals(endpointUnit,unitName,System.StringComparison.OrdinalIgnoreCase) then number
                     else
-                        let factor = function
+                        let factor (unit:string) =
+                            match unit.ToLowerInvariant() with
                             | "deg" -> Some(1.0,"angle") | "rad" -> Some(180.0/System.Math.PI,"angle")
                             | "turn" -> Some(360.0,"angle") | "grad" -> Some(0.9,"angle")
                             | "s" -> Some(1.0,"time") | "ms" -> Some(0.001,"time")
                             | "px" -> Some(1.0,"length") | "in" -> Some(96.0,"length")
                             | "cm" -> Some(96.0/2.54,"length") | "mm" -> Some(96.0/25.4,"length")
+                            | "q" -> Some(96.0/101.6,"length")
                             | "pt" -> Some(96.0/72.0,"length") | "pc" -> Some(16.0,"length")
+                            | "hz" -> Some(1.0,"frequency") | "khz" -> Some(1000.0,"frequency")
+                            | "dppx" | "x" -> Some(1.0,"resolution")
+                            | "dpi" -> Some(1.0/96.0,"resolution") | "dpcm" -> Some(2.54/96.0,"resolution")
                             | _ -> None
                         match factor unitName,factor endpointUnit with
                         | Some(a,kind),Some(b,targetKind) when kind = targetKind -> number*a/b
@@ -415,6 +420,24 @@ module Generation =
                     "Some(" + text + ", " + literal unitName + ")"
                 | _ -> "None"
 
+            let extractionFactories = ResizeArray<obj>()
+
+            let extractionFactory owner memberName kind inputMarker outputMarker functionName =
+                extractionFactories.Add (
+                    box
+                        {|
+                            owner = owner
+                            memberName = memberName
+                            kind = kind
+                            inputMarker = inputMarker
+                            outputMarker = outputMarker
+                            functionName = functionName
+                        |}
+                )
+
+            let syntaxFactory (value: Plan) suffix kind inputMarker functionName =
+                extractionFactory (namespaceName + ".Css.Syntax") (value.Factory + suffix) kind inputMarker value.Tag functionName
+
             line "    module Syntax ="
 
             if plans.Count = 0 then
@@ -443,6 +466,9 @@ module Generation =
                 | None -> emit "" "(tokens:string)" "Runtime.unsafeTokens tokens"
                 | Some (GrammarExpression.Literal token) -> emit "" "" ("Runtime.value " + literal token)
                 | Some (GrammarExpression.Reference reference) ->
+                    if reference.Range.IsNone then
+                        syntaxFactory value "" "copy" (targetTag reference (lookup value reference)) (None: string option)
+
                     let body =
                         match reference.Range with
                         | Some r ->
@@ -462,6 +488,7 @@ module Generation =
                 | Some (GrammarExpression.Choice _) ->
                     for i, child in value.Children |> List.indexed do
                         emit ("_" + string (i + 1)) ("(value: " + valueType child.Tag + ")") "Runtime.copy value"
+                        syntaxFactory value ("_" + string (i + 1)) "copy" child.Tag None
                 | Some (GrammarExpression.Sequence _)
                 | Some (GrammarExpression.AllOf _) -> emit "" (arguments value.Children) ("Runtime.sequence " + parts value.Children)
                 | Some (GrammarExpression.AnyOf _) ->
@@ -511,6 +538,8 @@ module Generation =
                     if value.Children.IsEmpty then
                         emit "" "" ("Runtime.value " + literal (functionName + "()"))
                     else
+                        syntaxFactory value "" "function" value.Children[0].Tag (Some functionName)
+
                         emit
                             ""
                             ("(value: " + childType () + ")")
@@ -606,6 +635,7 @@ module Generation =
 
                 let values = Dictionary<string, string * NumericRange list>()
                 let keywords = Dictionary<string, string>()
+                let functions = HashSet<string>()
                 let expanded = HashSet<string>()
                 let pending = Queue<Plan * Set<string> * (string -> string) * NumericRange list>()
                 values.Add (root.Tag, ("value", []))
@@ -677,6 +707,7 @@ module Generation =
                     | Some (GrammarExpression.Literal token) when Regex.IsMatch (token, "^[A-Za-z_-][A-Za-z0-9_-]*$") ->
                         if not (keywords.ContainsKey token) then
                             keywords.Add (token, wrap (call current))
+                    | Some (GrammarExpression.Function (functionName, _)) -> functions.Add functionName |> ignore
                     | Some (GrammarExpression.Required _)
                     | Some (GrammarExpression.Group _) -> descend current.Children[0] (fun expression -> call current + " (" + expression + ")")
                     | Some (GrammarExpression.Sequence _)
@@ -743,7 +774,8 @@ module Generation =
                          token = pair.Key
                          expression = pair.Value
                      |})
-                 |> Seq.toList)
+                 |> Seq.toList),
+                (functions |> Seq.sort |> Seq.toList)
 
             for feature in features do
                 let root = roots[feature.Id]
@@ -790,6 +822,14 @@ module Generation =
                 | _ -> ()
 
                 line ("    module " + api + " =")
+
+                match root.Node |> Option.map _.Expression with
+                | Some (GrammarExpression.Function (functionName, _)) when root.Children.Length = 1 ->
+                    extractionFactory (namespaceName + ".Css." + api) "create" "function" root.Children[0].Tag root.Tag (Some functionName)
+                | Some (GrammarExpression.Reference reference) when reference.Range.IsNone ->
+                    extractionFactory (namespaceName + ".Css." + api) "create" "copy" (targetTag reference (lookup root reference)) root.Tag None
+                | _ -> ()
+
                 line "        /// <summary>Upstream specification definition URL.</summary>"
                 line ("        let specUrl = " + literal feature.Href)
 
@@ -922,6 +962,27 @@ module Generation =
                     let numeric unitName =
                         emit (if unitName = "" then "create" else unitName) "(value:float)" ("Runtime.number value " + literal unitName)
 
+                    let units (defaults: string list) =
+                        let sourceUnits =
+                            features
+                            |> List.choose (fun candidate ->
+                                if
+                                    candidate.Id.Scopes = [ "<" + simpleName + ">" ]
+                                    && (obsolete candidate).IsNone
+                                then
+                                    match candidate.Grammar with
+                                    | GrammarStatus.Parsed (_,
+                                                            {
+                                                                Expression = GrammarExpression.Literal token
+                                                            }) when Regex.IsMatch (token, "^[A-Za-z]+$") -> Some (if token = "Q" then "q" else token)
+                                    | _ -> None
+                                else
+                                    None)
+
+                        defaults @ sourceUnits
+                        |> List.distinctBy (fun unitName -> unitName.ToLowerInvariant ())
+                        |> List.iter numeric
+
                     match simpleName with
                     | "number"
                     | "number-token" -> numeric ""
@@ -929,48 +990,39 @@ module Generation =
                     | "percentage"
                     | "percentage-token" -> emit "percent" "(value:float)" "Runtime.number value \"%\""
                     | "length" ->
-                        for unitName in
+                        units (
                             [
                                 "px"
-                                "em"
-                                "rem"
-                                "ex"
-                                "ch"
-                                "vw"
-                                "vh"
-                                "vmin"
-                                "vmax"
                                 "cm"
                                 "mm"
+                                "q"
                                 "in"
                                 "pt"
                                 "pc"
-                                "vi"
-                                "vb"
-                                "svw"
-                                "svh"
-                                "lvw"
-                                "lvh"
-                                "dvw"
-                                "dvh"
+                                "em"
+                                "ex"
+                                "cap"
+                                "ch"
+                                "ic"
+                                "rem"
+                                "rex"
+                                "rcap"
+                                "rch"
+                                "ric"
                                 "lh"
                                 "rlh"
-                            ] do
-                            numeric unitName
-                    | "angle" ->
-                        for unitName in [ "deg"; "rad"; "turn"; "grad" ] do
-                            numeric unitName
-                    | "time" ->
-                        numeric "s"
-                        numeric "ms"
-                    | "frequency" ->
-                        numeric "Hz"
-                        numeric "kHz"
-                    | "resolution" ->
-                        numeric "dpi"
-                        numeric "dpcm"
-                        numeric "dppx"
-                    | "flex" -> numeric "fr"
+                            ]
+                            @ [
+                                for prefix in [ ""; "s"; "l"; "d" ] do
+                                    for suffix in [ "vw"; "vh"; "vi"; "vb"; "vmin"; "vmax" ] -> prefix + suffix
+                            ]
+                            @ [ "cqw"; "cqh"; "cqi"; "cqb"; "cqmin"; "cqmax" ]
+                        )
+                    | "angle" -> units [ "deg"; "rad"; "turn"; "grad" ]
+                    | "time" -> units [ "s"; "ms" ]
+                    | "frequency" -> units [ "Hz"; "kHz" ]
+                    | "resolution" -> units [ "dpi"; "dpcm"; "dppx"; "x" ]
+                    | "flex" -> units [ "fr" ]
                     | "string"
                     | "string-token" -> emit "create" "(value:string)" "Runtime.stringValue value"
                     | "ident"
@@ -981,6 +1033,23 @@ module Generation =
                     | "custom-property-name" -> emit "create" "(value:string)" "Runtime.identifier true false value"
                     | "zero" -> emit "value" "" "Runtime.number 0.0 \"\""
                     | _ -> ()
+
+                if
+                    feature.Id.Kind = FeatureKind.Type
+                    && feature.Id.Scopes.IsEmpty
+                    && feature.Id.Name.Trim ('<', '>') = "integer"
+                    && root.Node.IsSome
+                then
+                    emit "fromInt" "(value:int)" "Runtime.number (float value) \"\""
+
+                    primitiveHelpers.Add (
+                        box
+                            {|
+                                methodName = "fromInt"
+                                parameters = "(value:int)"
+                                takesValue = true
+                            |}
+                    )
 
                 if
                     feature.Id.Kind = FeatureKind.Property
@@ -1006,11 +1075,11 @@ module Generation =
                                 + ")"
                             )
 
-                let ergonomicValues, ergonomicKeywords =
+                let ergonomicValues, ergonomicKeywords, ergonomicFunctions =
                     if feature.Id.Kind = FeatureKind.Property then
                         conversions root
                     else
-                        [], []
+                        [], [], []
 
                 entries.Add (
                     box
@@ -1033,6 +1102,7 @@ module Generation =
                             primitiveHelpers = primitiveHelpers.ToArray ()
                             ergonomicValues = ergonomicValues
                             ergonomicKeywords = ergonomicKeywords
+                            ergonomicFunctions = ergonomicFunctions
                             grammar =
                                 (match feature.Grammar with
                                  | GrammarStatus.Parsed _ -> "parsed"
@@ -1081,6 +1151,7 @@ module Generation =
                             opaqueCount = opaque.Length
                             unresolvedCount = unresolved.Length
                             definitions = entries.ToArray ()
+                            extractionFactories = extractionFactories.ToArray ()
                             primitiveTerminals =
                                 resolution.References
                                 |> List.choose (fun reference ->

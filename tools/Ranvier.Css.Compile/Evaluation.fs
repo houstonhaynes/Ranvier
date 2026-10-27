@@ -6,6 +6,7 @@ open FSharp.Compiler.Symbols
 open FSharp.Compiler.Symbols.FSharpExprPatterns
 open FSharp.Compiler.Text
 open Ranvier.Css
+open Ranvier.Css.Spec
 
 module internal Evaluation =
     type Definition =
@@ -23,6 +24,12 @@ module internal Evaluation =
         | Closure of (string * Data) list * FSharpMemberOrFunctionOrValue * FSharpExpr
         | Function of Definition * (string * Data) list
         | Css of Metadata.CssValue
+        | Numeric of Metadata.CssValue * Calculation
+        | Calculation of Calculation
+        | Intrinsic of IntrinsicCalculation
+        | CustomProperty of production: string * name: string
+        | OmittedArgument
+        | OptionalValue of Data
         | Declaration of Declaration
         | Nodes of StyleNode<unit> list
         | Builder of string * Data list
@@ -162,7 +169,34 @@ module internal Evaluation =
         let css expression =
             function
             | Css value -> value
+            | Numeric (value, _) -> value
             | _ -> error expression "Expected a specification-typed CSS value."
+
+        let calculation expression =
+            function
+            | Calculation value -> value
+            | Numeric (_, value) -> value
+            | Scalar (:? float as value) -> CalculationRuntime.literal "number" "" value
+            | Scalar (:? int as value) -> CalculationRuntime.literal "integer" "" (float value)
+            | _ -> error expression "Expected a generated calculation expression or numeric scalar."
+
+        let calculationArgument expression =
+            function
+            | Scalar (:? CalculationArgument as value) -> value
+            | Scalar (:? RoundingStrategy as value) -> CalculationArgument.Strategy value
+            | Scalar (:? CalculationRandomKey as value) -> CalculationArgument.RandomKey value
+            | Css value ->
+                match Value.render value.Value with
+                | "none" -> CalculationArgument.NoneBound
+                | "nearest" -> CalculationArgument.Strategy RoundingStrategy.Nearest
+                | "up" -> CalculationArgument.Strategy RoundingStrategy.Up
+                | "down" -> CalculationArgument.Strategy RoundingStrategy.Down
+                | "to-zero" -> CalculationArgument.Strategy RoundingStrategy.ToZero
+                | "line-width" -> CalculationArgument.Strategy RoundingStrategy.LineWidth
+                | "no-clamp" -> CalculationArgument.NoClamp
+                | "auto" -> CalculationArgument.RandomKey CalculationRandomKey.Auto
+                | _ -> error expression "Unsupported keyword in a CSS numeric function."
+            | value -> CalculationArgument.Value (calculation expression value)
 
         let counted expression values =
             iterations <- iterations + List.length values
@@ -364,6 +398,28 @@ module internal Evaluation =
                         this.Apply (expression, value, arguments)
                 else
                     this.Apply (expression, Function (definition, []), arguments)
+            | _ when metadata.ExtractionFactories.ContainsKey (ownerName, name) ->
+                let factory = metadata.ExtractionFactories[ownerName, name]
+
+                match arguments with
+                | [ value ] ->
+                    let input = css expression value
+
+                    if input.Marker <> factory.InputMarker then
+                        error expression "Canonical CSS factory argument has the wrong grammar marker."
+
+                    let value =
+                        match factory.Kind, factory.FunctionName with
+                        | "copy", None -> input.Value
+                        | "function", Some name -> Generated.value (name + "(" + Value.render input.Value + ")")
+                        | _ -> error expression "Unsupported canonical CSS factory metadata."
+
+                    Css
+                        {
+                            Value = value
+                            Marker = factory.OutputMarker
+                        }
+                | _ -> error expression "Expected one canonical CSS factory argument."
             | _ when builderOwner ownerName ->
                 let builder =
                     receiver
@@ -381,12 +437,299 @@ module internal Evaluation =
 
                 this.Build (expression, builder, name, arguments)
             | _ when
+                ownerName = metadata.Namespace + ".CalculationExpression`1"
+                || ownerName = metadata.Namespace + ".CalculationExpression"
+                || ownerName = metadata.Namespace + ".NumericValue`2"
+                || ownerName = metadata.Namespace + ".NumericValue"
+                || ownerName = metadata.Namespace + ".ICalculationExpression`1"
+                || ownerName = metadata.Namespace + ".ICalculationExpression"
+                || ownerName = metadata.Namespace + ".CalculationPosition"
+                || ownerName = metadata.Namespace + ".IntrinsicExpression"
+                ->
+                match name, arguments, receiver with
+                | "Calculation", [], Some value -> Calculation (calculation expression value)
+                | "op_UnaryNegation", [ value ], _ -> Calculation (CalculationRuntime.negate (calculation expression value))
+                | ("op_Addition" | "op_Subtraction" | "op_Multiply" | "op_Division"), [ left; right ], _ ->
+                    let operation =
+                        match name with
+                        | "op_Addition" -> "+"
+                        | "op_Subtraction" -> "-"
+                        | "op_Multiply" -> "*"
+                        | _ -> "/"
+
+                    Calculation (CalculationRuntime.binary operation (calculation expression left) (calculation expression right))
+                | _ ->
+                    error
+                        expression
+                        ("Unsupported generated calculation operation: "
+                         + symbol.FullName)
+            | _ when
+                List.contains
+                    ownerName
+                    [
+                        metadata.Namespace + ".IntrinsicValue"
+                        metadata.Namespace + ".IntrinsicBasisValue"
+                        metadata.Namespace + ".NumericInterpolationStop`1"
+                        metadata.Namespace + ".NumericInterpolationStop"
+                    ]
+                ->
+                match name, receiver, arguments with
+                | "Intrinsic", Some (Intrinsic _ as value), [] -> value
+                | "Basis", Some (Scalar (:? IntrinsicBasis) as value), [] -> value
+                | "Stop", Some (Scalar (:? CalculationInterpolationStop) as value), [] -> value
+                | _ ->
+                    error
+                        expression
+                        ("Unsupported generated contextual operation: "
+                         + symbol.FullName)
+            | _ when
                 ownerName = metadata.Namespace + ".Css"
+                || ownerName = metadata.Namespace + ".CssCalculations"
                 || ownerName.StartsWith (metadata.Namespace + ".CssProperty", StringComparison.Ordinal)
                 ->
+                let rawArguments = arguments
+
+                let arguments =
+                    arguments
+                    |> List.rev
+                    |> List.skipWhile (function
+                        | OmittedArgument -> true
+                        | _ -> false)
+                    |> List.rev
+
+                let primitive definition argument =
+                    let value = Metadata.primitive definition argument
+
+                    match metadata.CalculationPrimitives.TryFind name with
+                    | Some definition -> Numeric (value, Metadata.calculationPrimitive definition argument)
+                    | None -> Css value
+
+                let parameterNames =
+                    symbol.CurriedParameterGroups
+                    |> Seq.collect id
+                    |> Seq.map (fun parameter -> defaultArg parameter.Name "")
+                    |> Seq.toList
+
+                let named =
+                    if parameterNames.Length = rawArguments.Length then
+                        List.zip parameterNames rawArguments |> Map.ofList
+                    else
+                        Map.empty
+
+                let optional name =
+                    match named.TryFind name with
+                    | None
+                    | Some OmittedArgument
+                    | Some (Scalar null) -> None
+                    | Some (OptionalValue value) -> Some value
+                    | Some _ ->
+                        error
+                            expression
+                            ("Expected an optional numeric function argument: "
+                             + name)
+
+                let value name =
+                    named.TryFind name
+                    |> Option.defaultWith (fun () -> error expression ("Missing numeric function argument: " + name))
+
+                let argument name =
+                    calculationArgument expression (value name)
+
                 match metadata.Primitives.TryFind name, metadata.Keywords.TryFind name, metadata.Properties.TryFind name, arguments with
-                | Some primitive, _, _, [] when primitive.Argument = "none" -> Css (Metadata.primitive primitive null)
-                | Some primitive, _, _, [ value ] -> Css (Metadata.primitive primitive (scalar expression value))
+                | _, _, _, [ (Numeric _ | Calculation _) as value ] when
+                    ownerName = metadata.Namespace + ".CssCalculations"
+                    && metadata.ValueAdapters.ContainsKey name
+                    ->
+                    let calculation = calculation expression value
+
+                    match Metadata.valueAdapter metadata.ValueAdapters[name] calculation with
+                    | Some value -> Numeric (value, calculation)
+                    | None -> Calculation calculation
+                | _, _, _, _ when
+                    ownerName = metadata.Namespace + ".CssCalculations"
+                    && metadata.VariableSources.ContainsKey name
+                    ->
+                    let sources = metadata.VariableSources[name]
+
+                    match
+                        sources
+                        |> List.tryFind (fun source -> source.Kind = "create"),
+                        arguments
+                    with
+                    | Some source, [ propertyName ] ->
+                        let propertyName = text expression propertyName
+
+                        let checkedProperty: Ranvier.Css.CustomProperty<unit> =
+                            Ranvier.Css.CustomProperty.create propertyName
+
+                        ignore checkedProperty
+                        CustomProperty (source.Production, propertyName)
+                    | _ ->
+                        match value "variable" with
+                        | CustomProperty (production, propertyName) ->
+                            Calculation (
+                                CalculationRuntime.reference
+                                    production
+                                    propertyName
+                                    (optional "fallback"
+                                     |> Option.map (calculation expression))
+                            )
+                        | _ -> error expression "Expected a specification-typed numeric custom property."
+                | _, _, _, _ when
+                    ownerName = metadata.Namespace + ".CssCalculations"
+                    && metadata.ContextualHelpers.ContainsKey name
+                    ->
+                    let optionalEasing name =
+                        optional name
+                        |> Option.map (fun value -> unbox<CalculationEasing>(scalar expression value))
+
+                    match metadata.ContextualHelpers[name] with
+                    | "interpolationPosition" -> Calculation (calculation expression (value "value"))
+                    | "interpolationProgress" -> Scalar (box (CalculationProgress.Value (calculation expression (value "value"))))
+                    | "interpolationStop"
+                    | "lengthPercentageStop"
+                    | "anglePercentageStop"
+                    | "timePercentageStop"
+                    | "frequencyPercentageStop"
+                    | "resolutionPercentageStop"
+                    | "flexPercentageStop" ->
+                        Scalar (
+                            box
+                                {
+                                    Positions =
+                                        calculation expression (value "position")
+                                        :: (optional "secondPosition"
+                                            |> Option.map (calculation expression >> List.singleton)
+                                            |> Option.defaultValue [])
+                                    Value = calculation expression (value "value")
+                                    EasingBefore = optionalEasing "easingBefore"
+                                }
+                        )
+                    | "calcInterpolate" ->
+                        let stops =
+                            items expression (value "stops")
+                            |> List.map (fun value -> unbox<CalculationInterpolationStop>(scalar expression value))
+
+                        Calculation (
+                            CalculationRuntime.interpolate
+                                (unbox<CalculationProgress>(scalar expression (value "progress")))
+                                (optionalEasing "easing")
+                                (optionalEasing "defaultEasing")
+                                stops
+                        )
+                    | "intrinsicSize" -> Calculation CalculationRuntime.size
+                    | "intrinsic" -> Calculation (calculation expression (value "value"))
+                    | "lengthPercentage"
+                    | "anglePercentage"
+                    | "timePercentage"
+                    | "frequencyPercentage"
+                    | "resolutionPercentage"
+                    | "flexPercentage" -> Calculation (calculation expression (value "value"))
+                    | "intrinsicAny" -> Scalar (box IntrinsicBasis.Any)
+                    | "intrinsicKeyword" -> Scalar (box (IntrinsicBasis.Keyword (text expression (value "name"))))
+                    | "intrinsicBasis" ->
+                        match value "value" with
+                        | Intrinsic value -> Scalar (box (IntrinsicBasis.Nested value))
+                        | value -> Scalar (box (IntrinsicBasis.Value (calculation expression value)))
+                    | "intrinsicFitContent" -> Scalar (box (IntrinsicBasis.FitContent (calculation expression (value "value"))))
+                    | "intrinsicStretch" -> Scalar (box (IntrinsicBasis.Stretch (calculation expression (value "value"))))
+                    | "calcSize" ->
+                        Intrinsic (
+                            CalculationRuntime.intrinsic
+                                (unbox<IntrinsicBasis>(scalar expression (value "basis")))
+                                (calculation expression (value "calculation"))
+                        )
+                    | kind -> error expression ("Unsupported contextual CSS helper kind: " + kind)
+                | _, _, _, ([] | [ Scalar null ]) when
+                    ownerName = metadata.Namespace + ".CssCalculations"
+                    && metadata.CalculationConstants.ContainsKey name
+                    ->
+                    Calculation (CalculationRuntime.constant metadata.CalculationConstants[name])
+                | _, _, _, arguments when
+                    ownerName = metadata.Namespace + ".CssCalculations"
+                    && metadata.CalculationFunctions.ContainsKey name
+                    && not (
+                        metadata.Primitives.ContainsKey name
+                        && arguments.Length = 1
+                    )
+                    ->
+                    let rec flatten =
+                        function
+                        | Items values
+                        | Tuple values -> List.collect flatten values
+                        | value -> [ calculationArgument expression value ]
+
+                    let lowered =
+                        match name with
+                        | "clamp" when List.tryHead parameterNames = Some "value" ->
+                            [
+                                optional "minimum"
+                                |> Option.map (calculationArgument expression)
+                                |> Option.defaultValue CalculationArgument.NoneBound
+                                argument "value"
+                                optional "maximum"
+                                |> Option.map (calculationArgument expression)
+                                |> Option.defaultValue CalculationArgument.NoneBound
+                            ]
+                        | "round" when named.ContainsKey "strategy" ->
+                            [
+                                optional "strategy"
+                                |> Option.map (calculationArgument expression)
+                                |> Option.defaultValue (CalculationArgument.Strategy RoundingStrategy.Nearest)
+                                argument "value"
+                                argument "step"
+                            ]
+                        | "roundLineWidth" -> [ CalculationArgument.Strategy RoundingStrategy.LineWidth; argument "value" ]
+                        | "progress" ->
+                            [
+                                if
+                                    optional "noClamp"
+                                    |> Option.exists (fun value -> unbox<bool>(scalar expression value))
+                                then
+                                    yield CalculationArgument.NoClamp
+                                yield argument "value"
+                                yield argument "start"
+                                yield argument "finish"
+                            ]
+                        | "random" ->
+                            [
+                                yield!
+                                    optional "key"
+                                    |> Option.map (calculationArgument expression >> List.singleton)
+                                    |> Option.defaultValue []
+                                yield argument "minimum"
+                                yield argument "maximum"
+                                yield!
+                                    optional "step"
+                                    |> Option.map (calculationArgument expression >> List.singleton)
+                                    |> Option.defaultValue []
+                            ]
+                        | "calcMix" ->
+                            items expression (value "values")
+                            |> List.map (function
+                                | Tuple [ value; weight ] ->
+                                    let weight =
+                                        match weight with
+                                        | OmittedArgument -> None
+                                        | OptionalValue weight ->
+                                            Some (Convert.ToDouble (scalar expression weight, Globalization.CultureInfo.InvariantCulture))
+                                        | _ -> error expression "Expected an optional numeric calc-mix weight."
+
+                                    CalculationArgument.WeightedValue (calculation expression value, weight)
+                                | _ -> error expression "Expected a numeric calc-mix value and optional weight.")
+                        | "siblingCount"
+                        | "siblingIndex" ->
+                            match arguments with
+                            | []
+                            | [ Scalar null ] -> []
+                            | _ -> error expression "Sibling functions take no numeric arguments."
+                        | _ -> arguments |> List.collect flatten
+
+                    lowered
+                    |> CalculationRuntime.functionArguments metadata.CalculationFunctions[name]
+                    |> Calculation
+                | Some definition, _, _, [] when definition.Argument = "none" -> primitive definition null
+                | Some definition, _, _, [ value ] -> primitive definition (scalar expression value)
                 | _, Some keyword, _, []
                 | _, Some keyword, _, [ Scalar null ] ->
                     Css
@@ -395,6 +738,9 @@ module internal Evaluation =
                             Marker = "keyword"
                         }
                 | _, _, Some property, [ Css value ] -> Declaration (Metadata.declaration property value)
+                | _, _, Some property, [ Numeric (value, _) ] -> Declaration (Metadata.declaration property value)
+                | _, _, Some property, [ Calculation value ] -> Declaration (Metadata.calculationDeclaration property value)
+                | _, _, Some property, [ Intrinsic value ] -> Declaration (Metadata.intrinsicDeclaration property value)
                 | _, _, Some property, [ Closure _ ]
                 | _, _, Some property, [ Function _ ] ->
                     Nodes
@@ -404,6 +750,11 @@ module internal Evaluation =
                                 property.Name
                                 (fun () -> failwith "A build-time reader must never execute.")
                         ]
+                | _, _, _, [ value ] when
+                    ownerName = metadata.CalculationPrimitiveOwner
+                    && metadata.CalculationPrimitives.ContainsKey name
+                    ->
+                    Calculation (Metadata.calculationPrimitive metadata.CalculationPrimitives[name] (scalar expression value))
                 | _ ->
                     error
                         expression
@@ -427,6 +778,27 @@ module internal Evaluation =
                   [ _ ] when not (ownerName.EndsWith ".Style") -> Builder (name, arguments)
                 | "Ranvier.Css.Declaration", "create", [ property; value ] ->
                     Declaration (Declaration.create (text expression property) (text expression value))
+                | "Ranvier.Css.CustomProperty", "create", [ propertyName ] ->
+                    let marker =
+                        expression.Type.GenericArguments
+                        |> Seq.tryHead
+                        |> Option.filter _.HasTypeDefinition
+                        |> Option.map (fun marker -> marker.TypeDefinition.DisplayName)
+
+                    let production =
+                        marker
+                        |> Option.bind metadata.VariableMarkers.TryFind
+                        |> Option.defaultWith (fun () ->
+                            error expression "Only specification-typed numeric custom properties can feed numeric expressions.")
+
+                    let propertyName = text expression propertyName
+
+                    let checkedProperty: Ranvier.Css.CustomProperty<unit> =
+                        Ranvier.Css.CustomProperty.create propertyName
+
+                    ignore checkedProperty
+                    CustomProperty (production, propertyName)
+                | "Ranvier.Css.CustomProperty", "name", [ CustomProperty (_, name) ] -> Scalar name
                 | "Ranvier.Css.Declaration", "important", [ Declaration value ] -> Declaration (Declaration.important value)
                 | "Ranvier.Css.Selector", "unsafeFromText", [ value ] -> Scalar (box (Selector.unsafeFromText (text expression value)))
                 | "Ranvier.Css.Selector", "className", [ value ] -> Scalar (box (Selector.className (text expression value)))
@@ -647,6 +1019,108 @@ module internal Evaluation =
                 | NewArray (_, values) -> Items (List.map (fun value -> this.Evaluate (environment, value)) values)
                 | NewUnionCase (unionType, unionCase, values) when
                     unionType.HasTypeDefinition
+                    && List.contains
+                        unionType.TypeDefinition.FullName
+                        [
+                            "Ranvier.Css.Spec.RoundingStrategy"
+                            "Ranvier.Css.Spec.NumericDimension"
+                            "Ranvier.Css.CalculationArgument"
+                            "Ranvier.Css.CalculationRandomKey"
+                            "Ranvier.Css.CalculationEasing"
+                            "Ranvier.Css.CalculationProgress"
+                            "Ranvier.Css.CalculationTimeline"
+                            "Ranvier.Css.CalculationInset"
+                        ]
+                    ->
+                    let values =
+                        values
+                        |> List.map (fun value -> this.Evaluate (environment, value))
+
+                    let optional convert =
+                        function
+                        | OmittedArgument -> None
+                        | OptionalValue value -> Some (convert value)
+                        | _ -> error expression "Expected an explicit optional CSS function argument."
+
+                    let numeric value =
+                        Convert.ToDouble (scalar expression value, Globalization.CultureInfo.InvariantCulture)
+
+                    match unionType.TypeDefinition.FullName, unionCase.Name, values with
+                    | "Ranvier.Css.Spec.NumericDimension", name, [] ->
+                        NumericSemantics.dimensions
+                        |> List.find (fun dimension -> dimension.ToString () = name)
+                        |> box
+                        |> Scalar
+                    | "Ranvier.Css.CalculationEasing", "Keyword", [ name ] -> Scalar (box (CalculationEasing.Keyword (text expression name)))
+                    | "Ranvier.Css.CalculationEasing", "CubicBezier", [ a; b; c; d ] ->
+                        Scalar (box (CalculationEasing.CubicBezier (numeric a, numeric b, numeric c, numeric d)))
+                    | "Ranvier.Css.CalculationEasing", "Steps", [ count; position ] ->
+                        Scalar (box (CalculationEasing.Steps (unbox<int>(scalar expression count), text expression position)))
+                    | "Ranvier.Css.CalculationEasing", "Linear", [ points ] ->
+                        items expression points
+                        |> List.map (function
+                            | Tuple [ point; positions ] -> numeric point, items expression positions |> List.map numeric
+                            | _ -> error expression "Expected a linear easing point and position list.")
+                        |> CalculationEasing.Linear
+                        |> box
+                        |> Scalar
+                    | "Ranvier.Css.CalculationProgress", "Value", [ value ] -> Scalar (box (CalculationProgress.Value (calculation expression value)))
+                    | "Ranvier.Css.CalculationProgress", "Timeline", [ Scalar (:? CalculationTimeline as timeline) ] ->
+                        Scalar (box (CalculationProgress.Timeline timeline))
+                    | "Ranvier.Css.CalculationTimeline", "Named", [ name; Scalar (:? NumericDimension as dimension) ] ->
+                        Scalar (box (CalculationTimeline.Named (text expression name, dimension)))
+                    | "Ranvier.Css.CalculationTimeline", "Scroll", [ scroller; axis ] ->
+                        Scalar (box (CalculationTimeline.Scroll (optional (text expression) scroller, optional (text expression) axis)))
+                    | "Ranvier.Css.CalculationTimeline", "View", [ axis; insets ] ->
+                        let insets =
+                            items expression insets
+                            |> List.map (fun value -> unbox<CalculationInset>(scalar expression value))
+
+                        Scalar (box (CalculationTimeline.View (optional (text expression) axis, insets)))
+                    | "Ranvier.Css.CalculationInset", "Auto", [] -> Scalar (box CalculationInset.Auto)
+                    | "Ranvier.Css.CalculationInset", "Value", [ value ] -> Scalar (box (CalculationInset.Value (calculation expression value)))
+                    | "Ranvier.Css.Spec.RoundingStrategy", "Nearest", [] -> Scalar (box RoundingStrategy.Nearest)
+                    | "Ranvier.Css.Spec.RoundingStrategy", "Up", [] -> Scalar (box RoundingStrategy.Up)
+                    | "Ranvier.Css.Spec.RoundingStrategy", "Down", [] -> Scalar (box RoundingStrategy.Down)
+                    | "Ranvier.Css.Spec.RoundingStrategy", "ToZero", [] -> Scalar (box RoundingStrategy.ToZero)
+                    | "Ranvier.Css.Spec.RoundingStrategy", "LineWidth", [] -> Scalar (box RoundingStrategy.LineWidth)
+                    | "Ranvier.Css.CalculationArgument", "Value", [ value ] -> Scalar (box (CalculationArgument.Value (calculation expression value)))
+                    | "Ranvier.Css.CalculationArgument", "NoneBound", [] -> Scalar (box CalculationArgument.NoneBound)
+                    | "Ranvier.Css.CalculationArgument", "NoClamp", [] -> Scalar (box CalculationArgument.NoClamp)
+                    | "Ranvier.Css.CalculationArgument", "Strategy", [ Scalar (:? RoundingStrategy as strategy) ] ->
+                        Scalar (box (CalculationArgument.Strategy strategy))
+                    | "Ranvier.Css.CalculationArgument", "RandomKey", [ Scalar (:? CalculationRandomKey as key) ] ->
+                        Scalar (box (CalculationArgument.RandomKey key))
+                    | "Ranvier.Css.CalculationArgument", "WeightedValue", [ value; weight ] ->
+                        Scalar (box (CalculationArgument.WeightedValue (calculation expression value, optional numeric weight)))
+                    | "Ranvier.Css.CalculationRandomKey", "Auto", [] -> Scalar (box CalculationRandomKey.Auto)
+                    | "Ranvier.Css.CalculationRandomKey", "Fixed", [ value ] -> Scalar (box (CalculationRandomKey.Fixed (numeric value)))
+                    | "Ranvier.Css.CalculationRandomKey", "Scoped", [ name; scoped; property ] ->
+                        Scalar (
+                            box (
+                                CalculationRandomKey.Scoped (
+                                    optional (text expression) name,
+                                    unbox<bool>(scalar expression scoped),
+                                    optional (text expression) property
+                                )
+                            )
+                        )
+                    | _ -> error expression "Unsupported structured CSS function argument."
+                | NewUnionCase (unionType, unionCase, values) when
+                    unionType.HasTypeDefinition
+                    && unionType.TypeDefinition.FullName = "Microsoft.FSharp.Core.FSharpOption`1"
+                    && unionCase.Name = "None"
+                    && values.IsEmpty
+                    ->
+                    OmittedArgument
+                | NewUnionCase (unionType, unionCase, [ value ]) when
+                    unionType.HasTypeDefinition
+                    && unionType.TypeDefinition.FullName = "Microsoft.FSharp.Core.FSharpOption`1"
+                    && unionCase.Name = "Some"
+                    ->
+                    OptionalValue (this.Evaluate (environment, value))
+                | NewUnionCase (unionType, unionCase, values) when
+                    unionType.HasTypeDefinition
                     && unionType.TypeDefinition.FullName.StartsWith "Microsoft.FSharp.Collections.FSharpList"
                     ->
                     match unionCase.Name, List.map (fun value -> this.Evaluate (environment, value)) values with
@@ -684,6 +1158,32 @@ module internal Evaluation =
                              "utility"),
                         []
                     )
+                | CallWithWitnesses (_, symbol, _, _, [ witness ], arguments) when
+                    (owner symbol).StartsWith("Microsoft.FSharp.", StringComparison.Ordinal)
+                    && List.contains
+                        (memberName symbol)
+                        [
+                            "op_Addition"
+                            "op_Subtraction"
+                            "op_Multiply"
+                            "op_Division"
+                            "op_UnaryNegation"
+                        ]
+                    ->
+                    let arguments =
+                        arguments
+                        |> List.map (fun argument -> this.Evaluate (environment, argument))
+
+                    if
+                        arguments
+                        |> List.exists (function
+                            | Calculation _
+                            | Numeric _ -> true
+                            | _ -> false)
+                    then
+                        this.Apply (expression, this.Evaluate (environment, witness), arguments)
+                    else
+                        this.Invoke (expression, None, symbol, arguments)
                 | Call (receiver, symbol, _, _, arguments) ->
                     this.Invoke (
                         expression,

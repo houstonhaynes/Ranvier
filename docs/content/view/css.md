@@ -76,6 +76,102 @@ module Canonical = Ranvier.Css.Generated.Css
 Keep ordinary property authoring on the short `Css` helpers. The detailed API preserves required
 groups, repetitions and other structures that cannot safely become one-value overloads.
 
+## Numeric expressions
+
+Use the same `Css` helpers for numeric literals, arithmetic and math functions:
+
+```fsharp
+let calculated = utility {
+    Css.width (Css.percent 100. - Css.rem 2.)
+    Css.maxWidth (Css.min [Css.px 960.; Css.px 1280.])
+    Css.fontSize (Css.clamp(Css.rem 1., Css.rem 1.25, Css.rem 2.))
+    Css.opacity (Css.sin Css.pi)
+}
+```
+
+The surface includes comparison, rounding, remainder, trigonometric, exponential and sign
+functions, together with `e`, `pi`, `infinity`, `negativeInfinity` and `nan`. Function arguments
+retain their dimensions. For example, `Css.sin (Css.px 10.)` does not compile.
+
+Mixed length/percentage arguments work directly in tuple helpers, such as
+`Css.min(Css.percent 100., Css.rem 60.)`. F# lists need one element type; use
+`Css.lengthPercentage` when a list combines lengths and percentages:
+
+```fsharp
+let capped = utility {
+    Css.width (Css.min [
+        Css.lengthPercentage (Css.percent 100.)
+        Css.lengthPercentage (Css.rem 60.)
+    ])
+}
+```
+
+Operators preserve dimensions. Multiplication and division support compound intermediate
+dimensions, so `Css.px 20. / Css.px 40.` is a number, while a length multiplied by a length
+cannot be assigned to `width`. An angle cannot be added to a length. The generated expression
+types and property overloads come from the same generator and package as the other bindings.
+
+For canonical grammar constructors that require a typed value, use a checked adapter such as
+`Css.angle`, `Css.length`, `Css.number` or `Css.integer`. The adapter preserves the calculation:
+
+```fsharp
+let turn = Css.angle (Css.deg 30. + Css.deg 15.)
+let turned = utility {
+    Css.rotate turn
+}
+```
+
+These adapters also work inside reactive readers. They check the destination production's
+dimensions and percentage rules, and retain browser evaluation of the expression.
+
+Calculations remain CSS expressions. The browser evaluates relative units, layout-dependent
+percentages, special constants, integer rounding and computed-value range handling. A negative
+literal can fail a constructor's range check; a calculation retains its expression for CSS's
+computed-value rules.
+
+Percentages retain their provenance even when division cancels their dimensions. For compound
+arithmetic that needs an explicit percentage basis, use a basis helper:
+
+```fsharp
+let proportional = utility {
+    Css.width (Css.lengthPercent 50. * Css.px 2. / Css.px 1.)
+}
+```
+
+The property must permit that percentage basis. A number-only property does not acquire
+percentage support merely because an expression eventually produces a number.
+
+Typed numeric custom properties can participate in the same expressions:
+
+```fsharp
+let gutter = Css.lengthVariable "--gutter"
+
+let variableWidth = utility {
+    Css.width (Css.variable(gutter, fallback = Css.rem 1.) + Css.px 8.)
+}
+```
+
+The handle declares the expected numeric type. It does not register an `@property` rule or
+prove that every external declaration assigning the variable follows that type; substitution
+and invalid-at-computed-value behavior remain browser responsibilities.
+
+Newer draft forms include `Css.progress`, `Css.random`, `Css.calcMix`, `Css.siblingCount()`,
+`Css.siblingIndex()`, structured interpolation and intrinsic sizing:
+
+```fsharp
+let intrinsicPanel = utility {
+    Css.width (Css.calcSize(
+        Css.intrinsicKeyword "auto",
+        Css.intrinsicSize + Css.px 16.
+    ))
+}
+```
+
+`intrinsicSize` represents the scoped `size` keyword. It cannot be assigned directly as a
+normal numeric result. The generated property overload must admit `calc-size()`, and its
+destination grammar must admit the chosen intrinsic basis. Browser support for draft functions
+varies; generating valid syntax does not add browser support.
+
 ## Reactive values
 
 Use a reader when a property varies per component instance:
@@ -86,7 +182,7 @@ open Ranvier
 type Meter = { Width: Signal<float> }
 
 let meter = utility {
-    Css.width (fun (state: Meter) -> Css.px state.Width.Value)
+    Css.width (fun (state: Meter) -> Css.px state.Width.Value + Css.rem 2.)
     Css.maxWidth (Css.percent 100.)
 }
 ```

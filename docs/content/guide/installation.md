@@ -150,8 +150,8 @@ and map `Xantham.*` to Cloudsmith:
 Install the generated properties and the view adapter together:
 
 ```shell
-dotnet add package Ranvier.Css.Bindings --version 0.1.0-alpha.1
-dotnet add package Ranvier.Css.View --version 0.1.0-alpha.1
+dotnet add package Ranvier.Css.Bindings --version 0.1.0-alpha.2
+dotnet add package Ranvier.Css.View --version 0.1.0-alpha.2
 ```
 
 Both depend on `Ranvier.Css`. The view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later

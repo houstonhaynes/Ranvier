@@ -25,6 +25,208 @@ let tests =
     testList
         "CSS binding generation"
         [
+            testCase "canonical extraction factories follow exact unrestricted grammar nodes"
+            <| fun _ ->
+                let json =
+                    """{"properties":[{"name":"guarded","href":"https://example.test/guarded","syntax":"<angle [0,90]>"}],"types":[{"name":"angle","href":"https://example.test/angle"}],"functions":[{"name":"rotate()","href":"https://example.test/rotate","syntax":"rotate(<angle> | <zero>)"}],"selectors":[],"atrules":[]}"""
+
+                let output =
+                    Webref.consume "canonical-extraction" (Encoding.UTF8.GetBytes json)
+                    |> Result.toOption
+                    |> Option.get
+                    |> generate
+
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let field (name: string) (item: JsonElement) =
+                    item.GetProperty(name).GetString()
+
+                let factories =
+                    manifest.RootElement.GetProperty("extractionFactories").EnumerateArray()
+                    |> Seq.toList
+
+                Expect.isNonEmpty factories "The grammar supplies safe factories"
+
+                Expect.isTrue
+                    (factories
+                     |> List.forall (fun item -> List.contains (field "kind" item) [ "copy"; "function" ]))
+                    "The interpreter receives a bounded operation set"
+
+                let rotate =
+                    factories
+                    |> List.find (fun item ->
+                        field "owner" item = "Example.Generated.Css.FunctionRotate"
+                        && field "memberName" item = "create")
+
+                Expect.equal (field "functionName" rotate) "rotate" "Function metadata follows the grammar name"
+
+                let guarded =
+                    manifest.RootElement.GetProperty("definitions").EnumerateArray()
+                    |> Seq.find (fun item -> field "name" item = "guarded")
+
+                Expect.isFalse
+                    (factories
+                     |> List.exists (fun item -> field "memberName" item = field "syntaxFactory" guarded))
+                    "Ranged references cannot become unguarded copies"
+
+                Expect.isFalse
+                    (factories
+                     |> List.exists (fun item -> field "owner" item = "Example.Generated.Css.PropertyGuarded"))
+                    "Ranged canonical aliases fail closed too"
+            testCase "intrinsic admission follows whole-value inline functions and excludes none"
+            <| fun _ ->
+                let json =
+                    """{"properties":[{"name":"maximum","href":"https://example.test/max","syntax":"none | auto | fit-content(<length>) | calc-size(auto, <length>)"},{"name":"future-size","href":"https://example.test/stretch","syntax":"auto | stretch(<length>) | calc-size(auto, <length>)"},{"name":"required-pair","href":"https://example.test/pair","syntax":"calc-size(auto, <length>) fit-content(<length>)"}],"types":[{"name":"length","href":"https://example.test/length"}],"functions":[],"selectors":[],"atrules":[]}"""
+
+                let input =
+                    Webref.consume "inline-intrinsic" (Encoding.UTF8.GetBytes json)
+                    |> Result.toOption
+                    |> Option.get
+
+                let output =
+                    RuntimeGeneration.generate "Example.Generated" input
+                    |> Result.toOption
+                    |> Option.get
+
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let sinks =
+                    manifest.RootElement
+                        .GetProperty("numericSemantics")
+                        .GetProperty("runtime")
+                        .GetProperty("contextual")
+                        .GetProperty("sinks")
+                        .EnumerateArray()
+                    |> Seq.toList
+
+                let allowed name =
+                    sinks
+                    |> List.find (fun item -> item.GetProperty("property").GetString() = name)
+                    |> fun item ->
+                        item.GetProperty("allowedKeywords").EnumerateArray()
+                        |> Seq.map _.GetString()
+                        |> Set.ofSeq
+
+                Expect.contains (allowed "maximum") "fit-content()" "An inline sizing function is admitted through the complete grammar path"
+                Expect.isFalse ((allowed "maximum").Contains "none") "A property keyword cannot override the normative intrinsic exclusion"
+                Expect.contains (allowed "future-size") "stretch()" "New sizing functions retain their separate admission"
+
+                Expect.isFalse
+                    (sinks
+                     |> List.exists (fun item -> item.GetProperty("property").GetString() = "required-pair"))
+                    "A function requiring a sibling cannot stand alone"
+            testCase "numeric primitives cover current source unit sets in canonical and sugar APIs"
+            <| fun _ ->
+                let groups =
+                    [
+                        "length",
+                        [
+                            "em"
+                            "rem"
+                            "ex"
+                            "rex"
+                            "cap"
+                            "rcap"
+                            "ch"
+                            "rch"
+                            "ic"
+                            "ric"
+                            "lh"
+                            "rlh"
+                            "vw"
+                            "svw"
+                            "lvw"
+                            "dvw"
+                            "vh"
+                            "svh"
+                            "lvh"
+                            "dvh"
+                            "vi"
+                            "svi"
+                            "lvi"
+                            "dvi"
+                            "vb"
+                            "svb"
+                            "lvb"
+                            "dvb"
+                            "vmin"
+                            "svmin"
+                            "lvmin"
+                            "dvmin"
+                            "vmax"
+                            "svmax"
+                            "lvmax"
+                            "dvmax"
+                            "cm"
+                            "mm"
+                            "q"
+                            "in"
+                            "pc"
+                            "pt"
+                            "px"
+                            "cqw"
+                            "cqh"
+                            "cqi"
+                            "cqb"
+                            "cqmin"
+                            "cqmax"
+                        ]
+                        "angle", [ "deg"; "grad"; "rad"; "turn" ]
+                        "time", [ "s"; "ms" ]
+                        "frequency", [ "Hz"; "kHz" ]
+                        "resolution", [ "dpi"; "dpcm"; "dppx"; "x" ]
+                        "flex", [ "fr" ]
+                    ]
+
+                let input =
+                    let types =
+                        groups
+                        |> List.map (fun (production, _) ->
+                            {|
+                                name = production
+                                href = "https://example.test/" + production
+                            |})
+
+                    JsonSerializer.Serialize
+                        {|
+                            properties = [||]
+                            types = types
+                            functions = [||]
+                            selectors = [||]
+                            atrules = [||]
+                        |}
+                    |> Encoding.UTF8.GetBytes
+                    |> Webref.consume "numeric-unit-coverage"
+                    |> Result.toOption
+                    |> Option.get
+
+                for output in
+                    [
+                        generate input
+                        RuntimeGeneration.generate "Example.Generated" input
+                        |> Result.toOption
+                        |> Option.get
+                    ] do
+                    use manifest = JsonDocument.Parse output.Manifest
+
+                    for production, expected in groups do
+                        let definition =
+                            manifest.RootElement.GetProperty("definitions").EnumerateArray()
+                            |> Seq.find (fun item -> item.GetProperty("name").GetString() = production)
+
+                        let methods =
+                            definition.GetProperty("primitiveHelpers").EnumerateArray()
+                            |> Seq.map (fun item -> item.GetProperty("methodName").GetString())
+                            |> Set.ofSeq
+
+                        Expect.equal methods (Set.ofList expected) (production + " exposes every supported suffix")
+
+                        for unitName in expected do
+                            Expect.stringContains
+                                output.Source
+                                ("Runtime.number value "
+                                 + JsonSerializer.Serialize unitName)
+                                (production + " preserves its suffix")
             testCase "numeric contexts retain primitive fallbacks and leave unknown dimensions unclassified"
             <| fun _ ->
                 let json =
@@ -60,7 +262,7 @@ let tests =
                 let output = generate input
                 use manifest = JsonDocument.Parse output.Manifest
                 let semantics = manifest.RootElement.GetProperty "numericSemantics"
-                Expect.equal (semantics.GetProperty("schemaVersion").GetInt32()) 1 "Independent semantic schema"
+                Expect.equal (semantics.GetProperty("schemaVersion").GetInt32()) NumericSemantics.schemaVersion "Independent semantic schema"
 
                 use snapshot = JsonDocument.Parse (Snapshot.toJson input)
                 let rules = snapshot.RootElement.GetProperty "numericSemantics"
@@ -151,10 +353,12 @@ let tests =
 
                 use sharedManifest = JsonDocument.Parse shared.Manifest
 
-                Expect.equal
-                    (sharedManifest.RootElement.GetProperty("numericSemantics").GetRawText())
-                    (semantics.GetRawText ())
-                    "Both generators share semantic metadata"
+                for name in [ "properties"; "operators"; "functions" ] do
+                    Expect.equal
+                        (sharedManifest.RootElement.GetProperty("numericSemantics").GetProperty(name).GetRawText())
+                        (semantics.GetProperty(name).GetRawText())
+                        ("Both generators share authoritative numeric "
+                         + name)
 
                 Expect.equal
                     output
@@ -163,6 +367,66 @@ let tests =
                             Features = List.rev input.Features
                         })
                     "Semantic output is deterministic"
+            testCase "unified runtime manifest describes numeric expressions and the extraction allowlist"
+            <| fun _ ->
+                let json =
+                    """{"properties":[{"name":"width","href":"https://example.test/width","syntax":"<length-percentage>"}],"types":[{"name":"length","href":"https://example.test/length"},{"name":"percentage","href":"https://example.test/percentage"},{"name":"length-percentage","href":"https://example.test/mixed","syntax":"<length> | <percentage>"}],"functions":[],"selectors":[],"atrules":[]}"""
+
+                let input =
+                    Webref.consume "numeric-runtime" (Encoding.UTF8.GetBytes json)
+                    |> Result.toOption
+                    |> Option.get
+
+                let output =
+                    RuntimeGeneration.generate "Example.Generated" input
+                    |> Result.toOption
+                    |> Option.get
+
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let runtime =
+                    manifest.RootElement.GetProperty("numericSemantics").GetProperty("runtime")
+
+                Expect.equal (runtime.GetProperty("namespaceName").GetString()) "Example" "Math helpers share the short authoring namespace"
+                Expect.equal (runtime.GetProperty("primitiveType").GetString()) "Css" "Numeric primitives use the unified entry point"
+                Expect.isFalse (output.Source.Contains "type Calc ") "There is no separate Calc API"
+
+                let primitives =
+                    runtime.GetProperty("primitiveHelpers").EnumerateArray()
+                    |> Seq.map (fun item -> item.GetProperty("memberName").GetString())
+                    |> Set.ofSeq
+
+                for name in [ "px"; "rem"; "cap"; "rcap"; "q"; "svmin"; "lengthPercent" ] do
+                    Expect.isTrue
+                        (primitives.Contains name)
+                        (name
+                         + " is available to arithmetic and extraction")
+
+                let functions =
+                    runtime.GetProperty("functionHelpers").EnumerateArray()
+                    |> Seq.map (fun item -> item.GetProperty("name").GetString())
+                    |> Set.ofSeq
+
+                let policies =
+                    NumericSemantics.functionPolicies
+                    |> List.map _.Name
+                    |> Set.ofList
+
+                let contextualFunctions =
+                    runtime.GetProperty("contextual").GetProperty("helpers").GetProperty("functionHelpers").EnumerateArray()
+                    |> Seq.map (fun item -> item.GetProperty("name").GetString())
+                    |> Seq.filter policies.Contains
+                    |> Set.ofSeq
+
+                Expect.equal (Set.union functions contextualFunctions) policies "Every numeric policy has an extraction allowlist entry"
+
+                let constants =
+                    runtime.GetProperty("constantHelpers").EnumerateArray()
+                    |> Seq.map (fun item -> item.GetProperty("name").GetString())
+                    |> Set.ofSeq
+
+                Expect.equal constants (set [ "e"; "pi"; "infinity"; "-infinity"; "NaN" ]) "Symbolic constants have an explicit extraction allowlist"
+                Expect.stringContains output.Source "CalculationExpression<CalculationUnits.length" "Property overloads accept generated expressions"
             testCase "sugar fills provably empty optional sequence components through canonical factories"
             <| fun _ ->
                 let json =

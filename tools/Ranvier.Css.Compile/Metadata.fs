@@ -5,6 +5,7 @@ open System.IO
 open System.Globalization
 open System.Text.Json
 open Ranvier.Css
+open Ranvier.Css.Spec
 
 module internal Metadata =
     type CssValue = { Value: Value<unit>; Marker: string }
@@ -22,12 +23,51 @@ module internal Metadata =
             Name: string
             Keywords: Set<string>
             Paths: Map<string, ((float * string) option * (float * string) option) list>
+            CalculationContexts: (NumericContext * NumericType) list
+            IntrinsicKeywords: string list option
+        }
+
+    type CalculationPrimitive =
+        {
+            Production: string
+            UnitName: string
+            Argument: string
+        }
+
+    type VariableSource =
+        {
+            Kind: string
+            Production: string
+            Marker: string
+        }
+
+    type ValueAdapter =
+        {
+            Production: string
+            Marker: string option
+        }
+
+    type ExtractionFactory =
+        {
+            Kind: string
+            InputMarker: string
+            OutputMarker: string
+            FunctionName: string option
         }
 
     type Registry =
         {
             Namespace: string
             Primitives: Map<string, Primitive>
+            CalculationPrimitives: Map<string, CalculationPrimitive>
+            CalculationPrimitiveOwner: string
+            CalculationFunctions: Map<string, string>
+            CalculationConstants: Map<string, string>
+            ContextualHelpers: Map<string, string>
+            VariableSources: Map<string, VariableSource list>
+            VariableMarkers: Map<string, string>
+            ValueAdapters: Map<string, ValueAdapter>
+            ExtractionFactories: Map<string * string, ExtractionFactory>
             Keywords: Map<string, string>
             Properties: Map<string, Property>
         }
@@ -51,8 +91,210 @@ module internal Metadata =
         let range (item: JsonElement) =
             bound (item.GetProperty "minimum"), bound (item.GetProperty "maximum")
 
+        let dimension value =
+            NumericSemantics.dimensions
+            |> List.tryFind (fun dimension -> String.Equals (dimension.ToString (), value, StringComparison.OrdinalIgnoreCase))
+            |> Option.defaultWith (fun () -> invalidOp ("Unknown numeric dimension: " + value))
+
+        let optionalDimension (name: string) (item: JsonElement) =
+            let value = item.GetProperty name
+
+            if value.ValueKind = JsonValueKind.Null then
+                None
+            else
+                Some (dimension (value.GetString ()))
+
+        let semantics =
+            match document.RootElement.TryGetProperty "numericSemantics" with
+            | true, value -> Some value
+            | _ -> None
+
+        let contexts =
+            semantics
+            |> Option.map (fun semantics ->
+                semantics.GetProperty("properties").EnumerateArray()
+                |> Seq.filter (fun item ->
+                    item.GetProperty("scopes").GetArrayLength() = 0
+                    && not (item.GetProperty("obsolete").GetBoolean()))
+                |> Seq.map (fun item ->
+                    string "name" item,
+                    item.GetProperty("contexts").EnumerateArray()
+                    |> Seq.map (fun context ->
+                        let result = context.GetProperty "resultType"
+
+                        ({
+                            PercentagesAllowed = context.GetProperty("percentagesAllowed").GetBoolean()
+                            PercentageBasis = optionalDimension "percentageBasis" context
+                        }
+                        : NumericContext),
+                        ({
+                            Exponents =
+                                result.GetProperty("exponents").EnumerateArray()
+                                |> Seq.map (fun power -> dimension (string "dimension" power), power.GetProperty("exponent").GetInt32())
+                                |> Map.ofSeq
+                            PercentHint = optionalDimension "percentHint" result
+                        }
+                        : NumericType))
+                    |> Seq.toList)
+                |> Map.ofSeq)
+            |> Option.defaultValue Map.empty
+
+        let runtime =
+            semantics
+            |> Option.bind (fun item ->
+                match item.TryGetProperty "runtime" with
+                | true, runtime -> Some runtime
+                | _ -> None)
+
+        let contextual =
+            runtime
+            |> Option.bind (fun item ->
+                match item.TryGetProperty "contextual" with
+                | true, contextual -> Some contextual
+                | _ -> None)
+
+        let intrinsicSinks =
+            match contextual with
+            | Some contextual ->
+                contextual.GetProperty("sinks").EnumerateArray()
+                |> Seq.map (fun item ->
+                    string "property" item,
+                    item.GetProperty("allowedKeywords").EnumerateArray()
+                    |> Seq.map _.GetString()
+                    |> Seq.toList)
+                |> Map.ofSeq
+            | None -> Map.empty
+
+        let calculationPrimitives =
+            match runtime with
+            | Some runtime ->
+                if
+                    runtime.GetProperty("schemaVersion").GetInt32()
+                    <> 1
+                then
+                    invalidOp "CSS calculation metadata schema 1 is required."
+
+                runtime.GetProperty("primitiveHelpers").EnumerateArray()
+                |> Seq.map (fun item ->
+                    string "memberName" item,
+                    {
+                        Production = string "production" item
+                        UnitName = string "unitName" item
+                        Argument = string "argumentType" item
+                    })
+                |> Map.ofSeq
+            | None -> Map.empty
+
+        let helpers name =
+            match runtime with
+            | Some runtime ->
+                match runtime.TryGetProperty (name: string) with
+                | true, helpers ->
+                    helpers.EnumerateArray ()
+                    |> Seq.map (fun helper -> string "memberName" helper, string "name" helper)
+                    |> Map.ofSeq
+                | _ -> Map.empty
+            | None -> Map.empty
+
+        let variableSources =
+            match
+                runtime
+                |> Option.bind (fun item ->
+                    match item.TryGetProperty "variableSources" with
+                    | true, sources -> Some sources
+                    | _ -> None)
+            with
+            | Some sources ->
+                sources.GetProperty("sourceHelpers").EnumerateArray()
+                |> Seq.map (fun item ->
+                    string "memberName" item,
+                    {
+                        Kind = string "kind" item
+                        Production = string "production" item
+                        Marker = string "marker" item
+                    })
+                |> Seq.toList
+            | None -> []
+
+        let valueAdapters =
+            match
+                runtime
+                |> Option.bind (fun item ->
+                    match item.TryGetProperty "valueAdapters" with
+                    | true, adapters -> Some adapters
+                    | _ -> None)
+            with
+            | Some adapters ->
+                adapters.GetProperty("helpers").EnumerateArray()
+                |> Seq.map (fun item ->
+                    let marker = item.GetProperty "marker"
+
+                    string "memberName" item,
+                    {
+                        Production = string "production" item
+                        Marker =
+                            if marker.ValueKind = JsonValueKind.Null then
+                                None
+                            else
+                                Some (marker.GetString ())
+                    })
+                |> Map.ofSeq
+            | None -> Map.empty
+
         {
             Namespace = string "namespaceName" sugar
+            CalculationPrimitives = calculationPrimitives
+            CalculationFunctions = helpers "functionHelpers"
+            CalculationConstants = helpers "constantHelpers"
+            ValueAdapters = valueAdapters
+            ExtractionFactories =
+                match document.RootElement.TryGetProperty "extractionFactories" with
+                | true, factories ->
+                    factories.EnumerateArray ()
+                    |> Seq.map (fun item ->
+                        let functionName = item.GetProperty "functionName"
+
+                        (string "owner" item, string "memberName" item),
+                        {
+                            Kind = string "kind" item
+                            InputMarker = string "inputMarker" item
+                            OutputMarker = string "outputMarker" item
+                            FunctionName =
+                                if functionName.ValueKind = JsonValueKind.Null then
+                                    None
+                                else
+                                    Some (functionName.GetString ())
+                        })
+                    |> Map.ofSeq
+                | _ -> Map.empty
+            VariableSources =
+                variableSources
+                |> List.groupBy fst
+                |> List.map (fun (name, sources) -> name, List.map snd sources)
+                |> Map.ofList
+            VariableMarkers =
+                variableSources
+                |> List.map (fun (_, source) -> source.Marker, source.Production)
+                |> Map.ofList
+            ContextualHelpers =
+                match contextual with
+                | Some contextual ->
+                    contextual.GetProperty("helpers").GetProperty("functionHelpers").EnumerateArray()
+                    |> Seq.map (fun item -> string "memberName" item, string "kind" item)
+                    |> Map.ofSeq
+                | None -> Map.empty
+            CalculationPrimitiveOwner =
+                match runtime with
+                | Some runtime ->
+                    let primitiveType =
+                        match runtime.TryGetProperty "primitiveType" with
+                        | true, value -> value.GetString ()
+                        | _ -> "Css"
+
+                    string "namespaceName" runtime
+                    + "."
+                    + primitiveType
+                | None -> ""
             Primitives =
                 sugar.GetProperty("primitives").EnumerateArray()
                 |> Seq.map (fun item ->
@@ -77,6 +319,10 @@ module internal Metadata =
                     let definition =
                         {
                             Name = string "cssName" item
+                            CalculationContexts =
+                                contexts.TryFind (string "cssName" item)
+                                |> Option.defaultValue []
+                            IntrinsicKeywords = intrinsicSinks.TryFind (string "cssName" item)
                             Keywords =
                                 item.GetProperty("acceptedKeywords").EnumerateArray()
                                 |> Seq.map _.GetString()
@@ -94,6 +340,77 @@ module internal Metadata =
                     string "memberName" item, definition)
                 |> Map.ofSeq
         }
+
+    let calculationPrimitive (definition: CalculationPrimitive) (argument: obj) =
+        let value =
+            match definition.Argument with
+            | "none" -> 0.0
+            | "float"
+            | "int" -> Convert.ToDouble (argument, CultureInfo.InvariantCulture)
+            | _ ->
+                invalidOp (
+                    "Unsupported calculation primitive argument: "
+                    + definition.Argument
+                )
+
+        CalculationRuntime.literal definition.Production definition.UnitName value
+
+    let calculationDeclaration (definition: Property) value =
+        definition.CalculationContexts
+        |> List.tryPick (fun (context, expected) ->
+            match CalculationRuntime.infer context value with
+            | Ok actual when NumericSemantics.matches context expected actual ->
+                Some (CalculationRuntime.declaration definition.Name context expected value)
+            | _ -> None)
+        |> Option.defaultWith (fun () ->
+            invalidOp (
+                "Unsupported calculation result for "
+                + definition.Name
+            ))
+
+    let intrinsicDeclaration (definition: Property) value =
+        match definition.IntrinsicKeywords with
+        | Some allowed -> CalculationRuntime.declarationIntrinsic definition.Name allowed value
+        | None ->
+            invalidOp (
+                "Unsupported intrinsic calculation for "
+                + definition.Name
+            )
+
+    let valueAdapter (definition: ValueAdapter) calculation =
+        definition.Marker
+        |> Option.map (fun marker ->
+            let context, expected =
+                match definition.Production with
+                | "number"
+                | "integer" -> NumericSemantics.dimensionOnlyContext, NumericSemantics.number
+                | "percentage" -> NumericSemantics.ordinaryContext, NumericSemantics.dimension NumericDimension.Percent
+                | production ->
+                    let mixed = production.EndsWith ("-percentage", StringComparison.Ordinal)
+
+                    let dimensionName =
+                        if mixed then
+                            production.Substring (0, production.Length - "-percentage".Length)
+                        else
+                            production
+
+                    let dimension =
+                        NumericSemantics.dimensions
+                        |> List.find (fun dimension -> dimension.ToString().ToLowerInvariant() = dimensionName)
+
+                    {
+                        PercentagesAllowed = mixed
+                        PercentageBasis = if mixed then Some dimension else None
+                    },
+                    NumericSemantics.dimension dimension
+
+            let checkedValue =
+                CalculationRuntime.declaration "--numeric-value" context expected calculation
+
+            {
+                Value = Generated.value (Declaration.value checkedValue)
+                Marker = marker
+            })
 
     let primitive (definition: Primitive) (argument: obj) =
         let value: Value<unit> =

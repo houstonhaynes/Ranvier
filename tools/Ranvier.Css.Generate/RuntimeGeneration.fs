@@ -102,11 +102,12 @@ module RuntimeGeneration =
                     |> ignore
                 | _ -> ()
 
-            let sugarSource, sugarMap =
+            let sugarSource, sugarMap, numericRuntime =
                 SugarGeneration.render namespaceName manifest.RootElement
 
             let enriched = JsonNode.Parse bindings.Manifest
             enriched["sugar"] <- JsonNode.Parse (sugarMap.GetRawText ())
+            enriched["numericSemantics"]["runtime"] <- JsonNode.Parse (numericRuntime.GetRawText ())
 
             Ok
                 { bindings with

@@ -434,6 +434,7 @@ let tests =
         ([
             ResolutionTests.tests
             NumericSemanticsTests.tests
+            CalculationTests.tests
             SpecSourcesTests.tests
             GenerationTests.tests
             RuntimeTests.tests

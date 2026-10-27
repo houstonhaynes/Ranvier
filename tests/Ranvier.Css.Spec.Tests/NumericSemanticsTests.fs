@@ -336,18 +336,58 @@ let private cases =
             equal length (call ordinary "CaLc" [ value length ] |> success)
             equal (Error (NumericError.UnknownFunction "future-math")) (call ordinary "future-math" [ value number ])
 
-        "every published function rejects excessive arguments and missing calculations",
+        "published functions enforce policy arity and retain the complete numeric surface",
         fun () ->
             for policy in NumericSemantics.functionPolicies do
-                fails (call ordinary policy.Name [])
+                if policy.MinimumArguments > 0 then
+                    fails (call ordinary policy.Name [])
 
                 match policy.MaximumArguments with
                 | Some maximum -> fails (call ordinary policy.Name (List.replicate (maximum + 1) (value number)))
                 | None -> ()
 
-            equal 21 NumericSemantics.functionPolicies.Length
+            let expected =
+                set
+                    [
+                        "calc"
+                        "abs"
+                        "sign"
+                        "min"
+                        "max"
+                        "hypot"
+                        "clamp"
+                        "round"
+                        "mod"
+                        "rem"
+                        "sin"
+                        "cos"
+                        "tan"
+                        "asin"
+                        "acos"
+                        "atan"
+                        "atan2"
+                        "pow"
+                        "sqrt"
+                        "exp"
+                        "log"
+                        "progress"
+                        "random"
+                        "calc-mix"
+                        "sibling-count"
+                        "sibling-index"
+                        "calc-interpolate"
+                    ]
+
+            equal
+                expected
+                (NumericSemantics.functionPolicies
+                 |> List.map _.Name
+                 |> Set.ofList)
+
+            equal number (call ordinary "sibling-count" [] |> success)
+            equal number (call ordinary "sibling-index" [] |> success)
             equal 4 NumericSemantics.operatorPolicies.Length
-            equal 1 NumericSemantics.schemaVersion
+            equal 2 NumericSemantics.schemaVersion
 
         "operator algebra is commutative and inversion is involutive",
         fun () ->

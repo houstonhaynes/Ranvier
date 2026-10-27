@@ -4,8 +4,37 @@ open System
 open System.Globalization
 open System.Text.RegularExpressions
 
+/// <summary>Opaque serialized CSS storage retaining its nominal grammar marker.</summary>
+type ValueStorage<'syntax> = internal ValueStorage of text: string * numeric: (float * string) option
+
 /// <summary>A serialized CSS value with a nominal grammar marker and optional numeric dimension.</summary>
-type Value<'syntax> = private Value of string * (float * string) option
+type Value<'syntax>(storage: ValueStorage<'syntax>) =
+    let (ValueStorage (text, numeric)) = storage
+
+    /// <summary>The opaque content retained when a generated numeric wrapper inherits this value.</summary>
+    member _.Storage = storage
+
+    member internal _.Serialized = text
+    member internal _.Numeric = numeric
+
+    internal new(text: string, numeric: (float * string) option) = Value (ValueStorage (text, numeric))
+
+    /// <summary>Copies a value while preserving its grammar marker and numeric token metadata.</summary>
+    new(value: Value<'syntax>) = Value (value.Storage)
+
+    override _.Equals other =
+        match other with
+        | :? Value<'syntax> as value -> (text, numeric) = (value.Serialized, value.Numeric)
+        | _ -> false
+
+    override _.GetHashCode() =
+        hash (text, numeric)
+
+    interface IComparable with
+        member _.CompareTo other =
+            match other with
+            | :? Value<'syntax> as value -> compare (text, numeric) (value.Serialized, value.Numeric)
+            | _ -> invalidArg "other" "Values have different CSS grammar markers."
 
 /// <summary>A CSS declaration retaining its importance and exact value text.</summary>
 type Declaration = private Declaration of name: string * text: string * important: bool
@@ -59,15 +88,16 @@ module private NumberText =
 /// <summary>Factories used by generated grammar bindings; unchecked factories require specification validation by their caller.</summary>
 module Generated =
     /// <summary>Returns the serialized value text.</summary>
-    let text (Value (text, _)) = text
+    let text (value: Value<'syntax>) =
+        value.Serialized
 
     /// <summary>Accepts already serialized text without validating a grammar.</summary>
     let value text : Value<'tag> =
         Value (text, None)
 
     /// <summary>Reclassifies a value along a generated grammar edge.</summary>
-    let copy (Value (text, numeric)) : Value<'tag> =
-        Value (text, numeric)
+    let copy (value: Value<'syntax>) : Value<'tag> =
+        Value (value.Serialized, value.Numeric)
 
     /// <summary>Constructs a finite numeric token with the supplied unit suffix.</summary>
     let number (number: float) unitName : Value<'tag> =
@@ -190,10 +220,10 @@ module Generated =
 
     /// <summary>Checks numeric bounds, converting supported absolute units; computed values retain their text.</summary>
     let range minimum maximum (input: Value<'item>) : Value<'tag> =
-        match input with
-        | Value (_, Some (number, unitName)) ->
-            let factor =
-                function
+        match input.Numeric with
+        | Some (number, unitName) ->
+            let factor (unit: string) =
+                match unit.ToLowerInvariant () with
                 | "deg" -> Some (1.0, "angle")
                 | "rad" -> Some (180.0 / Math.PI, "angle")
                 | "turn" -> Some (360.0, "angle")
@@ -204,12 +234,22 @@ module Generated =
                 | "in" -> Some (96.0, "length")
                 | "cm" -> Some (96.0 / 2.54, "length")
                 | "mm" -> Some (96.0 / 25.4, "length")
+                | "q" -> Some (96.0 / 101.6, "length")
                 | "pt" -> Some (96.0 / 72.0, "length")
                 | "pc" -> Some (16.0, "length")
+                | "hz" -> Some (1.0, "frequency")
+                | "khz" -> Some (1000.0, "frequency")
+                | "dppx"
+                | "x" -> Some (1.0, "resolution")
+                | "dpi" -> Some (1.0 / 96.0, "resolution")
+                | "dpcm" -> Some (2.54 / 96.0, "resolution")
                 | _ -> None
 
             let convert unit =
-                if unit = "" || unit = unitName then
+                if
+                    unit = ""
+                    || String.Equals (unit, unitName, StringComparison.OrdinalIgnoreCase)
+                then
                     number
                 else
                     match factor unitName, factor unit with
@@ -333,6 +373,14 @@ module CustomProperty =
 
 /// <summary>Unambiguous entry points used by generated shared-runtime bindings on .NET and Fable.</summary>
 module RuntimeApi =
+    /// <summary>Creates a typed custom-property handle from a validated dashed identifier.</summary>
+    let createCustomProperty name : CustomProperty<'syntax> =
+        CustomProperty.create name
+
+    /// <summary>Returns the dashed name of a typed custom-property handle.</summary>
+    let customPropertyName (variable: CustomProperty<'syntax>) =
+        CustomProperty.name variable
+
     /// <summary>Creates a declaration from specification-generated property names and serialized values.</summary>
     let declaration name text =
         Declaration.create name text
@@ -344,6 +392,10 @@ module RuntimeApi =
     /// <summary>Serializes a CSS declaration.</summary>
     let renderDeclaration declaration =
         Declaration.render declaration
+
+    /// <summary>Returns a declaration's value text without its property name or importance.</summary>
+    let declarationValue (declaration: Declaration) =
+        Declaration.value declaration
 
     /// <summary>Serializes ordered declarations.</summary>
     let renderDeclarations declarations =

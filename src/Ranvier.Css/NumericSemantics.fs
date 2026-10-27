@@ -40,6 +40,9 @@ type NumericArgument =
     | Value of NumericType
     | NoneBound
     | Strategy of RoundingStrategy
+    | NoClamp
+    | RandomKey
+    | WeightedValue of NumericType * float option
 
 /// <summary>A failure to combine numeric types or satisfy a math function contract.</summary>
 [<RequireQualifiedAccess>]
@@ -71,14 +74,18 @@ type NumericOperatorPolicy =
 /// <summary>CSS Values 4 calculation typing and CSS Typed OM exponent-map algebra.</summary>
 module NumericSemantics =
     /// <summary>The version of the executable numeric policy contract.</summary>
-    let schemaVersion = 1
+    let schemaVersion = 2
 
     /// <summary>The normative algorithms implemented by this module, in stable order.</summary>
     let sources =
         [
             "https://drafts.csswg.org/css-values-4/#calc-type-checking"
             "https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing"
+            "https://drafts.csswg.org/css-values-5/"
         ]
+
+    /// <summary>The symbolic CSS calculation constants in stable canonical spelling.</summary>
+    let constants = [ "e"; "pi"; "infinity"; "-infinity"; "NaN" ]
 
     /// <summary>The binary type algebra policies, in stable operator order.</summary>
     let operatorPolicies =
@@ -331,9 +338,25 @@ module NumericSemantics =
                 ]
         }
 
+    let private policy5 name minimum maximum arguments result section =
+        { policy name minimum maximum arguments result section with
+            SourceUrls =
+                [
+                    "https://drafts.csswg.org/css-values-5/#"
+                    + section
+                    List.head sources
+                ]
+        }
+
     /// <summary>All executable math function contracts, in stable name order; keyword slots count toward arity.</summary>
     let functionPolicies =
         [
+            for name in [ "sibling-count"; "sibling-index" ] do
+                policy5 name 0 (Some 0) "no-arguments" "number" "sibling-functions"
+            policy5 "progress" 3 (Some 4) "optional-no-clamp;three-consistent-numeric" "number-consistent-with-input" "progress-func"
+            policy5 "random" 2 (Some 4) "optional-leading-random-key;two-or-three-consistent-numeric" "consistent-inputs" "random-func"
+            policy5 "calc-mix" 1 None "weighted-consistent-numeric" "consistent-inputs" "calc-mix"
+            policy5 "calc-interpolate" 2 None "interpolation-map" "consistent-output-values" "calc-interpolate"
             policy "calc" 1 (Some 1) "one-numeric" "input" "funcdef-calc"
             policy "abs" 1 (Some 1) "one-numeric" "input" "sign-funcs"
             policy "sign" 1 (Some 1) "one-typed-calculation" "number-consistent-with-input" "sign-funcs"
@@ -377,9 +400,56 @@ module NumericSemantics =
                 |> Option.exists (fun maximum -> arguments.Length > maximum))
             ->
             invalid name "The argument count does not match the function contract."
+        | Some _ when name = "sibling-count" || name = "sibling-index" -> Ok number
+        | Some _ when name = "calc-interpolate" -> invalid name "Interpolation requires a structured progress source and stop map."
         | Some _ ->
             let calculations =
                 match name, arguments with
+                | "progress", _ ->
+                    let numericArguments =
+                        match arguments with
+                        | NumericArgument.NoClamp :: rest -> rest
+                        | _ -> arguments
+
+                    if numericArguments.Length = 3 then
+                        valuesOnly name numericArguments
+                    else
+                        invalid name "Progress requires three numeric arguments after an optional no-clamp keyword."
+                | "random", _ ->
+                    let numericArguments =
+                        match arguments with
+                        | NumericArgument.RandomKey :: rest -> rest
+                        | _ -> arguments
+
+                    if
+                        numericArguments.Length = 2
+                        || numericArguments.Length = 3
+                    then
+                        valuesOnly name numericArguments
+                    else
+                        invalid name "Random requires two or three numeric arguments after an optional key."
+                | "calc-mix", _ ->
+                    arguments
+                    |> List.fold
+                        (fun state argument ->
+                            state
+                            |> Result.bind (fun values ->
+                                match argument with
+                                | NumericArgument.Value value -> Ok (value :: values)
+                                | NumericArgument.WeightedValue (value, weight) when
+                                    weight
+                                    |> Option.forall (fun n ->
+                                        not (
+                                            System.Double.IsNaN n
+                                            || System.Double.IsInfinity n
+                                        )
+                                        && n >= 0.
+                                        && n <= 100.)
+                                    ->
+                                    Ok (value :: values)
+                                | _ -> invalid name "Mix items require numeric values and finite weights from zero to 100 percent."))
+                        (Ok [])
+                    |> Result.map List.rev
                 | "clamp", [ lower; NumericArgument.Value middle; upper ] ->
                     let bound =
                         function
@@ -456,10 +526,45 @@ module NumericSemantics =
                                 Ok (consistentWith number common)
                             else
                                 invalid name "Exponential arguments must be numbers."
-                        | "sign" -> Ok (consistentWith number common)
+                        | "sign"
+                        | "progress" -> Ok (consistentWith number common)
                         | _ -> Ok common))
             |> Result.bind (fun result ->
                 if primitive context result then
                     Ok result
                 else
                     invalid name "The result must resolve to a CSS numeric production in this context.")
+
+    /// <summary>Validates interpolation input dimensions separately from output percentages, retaining the consistent output type.</summary>
+    /// <param name="context">The output value's percentage resolution context.</param>
+    /// <param name="progress">The numeric input type, or the absolute dimension of an animation timeline.</param>
+    /// <param name="progressIsTimeline">Whether progress also has a proportional timeline interpretation.</param>
+    /// <param name="positions">The input stop types, inferred in the ordinary percentage context.</param>
+    /// <param name="outputs">The output stop types, inferred in the destination context.</param>
+    let inferInterpolation context progress progressIsTimeline (positions: NumericType list) (outputs: NumericType list) =
+        let proportional numeric =
+            matchesNumber ordinaryContext numeric
+            || matchesDimension ordinaryContext NumericDimension.Percent numeric
+
+        let absolutePositions = positions |> List.filter (proportional >> not)
+
+        let absolute =
+            (if proportional progress then [] else [ progress ])
+            @ absolutePositions
+
+        if positions.IsEmpty || outputs.IsEmpty then
+            invalid "calc-interpolate" "At least one input position and output stop is required."
+        elif
+            (progress :: positions)
+            |> List.exists (primitive ordinaryContext >> not)
+        then
+            invalid "calc-interpolate" "Input positions must resolve to numeric primitives in their independent percentage context."
+        elif
+            not progressIsTimeline
+            && not (proportional progress)
+            && absolutePositions.IsEmpty
+        then
+            invalid "calc-interpolate" "An absolute progress source requires an absolute input stop."
+        else
+            (if absolute.IsEmpty then Ok number else consistent absolute)
+            |> Result.bind (fun _ -> inferFunction context "min" (outputs |> List.map NumericArgument.Value))
