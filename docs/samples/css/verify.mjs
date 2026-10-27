@@ -40,4 +40,6 @@ const css = fs.readdirSync(path.join(output, 'assets')).filter(file => file.ends
 assert.match(css, /font-size:/, 'The responsive typography must be emitted');
 assert.match(css, /opacity:/, 'The application condition must be emitted');
 assert.match(css, /var\(--r-/, 'The reactive value must have a static variable reference');
+assert.match(css, /max-width:\s*calc\(100% - var\(--card-gap,\s*1rem\)\)/,
+  'The evaluation example must preserve its calculation and typed variable fallback');
 console.log('Typed CSS guide examples compile and the documented component extracts static CSS.');

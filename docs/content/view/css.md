@@ -141,6 +141,28 @@ let proportional = utility {
 The property must permit that percentage basis. A number-only property does not acquire
 percentage support merely because an expression eventually produces a number.
 
+### When an expression is evaluated
+
+There are three distinct steps:
+
+1. **Authoring checks the expression.** F# types reject incompatible operands and property
+   arguments. The shared numeric domain checks function typing, compound dimensions and
+   percentage hints when a calculation is constructed or assigned. A checked adapter such as
+   `Css.length` applies the destination production's rules; it does not compute a pixel value.
+2. **Extraction emits the expression.** The build compiler interprets supported source code
+   and serializes the same calculation tree as the runtime. For example, it retains
+   `calc(100% - 2rem)` rather than substituting a viewport width or a root font size. It never
+   samples a reactive reader to guess its possible values.
+3. **The browser computes the result.** CSS resolves variables, relative units, percentage
+   bases and layout, then applies the function's computed-value rules. CSS integer rounding,
+   range handling and special values are part of this step. Browser support still determines
+   whether a generated draft function can be used.
+
+Ordinary F# arithmetic still computes ordinary F# numbers: `Css.px (10. + 5.)` constructs a
+literal. Arithmetic on typed CSS values, such as `Css.px 10. + Css.px 5.`, constructs a CSS
+calculation. This distinction matters for relative units, CSS rounding and special values;
+the typed layer is not a host-side layout engine.
+
 Typed numeric custom properties can participate in the same expressions:
 
 ```fsharp
@@ -195,6 +217,40 @@ identity used by the browser.
 
 Read signals **inside** the reader. Reading a signal while creating a top-level declaration
 captures a snapshot instead of establishing a per-instance binding.
+
+For example, this complete component combines a static calculation, a typed variable and a
+reactive calculation:
+
+```fsharp
+open Ranvier.View
+
+type EvaluatedCard = { Width: Signal<float> }
+
+let cardGap = Css.lengthVariable "--card-gap"
+
+let evaluatedCard = utility {
+    Css.width (fun (state: EvaluatedCard) -> Css.px state.Width.Value + Css.rem 2.)
+    Css.maxWidth (Css.percent 100. - Css.variable(cardGap, fallback = Css.rem 1.))
+}
+
+let evaluatedCardComponent =
+    Component.define
+        (fun _ initialWidth -> { Width = Api.createSignal initialWidth })
+        (fun _ ->
+            div (styles { evaluatedCard }) { "Calculated card" })
+```
+
+Extraction emits the `max-width` calculation and a `width` rule referring to a generated
+custom property. Mounting the component runs its width reader and writes the calculation
+to that property. Signal changes rerun the reader; CSS computes the resulting width.
+The `--card-gap` fallback is used by CSS variable substitution when applicable. Defining the
+typed handle neither assigns that custom property nor registers its syntax with the browser.
+
+Animation uses these same phase boundaries: type compatibility does not guarantee that two
+CSS values can be interpolated by an animation engine. Intrinsic keywords, unresolved
+variables and layout-dependent calculations may require browser resolution or a discrete
+transition. See [build-time evaluation](css-build.md#build-time-evaluation) for the supported
+source-code subset and diagnostics.
 
 ## User classes
 

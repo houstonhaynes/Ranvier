@@ -84,6 +84,45 @@ Old assets and unrelated files are retained; your asset deployment process contr
 See the [compiler contract](https://github.com/shayanhabibi/Ranvier/blob/master/tools/Ranvier.Css.Compile/README.md)
 for the complete supported subset and command options.
 
+### Static composition and runtime values
+
+Keep the stylesheet's structure knowable at build time. A deterministic source helper can
+choose declarations from fixed arguments, but a component's current signal value cannot
+decide which declarations exist in the extracted stylesheet. Use `whenActive` when runtime
+state selects a utility, and a property reader when runtime state changes a property's value.
+Both mechanisms keep the rule structure static.
+
+The extractor recognizes generated numeric helpers, operators, checked adapters and typed
+variable references through resolved symbols and the matching bindings manifest. It uses
+the shared numeric domain for dimensions and percentage rules. Ordinary source arithmetic
+can calculate a literal; arithmetic on typed CSS operands builds a calculation tree. Neither
+path measures DOM elements, resolves custom properties or implements browser layout.
+
+The distinction also applies to randomness: an ambient F# random call used to construct
+static declarations is unsupported. `Css.random` constructs the CSS function, whose value
+is left for a supporting browser. A supported function's presence in the typed API is not
+a browser-support guarantee.
+
+### Understanding diagnostics
+
+An F# type error such as passing an angle to `Css.width` occurs before extraction. A numeric
+domain error means the expression violates a function or destination's typing rules, such
+as an incompatible percentage basis. A source diagnostic from extraction means the compiler
+cannot interpret a used expression within its supported subset or evaluation limits.
+
+When extraction reports runtime-dependent static composition, move the changing decision
+into `whenActive` or a typed property reader. When it reports an unsupported framework call,
+replace that static construction with supported deterministic source code or compute its
+fixed input outside the extraction path. Raising evaluation limits does not make unsupported
+calls executable. Keep the source location in the diagnostic when tracing a helper's caller.
+
+Successful extraction establishes that the compiler could lower the supported source to
+CSS. It does not establish that the target browser supports every function, that an external
+custom property's value matches its typed handle, or that substituted values remain valid at
+computed-value time. Use browser tests for those behaviors. The
+[numeric-expression evaluation steps](css.md#when-an-expression-is-evaluated) explain which
+checks happen during authoring, extraction and browser computation.
+
 ## Import existing CSS
 
 The separate CSS importer parses existing `.css` with an established CSS parser and generates
