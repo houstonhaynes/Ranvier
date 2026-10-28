@@ -96,10 +96,26 @@ test("bound inputs follow external writes and keep an unfinished edit", async ({
 });
 
 test("a replay plays, steps, scrubs and keeps its speed across Reset", async ({ page, problems }) => {
-  const maps = await openMaps(page, guide);
+  const now = new Date("2026-01-01T00:00:00Z");
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now);
+  await page.goto(guide);
+  const maps = page.locator(".rv-map");
   const replay = maps.nth(3);
   const scrub = replay.locator(".rv-map__scrub");
+  await expect(replay.locator(".rv-map-node").first()).toBeVisible();
+  await expect(replay).toHaveAttribute("aria-busy", "true");
+  await expect(replay.getByRole("button", { name: "Play" })).toBeDisabled();
+  await expect(replay.getByRole("button", { name: "Step" })).toBeDisabled();
+  await expect(scrub).toBeDisabled();
+  const recordingEnd = Number(await scrub.getAttribute("max"));
+  await page.clock.runFor(1000);
+  await expect(replay).toHaveAttribute("aria-busy", "false");
+  await expect(replay.getByRole("button", { name: "Play" })).toBeEnabled();
+  await expect(scrub).toBeEnabled();
+  await page.clock.resume();
   const end = Number(await scrub.getAttribute("max"));
+  expect(end).toBeGreaterThan(recordingEnd);
   const start = Number(await scrub.getAttribute("min"));
   expect(end).toBeGreaterThan(start);
   await expect(scrub).toHaveValue(String(start));

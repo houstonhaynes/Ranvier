@@ -518,6 +518,7 @@ type internal MapMachine(settings: MapSettings) as this =
     let cursor = createSignal -1
     let count = createSignal 0
     let setup = createSignal 0
+    let preparing = createSignal true
     let playing = createSignal (not settings.Timeline)
     let speed = createSignal settings.Speed
     let caption = createSignal ""
@@ -593,6 +594,7 @@ type internal MapMachine(settings: MapSettings) as this =
     let fail (text: string) =
         batch (fun () ->
             error.Value <- text
+            preparing.Value <- false
             playing.Value <- false)
 
     let unlight (node: int) =
@@ -832,6 +834,7 @@ type internal MapMachine(settings: MapSettings) as this =
         unlightAll ()
 
         batch (fun () ->
+            preparing.Value <- true
             caption.Value <- ""
             cursor.Value <- -1
             setup.Value <- 0
@@ -1003,6 +1006,7 @@ type internal MapMachine(settings: MapSettings) as this =
                             |> ignore
                         with ex ->
                             fail $"{label}: {ex.Message}"
+                    | [] when current g generation -> preparing.Value <- false
                     | _ -> ()
 
                 stepFrom steps
@@ -1012,6 +1016,7 @@ type internal MapMachine(settings: MapSettings) as this =
                 playing.Value <- true
 
                 controls.Value <- made |> List.map (item attempt) |> Array.ofList
+                preparing.Value <- false
         with ex ->
             fail ("The example threw: " + ex.Message)
 
@@ -1119,6 +1124,7 @@ type internal MapMachine(settings: MapSettings) as this =
     member _.Cursor = cursor
     member _.Count = count
     member _.Setup = setup
+    member _.Preparing = preparing
     member _.Playing = playing
     member _.Speed = speed
     member _.Caption = caption
@@ -1447,11 +1453,21 @@ module internal MapView =
 
     let private timelineRow (settings: MapSettings) =
         div (Attrs.className "rv-map__timeline") {
-            button (Attrs.attribute ("type", "button"), Attrs.className "rv-map__button", Events.onClick (fun (m: MapMachine) _ -> m.Toggle ())) {
+            button (
+                Attrs.attribute ("type", "button"),
+                Attrs.className "rv-map__button",
+                Attrs.attribute ("disabled", (fun (m: MapMachine) -> if m.Preparing.Value then Some "" else None)),
+                Events.onClick (fun (m: MapMachine) _ -> m.Toggle ())
+            ) {
                 fun (m: MapMachine) -> if m.Playing.Value then "Pause" else "Play"
             }
 
-            button (Attrs.attribute ("type", "button"), Attrs.className "rv-map__button", Events.onClick (fun (m: MapMachine) _ -> m.Step ())) {
+            button (
+                Attrs.attribute ("type", "button"),
+                Attrs.className "rv-map__button",
+                Attrs.attribute ("disabled", (fun (m: MapMachine) -> if m.Preparing.Value then Some "" else None)),
+                Events.onClick (fun (m: MapMachine) _ -> m.Step ())
+            ) {
                 "Step"
             }
 
@@ -1482,6 +1498,7 @@ module internal MapView =
 
                 input (
                     Attrs.className "rv-map__scrub",
+                    Attrs.attribute ("disabled", (fun (m: MapMachine) -> if m.Preparing.Value then Some "" else None)),
                     Attrs.attribute ("type", "range"),
                     Attrs.attribute ("step", "1"),
                     Attrs.attribute ("aria-label", "Event"),
@@ -1504,6 +1521,7 @@ module internal MapView =
             | Live _ -> false
 
         div (
+            Attrs.attribute ("aria-busy", (fun (m: MapMachine) -> Some (if m.Preparing.Value then "true" else "false"))),
             Attrs.className (fun (m: MapMachine) ->
                 if m.Error.Value = "" then
                     "rv-map"

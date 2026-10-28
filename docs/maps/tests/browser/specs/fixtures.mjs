@@ -19,5 +19,9 @@ export async function openMaps(page, path) {
   const maps = page.locator(".rv-map");
   await expect(maps.first()).toBeVisible();
   await expect.poll(() => page.locator(".rv-map .rv-map-node").count()).toBeGreaterThan(0);
+  for (const map of await maps.all()) {
+    await expect(map).toHaveAttribute("aria-busy", "false");
+    await expect(map.locator(".rv-map-node").first()).toBeAttached();
+  }
   return maps;
 }
