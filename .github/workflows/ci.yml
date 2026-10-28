@@ -132,6 +132,8 @@ jobs:
         run: dotnet fsi build.fsx -- publish --dry-publish --skip-tests
       - name: Check the packages
         run: node .github/scripts/packages.cjs bin src
+      - name: Check shared DOM package consumers
+        run: node .github/scripts/dom-package-consumer.cjs bin
       - uses: actions/upload-artifact@v7
         with:
           name: nuget-packages

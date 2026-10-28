@@ -1,0 +1,58 @@
+name: DOM contracts
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/Ranvier.Dom/**'
+      - 'src/Fable.Ranvier.Dom/**'
+      - '.github/scripts/dom-contracts.*'
+      - '.github/workflows/dom-contracts.yml'
+  pull_request:
+    paths:
+      - 'src/Ranvier.Dom/**'
+      - 'src/Fable.Ranvier.Dom/**'
+      - '.github/scripts/dom-contracts.*'
+      - '.github/workflows/dom-contracts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Resolve generator revision
+        id: generator
+        run: |
+          node -e 'require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, "commit=" + require("./.github/scripts/dom-contracts.json").commit + "\n")'
+      - uses: actions/checkout@v7
+        with:
+          repository: ranvier-org/Ranvier.WebCore
+          ref: ${{ steps.generator.outputs.commit }}
+          path: .dom-generator
+          persist-credentials: false
+      - name: Resolve WebKit revision
+        id: webkit
+        run: |
+          node -e 'require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, "commit=" + require("./.dom-generator/pins.json").webkit.commit + "\n")'
+      - uses: actions/checkout@v7
+        with:
+          repository: WebKit/WebKit
+          ref: ${{ steps.webkit.outputs.commit }}
+          path: .dom-webkit
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /Source/WebCore/**/*.idl
+            /Source/WebCore/html/HTMLTagNames.in
+            /Source/WebCore/svg/svgtags.in
+          persist-credentials: false
+      - name: Check generated ABI and shared F# interfaces
+        run: node .github/scripts/dom-contracts.cjs .dom-generator .dom-webkit python

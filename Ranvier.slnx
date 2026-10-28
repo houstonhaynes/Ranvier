@@ -17,6 +17,8 @@
     <Project Path="examples/Ranvier.Mcp.Sample/Ranvier.Mcp.Sample.fsproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Ranvier.Dom/Ranvier.Dom.fsproj" />
+    <Project Path="src/Fable.Ranvier.Dom/Fable.Ranvier.Dom.fsproj" />
     <Project Path="src/Ranvier/Ranvier.fsproj" />
     <Project Path="src/Ranvier.CSharp/Ranvier.CSharp.fsproj" />
     <Project Path="src/Ranvier.Elmish/Ranvier.Elmish.fsproj" />
