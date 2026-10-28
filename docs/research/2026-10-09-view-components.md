@@ -1,6 +1,6 @@
 # Component and typed prop proof
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 The experimental component helper now expands to the direct component operation in Release Fable output. Both Tree and Program pass the component semantics proof. This is framework Task 4 evidence, not a production API freeze or an overall performance claim.
 

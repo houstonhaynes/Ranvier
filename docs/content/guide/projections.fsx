@@ -132,9 +132,9 @@ The key set stays the same. Only row 2's value changes.
 :::details Tests covering this behaviour
 
 Pinned by `editing one row wakes that row and no other`, `reordering the collection wakes Keys and no row`
-([Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs))
+([Projections.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs))
 and `an unchanged survivor is skipped`
-([MapSemantics.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/MapSemantics.fs)).
+([MapSemantics.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/MapSemantics.fs)).
 :::
 
 Rename one item, then reverse the collection. The row reader responds to its title change;
@@ -337,8 +337,8 @@ With `CreateFirst`, a factory failure fails and rolls back the pass.
 when consumers need those APIs. `Keys` and key readers remain available for membership and order.
 :::
 
-Behavior tests: [Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs)
-and [TrimmedPass.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/TrimmedPass.fs).
+Behavior tests: [Projections.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs)
+and [TrimmedPass.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/TrimmedPass.fs).
 
 ## Index projections
 

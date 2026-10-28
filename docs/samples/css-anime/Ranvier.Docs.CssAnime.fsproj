@@ -5,8 +5,8 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
-    <ProjectReference Include="../../../src/Ranvier.Css.View/Ranvier.Css.View.fsproj" />
+    <PackageReference Include="Ranvier.Css.Bindings" Version="$(RanvierCssVersion)" />
+    <PackageReference Include="Ranvier.Css.View" Version="$(RanvierCssVersion)" />
     <ProjectReference Include="../../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <Compile Include="Example.fs" />
   </ItemGroup>

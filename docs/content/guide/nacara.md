@@ -23,7 +23,7 @@ MyExamples.counter
 
 Use `setup` for declarations shared by later component fences, `render=name` for a component
 declared in the current fence, and `show=output` to display only its result.
-The [plugin README](https://github.com/shayanhabibi/Ranvier/tree/master/docs/plugin) covers registration
+The [plugin README](https://github.com/ranvier-org/Ranvier/tree/master/docs/plugin) covers registration
 and the complete fence options.
 
 ## What runs where

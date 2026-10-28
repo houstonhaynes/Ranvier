@@ -1,6 +1,6 @@
 # Remaining mount cost after cleanup
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 The production comparison remains **980 µs Ranvier / 533 µs Ripple / 313 µs Solid** at 128 rows: **1.84× Ripple** and **3.13× Solid**. This diagnostic capture profiles the cleaned-up code at `b1de7f5`; it does not replace the minified production comparison.
 

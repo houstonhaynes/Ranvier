@@ -58,7 +58,7 @@ The counter scenario `mvu-dispatch` compares a signal per field (`FieldSignalWri
 | A signal per field | 607 | 0 | EffectRuns 1, Flushes 1 |
 | `Mvu.Dispatch` | 48,133 | 400 | MemoRecomputes 64, EffectRuns 1, Flushes 1 |
 
-A dispatch costs about 80 times a field signal write: every observed selector re-runs, 64 recomputes per dispatch. `SelectorMemoWrite`, `ModelCopyOnly` and the 8- and 256-field cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*FieldWriteBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+A dispatch costs about 80 times a field signal write: every observed selector re-runs, 64 recomputes per dispatch. `SelectorMemoWrite`, `ModelCopyOnly` and the 8- and 256-field cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*FieldWriteBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 ## EditableBenchmarks
 
@@ -77,7 +77,7 @@ The counter scenarios `editable-edit` and `editable-upstream` measure the same t
 | `editable-edit` | 145,006 | 0 | MemoRecomputes 100, EffectRuns 100, Flushes 100 |
 | `editable-upstream` | 194,449 | 2,400 | MemoRecomputes 200, EffectRuns 100, Flushes 100 |
 
-A local edit costs about 1,450 instructions and allocates nothing; an upstream write costs about 1,940 instructions and 24 bytes, and recomputes two memos per write. `PlainSignalWrite` has no counter scenario of its own and no published figure yet; the timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*EditableBenchmarks*"`). The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+A local edit costs about 1,450 instructions and allocates nothing; an upstream write costs about 1,940 instructions and 24 bytes, and recomputes two memos per write. `PlainSignalWrite` has no counter scenario of its own and no published figure yet; the timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*EditableBenchmarks*"`). The full report is [`e13f159.md`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 ## BindingBenchmarks
 

@@ -1,6 +1,6 @@
 # Instruction-count erosion investigation — 2026-10-16
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 The Fable thread check is an avoidable regression. Previous-value memos and reverse-acquisition owner teardown have useful, tested contracts and evidence supporting their retention. The historical creation and disposal instruction deltas do not by themselves establish their steady-state cost: the Node counter protocol includes VM compilation and optimisation transitions.
 
@@ -18,7 +18,7 @@ The initial investigation below preceded production changes; its JavaScript no-g
 - These new measurements are elapsed time, not retired instructions. Each scenario runs in a separate process. They are deliberately distinct from the published full-suite, ten-warmup, N/2N counter protocol and must not replace its numbers or be presented as a framework ranking.
 - Hardware counters require an elevated Windows process. This session is not elevated, so no fresh retired-instruction result is claimed.
 
-The raw samples, summary, historical region analysis and reproduction scripts are in [`instruction-erosions/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions).
+The raw samples, summary, historical region analysis and reproduction scripts are in [`instruction-erosions/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions).
 
 To repeat the timing and V8 region audit, run from the repository root, with no build or other benchmark alongside:
 
@@ -130,4 +130,4 @@ Fresh verification of this source change:
 
 Direct field restoration in the two `RunHosted` overloads was also compared against conditional restoration, with the guard removed in both variants. Results were mixed across chain/update and normalized process ratios, so that change was not added.
 
-The follow-up's samples, verification commands, and IL comparison are recorded in [`instruction-erosions/affinity-conditionals.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/affinity-conditionals.json).
+The follow-up's samples, verification commands, and IL comparison are recorded in [`instruction-erosions/affinity-conditionals.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/affinity-conditionals.json).

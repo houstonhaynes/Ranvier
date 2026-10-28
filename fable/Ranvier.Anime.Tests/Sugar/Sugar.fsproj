@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
+    <PackageReference Include="Ranvier.Css.Bindings" Version="$(RanvierCssVersion)" />
     <ProjectReference Include="../../../src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
     <Compile Include="SugarChecks.fs" />
   </ItemGroup>

@@ -13,10 +13,6 @@
   <Folder Name="/Build/">
     <File Path="build.fsx" />
   </Folder>
-  <Folder Name="/examples/">
-    <Project Path="examples/Ranvier.Css.Example/Ranvier.Css.Example.fsproj" />
-    <Project Path="examples/Ranvier.Css.Utilities.Example/Ranvier.Css.Utilities.Example.fsproj" />
-  </Folder>
   <Folder Name="/examples/Fable.Ranvier.Playground/">
     <Project Path="examples/Fable.Ranvier.Playground/Playground.fsproj" />
     <Project Path="examples/Fable.Ranvier.Playground/tests/DomTests.fsproj" />
@@ -54,17 +50,11 @@
     <Project Path="experiments/Ranvier.View.Arms/Checks/TrimCallSite/TrimCallSite.fsproj" />
   </Folder>
   <Folder Name="/tools/">
-    <Project Path="tools/Ranvier.Css.Generate/Ranvier.Css.Generate.fsproj" />
-    <Project Path="tools/Ranvier.Css.Compile/Ranvier.Css.Compile.fsproj" />
     <Project Path="tools/Ranvier.Dom.Generate/Ranvier.Dom.Generate.fsproj" />
     <Project Path="tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj" />
     <Project Path="tools/Ranvier.Analyzers.Tests/Ranvier.Analyzers.Tests.fsproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Ranvier.Css/Ranvier.Css.fsproj" />
-    <Project Path="src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
-    <Project Path="src/Ranvier.Css.Build/Ranvier.Css.Build.fsproj" />
-    <Project Path="src/Ranvier.Css.View/Ranvier.Css.View.fsproj" />
     <Project Path="src/Ranvier/Ranvier.fsproj" />
     <Project Path="src/Fable.Ranvier/Fable.Ranvier.fsproj" />
     <Project Path="src/Ranvier.CSharp/Ranvier.CSharp.fsproj" />
@@ -79,9 +69,6 @@
     <Project Path="src/Ranvier.Mcp/Ranvier.Mcp.fsproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Ranvier.Css.Browser.Tests/Ranvier.Css.Browser.Tests.fsproj" />
-    <Project Path="tests/Ranvier.Css.Spec.Tests/Ranvier.Css.Spec.Tests.fsproj" />
-    <Project Path="tests/Ranvier.Css.Compile.Tests/Ranvier.Css.Compile.Tests.fsproj" />
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />
     <Project Path="tests/Ranvier.View.Twin.Tests/Ranvier.View.Twin.Tests.fsproj" />
     <Project Path="tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj" />

@@ -1,6 +1,6 @@
 # Array and modifier-function cleanup
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 The DOM foundation now uses arrays for modifiers, children and fragments. Modifiers are backend functions; the `Token` union and its interpreters are removed. Fable reuses the erased typed modifier array, avoiding the previous list-unwrapping copy. .NET unwraps the typed modifiers into a function array. Authoring arrays are retained, so callers should treat them as immutable after creating a view. Keyed snapshot copying remains in place.
 
@@ -12,7 +12,7 @@ Name validation uses a character loop instead of splitting strings and creating 
 
 ## Paired performance checkpoint
 
-The [raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/cleanup-results.json) compare the saved counter-free Release bundle from `ca3a5d5` against the cleanup bundle. Both are minified production builds. Three independent Chromium processes alternate variant order, discard three warmups and collect eleven rounds at widths 1, 16 and 128. Bundle hashes, all samples, correctness checks and retained heap readings are archived. Host setup and paint/layout are excluded; timings include GC and use the existing root-batch sizes.
+The [raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/cleanup-results.json) compare the saved counter-free Release bundle from `ca3a5d5` against the cleanup bundle. Both are minified production builds. Three independent Chromium processes alternate variant order, discard three warmups and collect eleven rounds at widths 1, 16 and 128. Bundle hashes, all samples, correctness checks and retained heap readings are archived. Host setup and paint/layout are excluded; timings include GC and use the existing root-batch sizes.
 
 At 128 rows, pooled median microseconds per operation were:
 
@@ -26,7 +26,7 @@ At 16 rows, pooled mounting improves by about 23%. One-row mounting has mixed pr
 
 ## Comparison with Ripple and Solid
 
-The subsequent [same-run framework comparison](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/cleanup-framework-results.json) rebuilds all adapters and measures the cleaned-up Ranvier alongside Fable.Ripple and Solid in the same production bundle. At 128 rows, pooled median microseconds are listed in **Ranvier / Fable.Ripple / Solid** order:
+The subsequent [same-run framework comparison](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/cleanup-framework-results.json) rebuilds all adapters and measures the cleaned-up Ranvier alongside Fable.Ripple and Solid in the same production bundle. At 128 rows, pooled median microseconds are listed in **Ranvier / Fable.Ripple / Solid** order:
 
 - Mount: **980.31 / 533.44 / 313.44**. Ranvier costs **1.84× Ripple** and **3.13× Solid**.
 - Update: **133.90 / 125.87 / 126.85**. Ranvier costs **1.06× Ripple** and **1.06× Solid**.

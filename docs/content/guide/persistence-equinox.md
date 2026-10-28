@@ -3,7 +3,7 @@ title: Equinox / FsCodec sample
 order: 29
 ---
 
-The [source sample](https://github.com/shayanhabibi/Ranvier/tree/master/samples/Ranvier.Persistence.Equinox)
+The [source sample](https://github.com/ranvier-org/Ranvier/tree/master/samples/Ranvier.Persistence.Equinox)
 implements `IStateStore` with Equinox and FsCodec. It uses Equinox's gRPC EventStoreDB backend,
 tested against KurrentDB 26.1.1.3690. The sample targets .NET 10 and keeps backend dependencies outside
 Ranvier's core and persistence packages.
@@ -106,7 +106,7 @@ A successful save changes the saved records' ETags; unrelated records retain the
   retain at least the latest snapshot.
 
 Adapt the event contract and Equinox access strategy to an application's storage needs. Journal transports
-remain separate work under [#185](https://github.com/shayanhabibi/Ranvier/issues/185).
+remain separate work under [#185](https://github.com/ranvier-org/Ranvier/issues/185).
 
 ## Integration tests
 

@@ -1,6 +1,6 @@
 # Keyed lists after the item identity change — 2026-10-15
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 - Machine: AMD Ryzen 9 9900X (12 cores, 62 GB), Windows 11 10.0.26200. Rider open and idle; every timing and profile ran one at a time, with no build alongside.
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release), Vite 8.3.2. Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
@@ -13,7 +13,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
 
 Absolute times are not comparable across days on this machine; ratios between frameworks measured in the same processes are. Ratios below 1 mean Ranvier is faster.
 
-Raw data in [`framework-performance/investigation/list-item-identity/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity):
+Raw data in [`framework-performance/investigation/list-item-identity/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity):
 
 - `timings-solid.json`: the timing protocol, all samples;
 - `heap.json`: heap snapshot diff, two processes;
@@ -22,7 +22,7 @@ Raw data in [`framework-performance/investigation/list-item-identity/`](https://
 
 ## Keyed list against Solid 2
 
-[`timings-solid.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/timings-solid.json). The protocol of the rerun note: five processes × (3 warmups + 21 shuffled rounds), a forced GC before every sample. Median ms, then the median same-round ratio `[per-process medians]`, and the ratio at `85e0f8c`:
+[`timings-solid.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/timings-solid.json). The protocol of the rerun note: five processes × (3 warmups + 21 shuffled rounds), a forced GC before every sample. Median ms, then the median same-round ratio `[per-process medians]`, and the ratio at `85e0f8c`:
 
 | Operation | Solid 2 (ms) | Production (ms) | Ratio | Ratio at `85e0f8c` | Target | |
 |---|---|---|---|---|---|---|
@@ -55,11 +55,11 @@ Per-process medians, ms (Production, then Solid 2), with the `85e0f8c` productio
 - Production's per-process medians lie within 4% of each other for every operation above, so the run shows no disturbance.
 - Solid 2's `swap1k` ran in its fast mode (0.10–0.14 ms) in all five processes; at `85e0f8c` three of five processes ran its slow mode (about 0.45 ms). Against the fast mode, swap1k moved from 6.37–6.88× to 3.25–4.67×.
 - Solid 2's `remove1k` ran its slow mode (0.39 ms) in the fifth process, where the ratio is 0.94. In the other four processes it is 2.91–3.67.
-- Heap snapshot diff ([`heap.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/heap.json), unminified, two processes): 1,171.9 bytes per row at 1,000 rows in both processes; 1,176.0 and 1,155.2 at 10,000 rows. Solid 2: 905.4 and 936.0, as before.
+- Heap snapshot diff ([`heap.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/heap.json), unminified, two processes): 1,171.9 bytes per row at 1,000 rows in both processes; 1,176.0 and 1,155.2 at 10,000 rows. Solid 2: 905.4 and 936.0, as before.
 
 ## Steady-state loop
 
-`keyed-gc-check.mjs`, the minified bundle, two processes, median of 40 per protocol, ms. "Loop" prepares a fresh list and runs the operation once per iteration inside one `evaluate`; "After CDP GC" is the timing protocol's step. The `85e0f8c` column is the one process of [`protocol-check.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-remove-profile/protocol-check.json).
+`keyed-gc-check.mjs`, the minified bundle, two processes, median of 40 per protocol, ms. "Loop" prepares a fresh list and runs the operation once per iteration inside one `evaluate`; "After CDP GC" is the timing protocol's step. The `85e0f8c` column is the one process of [`protocol-check.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-remove-profile/protocol-check.json).
 
 | Operation | Mode | Loop at `85e0f8c` | Loop, processes 1 / 2 | After CDP GC at `85e0f8c` | After CDP GC, processes 1 / 2 |
 |---|---|---|---|---|---|
@@ -76,7 +76,7 @@ In the loop, Ranvier ÷ Solid 2 is 2.9–3.3× for remove1k (8.1× at `85e0f8c`)
 
 ## Where the time goes now
 
-[`profile-loop.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/profile-loop.json). The method of the profile note: unminified bundle, 50 µs sampling, loop protocol (2,000 iterations for remove1k and swap1k, 1,000 for clear1k, 200 for remove10k), samples inside `measuredRun` only, the same buckets. Sampled ms per operation (share):
+[`profile-loop.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-item-identity/profile-loop.json). The method of the profile note: unminified bundle, 50 µs sampling, loop protocol (2,000 iterations for remove1k and swap1k, 1,000 for clear1k, 200 for remove10k), samples inside `measuredRun` only, the same buckets. Sampled ms per operation (share):
 
 | Bucket | remove1k (0.119; 0.311 at `85e0f8c`) | remove10k (1.638; 4.021) | swap1k (0.203; 0.403) | clear1k (0.660; 0.714) |
 |---|---|---|---|---|

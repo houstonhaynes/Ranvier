@@ -1,6 +1,6 @@
 # Keyed list region passes — 2026-10-15
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 - Machine: AMD Ryzen 9 9900X (12 cores, 62 GB), Windows 11 10.0.26200. Rider open; every timing and profile ran one at a time, with no build alongside. A game process (`deadlock.exe`) used about six cores until shortly before the runs; the runs started after it exited and the CPU load read 2–15%. Of three timing runs, two had one disturbed process (remove10k 4.50 and 5.22 ms against about 3.1 ms in the others); their cause is unknown and they were discarded. The third discarded run read swap1k at 2.321× and remove1k at 2.792×, with Solid 2 in its slow mode in two of its processes for each operation.
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release), Vite 8.3.2. Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
@@ -15,7 +15,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
 
 Absolute times are not comparable across days on this machine; ratios between frameworks measured in the same processes are. The absolute-time deltas against `1f1f1df` below are indicative only. Ratios below 1 mean Ranvier is faster.
 
-Raw data in [`framework-performance/investigation/list-region-passes/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes):
+Raw data in [`framework-performance/investigation/list-region-passes/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes):
 
 - `timings-solid.json`: the timing protocol, all samples;
 - `heap.json`: heap snapshot diff, two processes;
@@ -25,7 +25,7 @@ Raw data in [`framework-performance/investigation/list-region-passes/`](https://
 
 ## Keyed list against Solid 2
 
-[`timings-solid.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/timings-solid.json). The protocol of the rerun note: five processes × (3 warmups + 21 shuffled rounds), a forced GC before every sample. Median ms, then the median same-round ratio `[per-process medians]`, and the ratio at `1f1f1df`:
+[`timings-solid.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/timings-solid.json). The protocol of the rerun note: five processes × (3 warmups + 21 shuffled rounds), a forced GC before every sample. Median ms, then the median same-round ratio `[per-process medians]`, and the ratio at `1f1f1df`:
 
 | Operation | Solid 2 (ms) | Production (ms) | Ratio | Ratio at `1f1f1df` | Target | |
 |---|---|---|---|---|---|---|
@@ -59,7 +59,7 @@ Per-process medians, ms (Production, then Solid 2), with the `1f1f1df` productio
 - Two other runs of the same protocol each had one process with production remove10k at 4.50 and 5.22 ms, against about 3.1 ms in the others. They were discarded and are not reported here.
 - Solid 2's `swap1k` ran in its fast mode (0.11–0.14 ms) in all five processes, as at `1f1f1df` (0.10–0.14 ms). Against the fast mode, swap1k moved from 3.25–4.67× to 2.71–3.46×.
 - Solid 2's `remove1k` ran its fast mode (0.11–0.12 ms) in all five processes; at `1f1f1df` the fifth process ran its slow mode.
-- Heap snapshot diff ([`heap.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/heap.json), unminified, two processes): 1,179.9 bytes per row at 1,000 rows in both processes; 1,184.0 and 1,163.2 at 10,000 rows. Solid 2: 905.4 and 936.0, as before. The 8 bytes per row added at 1,000 rows match two retained 1,000-slot arrays (4-byte compressed slots): the region's copy of the previous items and the previous pass's rows. In `heap.json` the `array (object elements)` count rose from 4,008 to 4,010.
+- Heap snapshot diff ([`heap.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/heap.json), unminified, two processes): 1,179.9 bytes per row at 1,000 rows in both processes; 1,184.0 and 1,163.2 at 10,000 rows. Solid 2: 905.4 and 936.0, as before. The 8 bytes per row added at 1,000 rows match two retained 1,000-slot arrays (4-byte compressed slots): the region's copy of the previous items and the previous pass's rows. In `heap.json` the `array (object elements)` count rose from 4,008 to 4,010.
 
 ## Steady-state loop
 
@@ -80,7 +80,7 @@ In the loop, Ranvier ÷ Solid 2 is 2.1–2.5× for remove1k (2.9–3.3× at `1f1
 
 ## Where the time goes now
 
-[`profile-loop.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-loop.json). The method of the profile note: unminified bundle, 50 µs sampling, loop protocol (2,000 iterations for remove1k and swap1k, 1,000 for clear1k, 200 for remove10k), samples inside `measuredRun` only, the same buckets. Sampled ms per operation (share):
+[`profile-loop.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-loop.json). The method of the profile note: unminified bundle, 50 µs sampling, loop protocol (2,000 iterations for remove1k and swap1k, 1,000 for clear1k, 200 for remove10k), samples inside `measuredRun` only, the same buckets. Sampled ms per operation (share):
 
 | Bucket | remove1k (0.078; 0.119 at `1f1f1df`) | remove10k (0.992; 1.638) | swap1k (0.119; 0.203) | clear1k (0.398; 0.660) |
 |---|---|---|---|---|
@@ -99,7 +99,7 @@ Solid 2 in the same profiles: remove1k 0.030 ms, swap1k 0.058 ms, remove10k 0.34
 
 ### Per-task attribution
 
-Total time per function, ms per operation (share of the operation), from [`profile-functions.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-functions.json) and [`profile-functions-1f1f1df.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-functions-1f1f1df.json). "Row rebuild" is the layout callback's total minus `Row.Layout`: `keys |> Array.map projection.Get` at `1f1f1df`; at `e447e21`, the loop that takes unchanged rows from the previous pass and calls `Projection.Get` for the window.
+Total time per function, ms per operation (share of the operation), from [`profile-functions.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-functions.json) and [`profile-functions-1f1f1df.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-region-passes/profile-functions-1f1f1df.json). "Row rebuild" is the layout callback's total minus `Row.Layout`: `keys |> Array.map projection.Get` at `1f1f1df`; at `e447e21`, the loop that takes unchanged rows from the previous pass and calls `Projection.Get` for the window.
 
 | Change | Function | remove1k, `1f1f1df` → `e447e21` | remove10k | swap1k | clear1k |
 |---|---|---|---|---|---|

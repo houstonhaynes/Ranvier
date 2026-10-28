@@ -65,9 +65,9 @@ Try this in the [browser editor](getting-started.md).
 
 ## Pages
 
-- [Typed CSS](css.md): generated property helpers, reactive values and preserved user classes.
-- [Composite CSS utilities](css-utilities.md): reusable breakpoints, compositions and application conditions.
-- [Extracting and serving CSS](css-build.md): static extraction, CSS Modules and single-file output.
+- [Typed CSS](https://ranvier-org.github.io/Ranvier.Css/view/css/): generated property helpers, reactive values and preserved user classes.
+- [Composite CSS utilities](https://ranvier-org.github.io/Ranvier.Css/view/css-utilities/): reusable breakpoints, compositions and application conditions.
+- [Extracting and serving CSS](https://ranvier-org.github.io/Ranvier.Css/view/css-build/): static extraction, CSS Modules and single-file output.
 - [Getting started](getting-started.md): a counter, from project setup to a mounted DOM tree.
 - [Templates and bindings](templates.md): elements, text, attributes, properties and how bindings re-run.
 - [Components](components.md): the four declaration styles, setup, ids and child components.

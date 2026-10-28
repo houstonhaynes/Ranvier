@@ -51,7 +51,7 @@ host element, and that listener dispatches to the template handlers between the 
 host. The delegated set is `beforeinput`, `click`, `contextmenu`, `dblclick`, `focusin`, `focusout`,
 `input`, `keydown`, `keyup`, `mousedown`, `mousemove`, `mouseout`, `mouseover`, `mouseup`,
 `pointerdown`, `pointermove`, `pointerout`, `pointerover`, `pointerup`, `touchend`, `touchmove` and
-`touchstart` (`delegatedEvents` in [`Mounting.fs`](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Dom/Mounting.fs)).
+`touchstart` (`delegatedEvents` in [`Mounting.fs`](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View.Dom/Mounting.fs)).
 Every other event name, such as `change`, `submit`, `focus`, `blur` or `scroll`, attaches a listener to
 the element itself.
 

@@ -13,8 +13,8 @@ GitHub Actions runs on a pull request from a fork only after a maintainer approv
 The rules are defined in [`.github/rulesets`](.github/rulesets) and applied with the GitHub CLI:
 
 ```shell
-gh api -X POST repos/shayanhabibi/Ranvier/rulesets --input .github/rulesets/master.json
-gh api -X PUT repos/shayanhabibi/Ranvier/rulesets/<id> --input .github/rulesets/master.json   # update
+gh api -X POST repos/ranvier-org/Ranvier/rulesets --input .github/rulesets/master.json
+gh api -X PUT repos/ranvier-org/Ranvier/rulesets/<id> --input .github/rulesets/master.json   # update
 ```
 
 ## Before opening a pull request

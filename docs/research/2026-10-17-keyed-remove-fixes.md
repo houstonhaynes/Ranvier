@@ -23,7 +23,7 @@
 | version | `878ffe9` | cherry-pick of `ba65be1` (#89): `KeysVersion` and `ChangedSince` replace `ChangedRange`, which held its key arrays through JS `WeakRef`s; measured with the `Mounting.fs` of `a7e97a1` |
 | fix10 | `ae0e16a` | the template list reads its window through `ChangedSince`, and compares the two key arrays when the projection holds no window |
 
-Raw data in [`framework-performance/investigation/keyed-remove-fixes/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-remove-fixes):
+Raw data in [`framework-performance/investigation/keyed-remove-fixes/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-remove-fixes):
 
 - `<pair>/<bundle>-<n>.json`: three alternating processes per bundle, 3 warmups and 101 shuffled rounds, a forced CDP GC before every sample (the protocol of [the post-GC note](2026-10-17-arms-clear-and-post-gc.md)). `base-fix1` also holds `--pin` runs.
 - `profile-*.json`: CPU profiles of 100 remove10k operations (`--protocol=sample`), 50 µs sampling, unminified bundle; `pinned` keeps one 10,000-row list mounted.

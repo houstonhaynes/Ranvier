@@ -165,7 +165,7 @@
       }
       [...legend.children].forEach((button, index) => button.setAttribute('aria-pressed', String(!hidden.has(families[index]))));
       const date = new Date(selected.Date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-      const link = element('a', { href: `https://github.com/shayanhabibi/Ranvier/commit/${selected.Commit}`, class: 'rv-perf-sha' }, short(selected));
+      const link = element('a', { href: `https://github.com/ranvier-org/Ranvier/commit/${selected.Commit}`, class: 'rv-perf-sha' }, short(selected));
       provenance.replaceChildren(link, document.createTextNode(` · ${date} · ${selected.Subject}`));
       const available = [...new Set(allRows.map(row => row.Scenario))].filter(name => !group.length || group.some(prefix => name.startsWith(prefix))).sort();
       const currentScenario = scenario.select.value;
@@ -309,7 +309,7 @@
       [...legend.children].forEach((button, index) => button.setAttribute('aria-pressed', String(!hidden.has(references[index]))));
       const date = commit => new Date(commit.Date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
       provenance.replaceChildren(document.createTextNode(`${commits.length} recorded commits · ${short(commits[0])} (${date(commits[0])}) to `),
-        element('a', { href: `https://github.com/shayanhabibi/Ranvier/commit/${commits.at(-1).Commit}`, class: 'rv-perf-sha' }, short(commits.at(-1))),
+        element('a', { href: `https://github.com/ranvier-org/Ranvier/commit/${commits.at(-1).Commit}`, class: 'rv-perf-sha' }, short(commits.at(-1))),
         document.createTextNode(` (${date(commits.at(-1))})`));
       body.replaceChildren();
       for (const scenario of [...new Set(rows.map(row => row.Scenario))].sort()) {

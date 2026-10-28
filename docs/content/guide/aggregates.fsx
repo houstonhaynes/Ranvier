@@ -322,7 +322,7 @@ and folds it built; it stops observing the rows, and reads return the last state
 *)
 
 (**
-Behavior tests: [Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs).
+Behavior tests: [Combinators.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs).
 
 *)
 

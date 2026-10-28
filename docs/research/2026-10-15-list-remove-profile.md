@@ -1,6 +1,6 @@
 # Profile of the keyed list remove and swap path — 2026-10-15
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 ## Environment and commits
 
@@ -13,7 +13,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
   - `keyed-gc-check.mjs`: times one operation under several protocols in one process.
 - Builds of other commits: a throwaway worktree, since removed. Each build is the commit's `src/` and `experiments/` with the harness files of `26f633e` (`keyed-page.mjs`, `keyed-solid.jsx`, `vite.config.mjs`, `page.mjs`, `tests/DomTests.fsproj`, `tests/KeyedRowsPerf.fs`). The exception is `4353219`, built with its own harness and timed through its production mode `rows-C3`.
 
-Raw data in [`framework-performance/investigation/list-remove-profile/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-remove-profile):
+Raw data in [`framework-performance/investigation/list-remove-profile/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/list-remove-profile):
 
 - `profile-85e0f8c-loop.json`, `profile-85e0f8c-timing-protocol.json`, `profile-experiment-stable-tuples-loop.json`: buckets, the top 40 functions by self time and the top 50 by total time, per operation and framework.
 - `commits-run1.json`, `commits-run2.json`: per-commit timings.

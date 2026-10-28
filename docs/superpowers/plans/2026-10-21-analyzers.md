@@ -23,7 +23,7 @@ FSharp.Analyzers.Build 0.5.0, the `fsharp-analyzers` 0.41.0 CLI, Expecto 11.0.0-
   `[10.1.402]`, `net10.0`.
 - `tools/Ranvier.Analyzers` holds every rule; `tools/Ranvier.Analyzers.Tests` holds the Expecto suite.
 - One `[<CliAnalyzer>]` and one `[<EditorAnalyzer>]` entry per rule. `Message` carries no help link; the `HelpUri` of
-  the analyzer attribute does: `https://shayanhabibi.github.io/Ranvier/analyzers/ran001/` and so on.
+  the analyzer attribute does: `https://ranvier-org.github.io/Ranvier/analyzers/ran001/` and so on.
 - One shared traversal per file: a memoised index (a `ConditionalWeakTable` keyed on the
   `FSharpImplementationFileContents`) records, in one walk, each call with its lambda-context stack.
 - A rule set runs only when the project's `-r:` options name `Ranvier.dll`, `Ranvier.View.Portable.dll` or
@@ -1187,13 +1187,13 @@ In `Ranvier.Analyzers.fsproj`, add `<Compile Include="Rules/Fable.fs" />` after 
 ```fsharp
 [<CliAnalyzer("RAN002",
               "Generated union case tester in a Fable library",
-              "https://shayanhabibi.github.io/Ranvier/analyzers/ran002/")>]
+              "https://ranvier-org.github.io/Ranvier/analyzers/ran002/")>]
 let ran002Cli: Analyzer<CliContext> =
     fun context -> async { return runCli Rules.Fable.ran002 context }
 
 [<EditorAnalyzer("RAN002",
                  "Generated union case tester in a Fable library",
-                 "https://shayanhabibi.github.io/Ranvier/analyzers/ran002/")>]
+                 "https://ranvier-org.github.io/Ranvier/analyzers/ran002/")>]
 let ran002Editor: Analyzer<EditorContext> =
     fun context -> async { return runEditor Rules.Fable.ran002 context }
 ```
@@ -1523,13 +1523,13 @@ In `Analyzers.fs`, set `let rules: Rule list = [ Rules.Fable.ran001; Rules.Fable
 ```fsharp
 [<CliAnalyzer("RAN001",
               "Fable inlines a snapshot of a module mutable",
-              "https://shayanhabibi.github.io/Ranvier/analyzers/ran001/")>]
+              "https://ranvier-org.github.io/Ranvier/analyzers/ran001/")>]
 let ran001Cli: Analyzer<CliContext> =
     fun context -> async { return runCli Rules.Fable.ran001 context }
 
 [<EditorAnalyzer("RAN001",
                  "Fable inlines a snapshot of a module mutable",
-                 "https://shayanhabibi.github.io/Ranvier/analyzers/ran001/")>]
+                 "https://ranvier-org.github.io/Ranvier/analyzers/ran001/")>]
 let ran001Editor: Analyzer<EditorContext> =
     fun context -> async { return runEditor Rules.Fable.ran001 context }
 ```
@@ -2758,7 +2758,7 @@ let ran010: Rule =
 
 Add `<Compile Include="Rules/Core.fs" />` after `Rules/Fable.fs`; add `Rules.Core.ran010` to `Analyzers.rules`; add the
 `ran010Cli`/`ran010Editor` pair with title "Owned node created in a pure derivation" and HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran010/`, in the form of the RAN002 pair.
+`https://ranvier-org.github.io/Ranvier/analyzers/ran010/`, in the form of the RAN002 pair.
 
 - [ ] **Step 5: Write the docs page and the troubleshooting link**
 
@@ -3060,7 +3060,7 @@ let ran011: Rule =
 ```
 
 Register `Rules.Core.ran011` and the `ran011Cli`/`ran011Editor` pair (title "Async value created and read in the owner
-that replaces it", HelpUri `https://shayanhabibi.github.io/Ranvier/analyzers/ran011/`).
+that replaces it", HelpUri `https://ranvier-org.github.io/Ranvier/analyzers/ran011/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -3280,7 +3280,7 @@ let ran012: Rule =
 ```
 
 Register `Rules.Core.ran012` and the pair (title "Reactive read after the first await of an async memo", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran012/`).
+`https://ranvier-org.github.io/Ranvier/analyzers/ran012/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -3493,7 +3493,7 @@ let ran013: Rule =
 ```
 
 Register `Rules.Core.ran013` and the pair (title "Signal write or Pump on a thread-pool callback", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran013/`).
+`https://ranvier-org.github.io/Ranvier/analyzers/ran013/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -3668,7 +3668,7 @@ F# analyzers that report Ranvier traps at build time. Built against FSharp.Analy
 
 Install the CLI in the tool manifest: `dotnet tool install fsharp-analyzers --version 0.41.0`. `dotnet build` then
 prints `Foo.fs(12,9): warning RAN001: ...` after each build that compiles. The rules and their fixes are listed at
-https://shayanhabibi.github.io/Ranvier/analyzers/.
+https://ranvier-org.github.io/Ranvier/analyzers/.
 ````
 
 In `.github/scripts/packages.cjs`, add after `checkPackage`:
@@ -4246,7 +4246,7 @@ when the fixture uses `s`; use the lambda parameter's display name (the `Lambda`
 `s` if the reviewer flags it.
 
 Register `Rules.View.ran020` and the pair (title "Reactive read at template build time", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran020/`); add `<Compile Include="Rules/View.fs" />` after
+`https://ranvier-org.github.io/Ranvier/analyzers/ran020/`); add `<Compile Include="Rules/View.fs" />` after
 `Rules/Core.fs`.
 
 - [ ] **Step 5: Write the docs page and the troubleshooting link**
@@ -4600,7 +4600,7 @@ let ran021: Rule =
 ```
 
 Register `Rules.View.ran021` and the pair (title "Unstable list key", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran021/`).
+`https://ranvier-org.github.io/Ranvier/analyzers/ran021/`).
 
 - [ ] **Step 4: Write the docs page and the collections link**
 
@@ -4816,7 +4816,7 @@ Add `open FSharp.Compiler.CodeAnalysis` to `Rules/View.fs`. `show` inside arms r
 around it; the tests assert `contains`, and the docs page says the outermost definition is the one to hoist.
 
 Register `Rules.View.ran022` and the pair (title "Definition created on every region read", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran022/`). `runEditor` passes the editor's project results when it
+`https://ranvier-org.github.io/Ranvier/analyzers/ran022/`). `runEditor` passes the editor's project results when it
 has them; a missing project disables the property check only.
 
 - [ ] **Step 4: Write the docs page and the troubleshooting links**
@@ -5097,7 +5097,7 @@ let ran023: Rule =
 ```
 
 Register `Rules.View.ran023` and the pair (title "Invalid content parts on an element", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran023/`).
+`https://ranvier-org.github.io/Ranvier/analyzers/ran023/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -5368,7 +5368,7 @@ let ran024: Rule =
 signature in the extracted file and adapt the call if Task 17's merge changed it. If the generated builders omit a
 refused tag (`t.script`, `t.template`), the fixture uses the sugar tag type of the same name, and when neither exists
 the tag cannot be written literally, so its case leaves the test list with a ledger entry. Register `Rules.View.ran024` and the
-pair (title "Markup the server render refuses", HelpUri `https://shayanhabibi.github.io/Ranvier/analyzers/ran024/`).
+pair (title "Markup the server render refuses", HelpUri `https://ranvier-org.github.io/Ranvier/analyzers/ran024/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -5511,7 +5511,7 @@ let ran025: Rule =
 ```
 
 Register `Rules.View.ran025` and the pair (title "hydrateWith with queued commits", HelpUri
-`https://shayanhabibi.github.io/Ranvier/analyzers/ran025/`).
+`https://ranvier-org.github.io/Ranvier/analyzers/ran025/`).
 
 - [ ] **Step 4: Write the docs page and the troubleshooting link**
 
@@ -5667,7 +5667,7 @@ let ran015: Rule =
 ```
 
 Register `Rules.Core.ran015` after `ran013` and the pair (title "CancelPrevious with a body that ignores its token",
-HelpUri `https://shayanhabibi.github.io/Ranvier/analyzers/ran015/`).
+HelpUri `https://ranvier-org.github.io/Ranvier/analyzers/ran015/`).
 
 - [ ] **Step 4: Write the docs page**
 

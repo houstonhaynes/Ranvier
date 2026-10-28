@@ -72,7 +72,7 @@ when the document has none. `Decode` returns every failure as an `Error`:
 A codec reads the text that the other target wrote: dates, 64-bit integers, decimals and floats have
 one wire form on both targets. Use `Codecs.dateTimeOffset`, `Codecs.bigint` and `Codecs.decimal` for
 those types; Thoth's own members for them write differently on .NET and Fable and are marked obsolete.
-The [Ranvier.Wire README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.Wire/README.md)
+The [Ranvier.Wire README](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.Wire/README.md)
 lists the form of every type and the remaining differences between the targets.
 
 ## What to transfer

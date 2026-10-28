@@ -38,4 +38,4 @@ task {
   mode.
 
 Persisted inputs belong at the root of a graph or in a keyed factory. The trace dump is not a persistence format.
-Guide: [Persisted inputs](https://shayanhabibi.github.io/Ranvier/guide/persistence/).
+Guide: [Persisted inputs](https://ranvier-org.github.io/Ranvier/guide/persistence/).

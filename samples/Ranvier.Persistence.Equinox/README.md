@@ -53,7 +53,7 @@ Equinox appends against the loaded stream revision and reruns the decision on a 
 This sample targets small persisted state. Adapt the event contract, access strategy and category wiring
 for an application's requirements; other Equinox backends require their own integration tests.
 
-See the [guide](https://shayanhabibi.github.io/Ranvier/guide/persistence-equinox/) for the data flow and conditional-write example.
+See the [guide](https://ranvier-org.github.io/Ranvier/guide/persistence-equinox/) for the data flow and conditional-write example.
 
 ## Test
 

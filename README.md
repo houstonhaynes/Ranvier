@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://shayanhabibi.github.io/Ranvier/">Documentation</a>
+  <a href="https://ranvier-org.github.io/Ranvier/">Documentation</a>
   &middot;
-  <a href="https://shayanhabibi.github.io/Ranvier/benchmarks/">Benchmarks</a>
+  <a href="https://ranvier-org.github.io/Ranvier/benchmarks/">Benchmarks</a>
   &middot;
   <a href="LICENSE">MIT License</a>
 </p>
@@ -58,7 +58,7 @@ graph.Run(() =>
 });
 ```
 
-Read the [full documentation](https://shayanhabibi.github.io/Ranvier/).
+Read the [full documentation](https://ranvier-org.github.io/Ranvier/).
 
 ## Features
 

@@ -19,7 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
-        <ProjectReference Include="..\..\src\Ranvier.Css\Ranvier.Css.fsproj" />
+        <PackageReference Include="Ranvier.Css" Version="$(RanvierCssVersion)" />
     </ItemGroup>
 
 </Project>

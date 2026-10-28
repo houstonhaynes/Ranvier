@@ -2,7 +2,7 @@
 
 > This record's Solid figures are Solid 1.9.17 and are kept as an earlier measurement. The harness now builds Solid 2 (2.0.0-rc.14 with `@solidjs/compiler`); current comparisons are in [owner lifetime](../2026-10-13-owner-lifetime.md) and the [mount cost rationale](investigation/mount-rationale.md).
 
-Measured on 12 October 2026 in three independent Chromium 153.0.8010.12 processes on an AMD Ryzen 9 9900X. The [raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/results.json) contain all 1,188 samples, per-process medians, runtime/package versions, source hashes and 36 retained-heap readings. This is one small component workload, not a general framework ranking.
+Measured on 12 October 2026 in three independent Chromium 153.0.8010.12 processes on an AMD Ryzen 9 9900X. The [raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/results.json) contain all 1,188 samples, per-process medians, runtime/package versions, source hashes and 36 retained-heap readings. This is one small component workload, not a general framework ranking.
 
 Ranvier's update path is competitive with the two fine-grained libraries, but mounting, teardown and retained heap need attention. At 128 components it updates about 17% slower than Solid/Ripple and 45% faster than React's synchronous commits. It mounts about 3.2 times slower than Solid and twice as slowly as Ripple; disposal is about 7.4–7.8 times slower than those two.
 

@@ -7,17 +7,14 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const output = path.join(here, 'generated-types');
 await fs.mkdir(output, { recursive: true });
-const bindings = path.join(root, 'src/Ranvier.Css.Bindings/bin/Release/net10.0/Ranvier.Css.Bindings.dll');
 function dotnet(args, success = true) {
   const result = spawnSync('dotnet', args, { cwd: root, encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   const log = (result.stdout ?? '') + (result.stderr ?? '');
   if ((result.status === 0) !== success || result.error) throw new Error(log || String(result.error));
   return log;
 }
-try { await fs.access(bindings); }
-catch { dotnet(['build', 'src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj', '-c', 'Release', '-f', 'net10.0']); }
 const project = path.join(output, 'Types.fsproj');
-await fs.writeFile(project, `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include="${path.join(root, 'src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj')}"/><ProjectReference Include="${path.join(root, 'src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj')}"/><ProjectReference Include="${path.join(root, 'src/Ranvier.Css.View/Ranvier.Css.View.fsproj')}"/><Reference Include="Ranvier.Css.Bindings"><HintPath>${bindings}</HintPath></Reference><Compile Include="${path.join(root, 'docs/samples/css-anime/Example.fs')}"/><Compile Include="Types.fs"/></ItemGroup></Project>`);
+await fs.writeFile(project, `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include="${path.join(root, 'src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj')}"/><ProjectReference Include="${path.join(root, 'src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj')}"/><PackageReference Include="Ranvier.Css.View" Version="$(RanvierCssVersion)"/><PackageReference Include="Ranvier.Css.Bindings" Version="$(RanvierCssVersion)"/><Compile Include="${path.join(root, 'docs/samples/css-anime/Example.fs')}"/><Compile Include="Types.fs"/></ItemGroup></Project>`);
 const prefix = `module Types
 open Ranvier.Css
 open Ranvier.Anime

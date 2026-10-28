@@ -110,7 +110,7 @@ is the codec version and changes only when your payload format changes; the ETag
 - Keys are case-sensitive Unicode strings. The store also accepts an empty key, although `Persist.key` rejects it.
 
 This adapter implements state storage. A remote journal transport and a combined state/journal transaction
-are separate work under [#185](https://github.com/shayanhabibi/Ranvier/issues/185).
+are separate work under [#185](https://github.com/ranvier-org/Ranvier/issues/185).
 
 ## Run the integration suite
 

@@ -600,7 +600,7 @@ instead of an empty clean run.
   identifier.
 - **Docs.** `docs/content/analyzers/index.md` lists the codes; `docs/content/analyzers/ran001.md` and so on hold
   **Cause**, **Fix**, an example that triggers the rule, its fixed form, and **Suppression**, in the troubleshooting
-  pages' format. `HelpUri` is `https://shayanhabibi.github.io/Ranvier/analyzers/ran001/`. `docs/Site.fs` adds the
+  pages' format. `HelpUri` is `https://ranvier-org.github.io/Ranvier/analyzers/ran001/`. `docs/Site.fs` adds the
   section to the menu; each troubleshooting entry with a rule links to its page. The docs build compiles each page's
   examples, and the analyzer test suite runs every "triggers" example through its rule.
 

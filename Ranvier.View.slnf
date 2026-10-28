@@ -6,7 +6,6 @@
       "examples\\Fable.Ranvier.Playground\\tests\\DomTests.fsproj",
       "experiments\\Ranvier.View.Testing\\Ranvier.View.Testing.fsproj",
       "experiments\\Ranvier.View.Twin\\Ranvier.View.Twin.fsproj",
-      "src\\Ranvier.Css\\Ranvier.Css.fsproj",
       "src\\Ranvier\\Ranvier.fsproj",
       "src\\Fable.Ranvier\\Fable.Ranvier.fsproj",
       "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",

@@ -46,7 +46,7 @@ The counter scenario `chain-affinity` covers the same two checks: it writes the 
 | `Unchecked` | 2,177 | 0 | MemoRecomputes 4 |
 | `Serialised` | 2,516 | 0 | MemoRecomputes 4 |
 
-`Serialised` adds about 340 instructions per write and read of the chain, about 15 % over `Guarded`; `Unchecked` matches `Guarded` within noise. The timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*MemoBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+`Serialised` adds about 340 instructions per write and read of the chain, about 15 % over `Guarded`; `Unchecked` matches `Guarded` within noise. The timing cases are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*MemoBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 ## ChainBenchmarks
 

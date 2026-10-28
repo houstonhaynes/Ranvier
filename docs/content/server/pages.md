@@ -81,7 +81,7 @@ initial route, because fragments are not sent to the server.
 
 The playground uses the same helper: ordinary panels hydrate; the scheduling panel mounts
 explicitly to demonstrate commit modes. Its generated entry also connects the F# test controls.
-See the [playground README](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Fable.Ranvier.Playground/README.md)
+See the [playground README](https://github.com/ranvier-org/Ranvier/blob/master/examples/Fable.Ranvier.Playground/README.md)
 for commands and manual fixtures.
 
 The [lower-level deployment example](deployment.md) remains useful for applications that manage their own document

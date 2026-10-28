@@ -1,6 +1,6 @@
 # Keyed create and clear: where the time goes, an ordered `ReleasedAll` and a clearing pass that owns its markers' contents — 2026-10-19
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 ## Environment and commits
 
@@ -9,7 +9,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
 - Profile: `d264aed` (`poc/fable-ranvier-dom`, master `7853137` merged in), bundle `generated-keyed-profile` (unminified, `RANVIER_PERF_PROFILE`).
 - Timings: before `d264aed`, bundle `generated-keyed-rel0`; after `d264aed` with the `ReleasedAll` change, bundle `generated-keyed-rel1`. Both bundles were built before the timings, and every JSON records `commit: d264aed` and the change as uncommitted.
 
-Raw data in [`framework-performance/investigation/released-all/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/released-all): `profile-buckets.json` (`keyed-profile-buckets.mjs`: buckets, functions by self and by total time) and `rel0-1..3.json`, `rel1-1..3.json` (one process each, alternating).
+Raw data in [`framework-performance/investigation/released-all/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/released-all): `profile-buckets.json` (`keyed-profile-buckets.mjs`: buckets, functions by self and by total time) and `rel0-1..3.json`, `rel1-1..3.json` (one process each, alternating).
 
 ## Where the time goes
 
@@ -74,7 +74,7 @@ Tests: 380 Node DOM tests. New: a clear after a swap removes the rows in one ope
 
 A pass that empties a template `each` region, with every live laid-out row held for release, skips the validation of the laid-out rows and removes every node between the markers in one operation, foreign nodes included, without a report. A marker moved to another parent is still reported: `RegionSite.Parent` raises "Keyed-list boundaries were externally mutated" at the start of every pass. `Keyed.array` regions keep their row-by-row release.
 
-Before: `6e6c365` (the ordered `ReleasedAll`), bundle `generated-keyed-clr0`; after: `6e6c365` with the change, bundle `generated-keyed-clr1`. Raw data in [`framework-performance/investigation/clear-markers/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/clear-markers), `clr0-1..3.json` and `clr1-1..3.json`, same protocol as above:
+Before: `6e6c365` (the ordered `ReleasedAll`), bundle `generated-keyed-clr0`; after: `6e6c365` with the change, bundle `generated-keyed-clr1`. Raw data in [`framework-performance/investigation/clear-markers/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/clear-markers), `clr0-1..3.json` and `clr1-1..3.json`, same protocol as above:
 
 | Operation | Before | After |
 |---|---|---|
@@ -90,8 +90,8 @@ Tests: 383 Node DOM tests. New: a clear deletes a foreign node between the marke
 
 ## Remaining work
 
-- The staging fragment's second insertion on create (0.32 ms of 3.72). Building a pass into an empty region straight between its markers, with a failed pass releasing its rows there, saves nothing: create1k 5.450 [5.37, 5.45, 5.48] → 5.425 [5.56, 5.43, 5.38] ms, every operation's ranges overlapping (`b6f35f3` with and without the change, bundles `generated-keyed-dir0`, `generated-keyed-dir1`; [`investigation/direct-create/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/direct-create), create1k, replace1k, clear1k, remove1k and armsClear1k). Each row's insertion into the live parent costs what the fragment append and the single insertion cost. The change is not kept.
-- `Projection.RetireRemoved`'s lookup of each removed key (0.26 ms at 10,000 rows): [#96](https://github.com/shayanhabibi/Ranvier/pull/96) retired the entries found by the diff's walk. Timed on `c7a8d93` with and without its `Projections.fs` (bundles `generated-keyed-ret0`, `generated-keyed-ret1`; [`investigation/retire-entries/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/retire-entries)): clear10k 8.485 [8.53, 8.49, 8.23] → 8.445 [8.45, 8.51, 8.42] ms, every operation's ranges overlapping. #96 was closed unmerged: its CI counters failed the gate, with Node keyed-insert (memo-free rows) at +2.08% instructions and keyed-remove unchanged on .NET and +0.9% on Node.
+- The staging fragment's second insertion on create (0.32 ms of 3.72). Building a pass into an empty region straight between its markers, with a failed pass releasing its rows there, saves nothing: create1k 5.450 [5.37, 5.45, 5.48] → 5.425 [5.56, 5.43, 5.38] ms, every operation's ranges overlapping (`b6f35f3` with and without the change, bundles `generated-keyed-dir0`, `generated-keyed-dir1`; [`investigation/direct-create/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/direct-create), create1k, replace1k, clear1k, remove1k and armsClear1k). Each row's insertion into the live parent costs what the fragment append and the single insertion cost. The change is not kept.
+- `Projection.RetireRemoved`'s lookup of each removed key (0.26 ms at 10,000 rows): [#96](https://github.com/ranvier-org/Ranvier/pull/96) retired the entries found by the diff's walk. Timed on `c7a8d93` with and without its `Projections.fs` (bundles `generated-keyed-ret0`, `generated-keyed-ret1`; [`investigation/retire-entries/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/retire-entries)): clear10k 8.485 [8.53, 8.49, 8.23] → 8.445 [8.45, 8.51, 8.42] ms, every operation's ranges overlapping. #96 was closed unmerged: its CI counters failed the gate, with Node keyed-insert (memo-free rows) at +2.08% instructions and keyed-remove unchanged on .NET and +0.9% on Node.
 
 ## Reproduction
 

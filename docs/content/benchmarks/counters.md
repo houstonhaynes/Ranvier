@@ -21,9 +21,9 @@ Tiered Node counts depend on V8's optimisation history and are reported without 
 The static .NET and Node charts below are the historical `e13f159` run. The interactive
 views use recorded CI measurements (hardware counters and allocations on arm64, CPU time on x64)
 and identify the selected commit explicitly.
-The broader [October 4 report at `878f294`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md)
+The broader [October 4 report at `878f294`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/878f294.md)
 includes timed operators and additional derived/effect scenarios. The later
-[keyed-pass report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md)
+[keyed-pass report](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/6d496e7-untrimmable-pass.md)
 is a targeted comparison for #56, rather than a replacement for every chart panel.
 
 Each panel scales from zero to its largest bar, so bar lengths compare engines within a scenario,
@@ -75,11 +75,11 @@ show no bar. A negative subtraction is a measurement limitation, not negative en
 
 ### Fable core follow-up
 
-[#57](https://github.com/shayanhabibi/Ranvier/pull/57), merged as `2ce4b7d`, removes redundant Fable affinity/inbox work, observer/dependency slot wrappers, async continuation and lock callbacks, and checked scheduler queue stores. The .NET executable implementation is preserved.
+[#57](https://github.com/ranvier-org/Ranvier/pull/57), merged as `2ce4b7d`, removes redundant Fable affinity/inbox work, observer/dependency slot wrappers, async continuation and lock callbacks, and checked scheduler queue stores. The .NET executable implementation is preserved.
 
-The [source investigation at `d962b84`](https://github.com/shayanhabibi/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-generated-fable-savings.md) measured the combined patch before its core-only cherry-pick into `master`. Three fresh processes per version/scenario, forty warmups and twenty-one measured rounds gave median elapsed-time reductions of 36% for equal writes, 11% for updates, 26% for disposing 1,000 rows and 34% for creating 1,000 rows; the 2% chain difference was treated as noise. These are timings for that experiment, not fresh retired-instruction counts for #57. Creation/disposal remain sensitive to JIT state and warmup. Renderer changes and the measured playground bundle saving in that report were not merged by #57.
+The [source investigation at `d962b84`](https://github.com/ranvier-org/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-generated-fable-savings.md) measured the combined patch before its core-only cherry-pick into `master`. Three fresh processes per version/scenario, forty warmups and twenty-one measured rounds gave median elapsed-time reductions of 36% for equal writes, 11% for updates, 26% for disposing 1,000 rows and 34% for creating 1,000 rows; the 2% chain difference was treated as noise. These are timings for that experiment, not fresh retired-instruction counts for #57. Creation/disposal remain sensitive to JIT state and warmup. Renderer changes and the measured playground bundle saving in that report were not merged by #57.
 
-The companion [historical-counter investigation](https://github.com/shayanhabibi/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-instruction-erosions.md) compares `d87920f`, `878f294` and the PoC's `2ef3876` snapshot. Historical Node creation totals were nonlinear in N; separate traces of the isolated scenario found compilation/deoptimisation inside measured regions. Those traces demonstrate the protocol's vulnerability, not the exact compilation cost in the historical full-suite runs. The reported +18.5% creation delta therefore does not establish a steady-state source regression. The disposal gap remains an observation under that protocol, requiring a compilation-audited, scale-checked matched rerun before assigning it to a feature. No new hardware-counter acceptance run is claimed for #57.
+The companion [historical-counter investigation](https://github.com/ranvier-org/Ranvier/blob/d962b84e34d27f19b42e003131b2b5ac5e7a5540/docs/research/2026-10-16-instruction-erosions.md) compares `d87920f`, `878f294` and the PoC's `2ef3876` snapshot. Historical Node creation totals were nonlinear in N; separate traces of the isolated scenario found compilation/deoptimisation inside measured regions. Those traces demonstrate the protocol's vulnerability, not the exact compilation cost in the historical full-suite runs. The reported +18.5% creation delta therefore does not establish a steady-state source regression. The disposal gap remains an observation under that protocol, requiring a compilation-audited, scale-checked matched rerun before assigning it to a feature. No new hardware-counter acceptance run is claimed for #57.
 
 ## Wave B scenarios
 
@@ -136,5 +136,5 @@ A ▲ marks a commit where Ranvier's library counters changed; select it to insp
   adaptively.
 
 The full report, with cycles, branch misses, allocations and library counters per scenario, is
-[`docs/.ai/benchmarks/counters/e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md)
+[`docs/.ai/benchmarks/counters/e13f159.md`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md)
 in the repository.

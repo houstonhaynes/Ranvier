@@ -16,7 +16,7 @@ The playground suites pass 211 Node tests, including six delegation cases, and 2
 
 ## Measurements
 
-[Raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/delegation-framework-results.json) use the framework harness against Solid 2.0.0-rc.14: three Chromium processes, all 36 correctness checks passing. At 128 rows, µs per operation:
+[Raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/delegation-framework-results.json) use the framework harness against Solid 2.0.0-rc.14: three Chromium processes, all 36 correctness checks passing. At 128 rows, µs per operation:
 
 | | Ranvier | Solid 2 | Ripple | React |
 |---|---|---|---|---|

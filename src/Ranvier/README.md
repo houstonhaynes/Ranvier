@@ -29,7 +29,7 @@ factories and extension methods.
 
 Package builds from this source include F# sources for Fable's JavaScript target. The same core APIs support
 signals, memos, effects, bindings and collections on both targets; see the
-[Fable guide](https://shayanhabibi.github.io/Ranvier/fable/).
+[Fable guide](https://ranvier-org.github.io/Ranvier/fable/).
 
 ## Fixed-dependency bindings and ownership
 
@@ -41,8 +41,8 @@ Use a memo before `bindMemo` to derive a target value, or an effect for work wit
 
 Owners dispose children and cleanups together in reverse acquisition order. A cleanup registered
 after a child is created runs before that child is disposed, both on disposal and before a run's
-owned resources are replaced. See [Bindings](https://shayanhabibi.github.io/Ranvier/guide/bindings/)
-and [Cleanup](https://shayanhabibi.github.io/Ranvier/guide/cleanup/).
+owned resources are replaced. See [Bindings](https://ranvier-org.github.io/Ranvier/guide/bindings/)
+and [Cleanup](https://ranvier-org.github.io/Ranvier/guide/cleanup/).
 
 ## Keyed row factories
 
@@ -54,7 +54,7 @@ keeps the previously applied rows, items and keys until a source change retries 
 row memo. It suits a view object whose factory creates its own bindings. Key readers are supported;
 value readers, `AsObservableCollection` and projection view/aggregate operators are not. Use `createProjectionWith`
 when those consumers need reactive row values. See
-[Projections](https://shayanhabibi.github.io/Ranvier/guide/projections/).
+[Projections](https://ranvier-org.github.io/Ranvier/guide/projections/).
 
 ## Per-node equality
 
@@ -126,10 +126,10 @@ with explicit costs for membership and order.
 
 `Ranvier.Traced` is the same assembly, namespaces and version built with the per-graph event log and its queries.
 Reference it in place of `Ranvier` for development builds; see
-[Tracing](https://shayanhabibi.github.io/Ranvier/guide/tracing/).
+[Tracing](https://ranvier-org.github.io/Ranvier/guide/tracing/).
 
 ## Links
 
-- [Documentation](https://shayanhabibi.github.io/Ranvier/)
-- [Source](https://github.com/shayanhabibi/Ranvier)
-- [MIT License](https://github.com/shayanhabibi/Ranvier/blob/master/LICENSE)
+- [Documentation](https://ranvier-org.github.io/Ranvier/)
+- [Source](https://github.com/ranvier-org/Ranvier)
+- [MIT License](https://github.com/ranvier-org/Ranvier/blob/master/LICENSE)

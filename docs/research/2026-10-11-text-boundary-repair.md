@@ -20,7 +20,7 @@ Mounting inside a core batch or creating a keyed row during a graph flush can de
 
 ## Performance evidence
 
-The [raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/binding-minimal/browser-results.json) contain 1,650 samples, three independent Chromium processes, three warmups and eleven measured rounds per case. Fable 5.18.0 Release, Chromium 153.0.8010.12, Node 26.7.0, Ryzen 9 9900X, Windows 10.0.26200, isolated high-resolution timers.
+The [raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/binding-minimal/browser-results.json) contain 1,650 samples, three independent Chromium processes, three warmups and eleven measured rounds per case. Fable 5.18.0 Release, Chromium 153.0.8010.12, Node 26.7.0, Ryzen 9 9900X, Windows 10.0.26200, isolated high-resolution timers.
 
 The frozen benchmark-only `BindingBaselineMounting.fs` is the mounting source from `79b9e96`, with its module name changed. Both implementations use the same current core and identical benchmark handle records. This isolates the renderer comparison; it does not recreate historical core performance. The baseline source is excluded from the application project. Run `rtk npm run bench:binding` in the playground to reproduce.
 

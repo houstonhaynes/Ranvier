@@ -14,7 +14,7 @@ The counter bench (`bench/Ranvier.Counters`, `fable/Ranvier.Counters`, `counters
 
 ## Runner capabilities
 
-Measured on 2026-10-16 with throwaway workflows on branch `spike/ci-pmc-probe` (runs [38841846197](https://github.com/shayanhabibi/Ranvier/actions/runs/38841846197) and [38842531656](https://github.com/shayanhabibi/Ranvier/actions/runs/38842531656)):
+Measured on 2026-10-16 with throwaway workflows on branch `spike/ci-pmc-probe` (runs [38841846197](https://github.com/ranvier-org/Ranvier/actions/runs/38841846197) and [38842531656](https://github.com/ranvier-org/Ranvier/actions/runs/38842531656)):
 
 | Runner | CPU | Hardware counters |
 |---|---|---|

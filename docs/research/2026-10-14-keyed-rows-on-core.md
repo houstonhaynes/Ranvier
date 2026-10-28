@@ -5,7 +5,7 @@
 - Date: 2026-10-14.
 - Commit: production code at `ab68bde` (`poc/fable-ranvier-dom`, Tasks 1–9). Every run used the throwaway tree committed afterwards as `4353219` on `measure/keyed-rows-on-core`, which is never merged. Each JSON records `commit: ab68bde` and a `dirty` list of the throwaway files. The timing files' `sourceHashes` match `4353219`.
 
-Raw data, in [`framework-performance/investigation/keyed-rows-on-core/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core): `counters.json`, `heap.json`, `timings.json`, `timings-ab-direct.json`, `timings-ab-swapped.json`, `timings-solid.json`, `core.json`, `bundle.json`.
+Raw data, in [`framework-performance/investigation/keyed-rows-on-core/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core): `counters.json`, `heap.json`, `timings.json`, `timings-ab-direct.json`, `timings-ab-swapped.json`, `timings-solid.json`, `core.json`, `bundle.json`.
 
 The harness is the one from Keyed-row cost (`docs/research/2026-10-14-keyed-row-cost.md` on `research/keyed-row-cost`, `aa5b811`). The settings match it unless stated: shuffled paired rounds, a forced GC before every sample, and `flush()` inside each timed write.
 
@@ -25,7 +25,7 @@ The harness is the one from Keyed-row cost (`docs/research/2026-10-14-keyed-row-
 
 ### Op counters
 
-[`counters.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/counters.json). `RanvierCounters=true` builds, one run of each operation under jsdom after its untimed setup on a fresh list.
+[`counters.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/counters.json). `RanvierCounters=true` builds, one run of each operation under jsdom after its untimed setup on a fresh list.
 
 | Operation | Variant | Signals | Memos | Effects | Owners | Edges + / − | Observers + / − | Memo recomputes | Effect runs | Flushes | Factory rows | Memo-free rows |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -46,7 +46,7 @@ The harness is the one from Keyed-row cost (`docs/research/2026-10-14-keyed-row-
 
 ### Retained heap by constructor
 
-[`heap.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/heap.json). Each figure is a CDP heap-snapshot diff of one page: an empty mounted list, then the same list after `create(rows)`. Unminified, two processes. Each bundle holds one core build: A runs in the baseline bundle, B to C3 in the option bundle. Bytes per row (objects per row), 1,000 rows, first process:
+[`heap.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/heap.json). Each figure is a CDP heap-snapshot diff of one page: an empty mounted list, then the same list after `create(rows)`. Unminified, two processes. Each bundle holds one core build: A runs in the baseline bundle, B to C3 in the option bundle. Bytes per row (objects per row), 1,000 rows, first process:
 
 | Constructor | A | B | C1 | C2 | C3 | Solid 2 |
 |---|---|---|---|---|---|---|
@@ -82,7 +82,7 @@ The harness is the one from Keyed-row cost (`docs/research/2026-10-14-keyed-row-
 
 ### Timings
 
-[`timings.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings.json). Five Chromium processes × (3 warmups + 21 rounds). A, B, C1, C2, C3 and Solid 2 alternate in one page, in a seeded shuffled order per round. Minified production bundle. Median milliseconds, then the median same-round ratio to Solid 2:
+[`timings.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings.json). Five Chromium processes × (3 warmups + 21 rounds). A, B, C1, C2, C3 and Solid 2 alternate in one page, in a seeded shuffled order per round. Minified production bundle. Median milliseconds, then the median same-round ratio to Solid 2:
 
 | Operation | Solid 2 (ms) | A | B | C1 | C2 | C3 |
 |---|---|---|---|---|---|---|
@@ -114,7 +114,7 @@ Same-round ratios between variants, median `[per-process medians]`:
 
 The arm operations need an arm adapter for every mode in the page, so they do not run here. They run in [Production against Solid 2](#production-against-solid-2).
 
-**Bundle-position control.** In the six-mode page, B's core is the first module graph in the bundle and A's is the second. Two further runs time A and B alone, each with 5 processes × 31 shuffled rounds. [`timings-ab-direct.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-ab-direct.json) runs the bundle as built. [`timings-ab-swapped.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-ab-swapped.json) uses `RANVIER_ROWS_SWAPPED=true`, which exchanges the two builds' import positions. Each variant picks its fixture by core build, so A stays on the baseline core in both runs and neither column is inverted. B / A, median `[per-process medians]`:
+**Bundle-position control.** In the six-mode page, B's core is the first module graph in the bundle and A's is the second. Two further runs time A and B alone, each with 5 processes × 31 shuffled rounds. [`timings-ab-direct.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-ab-direct.json) runs the bundle as built. [`timings-ab-swapped.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-ab-swapped.json) uses `RANVIER_ROWS_SWAPPED=true`, which exchanges the two builds' import positions. Each variant picks its fixture by core build, so A stays on the baseline core in both runs and neither column is inverted. B / A, median `[per-process medians]`:
 
 | Operation | As built | Exchanged | Geometric mean |
 |---|---|---|---|
@@ -133,7 +133,7 @@ With bundle position controlled, B is within 1% of A on create, replace, update,
 
 ### Pure-core workload
 
-[`core.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/core.json), `bench/Ranvier.RowsBench`. Each row's factory creates one effect reading its label, and one effect reads `Keys` and every row untracked. There is no DOM. The bench runs 21 rounds, 10 warmups and 21 samples per process, with one process per variant per round in rotating order. .NET is Release net10.0; Node runs the Fable build with `--expose-gc`. Median ms of A, then the median `[interquartile range]` of the per-round ratios:
+[`core.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/core.json), `bench/Ranvier.RowsBench`. Each row's factory creates one effect reading its label, and one effect reads `Keys` and every row untracked. There is no DOM. The bench runs 21 rounds, 10 warmups and 21 samples per process, with one process per variant per round in rotating order. .NET is Release net10.0; Node runs the Fable build with `--expose-gc`. Median ms of A, then the median `[interquartile range]` of the per-round ratios:
 
 | Runtime | Operation | A (ms) | B / A | C1 / B | C2 / B | C3 / B | C3 / A |
 |---|---|---|---|---|---|---|---|
@@ -158,7 +158,7 @@ With bundle position controlled, B is within 1% of A on create, replace, update,
 
 ### Bundle size
 
-[`bundle.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/bundle.json): minified Vite library builds of one entry each. Bytes, minified / gzip / Brotli:
+[`bundle.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/bundle.json): minified Vite library builds of one entry each. Bytes, minified / gzip / Brotli:
 
 | Entry | A (baseline) | B (options compiled in) | B − A |
 |---|---|---|---|
@@ -170,7 +170,7 @@ The fixture row includes the measurement switch: the option build carries row fo
 
 ## Production against Solid 2
 
-[`timings-solid.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-solid.json). C3 (production rows; arms through the production arm adapter) and Solid 2 alone in one page. Five processes × (3 warmups + 21 shuffled rounds). Median ms, then the median same-round ratio `[per-process medians]`:
+[`timings-solid.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/keyed-rows-on-core/timings-solid.json). C3 (production rows; arms through the production arm adapter) and Solid 2 alone in one page. Five processes × (3 warmups + 21 shuffled rounds). Median ms, then the median same-round ratio `[per-process medians]`:
 
 | Operation | Solid 2 (ms) | Production (ms) | Ratio | Target | |
 |---|---|---|---|---|---|

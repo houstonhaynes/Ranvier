@@ -25,15 +25,15 @@ dependency requires the Xantham Cloudsmith feed. Add it in `nuget.config`:
 </packageSourceMapping>
 ```
 
-The [installation guide](https://shayanhabibi.github.io/Ranvier/guide/installation/#views) gives the full file.
+The [installation guide](https://ranvier-org.github.io/Ranvier/guide/installation/#views) gives the full file.
 
 ## View sugar
 
 `Ranvier.View.Sugar` provides lowercase tags, reactive control flow and component declarations
 that keep setup beside the view. Each declaration lowers to one `Component.define` call and
 `TemplateBuilder` operations. The result works with server rendering, browser mounting and hydration.
-Start with the [view guide](https://shayanhabibi.github.io/Ranvier/view/); the
-[design spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md)
+Start with the [view guide](https://ranvier-org.github.io/Ranvier/view/); the
+[design spec](https://github.com/ranvier-org/Ranvier/blob/master/docs/superpowers/specs/2026-10-20-view-sugar-v2-design.md)
 records the rationale and measurements.
 
 ## Opening the sugar
@@ -458,4 +458,4 @@ let mvuParent = Component.ofMembers<MvuParent, _> ()
 | `Component.ofClass` row | +892 B |
 | all three rows, against an explicit entry holding their three twins | +869 B |
 
-Unused sugar costs 0 B. The emitted sugar modules contain 0 `curry`, `uncurry` or `partialApply`. The tables and raw files are in the [measurements note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-20-view-sugar-v2.md).
+Unused sugar costs 0 B. The emitted sugar modules contain 0 `curry`, `uncurry` or `partialApply`. The tables and raw files are in the [measurements note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-20-view-sugar-v2.md).

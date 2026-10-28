@@ -13,7 +13,7 @@ later instrumentation changes are held to.
 Baseline figures come from `f48a3a7`, recorded on 2026-10-24 on an AMD Ryzen 9
 9900X under Windows 11 with .NET 10.0.13, Node.js 26.7.0 (fickl 0.5.3, fable-library-js 2.9.0)
 and Chromium 156. The raw results, the methodology and the machine are in
-[`docs/.ai/benchmarks/tracing/f48a3a7`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/f48a3a7/README.md).
+[`docs/.ai/benchmarks/tracing/f48a3a7`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/tracing/f48a3a7/README.md).
 The checkpoint and incremental-read follow-ups below cite their separate `b786373` measurements.
 These are historical runs; upgrading the compiler or runtime requires a new comparison.
 
@@ -57,7 +57,7 @@ slope against update count minus the untraced slope, measured after a full colle
 Without a checkpoint, history grows linearly: 100,000 `memo` updates hold 1.4 million events,
 about 88 MB on .NET. Checkpointed 100 updates before each measurement, the same graph retains
 1,400 events and 156 KB on .NET (890 KB on Node.js) at 100,000 updates, with a retained slope
-under 1 B per update ([`b786373`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)). In Chromium, a mounted keyed list retains about 600 to 700 more bytes per row
+under 1 B per update ([`b786373`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)). In Chromium, a mounted keyed list retains about 600 to 700 more bytes per row
 traced: 1,111 against 1,816 bytes per row at 1,000 rows, 976 against 1,584 at 10,000.
 
 ### Time and allocation per write
@@ -109,7 +109,7 @@ The tail read copies the log with `Trace.events` and slices the events after the
 It reads 1,400 new events at every checkpoint, yet its cost follows the length of the whole log.
 `Trace.eventsSince` reads the same events from a seq cursor and costs what it returns: 1.4 to
 1.9 µs and 54.7 KB at 1,000 to 100,000 updates on .NET, 2 µs or less on Node.js
-([`b786373`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)).
+([`b786373`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/tracing/b786373/README.md)).
 The signal maps read with it.
 
 `Trace.history` is quadratic in the run count: 11.5 ms at 1,000 updates, 104 ms at 3,000 and

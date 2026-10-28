@@ -1,6 +1,6 @@
 # Ranvier.CSharp
 
-C# entry points for [Ranvier](https://github.com/shayanhabibi/Ranvier): the `Reactive` factories take
+C# entry points for [Ranvier](https://github.com/ranvier-org/Ranvier): the `Reactive` factories take
 delegates, and extension methods cover `Graph.Run`, `Signal.Update` and the projection operators.
 
 ## Per-node equality
@@ -69,15 +69,15 @@ and cancels the token of the one in progress; `IsSearching` and `Error` follow t
 
 ## Binding to XAML
 
-The core's [fixed-dependency bindings](https://shayanhabibi.github.io/Ranvier/guide/bindings/)
+The core's [fixed-dependency bindings](https://ranvier-org.github.io/Ranvier/guide/bindings/)
 copy one source to a target. The `Reactive` facade has no `BindSignal` or `BindMemo` factories;
 the XAML notification adapter below serves view-model properties.
 
 `ReactiveBindings` raises `INotifyPropertyChanged` and `INotifyDataErrorInfo` for view-model properties backed by
 memos and signals, inside any existing view model; `ReactiveObject` is a base class over it. See the
-[C# guide](https://github.com/shayanhabibi/Ranvier/blob/master/docs/content/guide/csharp.md#binding-to-xaml).
+[C# guide](https://github.com/ranvier-org/Ranvier/blob/master/docs/content/guide/csharp.md#binding-to-xaml).
 `ReactiveCommand` is an `ICommand` whose `CanExecute` and busy state come from graph nodes; see
-[Commands](https://github.com/shayanhabibi/Ranvier/blob/master/docs/content/guide/csharp.md#commands).
+[Commands](https://github.com/ranvier-org/Ranvier/blob/master/docs/content/guide/csharp.md#commands).
 
 ## Editable collections
 
@@ -105,7 +105,7 @@ edits if the callback throws.
 for unequal settled values under the graph policy. First reads and overflow report a reset.
 Deltas contain coalesced key hints: read current values through the projection and handle its
 pending/error states there. Dispose readers to release shared observation. See the
-[C# collection guide](https://shayanhabibi.github.io/Ranvier/guide/csharp/#collections).
+[C# collection guide](https://ranvier-org.github.io/Ranvier/guide/csharp/#collections).
 
 ## Tracing
 

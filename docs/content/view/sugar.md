@@ -6,7 +6,7 @@ title: Sugar
 and component helpers. It produces the same template tree, server HTML and mounted resources as
 the [explicit builder](templates.md#the-explicit-form).
 
-The [view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md)
+The [view sugar README](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md)
 contains the full vocabulary, diagnostics and costs.
 
 ## Opening the sugar
@@ -31,7 +31,7 @@ sugar:
 names, requires qualified access (`open` of it fails with FS0892). An alias,
 `module H = Ranvier.View.Dom.Generated.Html`, compiles beside the sugar's tags.
 
-See [Opening the sugar](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#opening-the-sugar)
+See [Opening the sugar](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#opening-the-sugar)
 in the README.
 
 ## Tags
@@ -66,7 +66,7 @@ record field declared only by the instance's record needs no annotation; annotat
 a lambda that reads a class member (a `Signal`, a `Memo`, a class component) or a record label that a
 later record also declares. A missing annotation is reported at the element (FS0001, FS0193 or FS0041).
 The README's
-[Inference rule](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#inference-rule)
+[Inference rule](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#inference-rule)
 states the rule exactly, with a table of cases.
 
 Inside `Component.define setup (fun t -> ...)`, `t.` members carry the instance type into their
@@ -92,5 +92,5 @@ the row instance. Follow the linked pages for examples and diagnostics.
 
 Every sugar form except `Component.ofClass` mounts the same owners, effects, listeners and DOM writes as
 its explicit twin. The README's
-[Costs](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#costs)
+[Costs](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#costs)
 section gives the bundle size of each style and the per-instance cost of `Component.ofClass`.

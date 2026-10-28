@@ -32,7 +32,7 @@ The workflow exchanges GitHub's OIDC token for a short-lived NuGet key immediate
 Configure a policy on [NuGet Trusted Publishing](https://www.nuget.org/account/trustedpublishing):
 
 - NuGet owner/user: `shayan.habibi` (or set the repository variable `NUGET_USER` for another owner).
-- Repository owner: `shayanhabibi`; repository: `Ranvier`.
+- Repository owner: `ranvier-org`; repository: `Ranvier`.
 - Workflow filename: **`publish.yml`**, without `.github/workflows/`.
 - Environment: leave empty; this workflow does not declare an environment.
 - Allow new packages and new versions for the `Ranvier*` and `Fable.Ranvier*` package patterns.

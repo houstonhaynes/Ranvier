@@ -6,7 +6,7 @@ Measurements of the `Arms.Match` implementation ([spec](../superpowers/specs/202
 **Summary.** The plugin is found through a project reference and the `.targets`. On .NET a site lowers in about
 1.1-1.4 ms once the process is warm; the first five-target site of a process costs 125-146 ms, 9-12 ms after
 `Arms.Prepare ()` and about 7 ms with ReadyToRun as well. Under Fable, `Arms.Match` lowers to the payload-direct shape
-([#157](https://github.com/shayanhabibi/Ranvier/issues/157)): one `armOf` definition per target over the arm's values
+([#157](https://github.com/ranvier-org/Ranvier/issues/157)): one `armOf` definition per target over the arm's values
 thunk, and no cells. The first site costs 189 B gzip over its twin (budget 400 B) and each further site 8 B (budget
 60 B). The retained heap per row is 1.2 % above `ranvier-sugar` after create and after a switch, at 1,000 and 10,000
 rows. The Chromium gate is a paired median against the sugared twin of at most 1.05 on create and clear, 1.04 on

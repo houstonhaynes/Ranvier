@@ -16,18 +16,18 @@ function docsOnly(paths) {
   return files.length > 0 && files.every(file => !compiledCssDocs.test(file) && docsPatterns.some(pattern => pattern.test(file)));
 }
 
-const compiledCssDocs = /^docs\/(?:samples\/css(?:\/|-anime\/)|content\/view\/css(?:\.md$|-))/;
+const compiledCssDocs = /^docs\/samples\/css-anime\//;
 const servicePaths = {
   marten: /^(?:adapters|tests)\/Ranvier\.Persistence\.Marten(?:\.Tests)?\//,
   kurrentdb: /^(?:adapters|tests)\/Ranvier\.Persistence\.KurrentDB(?:\.Tests)?\//,
   equinox: /^(?:samples|tests)\/Ranvier\.Persistence\.Equinox(?:\.Tests)?\//,
 };
 const uiPaths = [
-  /^src\/(?:Ranvier\.Css(?:\.[^/]+)?|Ranvier\.View(?:\.[^/]+)?|Fable\.Ranvier\.Anime)\//,
-  /^tools\/Ranvier\.(?:Css\.[^/]+|Dom\.Generate)\//,
-  /^tests\/Ranvier\.(?:Css\.[^/]+|View\.[^/]+)\//,
+  /^src\/(?:Ranvier\.View(?:\.[^/]+)?|Fable\.Ranvier\.Anime)\//,
+  /^tools\/Ranvier\.Dom\.Generate\//,
+  /^tests\/Ranvier\.View\.[^/]+\//,
   /^fable\//,
-  /^examples\/(?:Ranvier\.Css\.[^/]+|Ranvier\.Motion|Ranvier\.Hydration|Fable\.Ranvier\.Playground)\//,
+  /^examples\/(?:Ranvier\.Motion|Ranvier\.Hydration|Fable\.Ranvier\.Playground)\//,
   compiledCssDocs,
 ];
 

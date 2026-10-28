@@ -4,7 +4,7 @@ title: Troubleshooting views
 
 Find the message or symptom below, then apply its fix. For sugar-specific diagnostics, see
 [Sugar](sugar.md) and the
-[view sugar README](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md).
+[view sugar README](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md).
 
 ## Compile errors
 

@@ -230,7 +230,7 @@ tiered compilation and PGO off:
 In this benchmark, dispatch re-runs all 64 observed selectors and costs about 80 times a field
 signal write. Nesting selectors reduces downstream runs to the changed path. See
 [Instruction counts](../benchmarks/counters.md) and the
-[full report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+[full report](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 :::
 

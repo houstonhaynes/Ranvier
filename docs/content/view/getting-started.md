@@ -3,7 +3,7 @@ title: Getting started with views
 ---
 
 Build a counter component, compile it with Fable and mount it into a page. The finished app is the
-same shape as the [playground](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Fable.Ranvier.Playground),
+same shape as the [playground](https://github.com/ranvier-org/Ranvier/tree/master/examples/Fable.Ranvier.Playground),
 which is the runnable reference for everything in this section.
 
 ## Project

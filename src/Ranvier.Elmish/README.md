@@ -1,6 +1,6 @@
 # Ranvier.Elmish
 
-An Elmish-style model-view-update bridge for [Ranvier](https://github.com/shayanhabibi/Ranvier). The model lives in a
+An Elmish-style model-view-update bridge for [Ranvier](https://github.com/ranvier-org/Ranvier). The model lives in a
 signal: `Dispatch` applies `update`, and `Select` reads a part of the model through a memo that wakes its readers only
 when that part changes.
 
@@ -30,15 +30,15 @@ Elmish commands pass unchanged; the package does not depend on Elmish.
 
 Package builds also include Fable sources and a standalone source project. F# consumers compiled
 with Fable use a normal package reference; CI tests both traced and untraced package consumers.
-See [Fable](https://shayanhabibi.github.io/Ranvier/fable/) for JavaScript timing and equality differences.
+See [Fable](https://ranvier-org.github.io/Ranvier/fable/) for JavaScript timing and equality differences.
 
 ## Tracing
 
 `Ranvier.Elmish.Traced` is the same assembly built against `Ranvier.Traced`. Reference it together with
-`Ranvier.Traced`; see [Tracing](https://shayanhabibi.github.io/Ranvier/guide/tracing/).
+`Ranvier.Traced`; see [Tracing](https://ranvier-org.github.io/Ranvier/guide/tracing/).
 
 ## Links
 
-- [Elmish guide](https://shayanhabibi.github.io/Ranvier/guide/elmish/)
-- [Source](https://github.com/shayanhabibi/Ranvier)
-- [MIT License](https://github.com/shayanhabibi/Ranvier/blob/master/LICENSE)
+- [Elmish guide](https://ranvier-org.github.io/Ranvier/guide/elmish/)
+- [Source](https://github.com/ranvier-org/Ranvier)
+- [MIT License](https://github.com/ranvier-org/Ranvier/blob/master/LICENSE)

@@ -30,7 +30,7 @@ Use this adapter for small snapshots. Writes copy all scoped records, and histor
 Manage retention explicitly; retain at least the latest event.
 A connection failure can leave the commit acknowledgement uncertain; reload before retrying a conditional write.
 
-The [KurrentDB guide](https://shayanhabibi.github.io/Ranvier/guide/persistence-kurrentdb/) includes setup and a persisted
+The [KurrentDB guide](https://ranvier-org.github.io/Ranvier/guide/persistence-kurrentdb/) includes setup and a persisted
 signal round-trip. The adapter adds KurrentDB.Client only to this package; core persistence stays independent.
 
 Run the integration suite against a disposable server:

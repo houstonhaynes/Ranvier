@@ -5,7 +5,7 @@ description: Template parts that animate elements on placement, on entering and 
 
 `Ranvier.View.Anime` adds `Motion.*` parts beside a tag's attributes and events. They start anime
 objects after placement and clean them up with the instance. The
-[reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View.Anime/README.md)
+[reference](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View.Anime/README.md)
 has every part; this page explains their shared lifecycle.
 
 ```fsharp
@@ -268,12 +268,12 @@ CI test under jsdom and Playwright. The site serves the built pages, with an
 
 | Page | Shows | Live |
 | --- | --- | --- |
-| [kanban](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Kanban.fs) | `presence` cards, `flip` across columns, `drag` with drop to a column and a spring back to the card's slot, undo | [kanban](/Ranvier/examples/motion/kanban/index.html) |
-| [dashboard](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Dashboard.fs) | `follow` gauges, a `draw` ring, a scrolling chart and counter driven by `Reactive.track`, a boundary skeleton | [dashboard](/Ranvier/examples/motion/dashboard/index.html) |
-| [graphs](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Graphs.fs) | Pointer-following inspection, animated SVG zoom and pan, staggered ranking timelines | [graphs](/Ranvier/examples/motion/graphs/index.html) |
-| [story](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Story.fs) | `scroll` timelines, a `split` headline, a staggered grid, `appear` tiles; rendered on .NET as a whole document by `Server.renderDocument` under `Omit`, and hydrated | [story](/Ranvier/examples/motion/story/index.html) |
-| [physics](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Physics.fs) | a thrown `drag` puck and a spring home, chained `follow`, a timeline scrubbed by `Reactive.scrub`, a policy toggle | [physics](/Ranvier/examples/motion/physics/index.html) |
-| [routes](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/src/Routes.fs) | hash routing with `presence` page arms and `flip` on the shell | [routes](/Ranvier/examples/motion/routes/index.html) |
+| [kanban](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Kanban.fs) | `presence` cards, `flip` across columns, `drag` with drop to a column and a spring back to the card's slot, undo | [kanban](/Ranvier/examples/motion/kanban/index.html) |
+| [dashboard](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Dashboard.fs) | `follow` gauges, a `draw` ring, a scrolling chart and counter driven by `Reactive.track`, a boundary skeleton | [dashboard](/Ranvier/examples/motion/dashboard/index.html) |
+| [graphs](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Graphs.fs) | Pointer-following inspection, animated SVG zoom and pan, staggered ranking timelines | [graphs](/Ranvier/examples/motion/graphs/index.html) |
+| [story](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Story.fs) | `scroll` timelines, a `split` headline, a staggered grid, `appear` tiles; rendered on .NET as a whole document by `Server.renderDocument` under `Omit`, and hydrated | [story](/Ranvier/examples/motion/story/index.html) |
+| [physics](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Physics.fs) | a thrown `drag` puck and a spring home, chained `follow`, a timeline scrubbed by `Reactive.scrub`, a policy toggle | [physics](/Ranvier/examples/motion/physics/index.html) |
+| [routes](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/src/Routes.fs) | hash routing with `presence` page arms and `flip` on the shell | [routes](/Ranvier/examples/motion/routes/index.html) |
 
 The kanban and physics springs run in a `Motion.slot` given to their draggables as the
 `DragBinding`'s `Slot` (see [animations from handlers](#animations-from-handlers)), and a card

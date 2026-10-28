@@ -14,9 +14,9 @@ Fable inserts conversion closures when a curried function value crosses a boxing
 
 ## Measurements
 
-Allocation sampling ([raw](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/allocation-cuts-profile/allocations.json)), one browser process, 4096-byte interval: Ranvier allocates 509–519 KiB per 128-row mount across three samples, from 568 KiB after [delegated listeners](2026-10-13-delegated-listeners.md); Solid 2 allocates 136–146 KiB and Ripple 367–374 KiB. Samples taken without the binding change measured 510–517 KiB, so its effect on mounting is within sampling noise; it removes a closure from every update.
+Allocation sampling ([raw](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/allocation-cuts-profile/allocations.json)), one browser process, 4096-byte interval: Ranvier allocates 509–519 KiB per 128-row mount across three samples, from 568 KiB after [delegated listeners](2026-10-13-delegated-listeners.md); Solid 2 allocates 136–146 KiB and Ripple 367–374 KiB. Samples taken without the binding change measured 510–517 KiB, so its effect on mounting is within sampling noise; it removes a closure from every update.
 
-[Framework results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/allocation-cuts-framework-results.json) against Solid 2.0.0-rc.14, all 36 correctness checks passing. Every framework measured slower than in the previous run, so the change is read against the frameworks measured in the same processes. At 128 rows, µs per operation:
+[Framework results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/allocation-cuts-framework-results.json) against Solid 2.0.0-rc.14, all 36 correctness checks passing. Every framework measured slower than in the previous run, so the change is read against the frameworks measured in the same processes. At 128 rows, µs per operation:
 
 | | Ranvier | Solid 2 | Ripple | React |
 |---|---|---|---|---|

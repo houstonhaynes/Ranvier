@@ -3,7 +3,7 @@
 Date: 2026-10-19
 Branch: `feat/67-stream-memo`
 Baseline: `305d00908d3f7cfbc015bd3df051c650886377dc`
-Issue: [#67](https://github.com/shayanhabibi/Ranvier/issues/67). The [exploration comment](https://github.com/shayanhabibi/Ranvier/issues/67#issuecomment-6230105257) holds the prior art, the source survey and the burst probe; this design selects its option 1 with option 2's first converters.
+Issue: [#67](https://github.com/ranvier-org/Ranvier/issues/67). The [exploration comment](https://github.com/ranvier-org/Ranvier/issues/67#issuecomment-6230105257) holds the prior art, the source survey and the burst probe; this design selects its option 1 with option 2's first converters.
 Status: draft for review.
 
 ## Purpose and boundaries

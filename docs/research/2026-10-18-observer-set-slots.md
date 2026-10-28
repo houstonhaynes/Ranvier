@@ -6,7 +6,7 @@
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release). Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
 - Before: `5c987ea` (`poc/fable-ranvier-dom`), bundle `generated-keyed-slots0`. After: `5c987ea` with `src/Ranvier/Core.fs` from `7a8e68c` (`perf/observer-set-slots`, from master `32c3a60`), bundle `generated-keyed-slots1`. Every JSON records `commit: 5c987ea`.
 
-Raw data in [`framework-performance/investigation/observer-set-slots/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/observer-set-slots): `heap-slots0.json` and `heap-slots1.json` (`keyed-heap.mjs`), `slots0-1..3.json` and `slots1-1..3.json` (all operations, one process each, alternating), `rerun-slots0-1..4.json` and `rerun-slots1-1..4.json` (create1k, replace1k and update10th1k, 31 rounds).
+Raw data in [`framework-performance/investigation/observer-set-slots/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/observer-set-slots): `heap-slots0.json` and `heap-slots1.json` (`keyed-heap.mjs`), `slots0-1..3.json` and `slots1-1..3.json` (all operations, one process each, alternating), `rerun-slots0-1..4.json` and `rerun-slots1-1..4.json` (create1k, replace1k and update10th1k, 31 rounds).
 
 ## What a row retained
 

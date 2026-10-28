@@ -4,9 +4,9 @@
 
 - Machine: AMD Ryzen 9 9900X (12 cores, 62 GB), Windows 11 10.0.26200. Rider open and idle; timings ran one at a time, with no build running alongside.
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release). Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
-- Before: `c948406`, bundle `generated-keyed-inplace1`. After: the core change of [#93](https://github.com/shayanhabibi/Ranvier/pull/93) (`e6448b4`) applied uncommitted to `d2ec3c0`, bundle `generated-keyed-owner1`. The timing JSONs record the checked-out commit.
+- Before: `c948406`, bundle `generated-keyed-inplace1`. After: the core change of [#93](https://github.com/ranvier-org/Ranvier/pull/93) (`e6448b4`) applied uncommitted to `d2ec3c0`, bundle `generated-keyed-owner1`. The timing JSONs record the checked-out commit.
 
-Raw data in [`framework-performance/investigation/owner-first-cleanup/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/owner-first-cleanup):
+Raw data in [`framework-performance/investigation/owner-first-cleanup/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/owner-first-cleanup):
 
 - `heap-before-snapshot.json`, `heap-before-holders.json`, `heap-after-holders.json`: `keyed-heap.mjs`, objects new after `create(rows)` by kind and by holding object.
 - `alloc-before.json`: `keyed-rows.mjs --profile`, sampled allocation bytes of create1k and clear1k by allocating function.
@@ -27,7 +27,7 @@ A row's owner holds one cleanup, the release registered by the list region's `bu
 
 ## The change
 
-[#93](https://github.com/shayanhabibi/Ranvier/pull/93): an owner keeps its first cleanup since the last teardown in two fields; the lists are allocated by the second cleanup.
+[#93](https://github.com/ranvier-org/Ranvier/pull/93): an owner keeps its first cleanup since the last teardown in two fields; the lists are allocated by the second cleanup.
 
 ## Results
 
@@ -47,7 +47,7 @@ Ranvier's median ms `[per-process medians]`, and the median ratio to Solid 2:
 
 Retained heap per row (`getHeapUsage`): 1,365 → 1,179 B at 1k rows and 1,228 → 1,073 B at 10k, against Solid 2's 1,058 and 1,051 B. The snapshot diff gives 964 JS bytes per row after, against 905.
 
-- The machine ran faster than in the [10-18 status run](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/poc-status-2026-10-18/status.json) (create1k 6.1 ms here, 8.25 ms there); compare ratios across days, not times.
+- The machine ran faster than in the [10-18 status run](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/poc-status-2026-10-18/status.json) (create1k 6.1 ms here, 8.25 ms there); compare ratios across days, not times.
 - armsCreate1k's per-process ranges overlap.
 
 ## Remaining per-row objects

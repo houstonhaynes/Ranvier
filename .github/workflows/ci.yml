@@ -50,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - run: node --test .github/scripts/*.test.cjs tools/Ranvier.Css.Generate/compiler-rejections.test.mjs
+      - run: node --test .github/scripts/*.test.cjs
 
   dotnet:
     name: .NET tests
@@ -91,115 +91,6 @@ jobs:
       - name: Check package compatibility
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1
-
-  css-bindings:
-    name: CSS specifications and type safety
-    needs: changes
-    if: needs.changes.outputs.docs != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
-          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: tools/Ranvier.Css.Generate/package-lock.json
-      - name: Install pinned CSS specifications
-        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
-      - name: Fetch and verify individual CSS specifications
-        run: node tools/Ranvier.Css.Generate/fetch-specs.mjs
-      - name: Test CSS specification model and bindings
-        run: dotnet test tests/Ranvier.Css.Spec.Tests -c Release
-      - name: Compile generated CSS bindings and check type safety
-        run: node tools/Ranvier.Css.Generate/verify-bindings.mjs
-
-  css-assets:
-    name: CSS extraction and utilities
-    needs: changes
-    if: needs.changes.outputs.docs != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
-          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: |
-            tools/Ranvier.Css.Generate/package-lock.json
-            tools/Ranvier.Css.Import/package-lock.json
-      - name: Install pinned CSS specifications
-        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
-      - name: Check CSS extraction, modules and server output
-        run: node tools/Ranvier.Css.Generate/verify-assets.mjs
-      - name: Build automatic utility extraction fixture
-        run: dotnet build tests/Ranvier.Css.Compile.Tests/Fixtures/App/App.fsproj -c Release
-      - name: Test automatic composite utility extraction
-        run: dotnet test tests/Ranvier.Css.Compile.Tests/Ranvier.Css.Compile.Tests.fsproj -c Release
-      - name: Check the composite utility example
-        run: |
-          dotnet build examples/Ranvier.Css.Utilities.Example -c Release
-          dotnet run --project tools/Ranvier.Css.Compile -c Release -- --project examples/Ranvier.Css.Utilities.Example/Ranvier.Css.Utilities.Example.fsproj --output examples/Ranvier.Css.Utilities.Example/out --single app.css --no-content-hash --public-path .
-          dotnet run --project examples/Ranvier.Css.Utilities.Example -c Release
-          node tools/Ranvier.Css.Generate/verify-utilities.mjs
-      - name: Compile and extract the CSS documentation examples
-        run: node docs/samples/css/verify.mjs
-      - name: Install the CSS source importer
-        run: npm ci --prefix tools/Ranvier.Css.Import --ignore-scripts
-      - name: Test the CSS source importer
-        run: node --test tools/Ranvier.Css.Import/import.test.mjs
-      - name: Build the CSS specification generator
-        run: dotnet build tools/Ranvier.Css.Generate -c Release
-      - name: Compile imported F# and check CSS round trips
-        run: node tools/Ranvier.Css.Import/verify-import.mjs
-
-  css-browser:
-    name: CSS browser behavior
-    needs: changes
-    if: needs.changes.outputs.docs != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
-          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: tools/Ranvier.Css.Generate/package-lock.json
-      - name: Install pinned CSS specifications
-        run: npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
-      - name: Compile CSS reactive browser checks
-        run: |
-          dotnet tool restore
-          dotnet fickl tests/Ranvier.Css.Browser.Tests/Ranvier.Css.Browser.Tests.fsproj -o tools/Ranvier.Css.Generate/out/browser -c Release
-      - name: Check reactive CSS mount, updates, disposal and SSR identity
-        run: node tools/Ranvier.Css.Generate/verify-browser.mjs
-      - name: Check native CSS behavior in Chromium
-        run: |
-          npm exec --prefix tools/Ranvier.Css.Generate -- playwright install --with-deps chromium
-          node tools/Ranvier.Css.Generate/verify-chromium.mjs
 
   marten:
     name: Marten store adapter
@@ -832,7 +723,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, css-bindings, css-assets, css-browser, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:

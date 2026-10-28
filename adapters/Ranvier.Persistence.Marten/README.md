@@ -27,7 +27,7 @@ Marten's normal schema management applies to the adapter's `MartenStateDocument`
   Explicit conditional saves are available through `IStateStore`.
 
 For a graph round trip and conditional updates, see the
-[Marten guide](https://shayanhabibi.github.io/Ranvier/guide/persistence-marten/).
+[Marten guide](https://ranvier-org.github.io/Ranvier/guide/persistence-marten/).
 
 ## Integration tests
 

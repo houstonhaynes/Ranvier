@@ -199,7 +199,7 @@ publish warns at each call.
 **Browser measurements.** The committed Chromium runs compare `Arms.Match` with an equivalent
 `matchWith` view at 1,000 rows. Their pooled medians meet the fixed creation, switch, payload-update
 and clear budgets. These are fixture measurements, not application guarantees. The
-[research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-arms-match.md#chromium)
+[research note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-21-arms-match.md#chromium)
 keeps the ratios, intervals, source hashes, excluded runs and gate rules.
 
 ### AM005
@@ -218,7 +218,7 @@ the site is built, with a JavaScript `TypeError`.
 Arms.Match: no arm of this site is mounted for the instance this reader received. A lambda over the instance type inside a case body runs with the arm's instance.
 ```
 
-A Release Fable build raises the short form `Ranvier AM006: shayanhabibi.github.io/Ranvier/view/arms/#am006`;
+A Release Fable build raises the short form `Ranvier AM006: ranvier-org.github.io/Ranvier/view/arms/#am006`;
 Debug builds and .NET raise the text above (`ArmsMatchException` on .NET). A lambda over the instance type inside a
 case body received another value of that type, as a row whose item type equals the instance type does. Give the row
 a type of its own.

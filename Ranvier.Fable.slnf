@@ -5,7 +5,6 @@
       "examples\\Ranvier.Motion\\Motion.fsproj",
       "examples\\Ranvier.Motion\\tests\\MotionTests.fsproj",
       "examples\\Ranvier.Motion\\Server\\ServerChecks.fsproj",
-      "src\\Ranvier.Css\\Ranvier.Css.fsproj",
       "src\\Ranvier\\Ranvier.fsproj",
       "src\\Fable.Ranvier\\Fable.Ranvier.fsproj",
       "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",

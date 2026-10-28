@@ -113,5 +113,5 @@ template is written. A command that dispatches later leaves the HTML as written.
 [Hydration](../server/hydration.md) runs `Create` again on the client.
 
 [Migrating from Elmish](../guide/elmish.md) covers `Mvu`, commands and selector costs, and the view sugar
-README's [Nested Elmish](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#nested-elmish)
+README's [Nested Elmish](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#nested-elmish)
 section states the pattern with its disposal rules.

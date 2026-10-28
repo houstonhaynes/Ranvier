@@ -26,7 +26,7 @@ The solution-level failures predate the repair. Missing Fable test support inclu
 
 ## Current API and migration points
 
-The [public API snapshot](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/2026-10-08-fable-ranvier-api.json) was captured using `fcs_public_api`. It is project-scoped and does not assert external-consumer compatibility.
+The [public API snapshot](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/2026-10-08-fable-ranvier-api.json) was captured using `fcs_public_api`. It is project-scoped and does not assert external-consumer compatibility.
 
 - Browser globals are `Global.document`, `Global.window` and `Global.globalThis`; `Global.isBrowser` is a lazy value.
 - `Dom.Modifier` is currently `HTMLElement -> unit`. `Dom.element` consumes existing `Node` children and returns an immediately created `HTMLElement`.

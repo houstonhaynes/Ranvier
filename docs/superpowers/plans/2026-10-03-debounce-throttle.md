@@ -1,6 +1,6 @@
 # Debounce and Throttle Implementation Plan
 
-**Status (2026-10-16):** implementation merged in [#46](https://github.com/shayanhabibi/Ranvier/pull/46).
+**Status (2026-10-16):** implementation merged in [#46](https://github.com/ranvier-org/Ranvier/pull/46).
 This plan preserves the original task lists and dated verification. Use the
 [timing guide](../../content/guide/timing.md) for the current API; unresolved measurements below are not
 unimplemented timing features.

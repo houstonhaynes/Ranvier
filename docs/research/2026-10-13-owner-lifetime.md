@@ -1,6 +1,6 @@
 # Owner lifetime
 
-Components now use the core owner as their only lifetime. The renderer creates no per-component `Scope`; each mount keeps one `Scope` for its phase, failures and keyed regions. The owned range records the mount's roots, native nodes and keyed boundaries; generated descendants and prepared clone descendants are appended directly. This relies on core teardown in reverse acquisition order ([#50](https://github.com/shayanhabibi/Ranvier/pull/50)): the mount registers its DOM release before building, so release runs after every component cleanup.
+Components now use the core owner as their only lifetime. The renderer creates no per-component `Scope`; each mount keeps one `Scope` for its phase, failures and keyed regions. The owned range records the mount's roots, native nodes and keyed boundaries; generated descendants and prepared clone descendants are appended directly. This relies on core teardown in reverse acquisition order ([#50](https://github.com/ranvier-org/Ranvier/pull/50)): the mount registers its DOM release before building, so release runs after every component cleanup.
 
 The decision and its measurements are recorded in the [mount cost ladder](framework-performance/investigation/mount-ladder.md), where this model was the R5 variant.
 
@@ -27,7 +27,7 @@ The suites encode these rules. Ten checks were rewritten: four structural-select
 
 ## Measurements
 
-[Raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/owner-lifetime-framework-results.json) use the framework harness: three Chromium processes, Release Fable, minified production bundles, all 36 correctness checks passing. Solid is 2.0.0-rc.14 compiled by `@solidjs/compiler` 2.0.0-rc.14. At 128 rows, µs per operation:
+[Raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/owner-lifetime-framework-results.json) use the framework harness: three Chromium processes, Release Fable, minified production bundles, all 36 correctness checks passing. Solid is 2.0.0-rc.14 compiled by `@solidjs/compiler` 2.0.0-rc.14. At 128 rows, µs per operation:
 
 | | Ranvier | Solid 2 | Ripple | React |
 |---|---|---|---|---|

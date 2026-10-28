@@ -1,6 +1,6 @@
 # View boundaries: mutation checks and measurements
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 Date: 2026-10-19. Branch `poc/fable-ranvier-dom`. Plan: [view boundaries](../superpowers/plans/2026-10-19-view-boundaries.md).
 
@@ -43,7 +43,7 @@ A boundary mounted inside a flush mounts, sets up, cleans up and removes its pen
 
 ## Measurements
 
-Results: [`framework-performance/investigation/view-boundaries/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/view-boundaries).
+Results: [`framework-performance/investigation/view-boundaries/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/view-boundaries).
 
 ### Operations without a boundary
 

@@ -4,7 +4,7 @@ Date: 2026-10-14. Commit `5c247cd`, with `bench/Ranvier.CoreListBench/` added un
 
 ## Method
 
-[`core-list-solid.json`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/core-list-solid/core-list-solid.json), `node bench/Ranvier.CoreListBench/run.mjs --build`. There is no DOM: the workload is the reactive core's keyed list alone.
+[`core-list-solid.json`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/core-list-solid/core-list-solid.json), `node bench/Ranvier.CoreListBench/run.mjs --build`. There is no DOM: the workload is the reactive core's keyed list alone.
 
 - **Ranvier:** the production row form, `createProjectionOnce ProjectionOptions.CreateFirst` keyed by id (`Fixture.fs`, Fable Release build). Writes run inside `Graph.Run`.
 - **Solid 2:** `mapArray` keyed by item identity, as `<For>` uses it. Each write is followed by `flush()`.

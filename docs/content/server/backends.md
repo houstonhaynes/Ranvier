@@ -5,7 +5,7 @@ description: Serve the same Ranvier page with Giraffe, Oxpecker or Suave.
 
 Giraffe, Oxpecker and Suave can serve the same Ranvier component, codec and browser bundle. Each
 handler reads query values, builds props and returns `HydrationPage.render props` as HTML. The
-[complete hydration example](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration)
+[complete hydration example](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Hydration)
 uses Giraffe; companion projects below use Oxpecker and Suave.
 
 ## Build the shared browser bundle
@@ -42,7 +42,7 @@ let page: HttpHandler =
         htmlString (HydrationPage.render props) next ctx
 ```
 
-Run the [complete Giraffe source](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration/Server):
+Run the [complete Giraffe source](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Hydration/Server):
 
 ```shell
 npm --prefix examples/Ranvier.Hydration start
@@ -68,7 +68,7 @@ let page: EndpointHandler =
         ctx.Response.WriteAsync (HydrationPage.render props)
 ```
 
-The [complete Oxpecker Program.fs](https://github.com/shayanhabibi/Ranvier/blob/master/docs/samples/server-backends/Oxpecker/Program.fs)
+The [complete Oxpecker Program.fs](https://github.com/ranvier-org/Ranvier/blob/master/docs/samples/server-backends/Oxpecker/Program.fs)
 registers routing and Oxpecker, serves `/assets` through ASP.NET Core static-file middleware,
 and exposes the stylesheet separately. Its small project references the shared hydration project:
 
@@ -99,7 +99,7 @@ let page: WebPart =
         (OK (HydrationPage.render props) >=> setMimeType "text/html; charset=utf-8") ctx
 ```
 
-The [complete Suave Program.fs](https://github.com/shayanhabibi/Ranvier/blob/master/docs/samples/server-backends/Suave/Program.fs)
+The [complete Suave Program.fs](https://github.com/ranvier-org/Ranvier/blob/master/docs/samples/server-backends/Suave/Program.fs)
 serves the rendered page at `/`, allows the built `/assets/` files and stylesheet, and binds to
 the loopback address:
 

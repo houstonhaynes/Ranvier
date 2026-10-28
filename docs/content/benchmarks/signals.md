@@ -75,7 +75,7 @@ The counter scenario `chain-affinity` writes the head of a four-memo chain and r
 | `Unchecked` | 2,177 | 0 | MemoRecomputes 4 |
 | `Serialised` | 2,516 | 0 | MemoRecomputes 4 |
 
-`Unchecked` costs the same as `Guarded`: the thread-id comparison is within run-to-run noise. `Serialised` costs about 340 more instructions per write and read of the chain, about 15 % over `Guarded`. The BenchmarkDotNet timing cases for each affinity are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*SignalBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
+`Unchecked` costs the same as `Guarded`: the thread-id comparison is within run-to-run noise. `Serialised` costs about 340 more instructions per write and read of the chain, about 15 % over `Guarded`. The BenchmarkDotNet timing cases for each affinity are in the suite for local runs (`dotnet run --project bench/Ranvier.Benchmarks -c Release -- --filter "*SignalBenchmarks*"`) and have no published figure yet. The full report is [`e13f159.md`](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/benchmarks/counters/e13f159.md).
 
 ## EqualityBenchmarks
 

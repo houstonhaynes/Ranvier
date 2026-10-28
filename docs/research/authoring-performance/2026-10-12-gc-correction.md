@@ -1,10 +1,10 @@
 # Corrected authoring performance check-in
 
-The initial .NET construction penalty was a benchmark artefact. [Collection diagnostics](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/gc-diagnostic.json) show every slow one-component overload batch had a collection; collection-free batches matched the explicit path. Equal batch allocations and deterministic ordering placed collections repeatedly in one variant's timed batches.
+The initial .NET construction penalty was a benchmark artefact. [Collection diagnostics](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/gc-diagnostic.json) show every slow one-component overload batch had a collection; collection-free batches matched the explicit path. Equal batch allocations and deterministic ordering placed collections repeatedly in one variant's timed batches.
 
 The corrected harness starts a 64 MiB no-GC region before each timed .NET construction sample, records all generation collection counts and rejects contaminated samples. Setup/teardown and collection counters are outside timing. Tiered compilation is disabled. This isolates construction cost and excludes real-world GC latency; it is not a server-rendering benchmark.
 
-[Corrected raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/browser-results.json) contain three independent Chromium runs and three independent .NET processes, with three warm-up rounds and eleven measured rounds per combination. Every .NET sample has zero collections and exact paired allocation parity.
+[Corrected raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/browser-results.json) contain three independent Chromium runs and three independent .NET processes, with three warm-up rounds and eleven measured rounds per combination. Every .NET sample has zero collections and exact paired allocation parity.
 
 Corrected .NET medians, explicit then overloaded:
 

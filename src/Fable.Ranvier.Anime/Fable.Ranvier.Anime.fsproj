@@ -34,7 +34,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Ranvier\Ranvier.fsproj" />
-        <ProjectReference Include="..\Ranvier.Css\Ranvier.Css.fsproj" />
+        <PackageReference Include="Ranvier.Css" Version="$(RanvierCssVersion)" />
         <InternalsVisibleTo Include="Ranvier.View.Anime" />
     </ItemGroup>
 

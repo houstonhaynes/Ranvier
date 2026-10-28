@@ -27,7 +27,7 @@ snapshot; it does not run the F# backend or produce new request-specific data.
 Click the counter, then reload: it returns to the value saved during the docs build.
 
 To run the real backend locally, follow the
-[hydration example README](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration).
+[hydration example README](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Hydration).
 It renders request-specific initial values on the server, transfers them to the browser and
 hydrates the shared Ranvier component. The README includes the build and start commands and
 URLs for changing those initial values.
@@ -41,12 +41,12 @@ embedded data; [hydration](../server/hydration.md) describes how the browser reu
 
 ## Explore the source
 
-- [Playground](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Fable.Ranvier.Playground):
+- [Playground](https://github.com/ranvier-org/Ranvier/tree/master/examples/Fable.Ranvier.Playground):
   ordinary panels are rendered on .NET and hydrated; the scheduling panel demonstrates explicit mounting.
-- [Motion](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Motion):
+- [Motion](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Motion):
   shared page declarations generate the documents and browser entries. Read the
   [motion walkthrough](../view/motion-parts.md#examples) for each animation technique.
-- [Server hydration](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Hydration):
+- [Server hydration](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Hydration):
   a shared component and page used by both the local HTTP server and the static exporter.
 
 For console and Avalonia applications, see [application examples](../guide/examples.md).

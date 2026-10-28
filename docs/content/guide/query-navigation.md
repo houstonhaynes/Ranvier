@@ -3,7 +3,7 @@ title: Dictionary navigation
 order: 25
 ---
 
-The [compiled example](https://github.com/shayanhabibi/Ranvier/blob/a2b9c30/examples/Ranvier.Query.Dictionary/Navigation.fs)
+The [compiled example](https://github.com/ranvier-org/Ranvier/blob/a2b9c30/examples/Ranvier.Query.Dictionary/Navigation.fs)
 loads the index, visited sections, and edited words separately. One session owns
 the client; each page owns its leases. The editor owns an independent draft.
 

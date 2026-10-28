@@ -18,7 +18,7 @@ const WT = 'C:/Users/shaya/RiderProjects/Ranvier-integration'
 const BRANCH = `issue/${ISSUE}`
 
 const COMMON = `
-Repository: shayanhabibi/Ranvier (F#, .NET 10, Fable). All work happens in the integration worktree ${WT}; create no other worktree and never touch C:/Users/shaya/RiderProjects/Ranvier (the user works there concurrently).
+Repository: ranvier-org/Ranvier (F#, .NET 10, Fable). All work happens in the integration worktree ${WT}; create no other worktree and never touch C:/Users/shaya/RiderProjects/Ranvier (the user works there concurrently).
 Branches form a stack: integration/issues (base: master), then one issue/<n> branch per issue, each cut from the previous branch's tip. The Stack table in ${WT}/docs/.ai/PRIORITIES.md records each branch, its PR and its base.
 Push and open PRs only as the Integrate step says; never comment on or edit GitHub issues; never force-push.
 Prefix shell commands with rtk. Follow .claude/rules/*.md and AGENTS.md (comments.md, view-uses-core.md, framework-comparisons.md). Use the sagefs REPL as the inner loop where AGENTS.md allows it; the build CLI (dotnet fsi build.fsx -- ...) is the gate.

@@ -70,7 +70,7 @@ jsdom has no layout and no Web Animations. `animate`, `Utils.set`, `revert`, ani
 and a layout's `record ()` run as in a browser. `splitText`, `onScroll` and `createDraggable` need
 stubs of `ResizeObserver`, `DOMPoint` and `DOMMatrix`, and a FLIP layout's transforms, which run
 through the Web Animations API, do not move.
-[`examples/Ranvier.Motion/tests/pages.test.mjs`](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/tests/pages.test.mjs)
+[`examples/Ranvier.Motion/tests/pages.test.mjs`](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/tests/pages.test.mjs)
 holds the full set of globals and stubs the example checks run under.
 
 ## Playwright
@@ -89,16 +89,16 @@ await page.clock.runFor(120);   // samples an animation 120 ms in
 `page.clock.runFor (ms)` moves every anime animation by `ms`. The Web Animations API runs on the
 browser's own timeline, outside the page clock: a FLIP test asserts that `element.getAnimations ()`
 holds the layout's animation, calls `finish ()` on it, then asserts the final boxes.
-[`examples/Ranvier.Motion/tests/support.mjs`](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/tests/support.mjs)
+[`examples/Ranvier.Motion/tests/support.mjs`](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/tests/support.mjs)
 holds these steps.
 
 ## Server checks
 
 A portable template with Motion parts renders on .NET with `Server.render`. Comparing that HTML with
 the render of a twin without the parts checks that the parts leave the markup unchanged, as the
-[server checks of the Motion parts](https://github.com/shayanhabibi/Ranvier/blob/master/fable/Ranvier.View.Anime.Tests/ServerChecks.fs)
+[server checks of the Motion parts](https://github.com/ranvier-org/Ranvier/blob/master/fable/Ranvier.View.Anime.Tests/ServerChecks.fs)
 do under the default `Reject` policy. A page with event handlers renders under `Omit`: the
-[story example's check](https://github.com/shayanhabibi/Ranvier/blob/master/examples/Ranvier.Motion/Server/Program.fs)
+[story example's check](https://github.com/ranvier-org/Ranvier/blob/master/examples/Ranvier.Motion/Server/Program.fs)
 renders the whole page and its twin with `Server.renderDocument` and fails when the documents differ.
 
 ## Bundle costs
@@ -120,8 +120,8 @@ root imports tree-shake, so a bundle holds the features it calls:
 | everything | 41.0 kB |
 
 What Ranvier adds, from the committed measurements
-([`bindings-bundle.json`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/motion/bindings-bundle.json),
-[`bundle.json`](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/motion/bundle.json)),
+([`bindings-bundle.json`](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/motion/bindings-bundle.json),
+[`bundle.json`](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/motion/bundle.json)),
 each checked for drift in CI:
 
 | Entry | Against | Δ gzip | Budget |
@@ -132,10 +132,10 @@ each checked for drift in CI:
 | the view's motion, exit and reflow hook kinds | the view before them, in a bundle using none of them | +447 B | 450 B |
 
 The last row is the Playground's `sugar-size.mjs` explicit entry, recorded in the
-[motion seam note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md#bundle-delta):
+[motion seam note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md#bundle-delta):
 every view bundle carries it, with or without animation. SVG element creation, the element-name
 checks and the client element refusals add a few hundred bytes more on the same entry; the
-[motion research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion.md#motion-parts-steps-89)
+[motion research note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-21-motion.md#motion-parts-steps-89)
 records each measurement.
 
 - An entry using one Motion part declares exactly the anime feature classes of the functions that part calls

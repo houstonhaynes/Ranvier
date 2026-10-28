@@ -1,6 +1,6 @@
 # armsClear1k and component dispose: where the remaining ratio comes from — 2026-10-19
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 ## Environment and commits
 
@@ -8,7 +8,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release). Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
 - Code: `31fc732` (`poc/fable-ranvier-dom`). Profiles use the unminified bundle `generated-keyed-profile`; the template timings use `run.mjs --build`'s minified bundle.
 
-Raw data in [`framework-performance/investigation/arms-and-dispose-profile/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/arms-and-dispose-profile):
+Raw data in [`framework-performance/investigation/arms-and-dispose-profile/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/arms-and-dispose-profile):
 
 - `keyed-profile-buckets.json`: armsClear1k, clear1k and armsCreate1k, loop protocol (`keyed-profile-buckets.mjs`).
 - `template-profile-buckets.json`: template-component mount and dispose at 128 rows (`template-profile.mjs`, then `keyed-profile-buckets.mjs`).
@@ -59,7 +59,7 @@ Profile of 300 rounds of 32 roots at 128 rows, µs per root:
 
 - Node removal costs the same in both.
 - The difference is in removing edges. Every row's bindings read the same shared state, so each source has hundreds of observers. Above 8 observers, `ObserverSet.Remove` deletes the observer from the position index and rewrites the index entry for the observer that fills the gap. Solid 2 unlinks each edge in constant time from a linked list.
-- This is the cost [#54](https://github.com/shayanhabibi/Ranvier/pull/54) measured, and its deferred design (indexed edge handles: each edge stores its position on both sides) removes it. A view-side change cannot remove it.
+- This is the cost [#54](https://github.com/ranvier-org/Ranvier/pull/54) measured, and its deferred design (indexed edge handles: each edge stores its position on both sides) removes it. A view-side change cannot remove it.
 
 ## Reproduction
 
@@ -75,7 +75,7 @@ node benchmarks/frameworks/run.mjs --build --template-comparison   # writes inve
 
 ## After indexed edge handles (#98)
 
-[#98](https://github.com/shayanhabibi/Ranvier/pull/98) removes edges by handle: each end of an edge stores its position in the other, and `ObserverSet` has no hash index. Master `168f44e`, merged into `poc/fable-ranvier-dom` as `e102216`. Two runs of `run.mjs --template-comparison` (`template-after-98-1.json`, `template-after-98-2.json`), the template component's median µs per root and its ratio to Solid 2:
+[#98](https://github.com/ranvier-org/Ranvier/pull/98) removes edges by handle: each end of an edge stores its position in the other, and `ObserverSet` has no hash index. Master `168f44e`, merged into `poc/fable-ranvier-dom` as `e102216`. Two runs of `run.mjs --template-comparison` (`template-after-98-1.json`, `template-after-98-2.json`), the template component's median µs per root and its ratio to Solid 2:
 
 | Phase, rows | Run 1 | Run 2 | Before #98 |
 |---|---|---|---|

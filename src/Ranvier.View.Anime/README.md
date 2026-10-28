@@ -7,9 +7,9 @@ the current visual state until the leaving animation finishes.
 
 Enter and exit follow list and arm updates; FLIP animates container reflow; reactive parts follow
 signals. The server omits all motion parts, so the template renders the same HTML with or without them.
-See the [motion guide](https://shayanhabibi.github.io/Ranvier/view/motion/) for application use, the
-[design spec](https://github.com/shayanhabibi/Ranvier/blob/master/docs/superpowers/specs/2026-10-21-motion-design.md)
-for rationale, and the [seam note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md)
+See the [motion guide](https://ranvier-org.github.io/Ranvier/view/motion/) for application use, the
+[design spec](https://github.com/ranvier-org/Ranvier/blob/master/docs/superpowers/specs/2026-10-21-motion-design.md)
+for rationale, and the [seam note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-21-motion-seam.md)
 for the runtime hooks.
 
 Install the JavaScript package beside it:
@@ -28,7 +28,7 @@ open Ranvier.View.Sugar
 open Ranvier.View.Anime
 ```
 
-Every sample on this page assumes these lines; the [view sugar reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md) covers `Ranvier.View` and `Ranvier.View.Sugar`, and `Ranvier.Anime` holds the bindings. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
+Every sample on this page assumes these lines; the [view sugar reference](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md) covers `Ranvier.View` and `Ranvier.View.Sugar`, and `Ranvier.Anime` holds the bindings. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
 
 **A play function receives the element as `Element`.** `Targets` converts from `Element` and `Element array` only, so a play function written `fun _ el -> Anime.animate (el, Anim (...))` type-checks on every tag.
 
@@ -227,7 +227,7 @@ let story =
 
 **`split` takes static text.** A text slot or region inside the split element stops updating once its text is split. `splitText`, `onScroll` and `createDraggable` require `ResizeObserver`, and the draggable `DOMPoint` and `DOMMatrix`.
 
-**`draw` and `morph` need SVG elements.** The SVG tags of the sugar (`svg`, `g`, `path`, `circle` and the others listed in the [sugar reference](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#tags)) create SVG elements under both commit modes:
+**`draw` and `morph` need SVG elements.** The SVG tags of the sugar (`svg`, `g`, `path`, `circle` and the others listed in the [sugar reference](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#tags)) create SVG elements under both commit modes:
 
 ```fsharp
 type Chart =

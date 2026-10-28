@@ -56,7 +56,7 @@ Recorded 2026-09-28. Source: `Ranvier.Benchmarks.Lifetimes.ReadingNodeBenchmarks
 
 ## FanOutLifecycleBenchmarks
 
-`Nodes` computations (1, 64 or 1024) on one source, created in a scope and torn down with it. At `d87920f`, the larger cases crossed the observer list's indexing threshold, so the table includes building and draining that index; [#98](https://github.com/shayanhabibi/Ranvier/pull/98) removed the index. Divide by `Nodes` for the cost per node.
+`Nodes` computations (1, 64 or 1024) on one source, created in a scope and torn down with it. At `d87920f`, the larger cases crossed the observer list's indexing threshold, so the table includes building and draining that index; [#98](https://github.com/ranvier-org/Ranvier/pull/98) removed the index. Divide by `Nodes` for the cost per node.
 
 | Method | What it measures |
 | --- | --- |
@@ -108,7 +108,7 @@ Three classes in the `ObserverRemoval` category measure removing and relinking o
 | `ObserverChurnBenchmarks.RelinkOne` | One effect drops its edge and links it again, cycling through the effects. |
 | `ObserverChurnBenchmarks.WriteWide` | One write notifying all `Nodes` effects, over an observer list with earlier removals from its middle. |
 
-These classes have no published figure. The [observer-removal report](https://github.com/shayanhabibi/Ranvier/blob/master/docs/.ai/observer-removal-benchmark.md) records the runs behind #98. They are in the suite for local runs: `dotnet run --project bench/Ranvier.Benchmarks -c Release -- --anyCategories ObserverRemoval`.
+These classes have no published figure. The [observer-removal report](https://github.com/ranvier-org/Ranvier/blob/master/docs/.ai/observer-removal-benchmark.md) records the runs behind #98. They are in the suite for local runs: `dotnet run --project bench/Ranvier.Benchmarks -c Release -- --anyCategories ObserverRemoval`.
 
 ## SizeOfProbe
 

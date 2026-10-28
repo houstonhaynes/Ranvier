@@ -150,7 +150,7 @@ let increment (graph: Graph) (count: Signal<int>) (cancel: CancellationToken) : 
     }
 ```
 
-The [sample](https://github.com/shayanhabibi/Ranvier/blob/master/samples/dispatch-async.fsx) runs the owner on a
+The [sample](https://github.com/ranvier-org/Ranvier/blob/master/samples/dispatch-async.fsx) runs the owner on a
 dedicated thread that drains its inbox when its dispatcher wakes it, and reads a memo, writes a signal and catches
 a failure from the thread pool. [Contracts](contracts.md#awaiting-dispatched-work) lists every case.
 

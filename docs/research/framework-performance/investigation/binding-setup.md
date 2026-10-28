@@ -1,6 +1,6 @@
 # Binding setup allocation reduction
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 This follows the mount diagnosis at `a2f2c7f`. The production renderer now keeps a committed-value flag and value instead of wrapping every successful write in an option. Synchronous bindings inline the liveness and setup-failure guards; queued bindings keep their asynchronous callbacks. Built-in property and attribute comparers are shared two-argument delegates. Fable emits them as aliases of its equality function and calls them directly, without a curried intermediate function. No public authoring API changes.
 

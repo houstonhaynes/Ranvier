@@ -116,7 +116,7 @@ Automatic optimistic session writes remain separate work.
 For larger state or frequent writes, evaluate the [Marten adapter](persistence-marten.md).
 A connection failure can leave the commit acknowledgement uncertain. Reload before retrying a conditional write.
 The KurrentDB adapter implements `IStateStore`; journal transport remains part of
-[#185](https://github.com/shayanhabibi/Ranvier/issues/185).
+[#185](https://github.com/ranvier-org/Ranvier/issues/185).
 
 ## Integration tests
 

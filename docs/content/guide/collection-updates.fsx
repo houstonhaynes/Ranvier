@@ -221,7 +221,7 @@ remain out of scope.
 
 *)
 (**
-Behavior tests: [Lenses.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lenses.fs).
+Behavior tests: [Lenses.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Lenses.fs).
 
 *)
 

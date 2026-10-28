@@ -1,6 +1,6 @@
 # Component templates
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 [Component templates](../superpowers/specs/2026-10-13-component-templates-design.md) build a component's view once per component type and materialise each instance as one skeleton clone, one state array, one render effect and one property write per event node. `Template.fs` holds the portable model: a backend-neutral template tree, a typed builder, `Component.define`/`render`/`renderWith`, an expansion into the existing `Operations`, and one markup writer shared by the DOM skeleton and server HTML. `TemplateDom.fs` compiles a definition once into a parsed skeleton, a walk program and slot tables; the mount backend's `Backend.Template` override materialises instances through it, and the delegated dispatcher finds template handlers on the node's state array. Other backends render templates through the default expansion.
 
@@ -20,7 +20,7 @@ All numbers below are from one run on this machine (AMD Ryzen 9 9900X, Chromium 
 
 The measured code includes binding reader-failure reporting: every synchronous binding and template effect wraps its reads in a `try`/`catch` and checks a failure flag on each run. It also includes the parse validation in `compile`, which runs once per definition.
 
-[Framework results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-framework-results.json) (`run.mjs --template-comparison`), three Chromium processes, all 45 correctness checks passing. At 128 rows, µs per operation, overall median with the per-process medians below it:
+[Framework results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-framework-results.json) (`run.mjs --template-comparison`), three Chromium processes, all 45 correctness checks passing. At 128 rows, µs per operation, overall median with the per-process medians below it:
 
 | | Ranvier (authored) | Ranvier template | Solid 2 | Ripple | React |
 |---|---|---|---|---|---|
@@ -50,7 +50,7 @@ Per process, the one-row mount is 1.10 / 1.21 / 1.21× Solid 2 and the one-row d
 
 Against the authored path in the same processes, templates mount in 0.59× the time, dispose in 0.51× and retain 0.32× the heap; updates are 1.00×. Against Solid 2, the authored path mounts in 1.97×. Templates retain 0.96× Solid 2's heap per 128-row mount. The one-row heap measurement varies between processes by more than the difference it would show (template 3.7, 5.1 and 5.2 KiB; Solid 2 1.7, 3.1 and 3.2 KiB) and is not compared.
 
-[Allocation sampling](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-profile/allocations.json), one browser process, 4096-byte interval, per 128-row mount:
+[Allocation sampling](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-profile/allocations.json), one browser process, 4096-byte interval, per 128-row mount:
 
 | | Ranvier (authored) | Ranvier template | Solid 2 | Ripple |
 |---|---|---|---|---|
@@ -71,7 +71,7 @@ At `08526f9`, `mountCore` kept a mount's state in local variables and created ab
 
 A one-row template mount with a delegated click now creates 8 closures in `Mounting.fs`: the scope's release callback, the 5 setup callbacks handed to core, the delegation release and the template `Setup` callback.
 
-[Allocation sampling](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations) of 4096 one-row mounts at a 128-byte interval (`allocations.mjs --modes=ranvier-template,solid --width=1 --roots=4096 --interval=128`), one browser process per variant, bytes per mount, [at `08526f9`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations/before/allocations.json) and [at `a0de558`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations/after/allocations.json):
+[Allocation sampling](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations) of 4096 one-row mounts at a 128-byte interval (`allocations.mjs --modes=ranvier-template,solid --width=1 --roots=4096 --interval=128`), one browser process per variant, bytes per mount, [at `08526f9`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations/before/allocations.json) and [at `a0de558`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-allocations/after/allocations.json):
 
 | Site | `08526f9` | `a0de558` |
 |---|---|---|
@@ -98,7 +98,7 @@ Paired runs of `run.mjs --template-comparison`, alternating `08526f9` and `a0de5
 | Dispose, 16 | 1.50 (1.39–1.53) | 1.46 (1.31–1.62) | 0.97 | 0.92 |
 | Dispose, 128 | 1.65 (1.53–1.66) | 1.52 (1.48–1.65) | 0.90 | 0.91 |
 
-The one-row mount fell from 6.1 to 5.7 µs while Solid 2 stayed at 5.0 µs; the other widths and disposal moved within the spread between runs. In [the one-row CPU profiles](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-profile) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount,dispose --width=1 --roots=256 --repeat=160`, one session per variant), the mount's garbage collection fell from 55.4 to 31.5 ms and `Mounting.js` self time from 49.7 to 33.2 ms; the busy-time ratio to Solid 2 moved from 1.39 to 1.21 for mount and from 1.36 to 1.18 for disposal.
+The one-row mount fell from 6.1 to 5.7 µs while Solid 2 stayed at 5.0 µs; the other widths and disposal moved within the spread between runs. In [the one-row CPU profiles](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-root-profile) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount,dispose --width=1 --roots=256 --repeat=160`, one session per variant), the mount's garbage collection fell from 55.4 to 31.5 ms and `Mounting.js` self time from 49.7 to 33.2 ms; the busy-time ratio to Solid 2 moved from 1.39 to 1.21 for mount and from 1.36 to 1.18 for disposal.
 
 The range boundary comments stay. They give an empty mount a position, anchor `Move` and `Relocate`, delimit keyed rows, and their claims let the native-ownership check detect an empty mount inside a native node. In the `a0de558` profile of 40960 one-row mounts and disposals, `createComment` took 6.5 ms, `claim` 7.1 ms and `unclaim` 6.8 ms for three nodes per mount, two of them boundaries, and `remove` 25.2 ms for the same three nodes. Counting two thirds of the per-node costs, the boundaries take about 32 ms of 352 ms busy, or 0.8 µs per mount and disposal.
 
@@ -106,7 +106,7 @@ The range boundary comments stay. They give an empty mount a position, anchor `M
 
 ### Mount at 128 rows
 
-[The mount profile](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-mount-cpu-profile.json) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount --roots=1024`, then mapped through the bundle's source map) samples one run of 1024 128-row mounts per framework at 100 µs, in one Chromium process. Busy time excludes idle and unattributed `(program)` samples.
+[The mount profile](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-mount-cpu-profile.json) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount --roots=1024`, then mapped through the bundle's source map) samples one run of 1024 128-row mounts per framework at 100 µs, in one Chromium process. Busy time excludes idle and unattributed `(program)` samples.
 
 At `5e69af2` the template mount was busy for 1167 ms against Solid 2's 722 ms. Ranked by self time:
 
@@ -132,7 +132,7 @@ Two variants were measured and rejected. `document.importNode` in place of `clon
 
 ### Disposal and per-root costs
 
-The remaining gap fell with width, so the cost was per mount root and, for disposal, per row. [The disposal and per-root profile](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-dispose-cpu-profile.json) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount,dispose --repeat`, mapped through the bundle's source map) samples, at 100 µs in one Chromium process per width, 160 runs of 256 one-row roots and 96 runs of 32 128-row roots. A single profiled run of 1024 roots in one document measures document size instead: its disposal cost 285 µs per 128-row root, against about 50 µs in the benchmark's 32-root batches. Busy time counts the samples inside the timed runs, including the garbage collector; a category holds JavaScript self time by source, with native DOM time and `fable-library` time attributed to the nearest Ranvier or Solid caller.
+The remaining gap fell with width, so the cost was per mount root and, for disposal, per row. [The disposal and per-root profile](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-dispose-cpu-profile.json) (`diagnose.mjs --modes=ranvier-template,solid --phases=mount,dispose --repeat`, mapped through the bundle's source map) samples, at 100 µs in one Chromium process per width, 160 runs of 256 one-row roots and 96 runs of 32 128-row roots. A single profiled run of 1024 roots in one document measures document size instead: its disposal cost 285 µs per 128-row root, against about 50 µs in the benchmark's 32-root batches. Busy time counts the samples inside the timed runs, including the garbage collector; a category holds JavaScript self time by source, with native DOM time and `fable-library` time attributed to the nearest Ranvier or Solid caller.
 
 At `9798fd2`, before the fixes:
 
@@ -236,9 +236,9 @@ Rows of a region at a mount's top level delegate events at the range's staging f
 
 ### Cost of templates without structure
 
-All numbers in this section are from this machine (AMD Ryzen 9 9900X, Chromium 153.0.8010.12) on 2026-10-14, against Solid 2.0.0-rc.14. The raw results are under [`template-structure/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure); every `run.mjs` result records the commit it measured and the hashes of its sources.
+All numbers in this section are from this machine (AMD Ryzen 9 9900X, Chromium 153.0.8010.12) on 2026-10-14, against Solid 2.0.0-rc.14. The raw results are under [`template-structure/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure); every `run.mjs` result records the commit it measured and the hashes of its sources.
 
-At `729a5a2`, the end of the structure tasks, the benchmark row (no dynamic structure) had regressed against `19c8a8f`, the commit before them. Paired runs of `run.mjs --template-comparison`, alternating the two commits three times in one session, give the median ratio to Solid 2 with the range of the three runs. Three sessions were run: [`729a5a2`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-729a5a2), [`64f8bf7`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-64f8bf7) and [`f4273e6`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-f4273e6). `f4273e6` has the sources of `c85916f`; `64f8bf7` differs from it only by `bind` not being inlined.
+At `729a5a2`, the end of the structure tasks, the benchmark row (no dynamic structure) had regressed against `19c8a8f`, the commit before them. Paired runs of `run.mjs --template-comparison`, alternating the two commits three times in one session, give the median ratio to Solid 2 with the range of the three runs. Three sessions were run: [`729a5a2`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-729a5a2), [`64f8bf7`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-64f8bf7) and [`f4273e6`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/paired-f4273e6). `f4273e6` has the sources of `c85916f`; `64f8bf7` differs from it only by `bind` not being inlined.
 
 | Phase, rows | `19c8a8f` | `729a5a2` | `19c8a8f` | `64f8bf7` | `19c8a8f` | `f4273e6` |
 |---|---|---|---|---|---|---|
@@ -260,14 +260,14 @@ The split of `materialise` into `stateFor` and `bind` added one closure context 
 
 | | `TemplateDom.js` | Whole template mount | Solid 2 |
 |---|---|---|---|
-| [`19c8a8f`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-64f8bf7/one-row-base.json), session with `64f8bf7` | 514 | 4387 | 3971 |
-| [`64f8bf7`](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-64f8bf7/one-row-head.json) | 550 | 4427 | 3967 |
-| [`19c8a8f`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-f4273e6), session with `f4273e6`, two samples | 511 / 519 | 4380 / 4389 | 3971 / 3960 |
-| [`f4273e6`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-f4273e6), two samples | 518 / 526 | 4385 / 4392 | 3980 / 3967 |
+| [`19c8a8f`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-64f8bf7/one-row-base.json), session with `64f8bf7` | 514 | 4387 | 3971 |
+| [`64f8bf7`](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-64f8bf7/one-row-head.json) | 550 | 4427 | 3967 |
+| [`19c8a8f`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-f4273e6), session with `f4273e6`, two samples | 511 / 519 | 4380 / 4389 | 3971 / 3960 |
+| [`f4273e6`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/allocations-f4273e6), two samples | 518 / 526 | 4385 / 4392 | 3980 / 3967 |
 
 `c85916f` inlines `bind`, and the one-row template mount allocates what it allocated at `19c8a8f`. At 128 rows (`allocations.mjs --modes=ranvier-template,solid`, 4096-byte interval, interleaved, two samples each), the template allocated 149.5 and 148.3 KiB per mount at `f4273e6` (1.06 and 1.04× Solid 2) against 143.7 and 145.4 KiB at `19c8a8f` (1.03 and 1.02×). By source, `TemplateDom.js` measured 58.7 and 56.1 KiB against 55.8 and 56.1 KiB. The rest of the difference is attributed to the benchmark row's setup function in `FrameworkPerf.js` (3.6 and 3.0 KiB against 0.7 and 0.8 KiB). That source is unchanged between the two commits, and the one-row samples, at a 32 times finer interval, show no such difference.
 
-The benchmark row has no dynamic structure. [One run](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/run-c85916f/run-2.json) of `run.mjs --template-comparison` at commit `c85916f`, all 45 correctness checks passing, overall medians, µs per operation, with the template's ratio to Solid 2:
+The benchmark row has no dynamic structure. [One run](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/run-c85916f/run-2.json) of `run.mjs --template-comparison` at commit `c85916f`, all 45 correctness checks passing, overall medians, µs per operation, with the template's ratio to Solid 2:
 
 | Phase, rows | Template | Solid 2 | × Solid 2 |
 |---|---|---|---|
@@ -281,7 +281,7 @@ The benchmark row has no dynamic structure. [One run](https://github.com/shayanh
 | Dispose, 16 | 8.8 | 6.5 | 1.35 |
 | Dispose, 128 | 55.2 | 39.1 | 1.41 |
 
-The run fell in one of the machine's slow phases: Solid 2's 128-row mount took 416.9 µs against 285.9 µs in the `a0de558` run, and the 128-row update ratio per process was 1.03 / 1.18 / 1.24. [The run before it](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/run-c85916f/run-1.json) was slower still (128-row mount 1.39× overall, 1.17 / 1.22 / 1.17× per process). The paired `f4273e6` columns above are the comparison with `19c8a8f`.
+The run fell in one of the machine's slow phases: Solid 2's 128-row mount took 416.9 µs against 285.9 µs in the `a0de558` run, and the 128-row update ratio per process was 1.03 / 1.18 / 1.24. [The run before it](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-structure/run-c85916f/run-1.json) was slower still (128-row mount 1.39× overall, 1.17 / 1.22 / 1.17× per process). The paired `f4273e6` columns above are the comparison with `19c8a8f`.
 
 ## Generated catalogue (plan 2c)
 

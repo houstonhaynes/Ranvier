@@ -57,7 +57,7 @@ controls [
 
 *)
 (**
-Behavior tests: [Lookups.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Lookups.fs).
+Behavior tests: [Lookups.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Lookups.fs).
 
 *)
 

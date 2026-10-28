@@ -15,7 +15,7 @@ compact text. `Expose.node` registers names a client can pass to `node`; it does
 trace visibility.
 
 The runnable sample, a cart over stdio, is
-[examples/Ranvier.Mcp.Sample](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Ranvier.Mcp.Sample). Its
+[examples/Ranvier.Mcp.Sample](https://github.com/ranvier-org/Ranvier/tree/master/examples/Ranvier.Mcp.Sample). Its
 README shows how to register it beside SageFs.
 
 ## Hosting the graph

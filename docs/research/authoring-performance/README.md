@@ -1,8 +1,8 @@
 # Authoring performance checkpoint
 
-**Superseded timing interpretation:** the apparent .NET construction penalty below was caused by GC scheduling in the benchmark. See the [GC correction and current results](2026-10-12-gc-correction.md). This file preserves the initial checkpoint; its [original samples](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/before-gc-control.json) are retained separately.
+**Superseded timing interpretation:** the apparent .NET construction penalty below was caused by GC scheduling in the benchmark. See the [GC correction and current results](2026-10-12-gc-correction.md). This file preserves the initial checkpoint; its [original samples](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/before-gc-control.json) are retained separately.
 
-Measured on 2026-10-12 against base `c425ccf`, with the benchmark additions uncommitted. [Raw results](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/before-gc-control.json) retain all samples, staged counters, native write counts, runtime/machine metadata and benchmark source hashes.
+Measured on 2026-10-12 against base `c425ccf`, with the benchmark additions uncommitted. [Raw results](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/authoring-performance/before-gc-control.json) retain all samples, staged counters, native write counts, runtime/machine metadata and benchmark source hashes.
 
 The overloaded authoring path preserves resource and update costs in this workload. Browser timings do not show a consistent slowdown across processes. This is not evidence that every generated overload is universally free: .NET definition construction is consistently slower despite allocating exactly the same bytes.
 

@@ -92,10 +92,10 @@ the same animation through the current Ranvier owner. `Anim.With(variable, start
 `Anim.With(variable, frames)` also work with `Motion.on`, enters and timelines. Each endpoint keeps
 the custom property's grammar marker; numeric tokens in an animation must share a unit suffix.
 
-Let [typed CSS expressions](css.md#numeric-expressions) consume the variable. The browser updates
+Let [typed CSS expressions](https://ranvier-org.github.io/Ranvier.Css/view/css/#numeric-expressions) consume the variable. The browser updates
 every dependent declaration, including pseudo-elements, as Anime writes the variable. Frames
 bypass signals. Compound expressions are CSS inputs rather than numeric animation endpoints.
-See the [complete component example](https://github.com/shayanhabibi/Ranvier/blob/master/docs/samples/css-anime/Example.fs).
+See the [complete component example](https://github.com/ranvier-org/Ranvier/blob/master/docs/samples/css-anime/Example.fs).
 
 ## `policy`
 

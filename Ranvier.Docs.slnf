@@ -1,4 +1,4 @@
-﻿{
+{
   "solution": {
     "path": "Ranvier.slnx",
     "projects": [
@@ -18,9 +18,6 @@
       "src\\Fable.Ranvier.Anime\\Fable.Ranvier.Anime.fsproj",
       "src\\Fable.Ranvier\\Fable.Ranvier.fsproj",
       "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
-      "src\\Ranvier.Css.View\\Ranvier.Css.View.fsproj",
-      "src\\Ranvier.Css.Bindings\\Ranvier.Css.Bindings.fsproj",
-      "src\\Ranvier.Css\\Ranvier.Css.fsproj",
       "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
       "src\\Ranvier.Query\\Ranvier.Query.fsproj",
       "src\\Ranvier.View.Anime\\Ranvier.View.Anime.fsproj",

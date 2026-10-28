@@ -6,7 +6,7 @@ order: 14
 :::info
 Research record — the measurements behind [Inspecting a running graph over MCP](mcp.md). The figures come from
 `claude -p` sessions with Opus on two sample tasks; the full notes are in
-[docs/.ai/research](https://github.com/shayanhabibi/Ranvier/tree/master/docs/.ai/research).
+[docs/.ai/research](https://github.com/ranvier-org/Ranvier/tree/master/docs/.ai/research).
 :::
 
 `Ranvier.Mcp` is measured by one question: does a coding agent with the tools fix a defect for fewer tokens and in less

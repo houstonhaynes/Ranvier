@@ -102,7 +102,7 @@ mount runs.
   call `Hydration.hydrate`. Assert that the server's nodes are the ones the mount kept: the hydrated
   button is the same object as the server button.
 
-The playground's [`tests/`](https://github.com/shayanhabibi/Ranvier/tree/master/examples/Fable.Ranvier.Playground/tests)
+The playground's [`tests/`](https://github.com/ranvier-org/Ranvier/tree/master/examples/Fable.Ranvier.Playground/tests)
 directory runs this setup for the whole view layer, with Chromium checks through Playwright for focus,
 caret and layout behaviour that jsdom does not model.
 

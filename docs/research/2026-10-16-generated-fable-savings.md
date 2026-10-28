@@ -1,6 +1,6 @@
 # Generated Fable savings
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 Date: 2026-10-16. Baseline: `d2ee0cb` (`2ef3876` has identical production source).
 Companion investigation: [historic instruction erosions](2026-10-16-instruction-erosions.md).
@@ -58,11 +58,11 @@ Independent source and generated-output review found no concrete correctness iss
 
 Measured sizes, timing samples and final verification are recorded in the sibling JSON artifacts. Generated output remains build output; only its F# source is changed.
 
-- [API bundle and emitted-module sizes](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-sizes.json)
-- [Playground bundle sizes](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-playground-size.json)
-- [Timing samples and summaries](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-performance.json)
-- [.NET IL comparison](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-dotnet-il.json)
-- [Verification commands and outcomes](https://github.com/shayanhabibi/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-verification.json)
+- [API bundle and emitted-module sizes](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-sizes.json)
+- [Playground bundle sizes](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-playground-size.json)
+- [Timing samples and summaries](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-performance.json)
+- [.NET IL comparison](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-dotnet-il.json)
+- [Verification commands and outcomes](https://github.com/ranvier-org/Ranvier/blob/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/instruction-erosions/generated-output-verification.json)
 
 Final acceptance: all 1,104 F# and 84 C# tests on each of net8.0/net10.0, AOT smoke, the traced/untraced Fable compatibility gate, 366 DOM tests and 23 Playwright browser tests. Fable's documented differences remain: untraced inline 923/941 and promise 879/941; traced inline 1,011/1,033 and promise 962/1,033. No new untriaged difference was introduced. Formatting and source-comment checks pass. XML auditing reports the existing nonstandard `<b>` tag in Core.fs, with no new finding.
 

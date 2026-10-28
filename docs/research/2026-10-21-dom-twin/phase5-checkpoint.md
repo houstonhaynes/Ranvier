@@ -2,7 +2,7 @@
 
 The remaining Phase 5 implementation and Task 23 work are complete. This checkpoint distinguishes verified
 local results from remote checks bound to a particular revision. Final-head CI and Perf results are published on
-[PR #159](https://github.com/shayanhabibi/Ranvier/pull/159) and must pass before merge. The 2026-10-22 checkpoint
+[PR #159](https://github.com/ranvier-org/Ranvier/pull/159) and must pass before merge. The 2026-10-22 checkpoint
 below is historical and superseded by this section.
 
 ## Completed implementation and documentation
@@ -51,9 +51,9 @@ No-define inspection absence remains a separate gate.
 bytes per bundle** and **+28–39 gzip bytes**. Combined grows from 219,718 to 219,875 raw bytes, 63,194 to 63,232
 gzip bytes, and 55,322 to 55,404 Brotli bytes. These are the head-placement/core API costs with inspection disabled.
 
-[Perf run 39884320577](https://github.com/shayanhabibi/Ranvier/actions/runs/39884320577) compared master
+[Perf run 39884320577](https://github.com/ranvier-org/Ranvier/actions/runs/39884320577) compared master
 `9651ffad38aed3ca3507bff5bbc09f18227645b8` with `fa7c0cfff2d03835288a40abd63acd14c33b08a1` and passed.
-The [report artifact](https://github.com/shayanhabibi/Ranvier/actions/runs/39884320577/artifacts/12472413287)
+The [report artifact](https://github.com/ranvier-org/Ranvier/actions/runs/39884320577/artifacts/12472413287)
 records all **71 Ranvier .NET instruction comparisons as Unchanged**. Exact base/head primitive medians are:
 
 | Primitive | Base instructions | Head instructions |

@@ -280,7 +280,7 @@ To fold the values of a projection into one value, such as a total or a count, s
 
 *)
 (**
-Behavior tests: [Combinators.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs), [Projections.fs](https://github.com/shayanhabibi/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs).
+Behavior tests: [Combinators.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Combinators.fs), [Projections.fs](https://github.com/ranvier-org/Ranvier/blob/master/tests/Ranvier.Tests/Projections.fs).
 
 *)
 

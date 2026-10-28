@@ -78,7 +78,7 @@ waits in the inbox and applies at the next drain on the owning thread.
 
 `graph.DispatchAsync (work)` returns a `Task<'T>` for result-producing work, for a caller outside the graph that
 awaits the outcome. `work` runs where `Dispatch` work runs. A
-[sample](https://github.com/shayanhabibi/Ranvier/blob/master/samples/dispatch-async.fsx) awaits it from the
+[sample](https://github.com/ranvier-org/Ranvier/blob/master/samples/dispatch-async.fsx) awaits it from the
 thread pool against a graph owned by a dedicated thread.
 
 | Case | Task |

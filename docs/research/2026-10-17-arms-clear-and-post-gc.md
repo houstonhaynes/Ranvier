@@ -1,6 +1,6 @@
 # armsClear1k and the first operation after a forced GC — 2026-10-17
 
-The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
+The probe scripts this note runs were removed from the branch; they are at commit [d784929](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54).
 
 ## Environment and commits
 
@@ -16,7 +16,7 @@ The probe scripts this note runs were removed from the branch; they are at commi
 
 Ratios are Ranvier over Solid 2 in the same round; below 1 means Ranvier is faster. Absolute times are not comparable across days.
 
-Raw data in [`framework-performance/investigation/arms-clear-and-post-gc/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/arms-clear-and-post-gc):
+Raw data in [`framework-performance/investigation/arms-clear-and-post-gc/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/arms-clear-and-post-gc):
 
 - `timings-before-1..5.json`, `timings-after-1..5.json`: the armsClear1k fix, one process each.
 - `profile-buckets-before.json`, `profile-buckets-after.json`: CPU profile buckets for armsClear1k and clear1k, method of [the remove profile](2026-10-15-list-remove-profile.md#method).

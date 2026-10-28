@@ -30,8 +30,8 @@ Install `Ranvier` for F#, `Ranvier.CSharp` for C#, or `Ranvier.Elmish` for the M
 Versions are previews, so pass `--prerelease`.
 
 The guide describes the current source. The current versions are
-[`Ranvier` 0.1.0-preview.7](https://www.nuget.org/packages/Ranvier/0.1.0-preview.7),
-[`Ranvier.CSharp` 0.1.0-preview.7](https://www.nuget.org/packages/Ranvier.CSharp/0.1.0-preview.7),
+[`Ranvier` 0.1.1-preview.1](https://www.nuget.org/packages/Ranvier/0.1.1-preview.1),
+[`Ranvier.CSharp` 0.1.1-preview.1](https://www.nuget.org/packages/Ranvier.CSharp/0.1.1-preview.1),
 [`Ranvier.Elmish` 0.1.0-preview.6](https://www.nuget.org/packages/Ranvier.Elmish/0.1.0-preview.6), and
 [`Ranvier.Query` 0.1.0-preview.3](https://www.nuget.org/packages/Ranvier.Query/0.1.0-preview.3).
 
@@ -49,7 +49,7 @@ dotnet add package Ranvier --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier" Version="0.1.0-preview.7" />
+<PackageReference Include="Ranvier" Version="0.1.1-preview.1" />
 ```
 
 :::
@@ -69,7 +69,7 @@ dotnet add package Ranvier.CSharp --prerelease
 :::tab Package reference
 
 ```xml
-<PackageReference Include="Ranvier.CSharp" Version="0.1.0-preview.7" />
+<PackageReference Include="Ranvier.CSharp" Version="0.1.1-preview.1" />
 ```
 :::
 ::::
@@ -150,16 +150,17 @@ and map `Xantham.*` to Cloudsmith:
 Install the generated properties and the view adapter together:
 
 ```shell
-dotnet add package Ranvier.Css.Bindings --version 0.1.0-alpha.2
-dotnet add package Ranvier.Css.View --version 0.1.0-alpha.2
+dotnet add package Ranvier.Css.Bindings --version 0.1.1-alpha.1
+dotnet add package Ranvier.Css.View --version 0.1.1-alpha.1
 ```
 
 Both depend on `Ranvier.Css`. The view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later
 so generated classes merge with user classes. These three CSS libraries target .NET 8 and
 .NET 10 and include Fable sources and standalone source projects. `Ranvier.Css.Build` is the
 separate .NET 10 asset compiler library. The source-project extractor remains a repository tool.
-See [typed CSS](../view/css.md), [composite utilities](../view/css-utilities.md) and
-[extracting CSS](../view/css-build.md).
+The CSS libraries live in [ranvier-org/Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css). See
+[typed CSS](https://ranvier-org.github.io/Ranvier.Css/view/css/), [composite utilities](https://ranvier-org.github.io/Ranvier.Css/view/css-utilities/) and
+[extracting CSS](https://ranvier-org.github.io/Ranvier.Css/view/css-build/).
 
 ## Fable
 

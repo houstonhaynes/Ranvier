@@ -59,6 +59,6 @@ the whole graph.
 - **Additional storage adapters:** persistence supplies memory, file and browser local-storage
   stores; database-backed stores remain an extension point.
 - **Mixed traced/untraced primitives:** let individual graph branches pay for tracing
-  ([#69](https://github.com/shayanhabibi/Ranvier/issues/69)).
+  ([#69](https://github.com/ranvier-org/Ranvier/issues/69)).
 
 See [Ecosystem](ecosystem.md) for collection tradeoffs and host integrations.

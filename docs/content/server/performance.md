@@ -4,8 +4,8 @@ title: Performance
 
 These fixture measurements come from one AMD Ryzen 9 9900X / Windows 11 machine and one revision.
 Use them to identify costs, then rerun against your application. The
-[research note](https://github.com/shayanhabibi/Ranvier/blob/master/docs/research/2026-10-19-server-html-hydration.md)
-and [raw results](https://github.com/shayanhabibi/Ranvier/tree/master/docs/research/framework-performance/investigation/server-html)
+[research note](https://github.com/ranvier-org/Ranvier/blob/master/docs/research/2026-10-19-server-html-hydration.md)
+and [raw results](https://github.com/ranvier-org/Ranvier/tree/master/docs/research/framework-performance/investigation/server-html)
 record the method and data.
 
 ## The fixtures
@@ -15,7 +15,7 @@ record the method and data.
 | `component` | 1, 16 or 128 rows, each a panel with an id, a class, a title read from a signal, an input whose value reads the same signal, and a button with a click counter. |
 | `keyed` | A table of 1,000 or 10,000 keyed rows with an id cell, a label link and a remove link. |
 
-Both are in [`ServerFixtures.fs`](https://github.com/shayanhabibi/Ranvier/blob/master/experiments/Ranvier.View.Checks/ServerFixtures.fs).
+Both are in [`ServerFixtures.fs`](https://github.com/ranvier-org/Ranvier/blob/master/experiments/Ranvier.View.Checks/ServerFixtures.fs).
 
 ## Server render on .NET
 
@@ -78,7 +78,7 @@ host, and against Solid 2's `hydrate`, medians over 180 samples:
 The [sugar](../view/sugar.md) mounts the same owners, effects, listeners and DOM writes as the explicit
 form for every style except `Component.ofClass`, which builds one two-element array per instance setup
 under Fable. Unused sugar adds 0 bytes to a bundle; the bundle cost of each style is in the view sugar
-README's [Costs](https://github.com/shayanhabibi/Ranvier/blob/master/src/Ranvier.View/README.md#costs)
+README's [Costs](https://github.com/ranvier-org/Ranvier/blob/master/src/Ranvier.View/README.md#costs)
 section.
 
 ## Guidance

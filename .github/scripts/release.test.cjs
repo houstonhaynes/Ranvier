@@ -22,7 +22,7 @@ test('missing versions include new IDs and new versions, and omit existing versi
   await assert.rejects(missingPackages(packages, async () => { throw new Error('feed unavailable'); }), /feed unavailable/);
 });
 
-const own = 'shayanhabibi/Ranvier';
+const own = 'ranvier-org/Ranvier';
 const sha = 'a'.repeat(40);
 const successful = { conclusion: 'success', event: 'push', path: '.github/workflows/ci.yml', head_branch: 'master', head_sha: sha, head_repository: { full_name: own } };
 

@@ -6,7 +6,7 @@
 - Chromium 153.0.8010.12 (Playwright 1.63.0), Node 26.7.0, Fable 5.18.0 (`--noCache`, Release). Solid 2: `solid-js`, `@solidjs/web`, `@solidjs/compiler` 2.0.0-rc.14.
 - Before: `7478d33` (master at `32c3a60`, #93, merged into `poc/fable-ranvier-dom`), bundle `generated-keyed-ctx0`. After: the change on top of `7478d33`, bundle `generated-keyed-ctx1`. Every JSON records `commit: 7478d33`; the after bundle was built from the uncommitted change.
 
-Raw data in [`framework-performance/investigation/template-bind-closures/`](https://github.com/shayanhabibi/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-bind-closures): `heap-ctx0.json` and `heap-ctx1.json` (`keyed-heap.mjs`, objects new after `create(rows)` by kind and by holding object), `ctx0-1..3.json` and `ctx1-1..3.json` (timings, one process each, alternating).
+Raw data in [`framework-performance/investigation/template-bind-closures/`](https://github.com/ranvier-org/Ranvier/tree/d784929cd9c67eed51bb319d1f3c2b993dcd9b54/docs/research/framework-performance/investigation/template-bind-closures): `heap-ctx0.json` and `heap-ctx1.json` (`keyed-heap.mjs`, objects new after `create(rows)` by kind and by holding object), `ctx0-1..3.json` and `ctx1-1..3.json` (timings, one process each, alternating).
 
 ## What a row retained
 
