@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <RootNamespace>Ranvier.View.WebCore</RootNamespace>
+        <AssemblyName>Ranvier.View.WebCore</AssemblyName>
+        <PackageId>Ranvier.View.WebCore</PackageId>
+        <PackageId Condition="'$(RanvierTrace)' == 'true'">Ranvier.View.WebCore.Traced</PackageId>
+        <Title>Ranvier.View.WebCore</Title>
+        <Description>Runs Ranvier's view and Fable.Ranvier's DOM API on .NET against a native WebCore page: the app forwards window input and paints the page into its window.</Description>
+        <Description Condition="'$(RanvierTrace)' == 'true'">The traced build of Ranvier.View.WebCore: Ranvier's view on a native WebCore page. Depends on Ranvier.View.Dom.Traced.</Description>
+        <PackageTags>reactive;signals;view;dom;webcore;native;fsharp</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReleaseNotes>Experimental. The API may change.</PackageReleaseNotes>
+        <Version>0.1.0-alpha.1</Version>
+        <IsAotCompatible>true</IsAotCompatible>
+        <!-- Not published yet: it depends on Fable.Ranvier, which is not a package, until the native path drops Fable
+             (docs/superpowers/specs/2026-10-28-native-app-gaps.md, G8). -->
+        <IsPackable>false</IsPackable>
+        <!-- The generated wrappers and the copied interop carry no docs of their own. -->
+        <NoWarn>$(NoWarn);FS3390</NoWarn>
+    </PropertyGroup>
+
+    <!--
+    The native library: the Ranvier.WebCore.Native.win-x64 package at RanvierWebCoreNativeVersion, whose ABI the
+    copied interop in Interop/ matches. Setting RanvierWebCoreNativeDir (the directory holding
+    runtimes/win-x64/native) takes the native files from a local build of Ranvier.WebCore instead.
+    -->
+    <PropertyGroup>
+        <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.0-preview.4</RanvierWebCoreNativeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RanvierWebCoreNativeDir)' == ''">
+        <PackageReference Include="Ranvier.WebCore.Native.win-x64" Version="$(RanvierWebCoreNativeVersion)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RanvierWebCoreNativeDir)' != ''">
+        <None Include="$(RanvierWebCoreNativeDir)/runtimes/win-x64/native/**/*"
+              Link="%(RecursiveDir)%(Filename)%(Extension)"
+              CopyToOutputDirectory="PreserveNewest"
+              CopyToPublishDirectory="PreserveNewest"
+              Pack="false"
+              Visible="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Interop/Native.fs" />
+        <Compile Include="Interop/NativeDom.fs" />
+        <Compile Include="Objects.fs" />
+        <Compile Include="Events.fs" />
+        <Compile Include="Members.fs" />
+        <Compile Include="Generated/Objects.fs" />
+        <Compile Include="Host.fs" />
+        <None Include="Interop/*.h" />
+        <None Include="Generated/report.txt" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+        <ProjectReference Include="../Fable.Ranvier/Fable.Ranvier.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Fable.Ranvier requires FSharp.Core 10.1.401. -->
+        <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+        <AssemblyMetadata Include="RanvierTrace" Value="true" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Ranvier.View.WebCore.Tests" />
+    </ItemGroup>
+
+</Project>

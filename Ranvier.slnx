@@ -51,6 +51,7 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Ranvier.Dom.Generate/Ranvier.Dom.Generate.fsproj" />
+    <Project Path="tools/Ranvier.View.WebCore.Generate/Ranvier.View.WebCore.Generate.fsproj" />
     <Project Path="tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj" />
     <Project Path="tools/Ranvier.Analyzers.Tests/Ranvier.Analyzers.Tests.fsproj" />
   </Folder>
@@ -67,10 +68,13 @@
     <Project Path="src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
     <Project Path="src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <Project Path="src/Ranvier.Mcp/Ranvier.Mcp.fsproj" />
+    <Project Path="src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ranvier.Tests/Ranvier.Tests.fsproj" />
     <Project Path="tests/Ranvier.View.Twin.Tests/Ranvier.View.Twin.Tests.fsproj" />
+    <Project Path="tests/Ranvier.View.WebCore.Tests/Ranvier.View.WebCore.Tests.fsproj" />
+    <Project Path="tests/Ranvier.View.WebCore.AotSmoke/Ranvier.View.WebCore.AotSmoke.fsproj" />
     <Project Path="tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj" />
     <Project Path="tests/Ranvier.Persistence.Tests/Ranvier.Persistence.Tests.fsproj" />
     <Project Path="tests/Ranvier.CSharp.Tests/Ranvier.CSharp.Tests.csproj" />

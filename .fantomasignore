@@ -9,3 +9,6 @@ experiments/Ranvier.View.Arms.FablePlugin/Tests/NoTargets/
 experiments/Ranvier.View.Twin/Generated/
 # The docs build and the maps tests write generated, gitignored output there.
 docs/.nacara/
+# The generated wrappers, and the interop copied from Ranvier.WebCore as it is generated there.
+src/Ranvier.View.WebCore/Generated/
+src/Ranvier.View.WebCore/Interop/

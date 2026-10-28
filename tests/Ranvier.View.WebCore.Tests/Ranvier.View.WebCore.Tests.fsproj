@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateProgramFile>false</GenerateProgramFile>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="Support.fs" />
+        <Compile Include="ObjectTests.fs" />
+        <Compile Include="HostTests.fs" />
+        <Compile Include="MountTests.fs" />
+        <Compile Include="InputTests.fs" />
+        <Compile Include="PaintTests.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/ServerFixtures.fs" Link="Checks/ServerFixtures.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/ServerChecks.fs" Link="Checks/ServerChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/RangeChecks.fs" Link="Checks/RangeChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DelegationChecks.fs" Link="Checks/DelegationChecks.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/Browser.fs" Link="Checks/Browser.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TemplateChecks.fs" Link="Checks/TemplateChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TestingApiChecks.fs" Link="Checks/TestingApiChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/BoundaryChecks.fs" Link="Checks/BoundaryChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/CheckSupport.fs" Link="Checks/CheckSupport.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PlacementChecks.fs" Link="Checks/PlacementChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/TemplateCatalogueChecks.fs" Link="Checks/TemplateCatalogueChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/UnsafeHtmlChecks.fs" Link="Checks/UnsafeHtmlChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DocumentChecks.fs" Link="Checks/DocumentChecks.fs" />
+        <Compile Include="../../experiments/Ranvier.View.Checks/SugarFixtures.fs" Link="Checks/SugarFixtures.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/HydrationChecks.fs" Link="Checks/HydrationChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PlaygroundSugar.fs" Link="Checks/PlaygroundSugar.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/KeyedRowsPerf.fs" Link="Checks/KeyedRowsPerf.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/KeyedRowsSugarPerf.fs" Link="Checks/KeyedRowsSugarPerf.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/SugarChecks.fs" Link="Checks/SugarChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/PendingRegionChecks.fs" Link="Checks/PendingRegionChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/OwnedAsyncChecks.fs" Link="Checks/OwnedAsyncChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DepartureChecks.fs" Link="Checks/DepartureChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/DumpChecks.fs" Link="Checks/DumpChecks.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/LoopBench.fs" Link="Checks/LoopBench.fs" />
+        <Compile Include="../../examples/Fable.Ranvier.Playground/tests/ConformanceCases.fs" Link="Checks/ConformanceCases.fs" />
+        <Compile Include="ConformanceTests.fs" />
+        <Compile Include="Main.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Expecto" Version="11.0.0-alpha8" />
+        <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../src/Ranvier/Ranvier.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View/Ranvier.View.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj" />
+        <ProjectReference Include="../../src/Fable.Ranvier/Fable.Ranvier.fsproj" />
+        <ProjectReference Include="../../src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" />
+        <ProjectReference Include="../../experiments/Ranvier.View.Twin/Ranvier.View.Twin.fsproj" />
+    </ItemGroup>
+</Project>

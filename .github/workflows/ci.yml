@@ -218,6 +218,26 @@ jobs:
       - name: Run
         run: ./artifacts/aot/Ranvier.AotSmoke
 
+  # Ranvier's view on the native WebCore page. Only win-x64 has run it, so the job runs on Windows; macOS and Linux
+  # join once the backend loads their Ranvier.WebCore.Native packages (docs/superpowers/specs/2026-10-28-native-app-gaps.md).
+  webcore:
+    name: WebCore backend (Windows)
+    needs: changes
+    if: needs.changes.outputs.docs != 'true'
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-${{ github.job }}-
+      - name: Test Ranvier.View.WebCore.Tests
+        run: dotnet test tests/Ranvier.View.WebCore.Tests -c Release
+
   # The publish command's release pipeline with the push replaced by a listing: builds, packs every source project
   # untraced and traced and the analyzers, then checks each package's id, version, lib frameworks and trace build, and
   # the analyzer package's layout. The .NET tests job runs the suites, so --skip-tests leaves them out here.
@@ -723,7 +743,7 @@ jobs:
   # build and test jobs were skipped for a documentation-only change.
   result:
     name: CI result
-    needs: [changes, scripts, dotnet, marten, kurrentdb, equinox, aot, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
+    needs: [changes, scripts, dotnet, marten, kurrentdb, equinox, aot, webcore, packages, format, docs-menus, fable, playground, sugar, anime, motion-view, motion, hydration, analyzer-tests, analyzers, analyzer-truth, arms]
     if: always()
     runs-on: ubuntu-latest
     steps:
