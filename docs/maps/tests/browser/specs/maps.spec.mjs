@@ -3,37 +3,33 @@ import { test, expect, openMaps } from "./fixtures.mjs";
 
 const guide = "guide/signal-maps/";
 
-test("the live editor compiles a component and its click updates the DOM", async ({ page, problems }) => {
+test("the live editor compiles a map and its controls update the graph", async ({ page, problems }) => {
   test.setTimeout(30_000);
-  await page.goto("view/getting-started/");
-  await page.getByRole("button", { name: "Run", exact: true }).click();
-  const output = async () => {
-    for (const frame of page.frames()) {
-      if (frame.url() === "about:srcdoc" && await frame.getByRole("button", { name: "Add a cup", exact: true }).count().catch(() => 0)) return frame;
-    }
-    return undefined;
-  };
-  await expect.poll(output, { timeout: 20_000, intervals: [100] }).toBeTruthy();
-  const frame = await output();
-  await expect(frame.getByText("0 cups", { exact: true })).toBeVisible();
-  await expect(frame.getByRole("button", { name: "Reset", exact: true })).toBeDisabled();
-  await frame.getByRole("button", { name: "Add a cup", exact: true }).click();
-  await expect(frame.getByText("1 cup", { exact: true })).toBeVisible();
-  await expect(frame.getByText("$4", { exact: true })).toBeVisible();
-  await frame.getByRole("button", { name: "Reset", exact: true }).click();
-  await expect(frame.getByText("0 cups", { exact: true })).toBeVisible();
-  await expect(frame.getByText("$0", { exact: true })).toBeVisible();
+  await page.goto(guide);
+  const run = page.getByRole("button", { name: "Run", exact: true });
+  await run.click();
+  await expect(run).toBeEnabled({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Result", exact: true }).click();
+  const result = page.frameLocator(".nacara-live__pane--result iframe");
+  const map = result.locator(".rv-map");
+  await expect(map.locator(".rv-map-node").first()).toBeVisible({ timeout: 20_000 });
+  await result.getByRole("button", { name: "Settle 4", exact: true }).click();
+  await expect(map.locator(".rv-map__log")).toContainText("Total 12");
+  await result.getByRole("button", { name: "Fail", exact: true }).click();
+  await expect(map.locator(".rv-map__log")).toContainText("Unavailable: feed offline");
+  await result.getByRole("button", { name: "Settle 5", exact: true }).click();
+  await expect(map.locator(".rv-map__log")).toContainText("Total 15");
 
   const editor = page.locator(".cm-content");
-  await editor.fill((await editor.innerText()).replace("createSignal 0", "createSignal 5").replace("let price = 4", "let price = 6"));
-  await page.getByRole("button", { name: "Run", exact: true }).click();
-  const changed = page.frameLocator(".nacara-live__pane--result iframe");
-  await expect(changed.getByText("5 cups", { exact: true })).toBeVisible();
-  await expect(changed.getByText("$30", { exact: true })).toBeVisible();
-  await expect(changed.getByText("Freshly brewed. $6 a cup.", { exact: true })).toBeVisible();
-  await changed.getByRole("button", { name: "Add a cup", exact: true }).click();
-  await expect(changed.getByText("6 cups", { exact: true })).toBeVisible();
-  await expect(changed.getByText("$36", { exact: true })).toBeVisible();
+  const source = await editor.innerText();
+  expect(source).toContain("price.Value * 3");
+  await editor.fill(source.replace("price.Value * 3", "price.Value * 5"));
+  await run.click();
+  await expect(run).toBeEnabled({ timeout: 20_000 });
+  await result.getByRole("button", { name: "Settle 4", exact: true }).click();
+  await expect(map.locator(".rv-map__log")).toContainText("Total 20");
+  await result.getByRole("button", { name: "Settle 5", exact: true }).click();
+  await expect(map.locator(".rv-map__log")).toContainText("Total 25");
 });
 
 /** The map whose controls include the text `name`. */
