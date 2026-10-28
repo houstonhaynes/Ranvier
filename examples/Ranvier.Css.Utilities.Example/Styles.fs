@@ -52,13 +52,13 @@ let card =
         contentWidth
         Css.padding (Css.rem 1.)
         md { spacious }
-        hover { Css.color Css.blue }
+        hover { Css.color CssValue.Color.blue }
         whenActive (fun (state: State) -> state.Busy.Value) { Css.opacity (Css.number 0.5) }
         Css.width (fun (state: State) -> Css.px state.Width.Value)
     }
 
 /// <summary>A definition retained in source and removed from output when it is proven unused.</summary>
-let unused = utility { Css.color Css.purple }
+let unused = utility { Css.color CssValue.Color.purple }
 
 /// <summary>A view that applies its top-level utilities without a stylesheet registry.</summary>
 let ``component`` =

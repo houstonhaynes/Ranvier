@@ -20,6 +20,7 @@
     <Compile Include="SpecSourcesTests.fs" />
     <Compile Include="GenerationTests.fs" />
     <Compile Include="RuntimeTests.fs" />
+    <Compile Include="GrammarRuntimeTests.fs" />
     <Compile Include="ConditionalRuntimeTests.fs" />
     <Compile Include="UtilityTests.fs" />
     <Compile Include="BuildTests.fs" />

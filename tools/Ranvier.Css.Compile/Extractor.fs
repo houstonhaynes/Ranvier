@@ -13,7 +13,7 @@ module Extractor =
         | None ->
             let rec search (directory: DirectoryInfo) =
                 if isNull directory then
-                    failwith "Cannot locate generated CSS sugar metadata. Pass --manifest with the bindings' Css.manifest.json."
+                    failwith "Cannot locate generated CSS metadata. Pass --manifest with the bindings' Css.manifest.json."
 
                 let candidate =
                     Path.Combine (directory.FullName, "src", "Ranvier.Css.Bindings", "Generated", "Css.manifest.json")

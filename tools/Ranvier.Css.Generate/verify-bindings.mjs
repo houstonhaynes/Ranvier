@@ -23,6 +23,11 @@ const manifestText = await fs.readFile(path.join(output, 'Css.Generated.manifest
 const committedManifest = await fs.readFile(path.join(root, 'src/Ranvier.Css.Bindings/Generated/Css.manifest.json'), 'utf8');
 if (manifestText.replaceAll('\r\n', '\n') !== committedManifest.replaceAll('\r\n', '\n')) throw new Error('Generated CSS binding manifest is stale.');
 const corpusManifest = JSON.parse(manifestText);
+if (corpusManifest.schemaVersion === 2) {
+  process.argv.push('--snapshot', path.join(output, 'model.json'));
+  await import('./verify-compact-bindings.mjs');
+  process.exit(0);
+}
 const propertyCount = corpusManifest.definitions.filter(item => item.kind === 'Property').length;
 if ((generated.match(/let reactive \(/g) ?? []).length !== propertyCount) throw new Error('Reactive helpers do not cover every property.');
 if (!corpusManifest.cssWideKeywords.includes('revert-rule') || !generated.includes('globalRevertRule')) throw new Error('Latest CSS-wide keywords are missing.');
@@ -36,6 +41,22 @@ open Ranvier.Css.Generated
 module Short =
     open Ranvier.Css
     let verify () =
+        if Value.render Css.red <> "red" then failwith "Keyword canonical storage."
+        let chooseWidth flag =
+            if flag then Css.px 42.0 :> CssValueCategories.IPropertyWidth
+            else Css.percent 50.0
+        if Declaration.render (Css.width (chooseWidth true)) <> "width: 42px;" then failwith "First branch interface widening."
+        if Declaration.render (Css.width (chooseWidth false)) <> "width: 50%;" then failwith "Implicit second branch coercion."
+        let chooseNumeric flag =
+            if flag then Css.px 42.0 :> CssValueCategories.ILengthPercentage
+            else Css.percent 50.0
+        if Declaration.render (Css.width (chooseNumeric false)) <> "width: 50%;" then failwith "Shared length percentage category."
+        let chooseKeyword flag =
+            if flag then Css.px 42.0 :> CssValueCategories.IPropertyWidth
+            else Css.auto
+        if Declaration.render (Css.width (chooseKeyword false)) <> "width: auto;" then failwith "Mixed numeric and keyword branch."
+        let conditionalStyle = styled { Css.width chooseWidth }
+        if not ((Style.renderVariables false conditionalStyle).Contains("50%")) then failwith "Interface reader tracks the chosen branch."
         if Declaration.render (Css.width (Css.px 42.0)) <> "width: 42px;" then failwith "Short typed width."
         if Declaration.render (Css.width (Css.percent 50.0)) <> "width: 50%;" then failwith "Short percentage."
         if Declaration.render (Css.width Css.auto) <> "width: auto;" then failwith "Short keyword."

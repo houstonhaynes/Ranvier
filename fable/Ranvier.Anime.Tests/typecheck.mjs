@@ -21,7 +21,7 @@ await fs.writeFile(project, `<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><Ta
 const prefix = `module Types
 open Ranvier.Css
 open Ranvier.Anime
-let gap = Css.lengthVariable "--gap"
+let gap: CustomProperty<CssValue.Length.Value> = CustomProperty.create "--gap"
 `;
 await fs.writeFile(path.join(output, 'Types.fs'), prefix + `
 let literal = Anim().With(gap, Css.px 42.)
@@ -29,7 +29,7 @@ let endpoints = Anim().With(gap, Css.px 0., Css.px 42.)
 let frames = Anim().With(gap, [| Css.px 0.; Css.px 42.; Css.px 10. |])
 let drive (el: Fable.Core.TS.Dom.Element) =
     Reactive.driveCss (fun () -> Css.px 42.) el gap (AnimatableProp(duration = 1000.))
-let expression = Css.width (Css.variable gap * Css.number 2. + Css.px 10.)
+let expression = Css.width (CssValue.Length.calc (CssValue.Length.variable "--gap" * Css.number 2. + Css.px 10.))
 `);
 dotnet(['build', project, '-c', 'Release']);
 const cases = [

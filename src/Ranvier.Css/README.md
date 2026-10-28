@@ -2,7 +2,7 @@
 
 `Ranvier.Css` provides portable values, ordered declarations, a stylesheet tree, deterministic component classes and reactive custom-property slots. `Ranvier.Css.Bindings` contains the ordinary generated F# source for every definition in the pinned CSS corpus. `Ranvier.Css.View` connects those styles to Ranvier templates. `Ranvier.Css.Build` is the separate .NET asset compiler.
 
-Install `Ranvier.Css.Bindings` and `Ranvier.Css.View` from NuGet with `--prerelease`, or reference their projects from a checkout. The CSS numeric expression helpers are available in `0.1.0-alpha.2`; the view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later for class contribution merging. The runtime, bindings and view adapter include Fable sources. `Ranvier.Css.Build` is .NET-only. Applications compile their normal F# references; the specification generator is a library-maintenance tool, not an application build prerequisite.
+Install `Ranvier.Css.Bindings` and `Ranvier.Css.View` from NuGet with `--prerelease`, or reference their projects from a checkout. Use the matching runtime dependency selected by the bindings package. The view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later for class contribution merging. The runtime, bindings and view adapter include Fable sources. `Ranvier.Css.Build` is .NET-only. Applications compile their normal F# references; the specification generator is a library-maintenance tool, not an application build prerequisite.
 
 Read the [typed CSS guide](https://shayanhabibi.github.io/Ranvier/view/css/), [composite utility examples](https://shayanhabibi.github.io/Ranvier/view/css-utilities/) and [asset extraction guide](https://shayanhabibi.github.io/Ranvier/view/css-build/).
 
@@ -17,7 +17,7 @@ open Ranvier.View
 let progress : Styled<Signal<float>> =
     styled {
         Css.width (fun (signal: Signal<float>) -> Css.px signal.Value)
-        Css.display Css.block
+        Css.display CssValue.Display.block
         Style.hover [Style.declarations [Css.width (Css.px 320.0)]]
         Style.media "(width >= 768px)" [Style.declarations [Css.width (Css.px 640.0)]]
     }
@@ -33,9 +33,11 @@ let component =
 
 The class name depends on the static CSS structure, never on signal values, object identities or registration order. Dynamic properties become static `var(--r-...)` references. Their instance readers use Ranvier's existing tracked template attribute binding. A signal update changes the element's custom properties; it does not create rules or class names. Disposal releases the existing component binding. SSR writes the current values using the same class identity. The DOM acceptance checks run real generated property helpers under both commit modes; a Chromium gate also checks native computed values and inline CSS-wide keyword semantics.
 
-The default `Css` type lives directly in `Ranvier.Css`. Each property has overloaded static methods: `Css.width (Css.px 42.0)` creates a declaration, while `Css.width (fun state -> Css.px state.Width.Value)` creates a tracked style node. Shared primitives include `px`, `rem`, `percent`, `number`, `integer`, `deg` and `ms`; shared keyword values include `auto`, `block` and `red`. Generated nominal marker types prevent an angle, unrelated keyword or raw string from being accepted as width. Conversion paths use the canonical grammar factories, including their range checks. Structural productions such as required pairs are not flattened into single-value overloads. Reader parameters may need an instance type annotation, as in the example.
+The default `Css` type lives directly in `Ranvier.Css`. Each property has overloaded static methods: `Css.width (Css.px 42.0)` creates a declaration, while `Css.width (fun state -> Css.px state.Width.Value)` creates a tracked style node. Shared primitives include `px`, `rem`, `percent`, `number`, `integer`, `deg` and `ms`. Discover keywords under semantic owners, such as `CssValue.Width.auto`, `CssValue.Display.block` and `CssValue.Color.red`. Grammar-derived interfaces prevent an angle, unrelated keyword or raw string from being accepted as width. The shared runtime checks numeric bounds and grammar construction. Structural productions such as required pairs are not flattened into single-value overloads. Reader parameters may need an instance type annotation, as in the example.
 
-The detailed grammar API remains under `Ranvier.Css.Generated.Css`; alias it with `module Canonical = Ranvier.Css.Generated.Css` when a structural expression needs explicit construction. Its property modules retain `declaration`, `constant`, `reactive`, and `reactiveImportant`. `reactiveImportant` fixes importance in the stylesheet, rather than placing `!important` on a custom-property value. Opening `Ranvier.Css.Generated` selects that longer canonical API instead of the default sugar.
+Structured grammar constructors live under `CssValue`, alongside their values. For example, `CssValue.Border.create (Some (Css.px 2.)) (Some CssValue.Border.Style.solid) None` supplies the width and style roles and omits color. Each meaningful owner exposes a `Value` interface. A conditional can set a common category on its first branch, for example `if usePixels then Css.px 42. :> CssValue.LengthPercentage.Value else Css.percent 50.`. Later compatible branches coerce to that interface. The default generated storage remains under `Ranvier.Css.Generated`; consumers open `Ranvier.Css` for authoring.
+
+Arithmetic and math functions retain unevaluated CSS trees. Finish them with a measured bridge such as `CssValue.Length.calc (Css.px 4. * 2.)` before assigning a property. Use `CssValue.LengthPercentage.calc` for expressions with a length percentage basis, `CssValue.Angle.calc` for angles, and `CssValue.Number.calc` or `CssValue.Integer.calc` for scalar results. These bridges also work in reactive readers. `CssValue.render` returns a typed value's serialized CSS text.
 
 CSS-wide property keywords (`initial`, `inherit`, `unset`, `revert`, `revert-layer`, `revert-rule`) work as static declarations, for example `Css.color Css.initial`. F# reserved keyword names such as `inherit` require double-backtick escaping. For changing CSS-wide values, use `CssView.inlineStyle` with a reader returning these declarations. The sugar deliberately supplies no variable-backed reader overload for these keyword markers: substituting them through a variable changes their cascade meaning. The generated keyword registry comes from the current `all` property specification.
 
@@ -62,7 +64,7 @@ let spacious = utility {
 let card = utility {
     Css.fontSize (Css.rem 1.)
     md { spacious }
-    hover { Css.color Css.blue }
+    hover { Css.color CssValue.Color.blue }
 }
 
 // Within a component's view:
@@ -80,7 +82,17 @@ The [project compiler](../../tools/Ranvier.Css.Compile/README.md) discovers appl
 
 ## Typed custom properties
 
-`CustomProperty<'syntax>` shares the generated value's grammar marker. Create a variable with `CustomProperty.create "--progress"`, use `CustomProperty.reference` or `referenceWithFallback` in typed property constructors, and bind it through `Style.bind variable reader`. `Rule.register` emits `@property` with a supported registration syntax, inheritance flag and initial value. The caller must ensure the initial value meets the registration's computational-independence and grammar requirements.
+Use `Css.variable<CssValue.Width.Value> "--width"` for a generic reference retaining the destination grammar category. `CssValue.Variable.withFallback` adds a value in that category, and `CssValue.Variable.declaration` assigns it. `CssValue.variable` and `CssValue.var` provide the same reference factory. Generic references enter property sinks directly.
+
+For arithmetic, use a measured numeric reference instead:
+
+```fsharp
+let gap = CssValue.Length.variableWithFallback "--gap" (Css.px 8.)
+let spaced = CssValue.Length.calc (gap + Css.px 2.)
+let width = Css.width spaced
+```
+
+`CssValue.Length.variable` omits the fallback. Measured references validate dashed names, preserve their calculation trees and require a fallback with the same dimension and percentage hint. Neither kind of reference reads the browser's current value or registers a property. `Rule.register` emits `@property` with a supported registration syntax, inheritance flag and initial value. The caller must ensure the initial value meets the registration's computational-independence and grammar requirements.
 
 ## View options
 
@@ -97,4 +109,4 @@ See [asset compilation](../Ranvier.Css.Build/README.md) and the [runnable exampl
 
 ## Specification boundaries
 
-The generated library covers 4,882 definitions from 122 locked raw extracts plus the canonical Webref package. Current definitions prefer newer same-series specifications; superseded items have compiler obsolescence attributes. The manifest records 160 prose-defined productions and two unresolved upstream `anchored-feature` references. Explicit unsafe constructors remain available for those gaps. Grammar typing does not infer every prose constraint, computed-value rule, property-specific identifier exclusion or browser support policy. Typed values remain distinct dimensions; a normal width constructor rejects an angle at compile time.
+The model retains 4,882 definitions from 122 locked raw extracts plus the canonical Webref package. Current definitions prefer newer same-series specifications. Compact public owners exclude archived obsolete scopes while current deprecated definitions remain available; their provenance stays in the manifest. The manifest records 160 prose-defined productions and two unresolved upstream `anchored-feature` references. Explicit `unsafeFromTokens` constructors remain available for grammar gaps. Grammar typing does not infer every prose constraint, computed-value rule, property-specific identifier exclusion or browser support policy. Typed values remain distinct dimensions; a normal width constructor rejects an angle at compile time.

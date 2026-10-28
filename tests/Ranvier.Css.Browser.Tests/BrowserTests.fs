@@ -81,21 +81,24 @@ let cssText () =
 /// <summary>Executes a real DOM mount, reactive update, and disposal under both template commit modes.</summary>
 let run () =
     let calculatedWidth =
-        Css.width (Css.percent 100. - Css.rem 2.)
+        Css.width (CssValue.LengthPercentage.calc (Css.percent 100. - Css.rem 2.))
         |> Declaration.render
 
     if calculatedWidth <> "width: calc(100% - 2rem);" then
         failwith "Portable expression serialization changed."
 
     let minimum =
-        Css.width (Css.min (Css.percent 100., Css.px 960.))
+        Css.width (CssValue.LengthPercentage.calc (Css.min (Css.percent 100., Css.px 960.)))
         |> Declaration.render
 
     if minimum <> "width: min(100%, 960px);" then
         failwith "Portable mixed-function typing changed."
 
+    if CssValue.render CssValue.Color.red <> "red" then
+        failwith "Keyword canonical storage changed."
+
     let canonicalAngle =
-        Css.rotate (Css.angle (Css.deg 30. + Css.deg 15.))
+        Css.rotate (CssValue.Angle.calc (Css.deg 30. + Css.deg 15.))
         |> Declaration.render
 
     if canonicalAngle <> "rotate: calc(30deg + 15deg);" then
@@ -103,27 +106,24 @@ let run () =
 
     for actual, expected in
         [
-            RuntimeApi.renderValue (Css.number (Css.number 1. + Css.number 2.)), "calc(1 + 2)"
-            RuntimeApi.renderValue (Css.integer (Css.number 1.5)), "calc(1.5)"
-            RuntimeApi.renderValue (Css.lengthPercentage (Css.px 10. + Css.percent 50.)), "calc(10px + 50%)"
+            CssValue.render (CssValue.Number.calc (Css.number 1. + Css.number 2.)), "calc(1 + 2)"
+            CssValue.render (CssValue.Integer.calc (Css.number 1.5)), "calc(1.5)"
+            CssValue.render (CssValue.LengthPercentage.calc (Css.px 10. + Css.percent 50.)), "calc(10px + 50%)"
         ] do
         if actual <> expected then
             failwith "Portable canonical numeric value bridge changed."
 
-    let gap = Css.lengthVariable "--portable-gap"
+    let gap = CssValue.Length.variableWithFallback "--portable-gap" (Css.px 8.)
 
     let reference =
-        Css.width (
-            Css.variable (gap, fallback = Css.px 8.)
-            + Css.px 2.
-        )
+        Css.width (CssValue.Length.calc (gap + Css.px 2.))
         |> Declaration.render
 
     if
         reference
         <> "width: calc(var(--portable-gap, 8px) + 2px);"
     then
-        failwith "Portable variable fallback changed."
+        failwithf "Portable variable fallback changed: %s" reference
 
     for number, expected in
         [
@@ -158,7 +158,7 @@ let run () =
                 yield
                     Css.width (fun (current: Signal<float>) ->
                         reads <- reads + 1
-                        Css.px current.Value + Css.px 2.)
+                        CssValue.Length.calc (Css.px current.Value + Css.px 2.))
             }
 
         let definition =
@@ -240,9 +240,9 @@ let run () =
                             CssView.inlineStyle t.Attrs (fun (signal: Signal<bool>) ->
                                 [
                                     if signal.Value then
-                                        Css.color Css.initial
+                                        Css.color CssValue.initial
                                     else
-                                        Css.color Css.``inherit``
+                                        Css.color CssValue.inherit'
                                 ])
                         |]
                         [||])

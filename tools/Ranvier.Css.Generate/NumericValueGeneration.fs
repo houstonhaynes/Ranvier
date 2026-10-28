@@ -150,6 +150,15 @@ module NumericValueGeneration =
 
         let registry = markers manifest
 
+        let wrappedMarkers =
+            items "definitions" manifest
+            |> List.filter (fun item ->
+                text "kind" item = "Type"
+                && (items "scopes" item).IsEmpty
+                && text "obsolete" item = "")
+            |> List.map (text "marker")
+            |> Set.ofList
+
         let markerType marker =
             canonical + "Markers.``" + marker + "``"
 
@@ -161,28 +170,41 @@ module NumericValueGeneration =
             + ">"
 
         let numericType item =
-            "NumericValue<"
-            + item.Measure
-            + ","
-            + markerType item.Marker
-            + ","
-            + item.Hint
-            + ">"
+            if wrappedMarkers.Contains item.Marker then
+                "CssValues.Numeric_" + item.Marker
+            else
+                "NumericValue<"
+                + item.Measure
+                + ","
+                + markerType item.Marker
+                + ","
+                + item.Hint
+                + ">"
 
         let body item =
             let context, expected = contextAndExpected item.Production
 
-            "let calculation = value.Calculation in let checkedValue = global.Ranvier.Css.CalculationRuntime.declaration \"--numeric-value\" "
-            + context
-            + " "
-            + expected
-            + " calculation in NumericFactory.value<"
-            + item.Measure
-            + ","
-            + markerType item.Marker
-            + ","
-            + item.Hint
-            + "> (global.Ranvier.Css.Generated.value (global.Ranvier.Css.RuntimeApi.declarationValue checkedValue)) calculation"
+            let expression =
+                "let calculation = value.Calculation in let checkedValue = global.Ranvier.Css.CalculationRuntime.declaration \"--numeric-value\" "
+                + context
+                + " "
+                + expected
+                + " calculation in NumericFactory.value<"
+                + item.Measure
+                + ","
+                + markerType item.Marker
+                + ","
+                + item.Hint
+                + "> (global.Ranvier.Css.Generated.value (global.Ranvier.Css.RuntimeApi.declarationValue checkedValue)) calculation"
+
+            if wrappedMarkers.Contains item.Marker then
+                "CssValues.Numeric_"
+                + item.Marker
+                + " ("
+                + expression
+                + ")"
+            else
+                expression
 
         let emit name (parameter: string) output implementation =
             line "    /// <summary>Checks a numeric expression against this grammar production and preserves its unevaluated tree.</summary>"

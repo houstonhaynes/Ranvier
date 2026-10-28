@@ -281,7 +281,26 @@ module Resolution =
                             ids
                             |> List.filter (fun id -> aliases[id] <> aliases[owner])
 
-                        if outer.IsEmpty then ids else outer
+                        let ownerScopes =
+                            owner.Scopes
+                            |> List.filter (fun scope -> not (scope.StartsWith ("#", StringComparison.Ordinal)))
+                            |> List.map scopeName
+                            |> Set.ofList
+
+                        let enclosing =
+                            outer
+                            |> List.filter (fun id ->
+                                let scopes =
+                                    id.Scopes
+                                    |> List.filter (fun scope -> not (scope.StartsWith ("#", StringComparison.Ordinal)))
+                                    |> List.map scopeName
+                                    |> Set.ofList
+
+                                Set.isProperSubset scopes ownerScopes)
+
+                        if not enclosing.IsEmpty then enclosing
+                        elif outer.IsEmpty then ids
+                        else outer
                     else
                         ids
 

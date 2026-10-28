@@ -10,11 +10,11 @@ open Ranvier.View.Sugar
 open Ranvier.View.Anime
 
 /// <summary>The length animated by each component instance.</summary>
-let gap = Css.lengthVariable "--card-gap"
+let gap: CustomProperty<CssValue.Length.Value> = CustomProperty.create "--card-gap"
 
 /// <summary>Static CSS whose width is computed by the browser from the animated variable.</summary>
 let cardStyle = utility {
-    Css.width (Css.variable(gap, fallback = Css.px 0.) * Css.number 2. + Css.px 10.)
+    Css.width (CssValue.Length.calc (CssValue.Length.variableWithFallback "--card-gap" (Css.px 0.) * Css.number 2. + Css.px 10.))
     Css.maxWidth (Css.percent 100.)
 }
 

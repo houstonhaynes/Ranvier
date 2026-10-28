@@ -58,6 +58,7 @@ module internal Metadata =
     type Registry =
         {
             Namespace: string
+            Compact: CompactMetadata.Registry option
             Primitives: Map<string, Primitive>
             CalculationPrimitives: Map<string, CalculationPrimitive>
             CalculationPrimitiveOwner: string
@@ -75,7 +76,7 @@ module internal Metadata =
     let private string (name: string) (item: JsonElement) : string =
         item.GetProperty(name).GetString()
 
-    let load path =
+    let private loadLegacy path =
         use document = JsonDocument.Parse (File.ReadAllText path)
         let sugar = document.RootElement.GetProperty "sugar"
 
@@ -243,6 +244,7 @@ module internal Metadata =
 
         {
             Namespace = string "namespaceName" sugar
+            Compact = None
             CalculationPrimitives = calculationPrimitives
             CalculationFunctions = helpers "functionHelpers"
             CalculationConstants = helpers "constantHelpers"
@@ -340,6 +342,33 @@ module internal Metadata =
                     string "memberName" item, definition)
                 |> Map.ofSeq
         }
+
+    let fromCompact (compact: CompactMetadata.Registry) : Registry =
+        {
+            Namespace = compact.Namespace
+            Compact = Some compact
+            Primitives = Map.empty
+            CalculationPrimitives = Map.empty
+            CalculationPrimitiveOwner = ""
+            CalculationFunctions = Map.empty
+            CalculationConstants = Map.empty
+            ContextualHelpers = Map.empty
+            VariableSources = Map.empty
+            VariableMarkers = Map.empty
+            ValueAdapters = Map.empty
+            ExtractionFactories = Map.empty
+            Keywords = Map.empty
+            Properties = Map.empty
+        }
+
+    let load path =
+        use document = JsonDocument.Parse (File.ReadAllText path)
+
+        match document.RootElement.TryGetProperty "sugar" with
+        | true, _ -> loadLegacy path
+        | _ ->
+            CompactMetadata.loadJson (document.RootElement.GetRawText ())
+            |> fromCompact
 
     let calculationPrimitive (definition: CalculationPrimitive) (argument: obj) =
         let value =

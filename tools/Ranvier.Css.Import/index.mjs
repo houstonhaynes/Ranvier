@@ -9,7 +9,7 @@ const directory = path.dirname(fileURLToPath(import.meta.url));
 const reserved = new Set('abstract and as asr assert atomic base begin break checked class component const constraint constructor continue default delegate do done downcast downto eager elif else end event exception extern external false finally fixed for fun function global if in include inherit inline interface internal land lazy let lor lsl lsr lxor match member method mixin mod module mutable namespace new not null object of open or override parallel private process protected public pure rec return sealed sig static struct tailcall then to trait true try type upcast use val virtual void volatile when while with yield'.split(' '));
 
 function identifier(value) {
-  if (typeof value !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) throw new Error(`Invalid F# identifier: ${value}`);
+  if (typeof value !== 'string' || !/^[A-Za-z_][A-Za-z0-9_']*$/.test(value)) throw new Error(`Invalid F# identifier: ${value}`);
   return reserved.has(value) ? '``' + value + '``' : value;
 }
 
@@ -47,6 +47,7 @@ function numberLiteral(text, integer) {
 }
 
 function prepare(manifest) {
+  if (manifest?.schemaVersion === 2 && !manifest.sugar) return prepareCompact(manifest);
   const sugar = manifest?.sugar;
   if (!sugar || sugar.schemaVersion !== 2 || !Array.isArray(sugar.properties) || !Array.isArray(sugar.primitives) || !Array.isArray(sugar.keywords)) {
     throw new Error('The binding manifest has no sugar map. Regenerate it with the current specification tool and --runtime.');
@@ -58,6 +59,141 @@ function prepare(manifest) {
     if (item.scopes.length === 0 && !item.obsolete) properties.set(item.cssName.toLowerCase(), item);
   }
   return { ...sugar, properties, keywords: new Map(sugar.keywords.map(item => [item.token, item])) };
+}
+
+function prepareCompact(manifest) {
+  qualified(manifest.namespaceName);
+  if (typeof manifest.encodedGrammar !== 'string' || !Array.isArray(manifest.properties) || !Array.isArray(manifest.factories)) {
+    throw new Error('The compact binding manifest requires encoded grammar, properties and explicit factories.');
+  }
+  const fields = [];
+  const encoded = manifest.encodedGrammar;
+  for (let offset = 0; offset < encoded.length;) {
+    const colon = encoded.indexOf(':', offset);
+    const size = encoded.slice(offset, colon);
+    if (colon < 0 || !/^\d+$/.test(size) || !Number.isSafeInteger(Number(size)) || Number(size) > encoded.length - colon - 1) throw new Error('Invalid compact grammar field.');
+    fields.push(encoded.slice(colon + 1, colon + 1 + Number(size)));
+    offset = colon + 1 + Number(size);
+  }
+  const integer = text => {
+    if (!/^-?\d+$/.test(text) || !Number.isSafeInteger(Number(text))) throw new Error('Invalid compact grammar integer.');
+    return Number(text);
+  };
+  if (!fields.length || integer(fields[0]) < 0 || fields.length !== 1 + integer(fields[0]) * 14) throw new Error('Invalid compact grammar node count.');
+  const nodes = new Map();
+  const bound = (value, unitName) => {
+    if (value === '') return { kind: 'unbounded' };
+    if (!Number.isFinite(Number(value))) throw new Error('Invalid compact numeric bound.');
+    return { kind: 'finite', value, unitName };
+  };
+  for (let offset = 1; offset < fields.length; offset += 14) {
+    const at = index => fields[offset + index];
+    const node = {
+      id: integer(at(0)), kind: integer(at(1)), text: at(2), target: integer(at(3)),
+      children: at(4) === '' ? [] : at(4).split(',').map(integer),
+      minimum: integer(at(6)), maximum: integer(at(7)),
+      ranges: [{ minimum: bound(at(9), at(10)), maximum: bound(at(11), at(12)) }]
+    };
+    if (node.id < 0 || nodes.has(node.id) || node.kind < 0 || node.kind > 12 || node.minimum < 0 || node.maximum < -1 || (node.maximum >= 0 && node.maximum < node.minimum)) throw new Error('Invalid compact grammar node.');
+    nodes.set(node.id, node);
+  }
+  for (const node of nodes.values()) {
+    if (node.children.some(id => !nodes.has(id)) || (node.kind === 2 && !nodes.has(node.target))) throw new Error('Missing compact grammar edge.');
+    if ([7, 8, 11].includes(node.kind) && node.children.length !== 1) throw new Error('Invalid compact unary grammar.');
+  }
+  const properties = new Map();
+  for (const item of manifest.properties) {
+    qualified(item.owner); identifier(item.memberName);
+    if (!nodes.has(item.nodeId)) throw new Error('Unknown compact property node.');
+    if (!properties.has(item.cssName.toLowerCase())) properties.set(item.cssName.toLowerCase(), item);
+  }
+  const factories = manifest.factories.filter(factory => ['number', 'integer', 'string', 'token', 'wide'].includes(factory.kind));
+  for (const factory of factories) {
+    if (!nodes.has(factory.nodeId)) throw new Error('Unknown compact factory node.');
+  }
+  factories.sort((left, right) => {
+    const rank = factory => factory.owner === manifest.namespaceName + '.Css' ? 0 : factory.owner.includes('.Keywords') ? 2 : 1;
+    return rank(left) - rank(right) || left.owner.length - right.owner.length || left.owner.localeCompare(right.owner) || left.memberName.localeCompare(right.memberName);
+  });
+  const owners = new Map((manifest.owners ?? []).map(owner => [owner.nodeId, manifest.namespaceName + '.CssValue.' + owner.path.join('.')]));
+  return { compact: true, namespaceName: manifest.namespaceName, properties, factories, nodes, owners };
+}
+
+function compactNullable(map, id, seen = new Set()) {
+  if (seen.has(id)) return false;
+  const node = map.nodes.get(id), next = new Set(seen).add(id);
+  const visit = child => compactNullable(map, child, next);
+  if (node.kind === 1) return node.text === '';
+  if (node.kind === 2) return visit(node.target);
+  if (node.kind === 3) return node.children.some(visit);
+  if ([4, 5].includes(node.kind)) return node.children.every(visit);
+  if (node.kind === 7) return node.minimum === 0 || visit(node.children[0]);
+  if (node.kind === 11) return visit(node.children[0]);
+  return false;
+}
+
+function compactAdmits(map, id, atom, seen = new Set()) {
+  if (seen.has(id)) return false;
+  const node = map.nodes.get(id), next = new Set(seen).add(id);
+  const visit = child => compactAdmits(map, child, atom, next);
+  let accepted = atom.nodeId === id;
+  if (!accepted) {
+    if (node.kind === 1) accepted = atom.nodeId === -1 && atom.text === node.text;
+    else if (node.kind === 2) accepted = visit(node.target);
+    else if ([3, 6, 8, 11].includes(node.kind)) accepted = node.children.some(visit);
+    else if ([4, 5].includes(node.kind)) accepted = node.children.some((child, index) => node.children.every((sibling, other) => index === other || compactNullable(map, sibling)) && visit(child));
+    else if (node.kind === 7 && node.minimum <= 1 && (node.maximum === -1 || node.maximum >= 1)) accepted = visit(node.children[0]);
+  }
+  return accepted && (atom.magnitude === undefined || rangesAllow(atom.magnitude, atom.unit, node.ranges));
+}
+
+function compactNumericIdentity(map, factory) {
+  const compatible = name => {
+    name = name.replace(/^<|>$/g, '').toLowerCase();
+    if (factory.unitName === '%') return ['percentage', 'percentage-token'].includes(name);
+    if (!factory.unitName) return ['number', 'number-token', 'integer', 'zero'].includes(name);
+    return ['length', 'angle', 'time', 'frequency', 'resolution', 'flex', 'dimension', 'dimension-token'].includes(name);
+  };
+  const terminals = new Set();
+  const visit = (id, seen = new Set()) => {
+    if (seen.has(id)) return;
+    const node = map.nodes.get(id), next = new Set(seen).add(id);
+    if (node.kind === 0 && compatible(node.text)) terminals.add(id);
+    else if (node.kind === 2) visit(node.target, next);
+    else if ([3, 8].includes(node.kind)) node.children.forEach(child => visit(child, next));
+  };
+  visit(factory.nodeId);
+  return terminals.size === 1 ? [...terminals][0] : factory.nodeId;
+}
+
+function compactTypedValue(token, property, map) {
+  const call = factory => {
+    const owner = factory.owner === map.namespaceName + '.Css' ? 'Css' : factory.owner.startsWith(map.namespaceName + '.') ? qualified(factory.owner.slice(map.namespaceName.length + 1)) : qualified(factory.owner);
+    return owner + '.' + identifier(factory.memberName);
+  };
+  if (['Identifier', 'Number'].includes(token.type)) {
+    const text = token.type === 'Identifier' ? ident.decode(token.name).toLowerCase() : token.value;
+    const preferred = map.owners.get(property.nodeId);
+    const factories = map.factories.filter(factory => ['token', 'wide'].includes(factory.kind) && map.nodes.get(factory.nodeId).text === text);
+    factories.sort((a, b) => Number(b.owner === preferred) - Number(a.owner === preferred));
+    for (const factory of factories) {
+      if (factory.kind === 'wide' || compactAdmits(map, property.nodeId, { nodeId: -1, text })) return call(factory);
+    }
+  }
+  for (const factory of map.factories) {
+    let argument = null;
+    const numeric = ['number', 'integer'].includes(factory.kind);
+    if (numeric && token.type === 'Dimension' && factory.unitName && ident.decode(token.unit).toLowerCase() === factory.unitName.toLowerCase()) argument = numberLiteral(token.value, factory.argumentType === 'int');
+    else if (numeric && token.type === 'Percentage' && factory.unitName === '%') argument = numberLiteral(token.value, false);
+    else if (numeric && token.type === 'Number' && !factory.unitName) argument = numberLiteral(token.value, factory.argumentType === 'int' || factory.kind === 'integer');
+    else if (factory.kind === 'string' && token.type === 'String') argument = literal(token.value);
+    if (argument === null || (factory.argumentType === 'none' && Number(token.value) !== 0)) continue;
+    const atom = numeric ? { nodeId: compactNumericIdentity(map, factory), magnitude: Number(token.value), unit: factory.unitName ?? '' } : { nodeId: factory.nodeId };
+    if (!compactAdmits(map, factory.nodeId, atom) || !compactAdmits(map, property.nodeId, atom)) continue;
+    if (factory.argumentType === 'none') return call(factory);
+    return '(' + call(factory) + ' ' + (argument.startsWith('-') ? '(' + argument + ')' : argument) + ')';
+  }
+  return null;
 }
 
 function rangesAllow(value, unit, ranges) {
@@ -84,6 +220,7 @@ function typedValue(value, property, map) {
   const nodes = tree.children.toArray();
   if (nodes.length !== 1) return null;
   const token = nodes[0];
+  if (map.compact) return compactTypedValue(token, property, map);
   if (token.type === 'Identifier') {
     const keyword = ident.decode(token.name).toLowerCase();
     const helper = map.keywords.get(keyword);
@@ -144,7 +281,7 @@ export function generate(css, manifest, options = {}) {
     } else {
       result = 'Declaration.create ' + literal(node.prop) + ' ' + literal(tokens);
       report.rawDeclarations++;
-      diagnostic(node, 'declaration', typed ? 'No lossless typed sugar conversion for this property/value.' : 'Descriptor declarations retain their original tokens.');
+      diagnostic(node, 'declaration', typed ? 'No lossless typed conversion for this property/value.' : 'Descriptor declarations retain their original tokens.');
     }
     return node.important ? '(' + result + ' |> Declaration.important)' : result;
   };

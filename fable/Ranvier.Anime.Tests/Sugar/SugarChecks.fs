@@ -20,7 +20,7 @@ let private equal expected actual =
 let run () =
     let el: Element = document.createElement "div"
     document.body.appendChild el |> ignore
-    let gap = Css.lengthVariable "--gap"
+    let gap: CustomProperty<CssValue.Length.Value> = CustomProperty.create "--gap"
     let finish = Css.px 100.
     equal (Some (100., "px")) (RuntimeApi.tryNumericValue finish)
 
@@ -40,9 +40,11 @@ let run () =
 
     let expression =
         Css.width (
-            Css.variable (gap, fallback = Css.px 0.)
-            * Css.number 2.
-            + Css.px 10.
+            CssValue.Length.calc (
+                CssValue.Length.variableWithFallback "--gap" (Css.px 0.)
+                * Css.number 2.
+                + Css.px 10.
+            )
         )
 
     equal "width: calc(var(--gap, 0px) * 2 + 10px);" (RuntimeApi.renderDeclaration expression)

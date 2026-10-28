@@ -438,6 +438,7 @@ let tests =
             SpecSourcesTests.tests
             GenerationTests.tests
             RuntimeTests.tests
+            GrammarRuntimeTests.tests
             ConditionalRuntimeTests.tests
             UtilityTests.tests
             BuildTests.tests

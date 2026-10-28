@@ -297,6 +297,97 @@ let private cases =
 
             Expect.equal (targets source result) [ ReferenceTarget.Definition nested.Id ] "Both ancestors outrank one"
 
+
+        "current and archived forwarding aliases prefer the external length production",
+        fun () ->
+            let outer =
+                { feature FeatureKind.Type "length" [] None None with
+                    Href = "https://example.test/values-4/#length"
+                }
+
+            let current =
+                { feature FeatureKind.Type "length" [ "background-position" ] None (Some "<length>") with
+                    Href = "https://example.test/backgrounds-4/#length"
+                }
+
+            let archived =
+                { current with
+                    Id =
+                        { current.Id with
+                            Scopes = [ "background-position"; "#obsolete:backgrounds-3" ]
+                        }
+                    Href = "https://example.test/backgrounds-3/#length"
+                }
+
+            let result =
+                catalogue [ current; archived; outer ]
+                |> Resolution.resolve
+
+            for alias in [ current; archived ] do
+                Expect.equal
+                    (targets alias result)
+                    [ ReferenceTarget.Definition outer.Id ]
+                    "Peer forwarding aliases do not shadow the enclosing definition."
+
+            Expect.isEmpty result.Cycles "The primitive aliases must not create a reference-only cycle."
+
+            Expect.equal
+                result
+                (catalogue [ outer; archived; current ]
+                 |> Resolution.resolve)
+                "Alias resolution remains deterministic."
+
+        "forwarding aliases retain the nearest enclosing semantic scope",
+        fun () ->
+            let outer = feature FeatureKind.Type "item" [ "outer" ] None None
+            let globalDefinition = feature FeatureKind.Type "item" [] None None
+
+            let local =
+                feature FeatureKind.Type "item" [ "outer"; "inner" ] None (Some "<item>")
+
+            let archived =
+                { local with
+                    Id =
+                        { local.Id with
+                            Scopes = local.Id.Scopes @ [ "#obsolete:older" ]
+                        }
+                    Href = "https://example.test/older/#item"
+                }
+
+            let result =
+                catalogue [ local; archived; outer; globalDefinition ]
+                |> Resolution.resolve
+
+            Expect.equal (targets local result) [ ReferenceTarget.Definition outer.Id ] "The enclosing scope outranks a global definition."
+
+            Expect.equal
+                (targets archived result)
+                [ ReferenceTarget.Definition outer.Id ]
+                "Archive markers are provenance rather than semantic scope."
+
+            Expect.isEmpty result.Cycles "Peers cannot replace the actual enclosing definition."
+
+        "productive recursion survives both global and scoped forwarding rules",
+        fun () ->
+            for scopes in [ []; [ "garden" ] ] do
+                let recursive =
+                    feature FeatureKind.Type "tree" scopes None (Some "leaf | branch( <tree> )")
+
+                let definitions =
+                    if scopes.IsEmpty then
+                        [ recursive ]
+                    else
+                        [ recursive; feature FeatureKind.Type "tree" [] None None ]
+
+                let result = catalogue definitions |> Resolution.resolve
+
+                Expect.equal
+                    (targets recursive result)
+                    [ ReferenceTarget.Definition recursive.Id ]
+                    "A productive grammar keeps its recursive reference."
+
+                Expect.equal result.Cycles [ [ recursive.Id ] ] "The genuine recursive component remains visible."
+
         "local forwarding specializations bind the outer definition",
         fun () ->
             let outer = feature FeatureKind.Type "custom-ident" [] None None

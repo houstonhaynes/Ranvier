@@ -20,11 +20,376 @@ let private generate catalogue =
     | Ok value -> value
     | Error errors -> failtestf "%A" errors
 
+let private compactCatalogue () =
+    let json =
+        """{"properties":[
+            {"name":"all","href":"https://example.test/all","syntax":"initial | inherit | unset | revert | revert-layer | revert-rule"},
+            {"name":"display","href":"https://example.test/display","syntax":"<display-outside> | <display-box>"},
+            {"name":"width","href":"https://example.test/width","syntax":"auto | <length-percentage>"},
+            {"name":"color","href":"https://example.test/color-property","syntax":"<color>"},
+            {"name":"background-color","href":"https://example.test/background-color","syntax":"<color>"},
+            {"name":"pair","href":"https://example.test/pair","syntax":"<length> <length>"},
+            {"name":"future-prose","href":"https://example.test/future-prose"},
+            {"name":"unknown","href":"https://example.test/unknown","syntax":"<not-defined-in-test>"}
+        ],"types":[
+            {"name":"display-outside","href":"https://example.test/display-outside","syntax":"block | inline"},
+            {"name":"display-box","href":"https://example.test/display-box","syntax":"contents | none"},
+            {"name":"length","href":"https://example.test/length"},
+            {"name":"percentage","href":"https://example.test/percentage"},
+            {"name":"length-percentage","href":"https://example.test/mixed","syntax":"<length> | <percentage>"},
+            {"name":"color","href":"https://example.test/color","syntax":"<named-color> | currentcolor"},
+            {"name":"named-color","href":"https://example.test/named-color","syntax":"red | blue"}
+        ],"functions":[],"selectors":[],"atrules":[]}"""
+
+    Webref.consume "compact-generation" (Encoding.UTF8.GetBytes json)
+    |> Result.toOption
+    |> Option.defaultWith (fun () -> failtest "The compact generation fixture must be valid.")
+
+let private compactOutput input =
+    RuntimeGeneration.generate "Example.Compact" input
+    |> Result.toOption
+    |> Option.defaultWith (fun () -> failtest "The compact fixture must generate.")
+
+let private manifestPath (item: JsonElement) =
+    item.GetProperty("path").EnumerateArray()
+    |> Seq.map _.GetString()
+    |> Seq.toList
+
+let private compactCases =
+    testList
+        "compact public bindings"
+        [
+            testCase "default generation separates declarations from discoverable value owners"
+            <| fun _ ->
+                let input = compactCatalogue ()
+                let output = compactOutput input
+                use manifest = JsonDocument.Parse output.Manifest
+                let root = manifest.RootElement
+                Expect.equal (root.GetProperty("schemaVersion").GetInt32()) 2 "The default runtime generator exposes the compact contract."
+                Expect.equal (root.GetProperty("namespaceName").GetString()) "Example.Compact" "The requested namespace is retained."
+
+                let properties =
+                    root.GetProperty("properties").EnumerateArray()
+                    |> Seq.toList
+
+                Expect.equal properties.Length 8 "Every fixture property remains represented."
+
+                Expect.isTrue
+                    (properties
+                     |> List.forall (fun property -> property.GetProperty("owner").GetString() = "Example.Compact.Css"))
+                    "Declaration sinks belong to Css."
+
+                let owners =
+                    root.GetProperty("owners").EnumerateArray()
+                    |> Seq.toList
+
+                Expect.isTrue
+                    (owners
+                     |> List.exists (fun owner -> manifestPath owner = [ "Width" ]))
+                    "Values have semantic property owners."
+
+                Expect.isTrue
+                    (owners
+                     |> List.exists (fun owner -> manifestPath owner = [ "LengthPercentage" ]))
+                    "Reusable mixed categories remain root values."
+
+                Expect.stringContains output.Source "module CssValue =" "The generated public value entry point is present."
+                Expect.stringContains output.Source "type Css =" "The generated public declaration entry point is present."
+
+                Expect.isTrue
+                    (output =
+                        compactOutput
+                            { input with
+                                Features = List.rev input.Features
+                            })
+                    "Public artifacts are independent of catalogue ordering."
+
+            testCase "property keywords remain discoverable through referenced shared grammars"
+            <| fun _ ->
+                let output = compactOutput (compactCatalogue ())
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let factories =
+                    manifest.RootElement.GetProperty("factories").EnumerateArray()
+                    |> Seq.toList
+
+                for keyword in [ "block"; "none" ] do
+                    let factory =
+                        factories
+                        |> List.find (fun factory ->
+                            factory.GetProperty("owner").GetString() = "Example.Compact.CssValue.Display"
+                            && factory.GetProperty("memberName").GetString() = keyword)
+
+                    Expect.equal (factory.GetProperty("kind").GetString()) "token" "Referenced keywords retain token provenance."
+
+                let wide =
+                    factories
+                    |> List.find (fun factory ->
+                        factory.GetProperty("owner").GetString() = "Example.Compact.CssValue.All"
+                        && factory.GetProperty("memberName").GetString() = "initial")
+
+                Expect.equal (wide.GetProperty("kind").GetString()) "wide" "All-property aliases retain the static-only CSS-wide type."
+
+            testCase "mixed numeric owners admit both branches through the exported grammar"
+            <| fun _ ->
+                let output = compactOutput (compactCatalogue ())
+                use manifest = JsonDocument.Parse output.Manifest
+                let root = manifest.RootElement
+
+                let table =
+                    Ranvier.Css.Internal.GrammarRuntime.Table.decode (root.GetProperty("encodedGrammar").GetString())
+
+                let mixed =
+                    root.GetProperty("owners").EnumerateArray()
+                    |> Seq.find (fun owner -> manifestPath owner = [ "LengthPercentage" ])
+                    |> fun owner -> owner.GetProperty("nodeId").GetInt32()
+
+                let factories =
+                    root.GetProperty("factories").EnumerateArray()
+                    |> Seq.toList
+
+                for owner, memberName, suffix in
+                    [
+                        "Example.Compact.CssValue.Length", "px", "px"
+                        "Example.Compact.CssValue.Percentage", "percent", "%"
+                    ] do
+                    let id =
+                        factories
+                        |> List.find (fun factory ->
+                            factory.GetProperty("owner").GetString() = owner
+                            && factory.GetProperty("memberName").GetString() = memberName)
+                        |> fun factory -> factory.GetProperty("nodeId").GetInt32()
+
+                    let value = Ranvier.Css.Internal.GrammarRuntime.number table id 42. suffix
+
+                    Expect.equal
+                        (Ranvier.Css.Internal.GrammarRuntime.admit table mixed value).Text
+                        value.Text
+                        "Both numeric branches enter the common named category."
+
+            testCase "owner factory and diagnostic metadata contain their complete fields"
+            <| fun _ ->
+                let input = compactCatalogue ()
+                let output = compactOutput input
+                use manifest = JsonDocument.Parse output.Manifest
+                let root = manifest.RootElement
+                Expect.equal (root.GetProperty("featureCount").GetInt32()) input.Features.Length "Feature coverage is complete."
+                let nodeCount = root.GetProperty("nodeCount").GetInt32()
+
+                for owner in root.GetProperty("owners").EnumerateArray() do
+                    Expect.isGreaterThan (owner.EnumerateObject () |> Seq.length) 0 "Internal records cannot serialize as empty objects."
+
+                    Expect.isTrue
+                        (manifestPath owner
+                         |> List.forall (String.IsNullOrWhiteSpace >> not))
+                        "Every owner segment is named."
+
+                    Expect.isFalse (String.IsNullOrWhiteSpace (owner.GetProperty("memberName").GetString())) "Every callable is named."
+                    let id = owner.GetProperty("nodeId").GetInt32()
+                    Expect.isTrue (id >= 0 && id < nodeCount) "Owner identities belong to the exported graph."
+
+                    for role in owner.GetProperty("roles").EnumerateArray() do
+                        Expect.isGreaterThanOrEqual (role.GetProperty("index").GetInt32()) 0 "Roles preserve original grammar positions."
+                        Expect.isFalse (String.IsNullOrWhiteSpace (role.GetProperty("name").GetString())) "Roles retain their names."
+
+                let issues =
+                    root.GetProperty("ownerIssues").EnumerateArray()
+                    |> Seq.toList
+
+                Expect.isNonEmpty issues "The ambiguous pair requires explicit naming policy."
+
+                for issue in issues do
+                    Expect.isFalse (String.IsNullOrWhiteSpace (issue.GetProperty("message").GetString())) "Policy diagnostics remain serialized."
+                    issue.GetProperty("nodeId").GetInt32() |> ignore
+
+                    issue.GetProperty("path").GetArrayLength()
+                    |> ignore
+
+                    issue.GetProperty("memberName").GetString()
+                    |> ignore
+
+                let unresolved =
+                    root.GetProperty("unresolved").EnumerateArray()
+                    |> Seq.toList
+
+                Expect.equal unresolved.Length 1 "Unknown references remain explicit rather than inferred."
+
+                Expect.equal
+                    (unresolved.Head.GetProperty("reference").GetString())
+                    "not-defined-in-test"
+                    "The unresolved production retains its spelling."
+
+            testCase "prose and rejected definitions remain explicitly opaque"
+            <| fun _ ->
+                let input = compactCatalogue ()
+
+                let prose =
+                    input.Features
+                    |> List.find (fun feature -> feature.Id.Name = "future-prose")
+
+                let rejected =
+                    { prose with
+                        Id =
+                            { prose.Id with
+                                Name = "rejected-prose"
+                            }
+                        Grammar = GrammarStatus.Rejected ("[", { Offset = 1; Message = "incomplete" })
+                    }
+
+                let output =
+                    compactOutput
+                        { input with
+                            Features = rejected :: input.Features
+                        }
+
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let definitions =
+                    manifest.RootElement.GetProperty("definitions").EnumerateArray()
+                    |> Seq.toList
+
+                for name, grammar in [ "future-prose", "missing"; "rejected-prose", "rejected" ] do
+                    let definition =
+                        definitions
+                        |> List.find (fun definition -> definition.GetProperty("name").GetString() = name)
+
+                    Expect.equal (definition.GetProperty("grammar").GetString()) grammar "Opaque coverage does not pretend to enforce prose."
+
+                Expect.equal output.UnresolvedCount 1 "Unsupported grammar and unresolved references remain separate."
+                Expect.stringContains output.Source "unsafeFromTokens" "Unchecked entry points remain explicitly named."
+
+            testCase "color properties reuse the shared palette"
+            <| fun _ ->
+                let output = compactOutput (compactCatalogue ())
+                use manifest = JsonDocument.Parse output.Manifest
+
+                let red =
+                    manifest.RootElement.GetProperty("factories").EnumerateArray()
+                    |> Seq.find (fun factory ->
+                        factory.GetProperty("owner").GetString() = "Example.Compact.CssValue.Color"
+                        && factory.GetProperty("memberName").GetString() = "red")
+
+                Expect.equal (red.GetProperty("kind").GetString()) "token" "The palette retains shared keyword evidence."
+                Expect.stringContains output.Source "module Colors = Palette" "Color-accepting properties expose the shared Colors vocabulary."
+
+                let table =
+                    Ranvier.Css.Internal.GrammarRuntime.Table.decode (manifest.RootElement.GetProperty("encodedGrammar").GetString())
+
+                let background =
+                    manifest.RootElement.GetProperty("properties").EnumerateArray()
+                    |> Seq.find (fun property -> property.GetProperty("cssName").GetString() = "background-color")
+                    |> fun property -> property.GetProperty("nodeId").GetInt32()
+
+                let value = Ranvier.Css.Internal.GrammarRuntime.token "red"
+
+                Expect.equal
+                    (Ranvier.Css.Internal.GrammarRuntime.admit table background value).Text
+                    "red"
+                    "The property and palette share runtime admission."
+        ]
+
+
 /// <summary>Checks deterministic generation, coverage, obsolescence, and output collision protection.</summary>
 let tests =
     testList
         "CSS binding generation"
         [
+            compactCases
+
+            testCase "shared runtime emits value categories instead of keyword overload products"
+            <| fun _ ->
+                let output =
+                    RuntimeGeneration.generateLegacy "Example.Generated" (catalogue ())
+                    |> Result.toOption
+                    |> Option.get
+
+                Expect.stringContains output.Source "module CssValueCategories" "Values expose acceptance interfaces"
+                Expect.stringContains output.Source "IPropertyWidth" "Width has a common representation"
+                Expect.stringContains output.Source "CssKeywords.Keyword_" "Keywords retain stable type identities"
+                Expect.isFalse (output.Source.Contains "(_: global.Ranvier.Css.Value<CssKeywords.") "Property helpers share keyword admission"
+
+            testCase "deprecated primitive constructors retain their value category adapters"
+            <| fun _ ->
+                let input = catalogue ()
+
+                let deprecated =
+                    { input with
+                        Features =
+                            input.Features
+                            |> List.map (fun feature ->
+                                if feature.Id.Kind = FeatureKind.Type then
+                                    { feature with
+                                        Metadata = feature.Metadata.Add ("deprecated", "true")
+                                    }
+                                else
+                                    feature)
+                    }
+
+                let output = RuntimeGeneration.generate "Example.Generated" deprecated
+                Expect.isOk output "Deprecated types still generate their constructors"
+
+            testCase "identical grammars share marker classes and distinct ranges remain separate"
+            <| fun _ ->
+                let input = catalogue ()
+
+                let property =
+                    input.Features
+                    |> List.find (fun feature -> feature.Id.Kind = FeatureKind.Property)
+
+                let duplicate =
+                    { property with
+                        Id = { property.Id with Name = "height" }
+                        Href = "https://example.test/height"
+                    }
+
+                let countMarkers (output: GeneratedBindings) =
+                    output.Source.Split ('\n')
+                    |> Array.filter (fun line -> line.Contains (" private () = class end"))
+                    |> Array.length
+
+                let originalCount = generate input |> countMarkers
+
+                let shared =
+                    generate
+                        { input with
+                            Features = duplicate :: input.Features
+                        }
+
+                Expect.equal (countMarkers shared) originalCount "Equivalent grammars share their CLR markers"
+                use sharedManifest = JsonDocument.Parse shared.Manifest
+
+                let propertyDefinitions =
+                    sharedManifest.RootElement.GetProperty("definitions").EnumerateArray()
+                    |> Seq.filter (fun definition -> definition.GetProperty("kind").GetString() = "Property")
+                    |> Seq.toList
+
+                for field in [ "marker"; "syntaxFactory" ] do
+                    let identities =
+                        propertyDefinitions
+                        |> List.map (fun definition -> definition.GetProperty(field).GetString())
+                        |> List.distinct
+
+                    Expect.equal identities.Length 1 "Manifest identities match the shared runtime representation"
+
+                let bounded =
+                    { duplicate with
+                        Grammar =
+                            GrammarStatus.Parsed (
+                                "auto | <length [0,50]>",
+                                Grammar.parse "auto | <length [0,50]>"
+                                |> Result.toOption
+                                |> Option.get
+                            )
+                    }
+
+                let separate =
+                    generate
+                        { input with
+                            Features = bounded :: input.Features
+                        }
+
+                Expect.isGreaterThan (countMarkers separate) originalCount "Different bounds have distinct markers"
+
             testCase "canonical extraction factories follow exact unrestricted grammar nodes"
             <| fun _ ->
                 let json =
@@ -84,7 +449,7 @@ let tests =
                     |> Option.get
 
                 let output =
-                    RuntimeGeneration.generate "Example.Generated" input
+                    RuntimeGeneration.generateLegacy "Example.Generated" input
                     |> Result.toOption
                     |> Option.get
 
@@ -203,7 +568,7 @@ let tests =
                 for output in
                     [
                         generate input
-                        RuntimeGeneration.generate "Example.Generated" input
+                        RuntimeGeneration.generateLegacy "Example.Generated" input
                         |> Result.toOption
                         |> Option.get
                     ] do
@@ -347,7 +712,7 @@ let tests =
                     "Number results retain the property's ordinary percentage context"
 
                 let shared =
-                    RuntimeGeneration.generate "NumericTest.Generated" input
+                    RuntimeGeneration.generateLegacy "NumericTest.Generated" input
                     |> Result.toOption
                     |> Option.get
 
@@ -378,7 +743,7 @@ let tests =
                     |> Option.get
 
                 let output =
-                    RuntimeGeneration.generate "Example.Generated" input
+                    RuntimeGeneration.generateLegacy "Example.Generated" input
                     |> Result.toOption
                     |> Option.get
 
@@ -438,7 +803,7 @@ let tests =
                     |> Option.get
 
                 let output =
-                    RuntimeGeneration.generate "Example.Generated" input
+                    RuntimeGeneration.generateLegacy "Example.Generated" input
                     |> Result.toOption
                     |> Option.get
 
@@ -481,7 +846,7 @@ let tests =
             testCase "sugar manifest exports canonical numeric guards for CSS import"
             <| fun _ ->
                 let output =
-                    RuntimeGeneration.generate "Example.Generated" (catalogue ())
+                    RuntimeGeneration.generateLegacy "Example.Generated" (catalogue ())
                     |> Result.toOption
                     |> Option.get
 
@@ -503,15 +868,15 @@ let tests =
             testCase "unified sugar exposes typed values and readers in the shorter namespace"
             <| fun _ ->
                 let output =
-                    match RuntimeGeneration.generate "Example.Generated" (catalogue ()) with
+                    match RuntimeGeneration.generateLegacy "Example.Generated" (catalogue ()) with
                     | Ok output -> output
                     | Error errors -> failtestf "%A" errors
 
                 Expect.stringContains output.Source "namespace ``Example``\n" "Default short namespace"
-                Expect.stringContains output.Source "static member inline ``px``" "Shared typed length primitive"
-                Expect.stringContains output.Source "static member inline ``width`` (value:" "Unified static overload"
-                Expect.stringContains output.Source "static member inline ``width`` (read:" "Unified reader overload"
-                Expect.stringContains output.Source "static member inline ``auto``" "Shared typed keyword"
+                Expect.stringContains output.Source "static member ``px``" "Shared typed length primitive"
+                Expect.stringContains output.Source "static member ``width`` (value:" "Unified static overload"
+                Expect.stringContains output.Source "static member ``width`` (read:" "Unified reader overload"
+                Expect.stringContains output.Source "static member ``auto``" "Shared typed keyword"
                 use manifest = JsonDocument.Parse output.Manifest
 
                 let width =
@@ -598,12 +963,12 @@ let tests =
                     |> Option.get
 
                 let short catalogue =
-                    RuntimeGeneration.generate "Example.Generated" catalogue
+                    RuntimeGeneration.generateLegacy "Example.Generated" catalogue
                     |> Result.toOption
                     |> Option.get
 
                 let output = short input
-                Expect.stringContains output.Source "``fooBar`` (_:" "First normalized property remains short"
+                Expect.stringContains output.Source "``fooBar`` (value:" "First normalized property remains short"
                 Expect.stringContains output.Source "``fooBar_" "Colliding property has a distinct stable name"
 
                 Expect.equal

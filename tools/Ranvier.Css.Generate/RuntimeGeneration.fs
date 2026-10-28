@@ -8,7 +8,7 @@ open System.Text.Json.Nodes
 /// <summary>Generates ordinary F# bindings that share the portable CSS compiler runtime.</summary>
 module RuntimeGeneration =
     /// <summary>Emits shared-runtime values and generated static/reactive property methods for every property in the catalogue.</summary>
-    let generate namespaceName catalogue =
+    let generateLegacy namespaceName catalogue =
         match Generation.generate namespaceName catalogue with
         | Error errors -> Error errors
         | Ok bindings ->
@@ -117,4 +117,60 @@ module RuntimeGeneration =
                     Manifest =
                         enriched.ToJsonString(JsonSerializerOptions (WriteIndented = true)).Replace("\r\n", "\n")
                         + "\n"
+                }
+
+    /// <summary>Emits property declarations and discoverable typed values over a shared specification grammar table.</summary>
+    /// <param name="namespaceName">A nonempty dot-separated F# namespace.</param>
+    /// <param name="catalogue">Consolidated definitions with unique feature identities.</param>
+    /// <returns>Generated source and metadata, or diagnostics for an invalid namespace or duplicate identity.</returns>
+    let generate namespaceName (catalogue: Catalogue) : Result<GeneratedBindings, InputDiagnostic list> =
+        if
+            String.IsNullOrWhiteSpace namespaceName
+            || not (System.Text.RegularExpressions.Regex.IsMatch (namespaceName, @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"))
+        then
+            Error
+                [
+                    {
+                        Path = "namespace"
+                        Message = "Expected an F# namespace composed of identifiers."
+                    }
+                ]
+        elif
+            (catalogue.Features
+             |> List.map _.Id
+             |> List.distinct
+             |> List.length)
+            <> catalogue.Features.Length
+        then
+            Error
+                [
+                    {
+                        Path = "features"
+                        Message = "Duplicate feature identities must be consolidated before generation."
+                    }
+                ]
+        else
+            let compact = CompactGeneration.render namespaceName catalogue
+            let resolution = Resolution.resolve catalogue
+
+            Ok
+                {
+                    Source = compact.Source
+                    Manifest = compact.Manifest
+                    FeatureCount = catalogue.Features.Length
+                    OpaqueCount =
+                        catalogue.Features
+                        |> List.filter (fun feature ->
+                            match feature.Grammar with
+                            | GrammarStatus.Parsed _ -> false
+                            | _ -> true)
+                        |> List.length
+                    UnresolvedCount =
+                        resolution.References
+                        |> List.filter (fun reference ->
+                            match reference.Target with
+                            | ReferenceTarget.Missing
+                            | ReferenceTarget.Ambiguous _ -> true
+                            | _ -> false)
+                        |> List.length
                 }

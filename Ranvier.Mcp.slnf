@@ -1,0 +1,17 @@
+{
+  "solution": {
+    "path": "Ranvier.slnx",
+    "projects": [
+      "examples\\Ranvier.Mcp.Sample\\Ranvier.Mcp.Sample.fsproj",
+      "src\\Ranvier\\Ranvier.fsproj",
+      "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
+      "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
+      "src\\Ranvier.Query\\Ranvier.Query.fsproj",
+      "src\\Ranvier.Mcp\\Ranvier.Mcp.fsproj",
+      "tests\\Ranvier.Mcp.Tests\\Ranvier.Mcp.Tests.fsproj",
+      "docs\\docs.fsproj",
+      "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
+      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"
+    ]
+  }
+}

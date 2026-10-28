@@ -130,6 +130,11 @@ module internal SugarGeneration =
             |> List.map (fun token -> token, "Keyword_" + suffix token)
             |> Map.ofList
 
+        let canonical = "global." + qualifiedNamespace + ".Css."
+
+        let categories =
+            ValueCategoryGeneration.render canonical manifest properties keywordTags
+
         line (
             "\nnamespace "
             + (authoringNamespace.Split ('.')
@@ -138,40 +143,18 @@ module internal SugarGeneration =
         )
 
         line (NumericRuntimeGeneration.source ())
+        line categories.Source
         line (NumericValueGeneration.types ())
         line (ContextualNumericGeneration.types ())
         line (NumericSugarGeneration.overloadTypes numericProperties)
         line "/// <summary>Nominal keyword markers accepted only by properties whose grammars include the keyword.</summary>"
         line "module CssKeywords ="
 
-        for token in tokens do
-            line (
-                "    /// <summary>Typed CSS keyword "
-                + System.Security.SecurityElement.Escape token
-                + ".</summary>"
-            )
-
-            line (
-                "    type "
-                + keywordTags[token]
-                + " = private | "
-                + keywordTags[token]
-                + " of unit"
-            )
+        line categories.Keywords
 
         line "/// <summary>Default typed CSS helpers; each property accepts a static value or an instance reader.</summary>"
         line "[<AbstractClass; Sealed>]"
         line "type Css private () ="
-
-        let canonical = "global." + qualifiedNamespace + ".Css."
-
-        let valueType marker =
-            canonical
-            + "Value<"
-            + canonical
-            + "Markers."
-            + marker
-            + ">"
 
         let mutable memberIndent = "    "
 
@@ -319,12 +302,21 @@ module internal SugarGeneration =
                         + ")"
                     | None -> rawCall
 
+                let wrapper =
+                    if numeric.IsSome then
+                        categories.NumericWrappers[text "marker" item]
+                    else
+                        categories.Wrappers[text "marker" item]
+
                 line (
-                    "    static member inline "
+                    "    static member "
                     + quoted methodName
                     + (if parameters = "" then "" else " " + parameters)
                     + " = "
+                    + wrapper
+                    + " ("
                     + body
+                    + ")"
                 )
 
         for dimension in
@@ -367,12 +359,11 @@ module internal SugarGeneration =
             )
 
             line (
-                "    static member inline "
+                "    static member "
                 + quoted keywordNames[token]
-                + " : global.Ranvier.Css.Value<CssKeywords."
+                + " = CssKeywords."
                 + keywordTags[token]
-                + "> = global.Ranvier.Css.Generated.value "
-                + literal token
+                + " ()"
             )
 
         line "/// <summary>Unified numeric functions, opened automatically alongside the existing CSS helpers.</summary>"
@@ -402,24 +393,7 @@ module internal SugarGeneration =
                 if memberLine <> "" then
                     line ("    " + memberLine))
 
-        let numericMarkers =
-            current
-            |> List.choose (fun item ->
-                if
-                    text "kind" item = "Type"
-                    && item.GetProperty("scopes").GetArrayLength() = 0
-                then
-                    NumericRuntimeGeneration.primitive (text "name" item)
-                    |> Option.map (fun shape -> text "marker" item, shape)
-                else
-                    None)
-            |> Map.ofList
-
         for item in properties do
-            line "/// <summary>Unified overloads for one specification property; opened automatically with the CSS namespace.</summary>"
-            line "[<AutoOpen>]"
-            line ("module Css" + text "moduleName" item + " =")
-            line "    type Css with"
             memberIndent <- "        "
             let propertyName = propertyNames[text "moduleName" item]
             line (ContextualNumericGeneration.propertyMembers canonical propertyName item manifest)
@@ -427,11 +401,6 @@ module internal SugarGeneration =
             numericProperties
             |> List.tryFind (fun property -> property.ModuleName = text "moduleName" item)
             |> Option.iter (fun property -> line (NumericSugarGeneration.propertyMembers propertyName canonical property))
-
-            let declaration =
-                canonical
-                + text "moduleName" item
-                + ".declaration"
 
             let emit parameter body reactive =
                 line (
@@ -447,7 +416,7 @@ module internal SugarGeneration =
 
                 line (
                     memberIndent
-                    + "static member inline "
+                    + "static member "
                     + quoted propertyName
                     + " ("
                     + parameter
@@ -455,88 +424,26 @@ module internal SugarGeneration =
                     + body
                 )
 
-            for conversion in item.GetProperty("ergonomicValues").EnumerateArray() do
-                let input = valueType (text "marker" conversion)
+            let input = "#CssValueCategories.I" + text "moduleName" item
 
-                let expression =
-                    (text "expression" conversion).Replace("Syntax.", canonical + "Syntax.")
+            let body =
+                "CssValueConversions."
+                + text "moduleName" item
+                + " value"
 
-                let body = declaration + " (" + expression + ")"
-                emit ("value: " + input) body false
+            emit ("value: " + input) body false
+            emit "value: CssValueCategories.ICssWide" body false
 
-                emit
-                    ("read: 'instance -> " + input)
-                    ("global.Ranvier.Css.Style.dynamicWithKeywords "
-                     + canonical
-                     + "cssWideKeywords "
-                     + literal (text "name" item)
-                     + " (fun instance -> let value = read instance in "
-                     + body
-                     + ")")
-                    true
-
-                match numericMarkers.TryFind (text "marker" conversion) with
-                | Some (unit, hint) ->
-                    let numericInput =
-                        "NumericValue<"
-                        + unit
-                        + ", "
-                        + canonical
-                        + "Markers."
-                        + text "marker" conversion
-                        + ", "
-                        + hint
-                        + ">"
-
-                    emit
-                        ("read: 'instance -> " + numericInput)
-                        ("global.Ranvier.Css.Style.dynamicWithKeywords "
-                         + canonical
-                         + "cssWideKeywords "
-                         + literal (text "name" item)
-                         + " (fun instance -> let value = read instance in "
-                         + body
-                         + ")")
-                        true
-                | None -> ()
-
-            let propertyKeywords =
-                item.GetProperty("ergonomicKeywords").EnumerateArray()
-                |> Seq.map (fun keyword -> text "token" keyword, text "expression" keyword)
-                |> Map.ofSeq
-
-            for token in Set.union wide (propertyKeywords |> Map.keys |> Set.ofSeq) do
-                let input =
-                    "global.Ranvier.Css.Value<CssKeywords."
-                    + keywordTags[token]
-                    + ">"
-
-                let body =
-                    match Map.tryFind token propertyKeywords with
-                    | Some expression ->
-                        declaration
-                        + " ("
-                        + expression.Replace ("Syntax.", canonical + "Syntax.")
-                        + ")"
-                    | None ->
-                        "global.Ranvier.Css.RuntimeApi.declaration "
-                        + literal (text "name" item)
-                        + " "
-                        + literal token
-
-                emit ("_: " + input) body false
-
-                if not (Set.contains token wide) then
-                    emit
-                        ("read: 'instance -> " + input)
-                        ("global.Ranvier.Css.Style.dynamicWithKeywords "
-                         + canonical
-                         + "cssWideKeywords "
-                         + literal (text "name" item)
-                         + " (fun instance -> read instance |> ignore; "
-                         + body
-                         + ")")
-                        true
+            emit
+                ("read: 'instance -> " + input)
+                ("global.Ranvier.Css.Style.dynamicWithKeywords "
+                 + canonical
+                 + "cssWideKeywords "
+                 + literal (text "name" item)
+                 + " (fun instance -> let value = read instance in "
+                 + body
+                 + ")")
+                true
 
         let sugar =
             JsonSerializer.SerializeToElement

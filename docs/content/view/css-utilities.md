@@ -45,7 +45,7 @@ let card = utility {
     contentWidth
     Css.padding (Css.rem 1.)
     md { spacious }
-    hover { Css.color Css.blue }
+    hover { Css.color CssValue.Color.blue }
 }
 
 // Inside a component's view:
@@ -68,7 +68,7 @@ let interactiveCard = utility {
             Css.opacity (Css.number 0.8)
         }
     }
-    focusWithin { Css.color Css.blue }
+    focusWithin { Css.color CssValue.Color.blue }
 }
 ```
 

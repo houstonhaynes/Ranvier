@@ -1,6 +1,6 @@
 # CSS to Ranvier.Css
 
-Parses UTF-8 `.css` files with pinned [PostCSS](https://postcss.org/api/) and [CSSTree](https://github.com/csstree/csstree), then generates an F# module using the default typed property sugar. The generated module exposes `rules: Rule list` for `Stylesheet.render` or the asset compiler. Existing selectors and class names are retained.
+Parses UTF-8 `.css` files with pinned [PostCSS](https://postcss.org/api/) and [CSSTree](https://github.com/csstree/csstree), then generates an F# module using the default typed property API. Compact schema 2 manifests and legacy sugar manifests are both supported. The generated module exposes `rules: Rule list` for `Stylesheet.render` or the asset compiler. Existing selectors and class names are retained.
 
 From the repository root:
 
@@ -29,8 +29,8 @@ open Ranvier.Css
 let rules: Rule list = [
     Rule.style (Selector.className "card") [
         Css.width (Css.px 240.0)
-        Css.display Css.block
-        (Css.color Css.red |> Declaration.important)
+        Css.display CssValue.Display.block
+        (Css.color CssValue.Color.red |> Declaration.important)
     ]
 ]
 ```
@@ -55,7 +55,7 @@ let result =
 
 ## Coverage and preservation
 
-Atomic numeric dimensions, percentages, numbers, strings and known keywords become sugar only when the generated specification manifest supplies a valid conversion path. Canonical numeric range guards, contextual unit comparisons, integer limits and decimal precision are checked before emission. The importer uses the manifest's actual helper names, including collision suffixes; it does not guess F# names or cast unchecked tokens to grammar markers.
+Atomic numeric dimensions, percentages, numbers, strings and known keywords become typed calls only when the generated specification manifest supplies a valid conversion path. Compact conversion walks the encoded resolved grammar through references, alternatives, nullable siblings and singleton repetitions; required siblings and larger minimum cardinalities prevent atomic conversion. Numeric bounds on every admitted path, contextual unit comparisons, integer limits and decimal precision are checked before emission. Recursive references terminate without granting unsupported conversions. Keywords use property-owned factories when available, and CSS-wide aliases retain their separate static type. The importer uses actual factory owners and member names; it does not guess F# names or cast unchecked tokens to grammar markers. Legacy manifests retain their existing accepted-marker and range-guard behavior.
 
 Custom properties, functions such as `calc()`/`var()`, compound values and descriptors retain their tokens through `Declaration.create`. Rule shapes the structured tree cannot preserve use the explicit `Rule.unsafeFromText` escape. This includes declarations interleaved with nested rules, escaped at-rule heads, and comments embedded in declaration punctuation. Opaque source slices retain delimiters and statement semicolons. Rules and repeated declarations retain their order; no rules are hoisted, imports fetched or class names renamed.
 
@@ -67,7 +67,7 @@ Opaque blocks work with regular per-module output and a single imported resource
 
 - `--input file.css`, `--output file.fs`: required paths.
 - `--module ImportedStyles`: generated module name; defaults to `ImportedStyles`.
-- `--manifest path`: shared-runtime binding manifest; defaults to the checked-in library manifest. Sugar map schema 2 includes canonical range guards. Regenerate an older manifest with the specification generator and `--runtime`.
+- `--manifest path`: shared-runtime binding manifest; defaults to the checked-in compact library manifest. Compact schema 2 requires `encodedGrammar`, `properties` and explicit `factories`. Legacy manifests with a version 2 `sugar` map remain accepted.
 - `--report path`, `--strict-typed`, `--help`.
 
 No input or manifest path may also be an output. Syntax, naming, manifest and strict-mode failures preserve existing outputs; successful writes replace each artifact atomically. Output formatting is deterministic, but source whitespace and equivalent numeric spellings may change. Fallback contents and comments retain their source tokens.
@@ -77,4 +77,4 @@ rtk npm test --prefix tools/Ranvier.Css.Import
 rtk node tools/Ranvier.Css.Import/verify-import.mjs
 ```
 
-The integration gate compiles generated F# against the real binding library, renders it back to CSS, compares normalized parser trees, checks regular asset compilation, compiles a custom-namespace binding fixture, and tests CLI output preservation. Build the specification generator first when running that gate alone; the normal CI CSS suite does this before import verification.
+Unit tests cover both manifest formats, compact grammar admission, range rejection and the checked-in default manifest. The integration gate compiles generated F# against the real binding library, renders it back to CSS, compares normalized parser trees, checks regular asset compilation, compiles a compact custom-namespace binding fixture, and tests CLI output preservation. Build the specification generator first when running that gate alone; the normal CI CSS suite does this before import verification.

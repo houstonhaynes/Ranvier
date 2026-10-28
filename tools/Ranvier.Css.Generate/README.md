@@ -7,9 +7,9 @@ From the repository root:
 ```powershell
 rtk npm ci --prefix tools/Ranvier.Css.Generate --ignore-scripts
 rtk node tools/Ranvier.Css.Generate/fetch-specs.mjs
-rtk dotnet run --project tools/Ranvier.Css.Generate -c Release -- --specs-dir tools/Ranvier.Css.Generate/out/specs --bindings tools/Ranvier.Css.Generate/out/Css.Generated.fs --strict
+rtk dotnet run --project tools/Ranvier.Css.Generate -c Release -- --runtime --specs-dir tools/Ranvier.Css.Generate/out/specs --bindings tools/Ranvier.Css.Generate/out/Css.Generated.fs --strict
 rtk dotnet test tests/Ranvier.Css.Spec.Tests -c Release
-rtk node tools/Ranvier.Css.Generate/verify-bindings.mjs
+rtk node tools/Ranvier.Css.Generate/verify-compact-bindings.mjs
 ```
 
 The command writes `tools/Ranvier.Css.Generate/out/css-model.json`. To consume another consolidated snapshot:
@@ -34,11 +34,11 @@ Custom input defaults to the label `custom`. The SHA-256 always identifies the e
 
 The pinned dataset contains 1,839 definitions: 822 properties, 529 types, 172 functions, 159 selectors, 55 at-rules and 102 descriptors. All 1,710 supplied grammars parse; the remaining 129 definitions have `Missing` grammar. Its `css.json` SHA-256 is `30cb8daa786d6c27a1f74c5d413311c785ee0eec1dd34c65e8a4e6681c86baca`. The corpus test pins these counts and input identity, and CI installs the lockfile before running the suite.
 
-The source lock also pins all 122 individual `ed/css` extracts from Webref revision `4bb34a8d08cb9b9c8b73f7f175703941eef5c20c`, with SHA-256 checks for each file. These contain 4,785 definitions: all 4,595 supplied grammars parse and 190 are prose-defined. Consolidation with the canonical package yields 4,596 current definitions and 286 archived obsolete definitions. Together these produce 4,882 binding modules, including 160 grammar-free definitions. Every nested raw value is retained; raw source definitions are also preserved as metadata when canonical definitions merge them.
+The source lock also pins all 122 individual `ed/css` extracts from Webref revision `4bb34a8d08cb9b9c8b73f7f175703941eef5c20c`, with SHA-256 checks for each file. These contain 4,785 definitions: all 4,595 supplied grammars parse and 190 are prose-defined. Consolidation with the canonical package yields 4,596 current definitions and 286 archived obsolete definitions. All 4,882 definitions remain in the model, including 160 grammar-free definitions. Compact public owners exclude archived `#obsolete` scopes; current deprecated definitions remain available. Every nested raw value is retained; raw source definitions are also preserved as metadata when canonical definitions merge them.
 
 ## Latest definitions and obsolete APIs
 
-`SpecSources.consume` reads individual extracts. `SpecSources.consolidate` selects the highest available level within each specification series; `consolidateWith` also accepts a canonical merged catalogue. Newer raw definitions beat older canonical definitions from the same series. Earlier definitions absent from a delta spec stay current. Superseded definitions retain their original grammar and provenance in an obsolete catalogue, including replacement URLs. Explicit upstream obsolescence and legacy aliases emit `System.Obsolete` attributes in generated F#.
+`SpecSources.consume` reads individual extracts. `SpecSources.consolidate` selects the highest available level within each specification series; `consolidateWith` also accepts a canonical merged catalogue. Newer raw definitions beat older canonical definitions from the same series. Earlier definitions absent from a delta spec stay current. Superseded definitions retain their original grammar and provenance in an obsolete catalogue, including replacement URLs. The legacy generator emits `System.Obsolete` attributes for explicit upstream obsolescence and legacy aliases; compact generation currently preserves their metadata without emitting those warnings.
 
 Cross-series extensions use canonical merged definitions. If a newer raw definition would replace an older canonical merge while dropping a distinct extension from another series, consolidation returns a diagnostic requiring a refreshed canonical source. It does not silently discard the extension or invent a grammar merge. The CLI includes both current and obsolete catalogues in its output.
 
@@ -48,51 +48,97 @@ The consumer is offline and reproducible. “Latest” means the newest availabl
 
 `Resolution.resolve` binds kind, normalized names, descriptor owners, lexical scopes, and source-document provenance. Equivalent aliases share a deterministic representative. Dependencies and recursive components are retained without recursively expanding grammar trees. Scoped forwarding definitions use their outer production when available. The complete corpus leaves two unresolved `anchored-feature` references from the upstream anchor-position extract; the manifest records these explicitly.
 
-`Generation.generate namespaceName catalogue` returns source and a JSON manifest. Each production and intermediate grammar node has a distinct nominal marker inside `Css.Value<'syntax>`. Alternatives, sequences, functions, unordered groups, repetitions, ranges and generic boolean expressions generate typed constructors. The manifest maps CSS identities to F# module names, marker types, root/child syntax factories, references and recursive components. Normalized naming collisions receive deterministic suffixes. Complex intermediate nodes are available through `Css.Syntax`; their factory names are generated details described by the manifest.
-
-For example, include the generated file before its consumers in an F# project:
+`RuntimeGeneration.generate namespaceName catalogue` is the compact shared-runtime entry point used by `--runtime`. It returns generated source and a schema 2 JSON manifest. Include the generated file before its consumers and reference `Ranvier.Css`:
 
 ```fsharp
-open Ranvier.Css.Generated
+open Ranvier.Css
 
-let width =
-    Css.TypeLength.px 42.0
-    |> Css.TypeLengthPercentage.fromLength
-    |> Css.TypeBoxSize.fromLengthPercentage
-    |> Css.PropertyWidth.fromBoxSize
-    |> Css.PropertyWidth.declaration
-
-Css.renderDeclaration width // width: 42px;
+let width = Css.width (Css.px 42.)
+let display = Css.display CssValue.Display.block
+let automatic = Css.width CssValue.Width.auto
+let foreground = Css.color CssValue.Color.red
+let background = Css.backgroundColor CssValue.Background.Color.Colors.red
 ```
 
-`Css.renderDeclarations` returns declaration text that a view can use as a style attribute. Use `--runtime` to generate bindings sharing `Ranvier.Css` values and declarations, including the default unified helpers: with `open Ranvier.Css`, write `Css.width (Css.px 42.0)`, `Css.display Css.block`, or `Css.width (fun state -> Css.px state.Width.Value)`. Static values return declarations; readers return tracked style nodes. The detailed grammar API shown above remains under `Ranvier.Css.Generated.Css`, with `constant`, `reactive`, and `reactiveImportant` property methods. The checked-in library is `src/Ranvier.Css.Bindings`; `Ranvier.Css.View` supplies template adapters and `Ranvier.Css.Build` emits modular or lifted assets. CSS-wide keywords cannot leak into property-reference value grammars.
+The CLI defaults to `Ranvier.Css.Generated` for hidden grammar storage and exposes authoring APIs in `Ranvier.Css`. A custom namespace is retained for authoring unless it ends in `.Generated`, in which case authoring uses its parent namespace. The manifest records the authoring namespace. `Css` contains property sinks and concise primitive aliases. `CssValue` contains discoverable values and constructors. Property ancestry gives paths such as `CssValue.Border.Top.Width`, `CssValue.Animation.TimingFunction`, and `CssValue.Grid.Template.Columns`. Reusable numeric and lexical categories live at `CssValue.Length`, `CssValue.LengthPercentage`, `CssValue.String`, and similar core names. Other named types live under `CssValue.Values`.
 
-Sugar uses resolved grammar paths through alternatives, references, single branches of `||`, and repetitions permitting one item. Each conversion calls the canonical factories, preserving bounds and required/cardinality validation. Required multi-part structures remain explicit canonical values. The manifest records `ergonomicValues`, `ergonomicKeywords`, and `primitiveHelpers`. Inline static property extensions are grouped per property and opened automatically; callers see one `Css` helper surface. Normalized naming collisions receive stable suffixes. Archived versions remain in the canonical API; current deprecated definitions retain obsolete attributes on sugar helpers. A custom namespace ending in `.Generated` places sugar in its parent namespace; other custom namespaces use an adjacent `.Sugar` namespace to avoid colliding with their canonical `Css` module.
+Keywords from referenced shared grammars are also available on property owners: `CssValue.Display.block` and `CssValue.Display.none`. Color properties expose a shared `Colors` palette, and `CssValue.Color` exposes that palette directly. Structured constructors stay under their semantic owners, with parameters derived from named grammar references and longhand roles. Literal punctuation is inserted by the constructor. Repetitions accept lists; unordered groups accept optional named parts and require at least one selected part. Ambiguous anonymous roles produce explicit policy diagnostics in the manifest.
 
-Numeric constructors require finite numbers. Repetition counts, required groups, unordered nonempty groups, and numeric reference bounds are checked at construction. String constructors escape CSS string newlines and quotes; identifier constructors accept a restricted unescaped subset. Numeric unit comparisons support matching units and basic absolute conversions; context-dependent conversion can fail until computed-value resolution is available.
+For example, the three border roles are width, style and color, in that order. Omit a role with `None`; at least one must be present:
+
+```fsharp
+let border =
+    CssValue.Border.create
+        (Some (Css.px 2.))
+        (Some CssValue.Border.Style.solid)
+        (Some CssValue.Color.red)
+    |> Css.border
+```
+
+Each meaningful owner exports a `Value` interface for ordinary F# annotations. A conditional needs a common category on its first branch; later compatible branches coerce implicitly:
+
+```fsharp
+let size usePixels =
+    if usePixels then Css.px 42. :> CssValue.LengthPercentage.Value
+    else Css.percent 50.
+
+let width = Css.width (size false)
+```
+
+Use `CssValue.Width.Value` to mix a numeric width with `CssValue.Width.auto`. Values enter property sinks directly. Static values return declarations; readers such as `Css.width (fun state -> Css.px state.Width)` return tracked style nodes. CSS-wide keywords such as `CssValue.initial` have a separate static-only type, including their property-owned aliases.
+
+Typed variables retain the expected value category and optional fallback:
+
+```fsharp
+let spacing = Css.variable<CssValue.LengthPercentage.Value> "--spacing"
+let fallback =
+    CssValue.Variable.withFallback spacing
+        (Css.px 8. :> CssValue.LengthPercentage.Value)
+let width = Css.width fallback
+```
+
+`CssValue.variable` and `CssValue.var` are aliases for variable creation. `CssValue.Variable.declaration` assigns a typed variable. These references preserve a grammar category; they do not supply a numeric calculation tree. For arithmetic, use a measured numeric owner's `variable` or `variableWithFallback` helper:
+
+```fsharp
+let gap = CssValue.Length.variableWithFallback "--gap" (Css.px 8.)
+let expanded = CssValue.Length.calc (gap + Css.px 2.)
+let width = Css.width expanded
+```
+
+The measured helpers validate dashed names and retain the fallback expression without reading a browser value. Their fallback must have the owner's dimension and percentage hint. `CssValue.render` returns a value's CSS text.
+
+The compact manifest records the exact namespace, encoded grammar, property identities and sinks, semantic owners and parameter roles, explicit factories, naming-policy diagnostics, unresolved references, and definition coverage. Factory metadata identifies numeric units and productions, lexical constructors, keywords, CSS-wide values, boolean operations, and grammar constructors. Static extraction uses this contract to call the same runtime grammar kernel without executing generated source bodies or reactive readers. Internal category sharing can change without changing semantic public paths.
+
+Numeric constructors require finite numbers. Repetition counts, required groups, unordered nonempty groups, and numeric reference bounds are checked at construction. String constructors escape CSS string newlines and quotes; identifier constructors accept a restricted unescaped subset. Missing or rejected productions expose explicitly named `unsafeFromTokens` entry points; unresolved references remain diagnostics. These entry points accept unchecked text. Grammar cannot determine prose-only exclusions, complete computed-value behavior, or browser support.
+
+`RuntimeGeneration.generateLegacy` is the explicit programmatic compatibility entry point for the previous canonical-plus-sugar shared-runtime API and its legacy manifest. `Generation.generate` retains the standalone canonical API used when the CLI omits `--runtime`. Legacy source, numeric, sugar, and obsolescence tests remain separate from the compact contract tests. The [CSS source importer](../Ranvier.Css.Import/README.md) accepts compact schema 2 manifests and legacy versioned sugar maps; it derives atomic conversions from resolved grammar and explicit factory metadata.
 
 ## Numeric expression semantics
 
-`NumericSemantics.fs` implements the numeric type rules from [CSS Values 4](https://drafts.csswg.org/css-values-4/#calc-type-checking) and [CSS Typed OM](https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing). These algorithms are specified in prose, so they are encoded explicitly alongside the consumed grammar. The independently versioned `numericSemantics` metadata retains their source URLs in the model snapshot and binding manifest.
+`NumericSemantics.fs` implements the numeric type rules from [CSS Values 4](https://drafts.csswg.org/css-values-4/#calc-type-checking) and [CSS Typed OM](https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing). These algorithms are specified in prose, so they are encoded explicitly alongside the consumed grammar. The independently versioned `numericSemantics` metadata retains their source URLs in the model snapshot and legacy binding manifest. Compact factories identify their numeric production and unit alongside the exported grammar.
 
 A `NumericType` contains dimension exponents and a percentage hint. `add` checks compatible dimensions; `multiply`, `invert`, and `divide` retain compound intermediate units and support cancellation. `inferFunction` checks the argument and result policies for `calc`, comparison, rounding, trigonometric, exponential, absolute-value, and sign functions. Unknown functions return an explicit error. The model checks types; numerical evaluation, browser support, computed values, and non-finite value handling belong to later expression evaluation and rendering.
 
-`NumericProjection.derive` supplies each property's calculation contexts from the same checked whole-value conversion paths used by sugar. Each context retains numeric bounds, percentage availability and basis, and integer rounding policy. Required siblings and function arguments cannot authorize an unrelated whole-property calculation. Unknown productions remain in the grammar model with no invented numeric semantics.
+`NumericProjection.derive` supplies the legacy property's calculation contexts from the same checked whole-value conversion paths used by sugar. Each context retains numeric bounds, percentage availability and basis, and integer rounding policy. Required siblings and function arguments cannot authorize an unrelated whole-property calculation. Unknown productions remain in the grammar model with no invented numeric semantics.
 
 For example, `width` has a length percentage basis, while `opacity` accepts independent number and percentage results. That distinction rejects adding an ordinary percentage to a number. Percentage hints survive unit cancellation. A number result can satisfy an integer property after rounding to the nearest integer, with ties toward positive infinity. Math range checks are deferred to computed-value handling; they do not reuse literal-token rejection.
 
-Binding generation can use these contexts and operator policies to emit static F# operators whose signatures preserve result types. This domain change does not add runtime expression operators to `Css.px`, `Css.rem`, or the property sugar yet; the generated grammar API continues to expose the original math productions.
+Compact numeric helpers retain calculation trees through arithmetic. Use the destination category's `calc` constructor to check the expression's dimension and percentage context before passing it to a property:
 
-Other prose-only constraints, full computed-value semantics, property-specific identifier exclusions and browser support are not inferred from grammar. Missing/rejected productions expose explicitly named `unsafeFromTokens`; unresolved references require `Css.Unsafe.externalValue`. These calls accept unchecked text. Built-in prose primitives also provide typed numeric/string/identifier helpers, but the manifest keeps their opaque status. This is complete consumption of the pinned corpus, not a claim that every prose rule in CSS is enforced by F#.
+```fsharp
+let doubled = CssValue.Length.calc (Css.px 4. * 2.)
+let width = Css.width doubled
+```
 
-The CLI emits a model, bindings and adjacent `.manifest.json`, writing each file atomically. Output paths must be distinct and cannot overwrite specification inputs. `--namespace` changes the generated namespace. `verify-bindings.mjs` checks the ordinary generated library source is current, compiles the entire corpus in Release, executes serialization and reactive-reader examples, checks rejected type mismatches and obsolete compiler warnings, and exercises range/cardinality/string contracts with a small fixture. `verify-assets.mjs` checks all three output modes with Lightning CSS. `verify-browser.mjs` runs the Fable DOM checks. CI runs the same acceptance path.
+Built-in prose primitives provide typed numeric/string/identifier helpers while their definitions retain the original opaque grammar status in metadata. Full computed-value semantics and property-specific prose exclusions remain outside grammar validation.
 
-To refresh the ordinary shared-runtime library after a generator/spec update:
+The CLI emits a model, bindings and adjacent `.manifest.json`, writing each file atomically. Output paths must be distinct and cannot overwrite specification inputs. `--namespace` changes the generated namespace. `verify-compact-bindings.mjs` exercises caller typing and runtime grammar contracts against the checked-in bindings. `verify-bindings.mjs` regenerates and checks source/manifest freshness before dispatching to the compact verifier; it retains the legacy checks for legacy manifests. `verify-assets.mjs` checks asset modes with Lightning CSS; `verify-browser.mjs` runs the Fable DOM checks.
+
+To regenerate the checked-in bindings after a generator/spec update and validate them:
 
 ```powershell
-rtk dotnet run --project tools/Ranvier.Css.Generate -c Release -- --runtime --specs-dir tools/Ranvier.Css.Generate/out/specs --bindings src/Ranvier.Css.Bindings/Generated/Css.fs --strict
+rtk proxy dotnet run --project tools/Ranvier.Css.Generate -c Release -- --runtime --specs-dir tools/Ranvier.Css.Generate/out/specs --bindings src/Ranvier.Css.Bindings/Generated/Css.fs --strict
+rtk node tools/Ranvier.Css.Generate/verify-bindings.mjs
 ```
 
 Sources: [Webref consolidated format](https://github.com/w3c/webref/blob/main/packages/css/README.md), [CSS value-definition syntax](https://drafts.csswg.org/css-values-4/#value-defs).
-
-Shared-runtime manifests also expose a versioned `sugar` map with actual property/primitive/keyword member names, accepted markers and canonical numeric guards. The [CSS source importer](../Ranvier.Css.Import/README.md) consumes this map to generate short F# calls from existing stylesheets. This keeps normalized naming and conversion constraints consistent with the generated library.

@@ -23,6 +23,10 @@ module internal Evaluation =
         | Record of Map<string, Data>
         | Closure of (string * Data) list * FSharpMemberOrFunctionOrValue * FSharpExpr
         | Function of Definition * (string * Data) list
+        | CompactValue of Ranvier.Css.Internal.GrammarRuntime.ValueData * Calculation option
+        | CompactVariable of string * Ranvier.Css.Internal.GrammarRuntime.ValueData option
+        | CompactWide of string
+        | CompactFunction of FSharpMemberOrFunctionOrValue * Data list
         | Css of Metadata.CssValue
         | Numeric of Metadata.CssValue * Calculation
         | Calculation of Calculation
@@ -170,12 +174,23 @@ module internal Evaluation =
             function
             | Css value -> value
             | Numeric (value, _) -> value
+            | CompactValue (data, _) ->
+                let canonical: Value<unit> =
+                    match data.Numeric with
+                    | Some (magnitude, unitName) -> Generated.number magnitude unitName
+                    | None -> Generated.value data.Text
+
+                {
+                    Value = canonical
+                    Marker = "compact"
+                }
             | _ -> error expression "Expected a specification-typed CSS value."
 
         let calculation expression =
             function
             | Calculation value -> value
-            | Numeric (_, value) -> value
+            | Numeric (_, value)
+            | CompactValue (_, Some value) -> value
             | Scalar (:? float as value) -> CalculationRuntime.literal "number" "" value
             | Scalar (:? int as value) -> CalculationRuntime.literal "integer" "" (float value)
             | _ -> error expression "Expected a generated calculation expression or numeric scalar."
@@ -185,8 +200,14 @@ module internal Evaluation =
             | Scalar (:? CalculationArgument as value) -> value
             | Scalar (:? RoundingStrategy as value) -> CalculationArgument.Strategy value
             | Scalar (:? CalculationRandomKey as value) -> CalculationArgument.RandomKey value
-            | Css value ->
-                match Value.render value.Value with
+            | (Css _ | CompactValue (_, None)) as input ->
+                let keyword =
+                    match input with
+                    | Css value -> Value.render value.Value
+                    | CompactValue (data, _) -> data.Text
+                    | _ -> ""
+
+                match keyword with
                 | "none" -> CalculationArgument.NoneBound
                 | "nearest" -> CalculationArgument.Strategy RoundingStrategy.Nearest
                 | "up" -> CalculationArgument.Strategy RoundingStrategy.Up
@@ -230,6 +251,61 @@ module internal Evaluation =
         let coreOwner (ownerName: string) =
             ownerName.StartsWith ("Ranvier.Css.", StringComparison.Ordinal)
 
+        let rec compactInput =
+            function
+            | Scalar value -> CompactEvaluation.Input.Scalar value
+            | CompactValue (value, calculation) -> CompactEvaluation.Input.Value (value, calculation)
+            | CompactVariable (name, fallback) -> CompactEvaluation.Input.Variable (name, fallback)
+            | CompactWide keyword -> CompactEvaluation.Input.Wide keyword
+            | Intrinsic value -> CompactEvaluation.Input.Intrinsic value
+            | Calculation value
+            | Numeric (_, value) -> CompactEvaluation.Input.Calculation value
+            | Items values -> CompactEvaluation.Input.Items (List.map compactInput values)
+            | Tuple values -> CompactEvaluation.Input.Tuple (List.map compactInput values)
+            | OmittedArgument -> CompactEvaluation.Input.Omitted
+            | OptionalValue value -> CompactEvaluation.Input.Optional (compactInput value)
+            | Closure _
+            | Function _
+            | CompactFunction _ -> CompactEvaluation.Input.Reader
+            | Unknown reason -> CompactEvaluation.Input.Unsupported reason
+            | _ -> CompactEvaluation.Input.Unsupported "This expression is not a compact CSS factory input."
+
+        let compactOutput =
+            function
+            | CompactEvaluation.Output.Value (value, calculation) -> CompactValue (value, calculation)
+            | CompactEvaluation.Output.Calculation value -> Calculation value
+            | CompactEvaluation.Output.Intrinsic value -> Intrinsic value
+            | CompactEvaluation.Output.Variable (name, fallback) -> CompactVariable (name, fallback)
+            | CompactEvaluation.Output.Wide keyword -> CompactWide keyword
+            | CompactEvaluation.Output.Declaration value -> Declaration value
+            | CompactEvaluation.Output.Nodes values -> Nodes values
+            | CompactEvaluation.Output.Scalar value -> Scalar value
+
+        let compactRecognized (symbol: FSharpMemberOrFunctionOrValue) =
+            metadata.Compact
+            |> Option.exists (fun registry -> CompactEvaluation.canInvoke registry (owner symbol) (memberName symbol))
+
+        member private _.CompactIntrinsic(receiver, symbol: FSharpMemberOrFunctionOrValue, arguments) =
+            metadata.Compact
+            |> Option.bind (fun registry ->
+                if CompactEvaluation.canInvoke registry (owner symbol) (memberName symbol) then
+                    let parameterNames =
+                        symbol.CurriedParameterGroups
+                        |> Seq.collect id
+                        |> Seq.map (fun parameter -> defaultArg parameter.Name "")
+                        |> Seq.toList
+
+                    CompactEvaluation.tryOperationWithParameters
+                        registry
+                        (owner symbol)
+                        (memberName symbol)
+                        parameterNames
+                        (receiver |> Option.map compactInput)
+                        (List.map compactInput arguments)
+                    |> Option.map compactOutput
+                else
+                    None)
+
         member private this.Global(expression, symbol: FSharpMemberOrFunctionOrValue) =
             if symbol.IsMutable then
                 error
@@ -239,9 +315,23 @@ module internal Evaluation =
 
             let key = symbolKey symbol
 
-            match definitions.TryGetValue key with
-            | true, definition when not definition.Parameters.IsEmpty -> Function (definition, [])
-            | true, definition ->
+            let compact =
+                if compactRecognized symbol then
+                    let arity =
+                        symbol.CurriedParameterGroups
+                        |> Seq.sumBy Seq.length
+
+                    if arity > 0 then
+                        Some (CompactFunction (symbol, []))
+                    else
+                        this.CompactIntrinsic (None, symbol, [])
+                else
+                    None
+
+            match compact, definitions.TryGetValue key with
+            | Some value, _ -> value
+            | None, (true, definition) when not definition.Parameters.IsEmpty -> Function (definition, [])
+            | None, (true, definition) ->
                 match cache.TryGetValue key with
                 | true, value -> value
                 | _ ->
@@ -276,6 +366,17 @@ module internal Evaluation =
                             else
                                 Function ({ definition with Parameters = rest }, bound)
                         | [] -> error expression "Too many helper arguments."
+                    | CompactFunction (symbol, bound) ->
+                        let bound = bound @ [ first ]
+
+                        let arity =
+                            symbol.CurriedParameterGroups
+                            |> Seq.sumBy Seq.length
+
+                        if bound.Length >= arity then
+                            this.Invoke (expression, None, symbol, bound)
+                        else
+                            CompactFunction (symbol, bound)
                     | Unknown reason -> error expression ("Cannot invoke compile-time helper: " + reason)
                     | _ -> error expression "Only source-defined deterministic functions can be invoked at build time."
 
@@ -387,8 +488,9 @@ module internal Evaluation =
             let name = memberName symbol
             let key = symbolKey symbol
 
-            match definitions.TryGetValue key with
-            | true, definition ->
+            match this.CompactIntrinsic (receiver, symbol, arguments), definitions.TryGetValue key with
+            | Some value, _ -> value
+            | None, (true, definition) ->
                 if definition.Parameters.IsEmpty then
                     let value = this.Global (expression, symbol)
 
@@ -1178,7 +1280,8 @@ module internal Evaluation =
                         arguments
                         |> List.exists (function
                             | Calculation _
-                            | Numeric _ -> true
+                            | Numeric _
+                            | CompactValue (_, Some _) -> true
                             | _ -> false)
                     then
                         this.Apply (expression, this.Evaluate (environment, witness), arguments)

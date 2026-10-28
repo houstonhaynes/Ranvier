@@ -1,0 +1,23 @@
+{
+  "solution": {
+    "path": "Ranvier.slnx",
+    "projects": [
+      "tools\\Ranvier.Css.Generate\\Ranvier.Css.Generate.fsproj",
+      "tools\\Ranvier.Css.Compile\\Ranvier.Css.Compile.fsproj",
+      "tools\\Ranvier.Dom.Generate\\Ranvier.Dom.Generate.fsproj",
+      "tools\\Ranvier.Analyzers\\Ranvier.Analyzers.fsproj",
+      "tools\\Ranvier.Analyzers.Tests\\Ranvier.Analyzers.Tests.fsproj",
+      "src\\Ranvier.Css\\Ranvier.Css.fsproj",
+      "src\\Ranvier.Css.Build\\Ranvier.Css.Build.fsproj",
+      "src\\Ranvier\\Ranvier.fsproj",
+      "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
+      "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
+      "src\\Ranvier.Query\\Ranvier.Query.fsproj",
+      "src\\Ranvier.View\\Ranvier.View.fsproj",
+      "src\\Ranvier.View.Dom\\Ranvier.View.Dom.fsproj",
+      "docs\\docs.fsproj",
+      "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
+      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"
+    ]
+  }
+}

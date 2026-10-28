@@ -1,0 +1,26 @@
+{
+  "solution": {
+    "path": "Ranvier.slnx",
+    "projects": [
+      "examples\\Fable.Ranvier.Playground\\benchmarks\\ripple\\RipplePerf.fsproj",
+      "experiments\\Ranvier.View.Checks\\SnapshotBench\\SnapshotBench.fsproj",
+      "experiments\\Ranvier.View.Checks\\AuthoringPerf\\AuthoringPerf.fsproj",
+      "experiments\\Ranvier.View.Checks\\ServerBench\\ServerBench.fsproj",
+      "src\\Ranvier\\Ranvier.fsproj",
+      "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
+      "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
+      "src\\Ranvier.Query\\Ranvier.Query.fsproj",
+      "src\\Ranvier.Persistence\\Ranvier.Persistence.fsproj",
+      "src\\Ranvier.Wire\\Ranvier.Wire.fsproj",
+      "src\\Ranvier.View\\Ranvier.View.fsproj",
+      "src\\Ranvier.View.Dom\\Ranvier.View.Dom.fsproj",
+      "tests\\Ranvier.AotSmoke\\Ranvier.AotSmoke.fsproj",
+      "bench\\Ranvier.Benchmarks\\Ranvier.Benchmarks.fsproj",
+      "bench\\Ranvier.Counters\\Ranvier.Counters.fsproj",
+      "bench\\Ranvier.Counters.Tests\\Ranvier.Counters.Tests.fsproj",
+      "docs\\docs.fsproj",
+      "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
+      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"
+    ]
+  }
+}

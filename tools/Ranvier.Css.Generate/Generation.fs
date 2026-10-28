@@ -154,7 +154,7 @@ module Generation =
                 | GrammarExpression.Group inner -> ungroup inner
                 | _ -> node
 
-            let rec plan feature path node =
+            let rec plan (feature: Feature) path node =
                 let node = node |> Option.map ungroup
                 serial <- serial + 1
                 let factory = "n" + string serial
@@ -341,6 +341,94 @@ module Generation =
     let renderDeclaration (Declaration(name,value)) = name + ": " + value + ";"
     let renderDeclarations declarations = declarations |> List.map renderDeclaration |> String.concat " "
 """
+
+            let canonicalPlans = Dictionary<string, Plan>()
+            let shapes = Dictionary<string, Plan>()
+
+            for value in plans do
+                let children =
+                    value.Children
+                    |> List.map (fun child -> canonicalPlans[child.Tag].Tag)
+                    |> String.concat ","
+
+                let separators =
+                    value.Children
+                    |> List.pairwise
+                    |> List.map (fun (left, right) ->
+                        match left.Node, right.Node with
+                        | Some a, Some b when b.Span.Offset = a.Span.Offset + a.Span.Length -> "adjacent"
+                        | _ -> "space")
+                    |> String.concat ","
+
+                let shape =
+                    match value.Node |> Option.map _.Expression with
+                    | None -> "opaque:" + value.Tag
+                    | Some (GrammarExpression.Literal token) -> "literal:" + literal token
+                    | Some (GrammarExpression.Reference reference) ->
+                        "reference:"
+                        + targetTag reference (lookup value reference)
+                        + ":"
+                        + sprintf "%A" reference.Range
+                    | Some (GrammarExpression.Sequence _) -> "sequence:" + separators
+                    | Some (GrammarExpression.AllOf _) -> "all:" + separators
+                    | Some (GrammarExpression.AnyOf _) -> "any"
+                    | Some (GrammarExpression.Choice _) -> "choice"
+                    | Some (GrammarExpression.Group _) -> "group"
+                    | Some (GrammarExpression.Required _) -> "required"
+                    | Some (GrammarExpression.Repeat (_, repetition)) -> "repeat:" + sprintf "%A" repetition
+                    | Some (GrammarExpression.Function (name, _)) -> "function:" + literal name
+                    | Some (GrammarExpression.Block (opening, _)) -> "block:" + literal opening
+                    | Some (GrammarExpression.TypeApplication ("boolean-expr", _)) -> "boolean"
+                    | Some (GrammarExpression.TypeApplication _) -> "opaque:" + value.Tag
+
+                let key =
+                    literal (obsolete value.Owner |> Option.defaultValue "")
+                    + ":"
+                    + shape
+                    + ":"
+                    + children
+
+                let representative =
+                    match shapes.TryGetValue key with
+                    | true, existing -> existing
+                    | _ ->
+                        shapes.Add (key, value)
+                        value
+
+                canonicalPlans.Add (value.Tag, representative)
+
+            let originalTargetTag = targetTag
+
+            let targetTag reference target =
+                let tag = originalTargetTag reference target
+
+                match canonicalPlans.TryGetValue tag with
+                | true, representative -> representative.Tag
+                | _ -> tag
+
+            let rec normalizePlan value =
+                let representative = canonicalPlans[value.Tag]
+
+                { value with
+                    Tag = representative.Tag
+                    Factory = representative.Factory
+                    Children = value.Children |> List.map normalizePlan
+                }
+
+            let roots =
+                roots
+                |> Map.map (fun _ root -> normalizePlan root)
+
+            let sharedPlans =
+                plans
+                |> Seq.map normalizePlan
+                |> Seq.distinctBy _.Tag
+                |> Seq.toList
+
+            plans.Clear ()
+
+            for value in sharedPlans do
+                plans.Add value
 
             line "    module Markers ="
 

@@ -1,0 +1,27 @@
+{
+  "solution": {
+    "path": "Ranvier.slnx",
+    "projects": [
+      "examples\\Ranvier.Css.Example\\Ranvier.Css.Example.fsproj",
+      "examples\\Ranvier.Css.Utilities.Example\\Ranvier.Css.Utilities.Example.fsproj",
+      "tools\\Ranvier.Css.Generate\\Ranvier.Css.Generate.fsproj",
+      "tools\\Ranvier.Css.Compile\\Ranvier.Css.Compile.fsproj",
+      "src\\Ranvier.Css\\Ranvier.Css.fsproj",
+      "src\\Ranvier.Css.Bindings\\Ranvier.Css.Bindings.fsproj",
+      "src\\Ranvier.Css.Build\\Ranvier.Css.Build.fsproj",
+      "src\\Ranvier.Css.View\\Ranvier.Css.View.fsproj",
+      "src\\Ranvier\\Ranvier.fsproj",
+      "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
+      "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
+      "src\\Ranvier.Query\\Ranvier.Query.fsproj",
+      "src\\Ranvier.View\\Ranvier.View.fsproj",
+      "src\\Ranvier.View.Dom\\Ranvier.View.Dom.fsproj",
+      "tests\\Ranvier.Css.Browser.Tests\\Ranvier.Css.Browser.Tests.fsproj",
+      "tests\\Ranvier.Css.Spec.Tests\\Ranvier.Css.Spec.Tests.fsproj",
+      "tests\\Ranvier.Css.Compile.Tests\\Ranvier.Css.Compile.Tests.fsproj",
+      "docs\\docs.fsproj",
+      "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
+      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"
+    ]
+  }
+}
