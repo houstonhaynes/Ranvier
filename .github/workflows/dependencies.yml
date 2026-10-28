@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: write
     env:
-      RanvierViewRoot: ${{ github.workspace }}/.dependency-view
+      RanvierViewRoot: ${{ github.workspace }}/dependency-view
     steps:
       - uses: actions/checkout@v7
         with:
