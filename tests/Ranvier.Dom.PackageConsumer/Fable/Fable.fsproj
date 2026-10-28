@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="Program.fs" />
     <PackageReference Include="Fable.Ranvier.Dom$(RanvierDomPackageSuffix)" Version="$(RanvierDomVersion)" />
-    <PackageReference Include="Fable.Core" Version="5.3.0" />
+    <PackageReference Include="Fable.Core" Version="5.6.0" />
   </ItemGroup>
 </Project>

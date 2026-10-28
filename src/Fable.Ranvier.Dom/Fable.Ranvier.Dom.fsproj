@@ -11,7 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Ranvier.Dom/Generated/Dom.fs" Link="Generated/Dom.fs" />
-    <PackageReference Include="Fable.Core" Version="5.3.0" />
+    <PackageReference Include="Fable.Core" Version="5.6.0" />
     <None Include="../Ranvier.Dom/README.md" Pack="true" PackagePath="README.md" />
     <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
