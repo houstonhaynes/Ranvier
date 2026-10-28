@@ -128,8 +128,8 @@ the public memo constructors do not.
 
 ## UI integration
 
-Use [Ranvier.View](../view/index.md) for template components and `Ranvier.View.Dom` for browser
-mounting, hydration and document-head ownership. The [getting-started guide](../view/getting-started.md)
+Use [Ranvier.View](https://ranvier-org.github.io/Ranvier.View/view/) for template components and `Ranvier.View.Dom` for browser
+mounting, hydration and document-head ownership. The [getting-started guide](https://ranvier-org.github.io/Ranvier.View/view/getting-started/)
 includes a browser editor for standard components. Compiler-plugin extensions such as `Arms.Match`
 require a local build.
 

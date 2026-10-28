@@ -1,6 +1,0 @@
-instance unit  path=r-0  hash=3a0a8f0b
-<div>
-  "page"
-head
-  title  key=title  "Board (4)"
-  meta  key=meta:name=description  name="description" content="Four cards"

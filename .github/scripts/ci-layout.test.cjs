@@ -7,7 +7,7 @@ const jobs = Object.fromEntries([...workflow.slice(workflow.indexOf('\njobs:')).
 
 test('core .NET gates run in the .NET tests job', () => {
   const gates = {
-    dotnet: ['Test Ranvier.Tests', 'Test Ranvier.CSharp.Tests', 'Test Ranvier.Wire.Tests', 'Test Ranvier.Persistence.Tests', 'Check the vendored Thoth.Json', 'Test Ranvier.Tests, traced', 'Test Ranvier.Docs.Maps.Tests, traced', 'Check package compatibility'],
+    dotnet: ['Test Ranvier.Tests', 'Test Ranvier.CSharp.Tests', 'Test Ranvier.Wire.Tests', 'Check the vendored Thoth.Json', 'Test Ranvier.Tests, traced', 'Test Ranvier.Docs.Maps.Tests, traced', 'Check package compatibility'],
   };
   for (const [id, names] of Object.entries(gates)) {
     assert.match(jobs[id], /needs: changes/);
@@ -15,13 +15,6 @@ test('core .NET gates run in the .NET tests job', () => {
       const owners = Object.entries(jobs).filter(([, body]) => body.split(/\r?\n/).some(line => line.trim() === `- name: ${name}`)).map(([owner]) => owner);
       assert.deepEqual(owners, [id], name);
     }
-  }
-});
-
-test('service selection outputs are wired into the corresponding job conditions', () => {
-  for (const service of ['marten', 'kurrentdb', 'equinox']) {
-    assert.ok(jobs.changes.includes(`${service}: \u0024{{ steps.classify.outputs.${service} }}`));
-    assert.ok(jobs[service].includes(`if: needs.changes.outputs.${service} == 'true'`));
   }
 });
 

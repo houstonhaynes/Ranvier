@@ -186,9 +186,6 @@ let main _ =
     for name, ok, detail in WireSmoke.checks () do
         report name ok detail
 
-    for name, ok, detail in PersistSmoke.checks () do
-        report name ok detail
-
     if failures = 0 then
         Console.WriteLine "all checks passed"
         0

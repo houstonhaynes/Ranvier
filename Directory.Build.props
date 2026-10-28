@@ -16,6 +16,9 @@
         <IncludeSymbols>false</IncludeSymbols>
         <!-- Ranvier.Css packages, published from ranvier-org/Ranvier.Css. -->
         <RanvierCssVersion>0.1.1-alpha.1</RanvierCssVersion>
+        <!-- A ranvier-org/Ranvier.View checkout built against this repository's core: the docs maps compile its
+             view projects, and `RanvierAnalyze` runs its analyzers. .github/scripts/view-sibling.sh sets one up. -->
+        <RanvierViewRoot Condition="'$(RanvierViewRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier.View'))</RanvierViewRoot>
     </PropertyGroup>
 
     <!-- Packed projects only: a CI build maps source paths to /_/, which breaks the docs site's __SOURCE_DIRECTORY__. -->

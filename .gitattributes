@@ -1,7 +1,4 @@
 .githooks/* text eol=lf
-tools/Ranvier.Dom.Generate/*.json text eol=lf
-tests/Ranvier.View.Twin.Tests/dumps/*.txt text eol=lf
-tests/Ranvier.View.Twin.Tests/dumps/*.json text eol=lf
 docs/research/**/*-report-github.md -whitespace
 docs/research/2026-10-21-dom-twin/*.diff text eol=lf whitespace=-blank-at-eol
 docs/.ai/benchmarks/tracing/** -whitespace

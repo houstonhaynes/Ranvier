@@ -106,61 +106,26 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The four view packages share version `0.1.0-alpha.3`, with matching dependency versions.
-
-```shell
-dotnet add package Ranvier.View.Dom --version 0.1.0-alpha.3
-```
-
-| Package | Holds | Depends on |
-| --- | --- | --- |
-| `Ranvier.View` | Template components, view sugar and server HTML rendering, on .NET and under Fable | `Ranvier`, `Xantham.Fable.Core.TS` |
-| `Ranvier.View.Dom` | Mounting, hydration and the document head in the browser, under Fable | `Ranvier.View` |
-| `Ranvier.View.Anime` | Motion parts for templates over anime.js | `Ranvier.View`, `Fable.Ranvier.Anime` |
-| `Fable.Ranvier.Anime` | Typed anime.js 4.5 bindings | `Ranvier`, `Xantham.Fable.Core.TS` |
-
-A browser app references `Ranvier.View.Dom`; server or shared component code references
-`Ranvier.View`. See [Views](../view/index.md) for setup.
-
-:::warning Additional dependency feed
-`Xantham.Fable.Core.TS` 0.2.1 comes from the Xantham Cloudsmith feed. Add it beside nuget.org
-and map `Xantham.*` to Cloudsmith:
-
-
-```xml
-<configuration>
-  <packageSources>
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="xantham-cloudsmith" value="https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json" />
-  </packageSources>
-  <packageSourceMapping>
-    <packageSource key="xantham-cloudsmith">
-      <package pattern="Xantham.*" />
-    </packageSource>
-    <packageSource key="nuget.org">
-      <package pattern="*" />
-    </packageSource>
-  </packageSourceMapping>
-</configuration>
-```
-:::
+The view packages, `Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and
+`Fable.Ranvier.Anime`, and the `Ranvier.Analyzers` package are built in
+[ranvier-org/Ranvier.View](https://github.com/ranvier-org/Ranvier.View). Their
+[documentation](https://ranvier-org.github.io/Ranvier.View/) covers installation, the additional
+`Xantham.*` package feed, templates, server rendering, motion and the analyzer rules.
 
 ## Typed CSS
 
-Install the generated properties and the view adapter together:
-
-```shell
-dotnet add package Ranvier.Css.Bindings --version 0.1.1-alpha.1
-dotnet add package Ranvier.Css.View --version 0.1.1-alpha.1
-```
-
-Both depend on `Ranvier.Css`. The view adapter requires `Ranvier.View` `0.1.0-alpha.2` or later
-so generated classes merge with user classes. These three CSS libraries target .NET 8 and
-.NET 10 and include Fable sources and standalone source projects. `Ranvier.Css.Build` is the
-separate .NET 10 asset compiler library. The source-project extractor remains a repository tool.
-The CSS libraries live in [ranvier-org/Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css). See
-[typed CSS](https://ranvier-org.github.io/Ranvier.Css/view/css/), [composite utilities](https://ranvier-org.github.io/Ranvier.Css/view/css-utilities/) and
+`Ranvier.Css`, `Ranvier.Css.Bindings`, `Ranvier.Css.View` and `Ranvier.Css.Build` are built in
+[ranvier-org/Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css). See
+[typed CSS](https://ranvier-org.github.io/Ranvier.Css/view/css/),
+[composite utilities](https://ranvier-org.github.io/Ranvier.Css/view/css-utilities/) and
 [extracting CSS](https://ranvier-org.github.io/Ranvier.Css/view/css-build/).
+
+## Persistence
+
+`Ranvier.Persistence` and its store adapters, `Ranvier.Persistence.Marten` and
+`Ranvier.Persistence.KurrentDB`, are built in
+[ranvier-org/Ranvier.Persistence](https://github.com/ranvier-org/Ranvier.Persistence). See
+[persisted inputs](https://ranvier-org.github.io/Ranvier.Persistence/guide/persistence/).
 
 ## Fable
 

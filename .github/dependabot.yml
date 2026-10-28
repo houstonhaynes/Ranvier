@@ -4,11 +4,6 @@ updates:
     directories:
       - "/"
       - "/bench/Ranvier.CoreListBench"
-      - "/examples/Fable.Ranvier.Playground"
-      - "/examples/Ranvier.Motion"
-      - "/fable/Ranvier.Anime.Tests"
-      - "/fable/Ranvier.View.Anime.Tests"
-      - "/tools/Ranvier.Dom.Generate"
     schedule:
       interval: monthly
     open-pull-requests-limit: 2
@@ -19,9 +14,6 @@ updates:
       npm-security-updates:
         applies-to: security-updates
         patterns: ["*"]
-    ignore:
-      # tools/Ranvier.Dom.Generate pins a TypeScript nightly build.
-      - dependency-name: "typescript"
 
   - package-ecosystem: nuget
     directory: "/"
@@ -41,8 +33,6 @@ updates:
       - dependency-name: "fable"
       - dependency-name: "Fickl"
       - dependency-name: "Xantham.*"
-      # Exact-pinned [7.0.5] in tools/Ranvier.Dom.Generate.
-      - dependency-name: "Fantomas.Core"
       # Local-feed builds committed under docs/feed.
       - dependency-name: "Partas.Solid"
       - dependency-name: "Partas.Nacara.Plugins.Solid"

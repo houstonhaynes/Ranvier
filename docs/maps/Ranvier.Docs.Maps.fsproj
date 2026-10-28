@@ -5,6 +5,8 @@
         <LangVersion>latest</LangVersion>
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <!-- docs/literate.fsx loads the view assemblies from this output directory. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,8 +20,14 @@
 
     <ItemGroup>
         <ProjectReference Include="model\Ranvier.Docs.MapModel.fsproj" />
-        <ProjectReference Include="..\..\src\Ranvier.View.Dom\Ranvier.View.Dom.fsproj" />
-        <ProjectReference Include="..\..\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
+        <!-- Fable compiles package sources ahead of project references, so view packages would compile before the
+             core project they depend on. The view projects compile from source, against this core. -->
+        <ProjectReference Include="$(RanvierViewRoot)\src\Ranvier.View.Dom\Ranvier.View.Dom.fsproj" />
+        <ProjectReference Include="$(RanvierViewRoot)\src\Fable.Ranvier.Anime\Fable.Ranvier.Anime.fsproj" />
     </ItemGroup>
+
+    <Target Name="ValidateRanvierViews" BeforeTargets="CollectPackageReferences;PrepareForBuild">
+        <Error Condition="!Exists('$(RanvierViewRoot)/Local.Build.props')" Text="RanvierViewRoot must point to a ranvier-org/Ranvier.View checkout built against this core. Run .github/scripts/view-sibling.sh." />
+    </Target>
 
 </Project>

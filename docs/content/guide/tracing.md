@@ -27,7 +27,7 @@ triggered it, and also explains why a node did not run. Choose a query for your 
   and line that created one, the owner chain it lives under, and its label.
 - **What does the graph look like now?** `Trace.snapshot` prints the owner tree with every node's
   status, run count and sources.
-- **What is mounted in the view?** [Dumping a view](../view/testing.md#dumping-a-view) shows component
+- **What is mounted in the view?** [Dumping a view](https://ranvier-org.github.io/Ranvier.View/view/testing/#dumping-a-view) shows component
   fields and rendered regions, and connects an instance field to its core node for `Trace.why`.
 
 ## Turning it on

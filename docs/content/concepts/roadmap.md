@@ -27,7 +27,7 @@ versions and local builds. Exploratory items below have no delivery schedule.
   [forms](../guide/forms.md), plus an [MVU bridge](../guide/elmish.md) over selector memos.
 - **Remote data:** [Ranvier.Query](../guide/queries.md) shares acquired query leases, retains refresh
   data and reconciles mutation receipts across loaded queries.
-- **Persistence and replay:** [persisted inputs](../guide/persistence.md) restore signals and
+- **Persistence and replay:** [persisted inputs](https://ranvier-org.github.io/Ranvier.Persistence/guide/persistence/) restore signals and
   collections; the [input journal](../guide/journal.md) records external inputs for diagnostic
   replay and re-enactment. Read the restore limitations before combining snapshots and journal tails.
 - **Diagnostics:** [tracing](../guide/tracing.md) records node creation, causal runs, pending work
@@ -35,8 +35,8 @@ versions and local builds. Exploratory items below have no delivery schedule.
 - **C# integration:** delegate factories, XAML property/error bindings, commands and observable
   collections. See [C#](../guide/csharp.md).
 - **Views:** shared templates support DOM mounting, server HTML and hydration, with motion and
-  testing helpers. See [Views](../view/index.md), [Server rendering](../server/index.md) and
-  [Testing views](../view/testing.md).
+  testing helpers. See [Views](https://ranvier-org.github.io/Ranvier.View/view/), [Server rendering](https://ranvier-org.github.io/Ranvier.View/server/) and
+  [Testing views](https://ranvier-org.github.io/Ranvier.View/view/testing/).
 - **Fable and deployment:** local package builds include standalone Fable source projects; CI
   checks packed consumers. The core, C#, Elmish and Query packages have traced/untraced .NET 10
   `linux-x64` trim/AOT smoke checks. See [Installation](../guide/installation.md) for scope and

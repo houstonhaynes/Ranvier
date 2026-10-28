@@ -995,7 +995,6 @@ let all (scale: int) : Case list =
                         "Ranvier (stable items)", workload (Workloads.keyedPass false edit)
                         "Ranvier (memo-free rows)", workload (OnceWorkloads.keyedOncePass edit)
                     ]
-        yield! scenario "server-render" "render a 100-row keyed table as one request" (5 * scale) [ "Ranvier", workload ServerWorkloads.serverRender ]
         yield!
             scenario
                 "project-chain"
@@ -1114,15 +1113,6 @@ let all (scale: int) : Case list =
                 [
                     "Ranvier (signal per field)", Ranvier.fieldWrite false
                     "Ranvier (Mvu)", Ranvier.fieldWrite true
-                ]
-        yield!
-            scenario
-                "persist-write"
-                "write a new value to a signal read by one createEffectOn, saved to a MemoryStateStore when persisted"
-                (5000 * scale)
-                [
-                    "Ranvier (signal)", workload (PersistWorkloads.write false)
-                    "Ranvier (persisted signal)", workload (PersistWorkloads.write true)
                 ]
         yield!
             scenario

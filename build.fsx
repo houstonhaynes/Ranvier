@@ -86,38 +86,34 @@ module Spec =
                 "src/Ranvier.Query/Ranvier.Query.fsproj"
                 "src/Ranvier.Elmish/Ranvier.Elmish.fsproj"
                 "src/Ranvier.Wire/Ranvier.Wire.fsproj"
-                "src/Ranvier.Persistence/Ranvier.Persistence.fsproj"
-                "src/Fable.Ranvier/Fable.Ranvier.fsproj"
-                "src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
                 "tests/Ranvier.Tests/Ranvier.Tests.fsproj"
                 "tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj"
-                "tests/Ranvier.Persistence.Tests/Ranvier.Persistence.Tests.fsproj"
-            ]
-            "view",
-            [
-                "src/Ranvier.View/Ranvier.View.fsproj"
-                "src/Ranvier.View.Dom/Ranvier.View.Dom.fsproj"
-                "src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj"
-                "experiments/Ranvier.View.Arms/Ranvier.View.Arms.fsproj"
-                "examples/Fable.Ranvier.Playground/Playground.fsproj"
-                "examples/Fable.Ranvier.Playground/tests/DomTests.fsproj"
-                "docs/samples/view/Ranvier.Docs.ViewSamples.fsproj"
             ]
             "examples",
             [
-                "examples/Ranvier.Motion/Motion.fsproj"
-                "examples/Ranvier.Motion/Server/ServerChecks.fsproj"
-                "examples/Ranvier.Motion/tests/MotionTests.fsproj"
-                "examples/Ranvier.Hydration/Shared.fsproj"
-                "examples/Ranvier.Hydration/Server/Server.fsproj"
                 "examples/Ranvier.Query.Dictionary/Ranvier.Query.Dictionary.fsproj"
                 "examples/Ranvier.FuncUI.Workload/Workload.Model.fsproj"
             ]
         ]
 
-    /// The Motion example pages, which the docs site serves under examples/motion/.
-    let motionExamples =
-        System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Ranvier.Motion")
+    /// The ranvier-org/Ranvier.View checkout: `RanvierViewRoot` when set, else a sibling of this repository.
+    let viewsRoot =
+        match System.Environment.GetEnvironmentVariable "RanvierViewRoot" with
+        | null
+        | "" -> System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "../Ranvier.View")
+        | root -> root
+        |> System.IO.Path.GetFullPath
+
+    /// The analyzers built in the Ranvier.View checkout, which `analyze` runs.
+    let analyzersProject =
+        System.IO.Path.Combine (viewsRoot, "tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj")
+
+    let analyzersDirectory =
+        System.IO.Path.Combine (System.IO.Path.GetDirectoryName analyzersProject, "bin/Release/net10.0")
+
+    /// The Playground of the Ranvier.View checkout, which runs the trace report's Chromium rows.
+    let playground =
+        System.IO.Path.Combine (viewsRoot, "examples/Fable.Ranvier.Playground")
 
     let sourceProjectsMap =
         sourceProjects
@@ -390,22 +386,6 @@ module Stage =
                 }
         }
 
-    /// Packs the analyzers into the output directory; publish pushes them with the libraries.
-    let packAnalyzers =
-        input {
-            let! config = Options.config
-
-            return
-                stage "pack analyzers" {
-                    quiet
-
-                    run (
-                        cmd
-                            $"dotnet pack tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj -c {config} -v q -o {Repo.VirtualFileSystem.bin.ToString ()}"
-                    )
-                }
-        }
-
     /// Pushes the packages of the output directory whose dependencies all resolve on nuget.org, on a source nuget.config
     /// maps to them, or in the same push, with the key masked
     /// in every printed form of the step, then fails naming each package it held back.
@@ -560,22 +540,6 @@ module Stage =
                         run "git" "worktree remove --force .docs-perf-data"
                     }
 
-                    stage "browser examples" {
-                        when' (not watch)
-
-                        for name, directory in
-                            [
-                                "motion", Spec.motionExamples
-                                "playground", System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Fable.Ranvier.Playground")
-                                "hydration", System.IO.Path.Combine (__REPOSITORY_DIRECTORY__, "examples/Ranvier.Hydration")
-                            ] do
-                            stage $"{name} examples" {
-                                workingDir directory
-                                run "npm ci"
-                                run "npm run build"
-                            }
-                    }
-
                     run (
                         Cmd.ofString "dotnet"
                         |> Cmd.args (
@@ -595,7 +559,7 @@ module private Analyze =
     let private flags (report: string) =
         [
             "--analyzers-path"
-            "tools/Ranvier.Analyzers/bin/Release/net10.0"
+            Spec.analyzersDirectory
             "-c"
             "Release"
             "--fail-on-type-errors"
@@ -621,7 +585,7 @@ module private Analyze =
 
             return
                 stage "analyze" {
-                    stage "build analyzers" { run (cmd $"dotnet build tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj -c Release -v q") }
+                    stage "build analyzers" { run (cmd $"dotnet build {Spec.analyzersProject} -c Release -v q") }
 
                     // The CLI reads a project's references from its build outputs.
                     for name, projects in chosen do
@@ -991,8 +955,7 @@ module private Perf =
 
             let output = absolute directory
 
-            let playground =
-                combine __REPOSITORY_DIRECTORY__ "examples/Fable.Ranvier.Playground"
+            let playground = Spec.playground
 
             let chromiumModes = "--modes=ranvier,ranvier-sugar"
 
@@ -1118,7 +1081,10 @@ module private Perf =
                             )
                         }
 
-                    if not noChromium then
+                    if
+                        not noChromium
+                        && System.IO.Directory.Exists playground
+                    then
                         stage "chromium packages" {
                             workingDir playground
                             run "npm ci"
@@ -1507,7 +1473,6 @@ exit
         Stage.fableClean
         Stage.pack
         Stage.packTraced
-        Stage.packAnalyzers
         Stage.publish
     }
 

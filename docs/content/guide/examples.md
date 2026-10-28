@@ -7,7 +7,7 @@ description: Complete F# and C# applications built on Ranvier, in the Ranvier.Ex
 Preview — Ranvier is pre-release; its APIs may change.
 :::
 
-To try interactive views directly in your browser, open the [browser examples](../examples/index.md):
+To try interactive views directly in your browser, open the [browser examples](https://ranvier-org.github.io/Ranvier.View/examples/):
 the playground, Motion demos and a server-rendered hydration snapshot.
 
 [Ranvier.Examples](https://github.com/shayanhabibi/Ranvier.Examples) holds complete applications
@@ -15,7 +15,7 @@ that use Ranvier for real workflows: remote data, file processing, data repair a
 review. Each workflow runs as a console scenario that checks its own outcome, and all four open
 together as tabs of one Avalonia desktop workbench.
 
-The [shop replay recipe](shop-replay.md) adds a console example: save an async production incident and
+The [shop replay recipe](https://ranvier-org.github.io/Ranvier.Persistence/guide/shop-replay/) adds a console example: save an async production incident and
 reproduce it in a traced development build, including the pending states and completion order.
 
 ## Workflows

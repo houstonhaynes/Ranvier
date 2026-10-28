@@ -1,13 +1,15 @@
 # Publish Ranvier packages
 
 `Publish NuGet` (`.github/workflows/publish.yml`) publishes the exact package artifacts from successful
-`master` CI. It includes every packable library under `src/` and `adapters/`, their `.Traced` variants,
-and `Ranvier.Analyzers`. Samples, experiments and projects with `IsPackable=false` are excluded.
+`master` CI. It includes every packable library under `src/` and their `.Traced` variants. Samples,
+experiments and projects with `IsPackable=false` are excluded. The view, CSS and persistence packages publish from
+[Ranvier.View](https://github.com/ranvier-org/Ranvier.View), [Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css)
+and [Ranvier.Persistence](https://github.com/ranvier-org/Ranvier.Persistence).
 
 ## Normal release
 
 1. Bump the affected projects' `<Version>` values. Keep a library and its traced variant at the same
-   version; keep the four `RanvierExactSiblingVersions` view projects at one shared version.
+   version.
 2. Merge after checks pass. CI builds and validates the packages, then uploads `nuget-packages`.
 3. After successful `master` CI, publishing examines that run's package artifacts. Documentation-only CI is skipped.
    The workflow validates all artifacts and dependency feeds, lists missing NuGet versions, authenticates

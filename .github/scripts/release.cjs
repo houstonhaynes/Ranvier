@@ -72,14 +72,8 @@ async function resolveRelease(event, passingCI) {
   return { ref: event.sha, pack: true, publish: !event.dryRun };
 }
 
-function adapterProjects(root = '.') {
-  const directory = path.join(root, 'adapters');
-  return fs.readdirSync(directory).sort().map(name => path.join(directory, name, `${name}.fsproj`))
-    .filter(file => fs.existsSync(file));
-}
-
 async function releasePlan(directory, get = getJson) {
-  const problems = check(directory, 'src', ['tools/Ranvier.Analyzers/Ranvier.Analyzers.fsproj'], adapterProjects());
+  const problems = check(directory, 'src', [], []);
   if (problems.length) throw new Error(problems.join('\n'));
   const packages = fs.readdirSync(directory).filter(file => file.endsWith('.nupkg')).sort()
     .map(file => ({ file, ...readPackage(fs.readFileSync(path.join(directory, file))) }));
@@ -115,5 +109,5 @@ async function main([command, directory = 'bin']) {
   } else throw new Error('Usage: release.cjs plan|push <packages-directory>');
 }
 
-module.exports = { trustedCI, artifactAvailable, orderPackages, missingPackages, resolveRelease, adapterProjects, releasePlan, getJson };
+module.exports = { trustedCI, artifactAvailable, orderPackages, missingPackages, resolveRelease, releasePlan, getJson };
 if (require.main === module) main(process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });

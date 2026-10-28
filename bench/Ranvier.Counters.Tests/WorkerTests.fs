@@ -183,19 +183,5 @@ let tests =
                     [ "Instructions"; "Cycles"; "BranchMisses"; "CpuNs" ]
                     "transport fields retained"
             }
-
-            test "persist-write measures a plain and a persisted signal write, and the persisted case saves every write" {
-                let cases =
-                    Scenarios.all 1
-                    |> List.filter (fun case -> case.Scenario = "persist-write")
-
-                Expect.equal (cases |> List.map _.Engine) [ "Ranvier (signal)"; "Ranvier (persisted signal)" ] "engines in report order"
-
-                let bytes =
-                    cases
-                    |> List.map (fun case -> (Worker.measure None case 100 0).Bytes)
-
-                Expect.isGreaterThan bytes[1] bytes[0] "a persisted write allocates its record and save"
-            }
         ]
     |> testSequenced

@@ -2,23 +2,15 @@
   "solution": {
     "path": "Ranvier.slnx",
     "projects": [
-      "examples\\Ranvier.Hydration\\Shared.fsproj",
-      "examples\\Ranvier.Hydration\\Server\\Server.fsproj",
       "src\\Ranvier\\Ranvier.fsproj",
       "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
       "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
       "src\\Ranvier.Query\\Ranvier.Query.fsproj",
-      "src\\Ranvier.Persistence\\Ranvier.Persistence.fsproj",
       "src\\Ranvier.Wire\\Ranvier.Wire.fsproj",
-      "src\\Ranvier.View\\Ranvier.View.fsproj",
-      "src\\Ranvier.View.Dom\\Ranvier.View.Dom.fsproj",
       "tests\\Ranvier.Wire.Tests\\Ranvier.Wire.Tests.fsproj",
-      "tests\\Ranvier.Persistence.Tests\\Ranvier.Persistence.Tests.fsproj",
       "docs\\docs.fsproj",
       "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
-      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj",
-      "docs\\samples\\server-backends\\Oxpecker\\Oxpecker.fsproj",
-      "docs\\samples\\server-backends\\Suave\\Suave.fsproj"
+      "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"
     ]
   }
 }

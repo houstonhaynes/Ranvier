@@ -11,6 +11,18 @@ Ranvier combines fine-grained dependency tracking with a propagating [pending ch
 Signals hold state, memos derive it, and boundaries turn loading and failures into display values.
 It targets .NET and Fable, with an F# API and a C# facade.
 
+## Ranvier packages
+
+- [Ranvier.View](https://ranvier-org.github.io/Ranvier.View/): template components for the browser
+  DOM, server HTML and hydration, motion over anime.js, and the analyzers.
+  Source: [ranvier-org/Ranvier.View](https://github.com/ranvier-org/Ranvier.View).
+- [Ranvier.Css](https://ranvier-org.github.io/Ranvier.Css/): typed CSS bindings, composite utilities,
+  static extraction and reactive styles for views.
+  Source: [ranvier-org/Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css).
+- [Ranvier.Persistence](https://ranvier-org.github.io/Ranvier.Persistence/): persisted signals and
+  collections, with Marten and KurrentDB stores.
+  Source: [ranvier-org/Ranvier.Persistence](https://github.com/ranvier-org/Ranvier.Persistence).
+
 ## Related libraries
 
 - [FSharp.Data.Adaptive](https://fsprojects.github.io/FSharp.Data.Adaptive/) provides adaptive sets,
@@ -110,8 +122,8 @@ sources are unowned. State that must survive a body's re-run lives outside that 
 
 ## Rendering and host integration
 
-- **Browser and server HTML:** [Ranvier.View](../view/index.md) uses Ranvier signals directly.
-  Templates support DOM mounting, [server rendering](../server/index.md) and hydration.
+- **Browser and server HTML:** [Ranvier.View](https://ranvier-org.github.io/Ranvier.View/view/) uses Ranvier signals directly.
+  Templates support DOM mounting, [server rendering](https://ranvier-org.github.io/Ranvier.View/server/) and hydration.
 - **XAML view models:** [Ranvier.CSharp](../guide/csharp.md#binding-to-xaml) supplies
   `ReactiveBindings`, `ReactiveCommand` and `AsObservableCollection`. Existing WPF, Avalonia, MAUI,
   Uno and WinUI hosts render through their own toolkits. The [Avalonia workbench](../guide/examples.md)

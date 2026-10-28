@@ -2,23 +2,10 @@
   "solution": {
     "path": "Ranvier.slnx",
     "projects": [
-      "experiments\\Ranvier.View.Checks\\RepresentationChecks.fsproj",
-      "experiments\\Ranvier.View.Checks\\SnapshotBench\\SnapshotBench.fsproj",
-      "experiments\\Ranvier.View.Checks\\AuthoringPerf\\AuthoringPerf.fsproj",
-      "experiments\\Ranvier.View.Checks\\ServerBench\\ServerBench.fsproj",
-      "experiments\\Ranvier.View.Testing\\Ranvier.View.Testing.fsproj",
-      "experiments\\Ranvier.View.Twin\\Ranvier.View.Twin.fsproj",
-      "experiments\\Ranvier.View.Arms\\Ranvier.View.Arms.fsproj",
-      "experiments\\Ranvier.View.Arms.FablePlugin\\Ranvier.View.Arms.FablePlugin.fsproj",
-      "experiments\\Ranvier.View.Arms\\Checks\\Discovery\\Discovery.fsproj",
-      "experiments\\Ranvier.View.Arms\\Checks\\DotnetCost\\DotnetCost.fsproj",
-      "experiments\\Ranvier.View.Arms\\Checks\\TrimCallSite\\TrimCallSite.fsproj",
       "src\\Ranvier\\Ranvier.fsproj",
       "src\\Ranvier.CSharp\\Ranvier.CSharp.fsproj",
       "src\\Ranvier.Elmish\\Ranvier.Elmish.fsproj",
       "src\\Ranvier.Query\\Ranvier.Query.fsproj",
-      "src\\Ranvier.View\\Ranvier.View.fsproj",
-      "src\\Ranvier.View.Dom\\Ranvier.View.Dom.fsproj",
       "docs\\docs.fsproj",
       "docs\\plugin\\Nacara.Plugin.Ranvier.fsproj",
       "docs\\maps\\model\\Ranvier.Docs.MapModel.fsproj"

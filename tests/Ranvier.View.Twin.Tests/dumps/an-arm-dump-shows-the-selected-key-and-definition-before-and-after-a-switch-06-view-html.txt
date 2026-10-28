@@ -1,1 +1,0 @@
-<!--ranvier:start--><div class="board"><h2>Cards: <!--!-->4</h2><ul><!--[--><li class="card">Write spec</li><li class="card">Review</li><li class="card">Ship</li><li class="card">Rest</li><!--]--></ul><!--[--><section>view</section><!--]--><!--[--><!--ranvier:start--><p>Loading</p><!--ranvier:end--><!--]--></div><!--ranvier:end-->

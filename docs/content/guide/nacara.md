@@ -11,7 +11,7 @@ compiles Ranvier.View components, renders their initial HTML and bundles hydrati
 - **`fsharp ranvier`** renders a `Component<unit>`. Use it for a working UI example.
 - **`fsharp map`** turns a scenario and its controls into a [signal map](signal-maps.md).
 - **`fsharp live`**, supplied by Nacara's `LiveExample` plugin, opens an editor that compiles and
-  evaluates code in the browser. Try the [editable counter](../view/getting-started.md#try-a-component-in-the-live-editor).
+  evaluates code in the browser. Try the [editable counter](https://ranvier-org.github.io/Ranvier.View/view/getting-started/#try-a-component-in-the-live-editor).
 
 For a component already exposed by your example project:
 

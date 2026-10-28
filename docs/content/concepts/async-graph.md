@@ -207,11 +207,11 @@ differences include:
 - **Threads.** A Fable graph runs in one JavaScript execution context and ignores the .NET dispatcher machinery.
 
 Compile browser applications with [Fable](../fable/index.md) and render them with
-[Ranvier.View.Dom](../view/getting-started.md). Server and browser components share the same
-[Ranvier.View templates](../view/templates.md).
+[Ranvier.View.Dom](https://ranvier-org.github.io/Ranvier.View/view/getting-started/). Server and browser components share the same
+[Ranvier.View templates](https://ranvier-org.github.io/Ranvier.View/view/templates/).
 
 ## Outside the scope of the core
 
-The `Ranvier` package owns reactive computation. [Ranvier.View](../view/index.md) adds reusable
+The `Ranvier` package owns reactive computation. [Ranvier.View](https://ranvier-org.github.io/Ranvier.View/view/) adds reusable
 templates, browser mounting, server HTML and hydration. Each binding updates the DOM part that
 reads it. Native hosts such as Avalonia, WPF, MAUI and Blazor render through their own toolkits.

@@ -1,1 +1,0 @@
-{"schema":"ranvier-view-dump/1","mount":null,"root":[{"kind":"instance","name":"record","path":"r-0","hash":"3bb37e3e","fields":[{"name":"Value","kind":"OpaqueDump","value":"OpaqueDump","status":""}],"children":[{"kind":"element","tag":"p","attributes":[],"properties":[],"children":[]}]}],"head":[]}

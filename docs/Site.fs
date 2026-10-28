@@ -24,25 +24,31 @@ let apiOptions =
             ]
     }
 
+/// The documentation sites of the packages built in the other ranvier-org repositories.
+module Packages =
+    let views = "https://ranvier-org.github.io/Ranvier.View/"
+    let css = "https://ranvier-org.github.io/Ranvier.Css/"
+    let persistence = "https://ranvier-org.github.io/Ranvier.Persistence/"
+
 let theme =
     Theme.theme (
         Theme.navbar
             [
                 NavbarSection ("Guide", "guide", "/guide/")
+                NavbarSection ("Fable", "fable", "/fable/")
                 NavbarDropdown (
-                    "Build",
+                    "Packages",
                     [
-                        NavbarSection ("Views", "view", "/view/")
-                        NavbarSection ("Server", "server", "/server/")
-                        NavbarSection ("Fable", "fable", "/fable/")
+                        NavbarDescribed ("Ranvier.View", "Templates, DOM and server rendering, motion and the analyzers", Packages.views)
+                        NavbarDescribed ("Ranvier.Css", "Typed CSS, utilities and static extraction", Packages.css)
+                        NavbarDescribed ("Ranvier.Persistence", "Persisted signals and the Marten and KurrentDB stores", Packages.persistence)
                     ]
                 )
-                NavbarSection ("Examples", "examples", "/examples/")
                 NavbarDropdown (
                     "Reference",
                     [
                         NavbarSection ("API reference", "reference", "/reference/")
-                        NavbarSection ("Analyzers", "analyzers", "/analyzers/")
+                        NavbarLink ("Analyzers", Packages.views + "analyzers/")
                     ]
                 )
                 NavbarDropdown (
@@ -110,21 +116,13 @@ let theme =
                                 Menu.page "guide/collection-views.fsx"
                                 Menu.page "guide/aggregates.fsx"
                             ]
-                        Menu.section "Recipes" [ Menu.page "guide/forms.md"; Menu.page "guide/shop-replay.md" ]
+                        Menu.section "Recipes" [ Menu.page "guide/forms.md" ]
                     ]
                 Menu.section
                     "Extensions"
                     [
                         Menu.section "Ranvier.Query" [ Menu.page "guide/queries.md"; Menu.page "guide/query-navigation.md" ]
                         Menu.section "Ranvier.Elmish" [ Menu.page "guide/elmish.md" ]
-                        Menu.section
-                            "Ranvier.Persistence"
-                            [
-                                Menu.page "guide/persistence.md"
-                                Menu.page "guide/persistence-marten.md"
-                                Menu.page "guide/persistence-kurrentdb.md"
-                                Menu.page "guide/persistence-equinox.md"
-                            ]
                         Menu.section "Ranvier.Mcp" [ Menu.page "guide/mcp.md"; Menu.page "guide/mcp-research.md" ]
                     ]
                 Menu.section
@@ -135,64 +133,6 @@ let theme =
                         Menu.page "guide/signal-maps.md"
                         Menu.page "guide/nacara.md"
                         Menu.page "guide/troubleshooting.md"
-                    ]
-            ]
-        >> Theme.menu
-            "view"
-            [
-                Menu.section
-                    "Introduction"
-                    [
-                        Menu.page "view/index.md"
-                        Menu.page "view/getting-started.md"
-                        Menu.page "examples/index.md"
-                    ]
-                Menu.section
-                    "Authoring"
-                    [
-                        Menu.page "view/templates.md"
-                        Menu.page "view/components.md"
-                        Menu.page "view/collections.md"
-                        Menu.page "view/arms.md"
-                        Menu.page "view/boundaries.md"
-                        Menu.page "view/events.md"
-                        Menu.page "view/document-head.md"
-                        Menu.page "view/sugar.md"
-                        Menu.page "view/authored.md"
-                    ]
-                Menu.section
-                    "Motion"
-                    [
-                        Menu.page "view/motion.md"
-                        Menu.page "view/motion-reactive.md"
-                        Menu.page "view/motion-parts.md"
-                        Menu.page "view/motion-testing.md"
-                    ]
-                Menu.section
-                    "Running views"
-                    [
-                        Menu.page "view/lifetimes.md"
-                        Menu.page "view/elmish.md"
-                        Menu.page "view/testing.md"
-                        Menu.page "view/native.md"
-                    ]
-                Menu.section "Reference" [ Menu.page "view/troubleshooting.md"; Menu.page "view/reference.md" ]
-            ]
-        >> Theme.menu
-            "server"
-            [
-                Menu.section
-                    "Server"
-                    [
-                        Menu.page "server/index.md"
-                        Menu.page "server/rendering.md"
-                        Menu.page "server/hydration.md"
-                        Menu.page "server/pages.md"
-                        Menu.page "server/backends.md"
-                        Menu.page "examples/index.md"
-                        Menu.page "server/state-transfer.md"
-                        Menu.page "server/deployment.md"
-                        Menu.page "server/performance.md"
                     ]
             ]
         >> Theme.menu
@@ -228,30 +168,7 @@ let theme =
                     ]
                 Menu.section "Ranvier.Query" [ Menu.page "benchmarks/queries.md" ]
             ]
-        >> Theme.menu "examples" [ Menu.section "Browser examples" [ Menu.page "examples/index.md" ] ]
         >> Theme.menu "fable" [ Menu.section "Fable" [ Menu.page "fable/index.md" ] ]
-        >> Theme.menu
-            "analyzers"
-            [
-                Menu.section
-                    "Analyzers"
-                    [
-                        Menu.page "analyzers/index.md"
-                        Menu.page "analyzers/ran001.md"
-                        Menu.page "analyzers/ran002.md"
-                        Menu.page "analyzers/ran010.md"
-                        Menu.page "analyzers/ran011.md"
-                        Menu.page "analyzers/ran012.md"
-                        Menu.page "analyzers/ran013.md"
-                        Menu.page "analyzers/ran015.md"
-                        Menu.page "analyzers/ran020.md"
-                        Menu.page "analyzers/ran021.md"
-                        Menu.page "analyzers/ran022.md"
-                        Menu.page "analyzers/ran023.md"
-                        Menu.page "analyzers/ran024.md"
-                        Menu.page "analyzers/ran025.md"
-                    ]
-            ]
         >> Theme.menu
             "blog"
             [
@@ -275,16 +192,11 @@ let theme =
 /// The og card of each section, keyed by the path segment that names it, with the card's alt text.
 let private ogCards =
     [
-        "native", "native", "Native Ranvier deployment through WebCore, in development"
         "nacara", "nacara", "Runnable Ranvier documentation: components, signal maps and editable examples"
         "async-and-pending", "async", "Async and pending: boundary states along a nerve fibre"
         "tracing", "tracing", "Tracing: a cause chain traced back along a nerve fibre"
         "signal-maps", "signal-maps", "Signal maps: a traced graph drawn live, a write travelling its edges"
         "timing", "timing", "Debounce and throttle: capture changes now, admit them after quiet or at a fixed deadline"
-        "view", "view", "Ranvier.View: templates, events and bindings over a reactive graph"
-        "server", "server", "Ranvier server rendering: render HTML, transfer state and hydrate"
-        "examples", "examples", "Runnable Ranvier views, motion and hydration examples"
-        "analyzers", "analyzers", "Ranvier analyzers: diagnostics for reactive state, lifetimes and views"
         "guide", "guide", "Ranvier guide: build with signals"
         "concepts", "concepts", "Ranvier concepts: how the graph works"
         "fable", "fable", "Ranvier on Fable: the JavaScript target"
@@ -324,29 +236,6 @@ let private csharpGrammar (options: TreeSitterOptions) =
         :: options.Grammars
     )
 
-/// <summary>Copies the built browser examples into the documentation output.</summary>
-let private browserExamples =
-    Site.plugin
-        { new IPlugin with
-            member _.Name = "browser-examples"
-
-            member _.Configure registry =
-                [
-                    "Ranvier.Motion", "motion"
-                    "Fable.Ranvier.Playground", "playground"
-                    "Ranvier.Hydration", "hydration"
-                ]
-                |> List.fold
-                    (fun assets (project, route) ->
-                        let dist =
-                            Path.Combine (__SOURCE_DIRECTORY__, $"../examples/{project}/dist")
-                            |> Path.GetFullPath
-
-                        assets
-                        |> Registry.asset (Asset.CopyDirectory (AbsolutePath.create dist, RelativePath.create $"examples/{route}")))
-                    registry
-        }
-
 let reference =
     FSharpApi.collection "reference" DocFrontMatter.decoder apiOptions
     |> Collection.title _.Title
@@ -355,7 +244,7 @@ let reference =
 let site =
     Site.create "Ranvier"
     |> Site.baseUrl Spec.baseUrl
-    |> Site.origin "https://shayanhabibi.github.io"
+    |> Site.origin "https://ranvier-org.github.io"
     |> Site.output "output"
     |> Site.staticFiles "static"
     |> Markdown.register
@@ -365,7 +254,6 @@ let site =
     |> Sitemap.register
     |> FSharpApi.register apiOptions
     |> LinkValidator.register
-    |> browserExamples
     |> LiveExample.registerWith (
         LiveExample.preset (
             LiveExamplePreset.create "maps"
@@ -396,7 +284,7 @@ let site =
     |> AgentFriendly.registerWith (
         AgentFriendly.summary "Fine-grained reactive computation for .NET, with a Fable target"
         >> AgentFriendly.details
-            "Start with the guide. Views covers the experimental template components, Server their server rendering and hydration; Concepts explains the engine's model; Benchmarks holds measured results."
+            "Start with the guide. Concepts explains the engine's model; Benchmarks holds measured results. Views, typed CSS and persistence are documented in the Ranvier.View, Ranvier.Css and Ranvier.Persistence sites."
     )
     |> LightningCss.register
     |> Esbuild.register

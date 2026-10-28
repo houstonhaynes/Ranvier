@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 170" role="img" aria-labelledby="title desc">
-  <title id="title">Native deployment through WebCore</title>
-  <desc id="desc">A native Ranvier application sends reactive updates to WebCore, which updates DOM elements and handles events. JavaScript is absent from this path. This deployment target is in development.</desc>
-  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#476555"/></marker></defs>
-  <rect width="840" height="170" rx="16" fill="#f4f6ef"/>
-  <g fill="#fff" stroke="#476555" stroke-width="2"><rect x="20" y="38" width="220" height="86" rx="12"/><rect x="310" y="38" width="220" height="86" rx="12"/><rect x="600" y="38" width="220" height="86" rx="12"/></g>
-  <g fill="#20382d" font-family="system-ui,sans-serif" text-anchor="middle"><text x="130" y="73" font-size="20">Native Ranvier</text><text x="130" y="101" font-size="15">signals · bindings</text><text x="420" y="73" font-size="20">WebCore</text><text x="420" y="101" font-size="15">DOM implementation</text><text x="710" y="73" font-size="20">Document</text><text x="710" y="101" font-size="15">elements · events · text</text><text x="420" y="151" font-size="14">In development · no JavaScript compilation or runtime in this path</text></g>
-  <g stroke="#476555" stroke-width="2" marker-end="url(#arrow)"><path d="M244 81H300"/><path d="M534 81H590"/></g>
-</svg>

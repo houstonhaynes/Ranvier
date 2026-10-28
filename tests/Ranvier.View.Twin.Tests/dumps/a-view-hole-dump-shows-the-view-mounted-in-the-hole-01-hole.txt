@@ -1,7 +1,0 @@
-instance Holed  path=r-0  hash=1a016701
-  Body  fun
-<div class="holder">
-  hole  path=r-0.r0
-    instance unit  path=r-0.r0.0  hash=7336d24d
-    <section>
-      "view"
