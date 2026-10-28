@@ -196,7 +196,11 @@ type StreamMemo<'S>
         seed: 'S,
         emptyFails: bool,
         launch: IStreamRequester -> (exn -> unit) -> CancellationToken -> struct (IStreamRun<'S> * (unit -> Task))
-    ) as this =
+    )
+#if !FABLE_COMPILER
+    as this
+#endif
+    =
     let id = graph.NextId ()
     let observers = ObserverSet ()
     do Tracer.Bind (observers, graph, id)
@@ -846,7 +850,7 @@ module StreamSource =
                         match outcome with
                         | Platform.FlightOutcome.Completed result when isDone result -> finished.Resolve ()
                         | Platform.FlightOutcome.Completed result ->
-                            sink.Next (valueOf<'T> result)
+                            sink.Next (valueOf result)
                             step ()
                         | Platform.FlightOutcome.Faulted error
                         | Platform.FlightOutcome.Canceled error -> finished.Reject error)
