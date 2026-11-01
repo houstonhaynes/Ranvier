@@ -60,7 +60,7 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', '**/*.fsproj', '**/nuget.config', '.config/dotnet-tools.json') }}
