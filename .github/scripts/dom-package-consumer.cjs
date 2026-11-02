@@ -44,6 +44,13 @@ for (const suffix of ['', '.Traced']) {
   });
   fs.writeFileSync(path.join(output, 'package.json'), '{"type":"module"}');
   execFileSync('node', [path.join(output, 'Program.js')], { cwd: root, stdio: 'inherit' });
+  const mutationProject = path.join(root, 'tests/MutationObservation/PackageBrowser.fsproj');
+  execFileSync('dotnet', ['restore', mutationProject, '--configfile', config, '--packages', path.join(temporary, 'packages'),
+    ...properties, `-p:MutationDomVersion=${version}`], { cwd: root, stdio: 'inherit' });
+  execFileSync('dotnet', ['fickl', mutationProject, '--outDir', path.join(output, 'mutation-browser'), '--noCache'], {
+    cwd: root, stdio: 'inherit', env: { ...process.env, NUGET_PACKAGES: path.join(temporary, 'packages'),
+      MutationDomVersion: version, RanvierDomPackageSuffix: suffix }
+  });
 }
 } finally {
   const resolved = fs.realpathSync(temporary);

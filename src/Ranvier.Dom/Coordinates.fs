@@ -4,7 +4,39 @@ open System
 
 /// <summary>A point of a coordinate space: CSS pixels, or device pixels in <c>Device</c>.</summary>
 [<Struct>]
-type CoordinatePoint = { X: float; Y: float }
+type CoordinatePoint =
+    {
+        X: float
+        Y: float
+    }
+
+#if !FABLE_COMPILER
+    /// <summary>Formats the coordinates in F# record syntax with invariant numeric text.</summary>
+    override this.ToString() =
+        let number (value: float) =
+            if Double.IsNaN value then
+                "nan"
+            elif Double.IsPositiveInfinity value then
+                "infinity"
+            elif Double.IsNegativeInfinity value then
+                "-infinity"
+            else
+                let text = value.ToString ("g10", Globalization.CultureInfo.InvariantCulture)
+
+                if text.Contains ('.') || text.Contains ('e') then
+                    text
+                else
+                    text + ".0"
+
+        if Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%A" this
+        else
+            "{ X = "
+            + number this.X
+            + "\n  Y = "
+            + number this.Y
+            + " }"
+#endif
 
 /// <summary>Four points in the order of <c>DOMQuad</c>'s p1 to p4: the top-left, top-right, bottom-right and bottom-left
 /// corners of the box they map.</summary>
@@ -40,6 +72,7 @@ type CoordinateBox =
     | Padding
     | Content
     | Margin
+
 
 /// <summary>Why a conversion has no result.</summary>
 [<RequireQualifiedAccess>]

@@ -7,6 +7,9 @@ open System.Threading.Tasks
 
 /// <summary>The runtime observation domain; format domains describe support queries.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityCategory =
     | Abi
     | RendererSetting
@@ -14,12 +17,47 @@ type CapabilityCategory =
     | FontFormat
     | PlatformFacility
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box (this)) (fun n0 ->
+            match this with
+            | CapabilityCategory.Abi -> "Abi", []
+            | CapabilityCategory.RendererSetting -> "RendererSetting", []
+            | CapabilityCategory.ImageFormat -> "ImageFormat", []
+            | CapabilityCategory.FontFormat -> "FontFormat", []
+            | CapabilityCategory.PlatformFacility -> "PlatformFacility", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A category and normalized nonempty name; use Capabilities.key to validate external input.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityKey =
     {
         Category: CapabilityCategory
         Name: string
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.record context depth (box (this)) (fun n0 ->
+            [
+                "Category", (fun () -> (NativeDisplay.known context n0 ((this).Category) (fun retained -> retained.NativeDisplay (context, n0, 3))))
+                "Name", (fun () -> NativeDisplay.text context n0 ((this).Name))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>An independently observed fact, with Unknown for unobservable or contradictory evidence.</summary>
 [<RequireQualifiedAccess>]

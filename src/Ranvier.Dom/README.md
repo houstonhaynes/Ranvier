@@ -45,3 +45,5 @@ element as `MathMLElement`, which the interface extends.
 `Element.getClientRects()` and `Range.getClientRects()` return the engine's fragment rectangle snapshot.
 `DOMRectList.length` counts its entries, and `item` returns a null-capable `DOMRect` for each index.
 Coordinates retain double precision; an out-of-range item returns null.
+
+NativeAOT capability diagnostics retain typed categories, names and F# record layout. `NodeOrDOMString` retains its case and string payload; its native node leaf uses the declared marker `<Ranvier.Dom.Node>` without invoking user code. Ordinary JIT and Fable diagnostics retain their original structural display.

@@ -71,6 +71,8 @@ jobs:
         run: dotnet test tests/Ranvier.CSharp.Tests -c Release
       - name: Test Ranvier.Wire.Tests
         run: dotnet test tests/Ranvier.Wire.Tests -c Release
+      - name: Test shared mutation observation
+        run: dotnet run --project tests/MutationObservation/Shared.fsproj -c Release
       # The vendored Thoth.Json files must equal the pinned upstream commit plus src/Ranvier.Wire/Vendor/Thoth.Json/patches.
       - name: Check the vendored Thoth.Json
         shell: pwsh
@@ -192,6 +194,14 @@ jobs:
           RanvierTrace: 'true'
       - name: Run the tests and report
         run: node fable/Ranvier.Tests.Fable/Report.mjs
+      - name: Compile browser mutation observation
+        run: dotnet fickl tests/MutationObservation/Browser.fsproj -c Release --noCache -o artifacts/mutation-browser
+      - name: Install browser mutation fixture dependencies
+        run: npm ci --prefix tests/MutationObservation
+      - name: Install Chromium
+        run: npx --prefix tests/MutationObservation playwright install --with-deps chromium
+      - name: Test browser mutation observation
+        run: node tests/MutationObservation/run-browser.mjs artifacts/mutation-browser
       - name: Check Fable package consumers
         shell: pwsh
         run: ./tests/check-package-compatibility.ps1 -CheckFable

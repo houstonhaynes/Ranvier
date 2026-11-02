@@ -86,6 +86,8 @@ module Spec =
                 "src/Ranvier.Query/Ranvier.Query.fsproj"
                 "src/Ranvier.Elmish/Ranvier.Elmish.fsproj"
                 "src/Ranvier.Wire/Ranvier.Wire.fsproj"
+                "src/Ranvier.Dom/Ranvier.Dom.fsproj"
+                "tests/MutationObservation/Shared.fsproj"
                 "tests/Ranvier.Tests/Ranvier.Tests.fsproj"
                 "tests/Ranvier.Wire.Tests/Ranvier.Wire.Tests.fsproj"
             ]
@@ -462,6 +464,8 @@ module Stage =
 
                     for { Name = name; Path = path } in Spec.testProjects do
                         stage $"run {name}" { run (cmd $"dotnet test {path} -c {config} -v q") }
+
+                    stage "run shared mutation observation" { run (cmd $"dotnet run --project tests/MutationObservation/Shared.fsproj -c {config}") }
                 }
         }
 
@@ -506,6 +510,18 @@ module Stage =
                     }
 
                     stage "run and report" { run "node fable/Ranvier.Tests.Fable/Report.mjs" }
+
+                    stage "install mutation browser fixture" {
+                        when' (not quick)
+                        run "npm ci --prefix tests/MutationObservation"
+                        run "npx --prefix tests/MutationObservation playwright install --with-deps chromium"
+                    }
+
+                    stage "compile mutation browser fixture" {
+                        run "dotnet fickl tests/MutationObservation/Browser.fsproj -c Release --noCache -o artifacts/mutation-browser"
+                    }
+
+                    stage "run mutation browser fixture" { run "node tests/MutationObservation/run-browser.mjs artifacts/mutation-browser" }
                 }
         }
 

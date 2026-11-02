@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <RanvierIntegrationTest>true</RanvierIntegrationTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Concurrency.fs" />
+    <Compile Include="Shared.fs" />
+    <ProjectReference Include="../../src/Ranvier.Dom/Ranvier.Dom.fsproj" />
+  </ItemGroup>
+</Project>
