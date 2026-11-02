@@ -6,12 +6,33 @@ open System.Threading.Tasks
 
 /// <summary>The kind of the most recent trusted user input since the service was created.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type InputModality =
     | Unknown
     | Keyboard
     | Pointer
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | InputModality.Unknown -> "Unknown", []
+            | InputModality.Keyboard -> "Keyboard", []
+            | InputModality.Pointer -> "Pointer", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>Live window activation, modality, focus visibility and touch capacity of one document.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type InputSnapshot =
     {
         /// <summary><c>document.hasFocus()</c>.</summary>
@@ -23,8 +44,31 @@ type InputSnapshot =
         MaxTouchPoints: int
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Focused", (fun () -> NativeDisplay.boolean context nested (this.Focused))
+                "Modality",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Modality) (fun (retained: InputModality) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "FocusVisible", (fun () -> NativeDisplay.boolean context nested (this.FocusVisible))
+                "MaxTouchPoints", (fun () -> NativeDisplay.int32 context nested (this.MaxTouchPoints))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A change delivered once to each subscriber, in the order the engine dispatched its event.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type InputChange =
     /// <summary>The window gained (true) or lost (false) activation.</summary>
     | Activation of focused: bool
@@ -33,6 +77,40 @@ type InputChange =
     | CaptureGained of pointerId: int * pointerType: string * target: Element
     /// <summary>A <c>lostpointercapture</c> event: <c>target</c> released capture of the pointer.</summary>
     | CaptureLost of pointerId: int * pointerType: string * target: Element
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | InputChange.Activation (caseValue0) -> "Activation", [ Some (fun _ -> NativeDisplay.boolean context nested (caseValue0)) ]
+            | InputChange.Modality (caseValue0) ->
+                "Modality",
+                [
+                    Some (fun p ->
+                        NativeDisplay.known context nested (caseValue0) (fun (retained: InputModality) ->
+                            retained.NativeDisplay (context, nested, p)))
+                ]
+            | InputChange.CaptureGained (caseValue0, caseValue1, caseValue2) ->
+                "CaptureGained",
+                [
+                    Some (fun _ -> NativeDisplay.int32 context nested (caseValue0))
+                    Some (fun _ -> NativeDisplay.text context nested (caseValue1))
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue2)))
+                ]
+            | InputChange.CaptureLost (caseValue0, caseValue1, caseValue2) ->
+                "CaptureLost",
+                [
+                    Some (fun _ -> NativeDisplay.int32 context nested (caseValue0))
+                    Some (fun _ -> NativeDisplay.text context nested (caseValue1))
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue2)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Window activation, input modality and pointer capture of one document, observed through its window.</summary>
 /// <remarks>

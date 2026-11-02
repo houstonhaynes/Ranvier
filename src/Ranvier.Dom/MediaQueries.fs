@@ -5,24 +5,78 @@ open System.Collections.Generic
 
 /// <summary>The <c>prefers-color-scheme</c> value a host supplies.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ColorSchemePreference =
     | Light
     | Dark
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | ColorSchemePreference.Light -> "Light", []
+            | ColorSchemePreference.Dark -> "Dark", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The <c>prefers-reduced-motion</c> value a host supplies.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MotionPreference =
     | NoPreference
     | Reduce
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | MotionPreference.NoPreference -> "NoPreference", []
+            | MotionPreference.Reduce -> "Reduce", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The <c>prefers-contrast</c> value a host supplies.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ContrastPreference =
     | NoPreference
     | More
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | ContrastPreference.NoPreference -> "NoPreference", []
+            | ContrastPreference.More -> "More", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The accuracy of pointing devices, as <c>pointer</c> and <c>any-pointer</c> report it.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type PointerAccuracy =
     | NoPointer
     | Coarse
@@ -30,10 +84,29 @@ type PointerAccuracy =
     /// <summary>Coarse and fine devices together; <c>any-pointer</c> only.</summary>
     | CoarseAndFine
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | PointerAccuracy.NoPointer -> "NoPointer", []
+            | PointerAccuracy.Coarse -> "Coarse", []
+            | PointerAccuracy.Fine -> "Fine", []
+            | PointerAccuracy.CoarseAndFine -> "CoarseAndFine", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>
 /// The user preferences and input devices a host supplies to media query evaluation. <c>None</c> keeps the engine's
 /// own value: light, no motion or contrast preference, no pointing device, no hover and text at its page size.
 /// </summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MediaPreferences =
     {
         ColorScheme: ColorSchemePreference option
@@ -49,6 +122,90 @@ type MediaPreferences =
         /// <summary>The platform text scale, from 0.25 to 8: laid-out text is this many times its font size.</summary>
         TextScale: float option
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "ColorScheme",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c121 d121 p121 (item121: ColorSchemePreference) ->
+                            NativeDisplay.known c121 d121 (item121) (fun (retained: ColorSchemePreference) ->
+                                retained.NativeDisplay (c121, d121, p121)))
+                        (this.ColorScheme))
+                "ReducedMotion",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c123 d123 p123 (item123: MotionPreference) ->
+                            NativeDisplay.known c123 d123 (item123) (fun (retained: MotionPreference) -> retained.NativeDisplay (c123, d123, p123)))
+                        (this.ReducedMotion))
+                "Contrast",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c125 d125 p125 (item125: ContrastPreference) ->
+                            NativeDisplay.known c125 d125 (item125) (fun (retained: ContrastPreference) ->
+                                retained.NativeDisplay (c125, d125, p125)))
+                        (this.Contrast))
+                "Pointer",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c127 d127 p127 (item127: PointerAccuracy) ->
+                            NativeDisplay.known c127 d127 (item127) (fun (retained: PointerAccuracy) -> retained.NativeDisplay (c127, d127, p127)))
+                        (this.Pointer))
+                "Hover",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c129 d129 p129 (item129: System.Boolean) -> NativeDisplay.boolean c129 d129 (item129))
+                        (this.Hover))
+                "AnyPointer",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c131 d131 p131 (item131: PointerAccuracy) ->
+                            NativeDisplay.known c131 d131 (item131) (fun (retained: PointerAccuracy) -> retained.NativeDisplay (c131, d131, p131)))
+                        (this.AnyPointer))
+                "AnyHover",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c133 d133 p133 (item133: System.Boolean) -> NativeDisplay.boolean c133 d133 (item133))
+                        (this.AnyHover))
+                "TextScale",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c135 d135 p135 (item135: System.Double) -> NativeDisplay.float64 c135 d135 (item135))
+                        (this.TextScale))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
     static member Default =
         {
@@ -75,6 +232,9 @@ type MediaQuery =
     abstract Subscribe: observer: (bool -> unit) -> IDisposable
 
 /// <summary>The supply side of a host's media preferences.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MediaPreferenceSupply =
     {
         /// <summary>Supplies every preference at once; the engine evaluates them at its next rendering update.</summary>
@@ -85,7 +245,32 @@ type MediaPreferenceSupply =
         Unavailable: string list
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Supply", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Supply)))
+                "Current", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Current)))
+                "Unavailable",
+                (fun () ->
+                    NativeDisplay.list
+                        context
+                        nested
+                        (fun c119 d119 p119 (item119: System.String) -> NativeDisplay.text c119 d119 (item119))
+                        (this.Unavailable))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The window of one document and, when the host can supply them, its media preferences.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MediaQueryProvider =
     {
         /// <summary><c>window.matchMedia</c>.</summary>
@@ -93,6 +278,30 @@ type MediaQueryProvider =
         /// <summary><c>None</c> when preferences come from the platform, as in a browser.</summary>
         Preferences: MediaPreferenceSupply option
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "MatchMedia", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.MatchMedia)))
+                "Preferences",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c138 d138 p138 (item138: MediaPreferenceSupply) ->
+                            NativeDisplay.known c138 d138 (item138) (fun (retained: MediaPreferenceSupply) ->
+                                retained.NativeDisplay (c138, d138, p138)))
+                        (this.Preferences))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Media query evaluation, change subscription and host preference supply of one document.</summary>
 /// <remarks>

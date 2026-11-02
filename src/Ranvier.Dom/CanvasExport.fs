@@ -4,6 +4,9 @@ open System
 
 /// <summary>A createImageBitmap source.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ImageBitmapSource =
     | Image of image: HTMLImageElement
     | SvgImage of image: SVGImageElement
@@ -11,6 +14,48 @@ type ImageBitmapSource =
     | Bitmap of bitmap: ImageBitmap
     | ImageData of data: ImageData
     | Blob of blob: Blob
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun n0 ->
+            match this with
+            | ImageBitmapSource.Image value ->
+                "Image",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.HTMLImageElement>" (box value))
+                ]
+            | ImageBitmapSource.SvgImage value ->
+                "SvgImage",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.SVGImageElement>" (box value))
+                ]
+            | ImageBitmapSource.Canvas value ->
+                "Canvas",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.HTMLCanvasElement>" (box value))
+                ]
+            | ImageBitmapSource.Bitmap value ->
+                "Bitmap",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.ImageBitmap>" (box value))
+                ]
+            | ImageBitmapSource.ImageData value ->
+                "ImageData",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.ImageData>" (box value))
+                ]
+            | ImageBitmapSource.Blob value ->
+                "Blob",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context n0 "<Ranvier.Dom.Blob>" (box value))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>ImageOrientation, numbered as the native <c>RV_IMAGE_BITMAP_ORIENTATION_*</c> values.</summary>
 type ImageBitmapOrientation =
@@ -45,6 +90,23 @@ type ImageBitmapCrop =
         Height: int
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun n0 ->
+            [
+                "X", (fun () -> NativeDisplay.int32 context n0 this.X)
+                "Y", (fun () -> NativeDisplay.int32 context n0 this.Y)
+                "Width", (fun () -> NativeDisplay.int32 context n0 this.Width)
+                "Height", (fun () -> NativeDisplay.int32 context n0 this.Height)
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>ImageBitmapOptions, with the optional source rectangle.</summary>
 type ImageBitmapOptions =
     {
@@ -56,6 +118,35 @@ type ImageBitmapOptions =
         ResizeHeight: int option
         ResizeQuality: ImageBitmapResizeQuality
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun n0 ->
+            [
+                "Crop",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        n0
+                        3
+                        (fun c d p (value: ImageBitmapCrop) -> NativeDisplay.known c d value (fun item -> item.NativeDisplay (c, d, p)))
+                        this.Crop)
+                "Orientation", (fun () -> NativeDisplay.manual context n0 (box this.Orientation) (fun () -> this.Orientation.ToString ()))
+                "PremultiplyAlpha",
+                (fun () -> NativeDisplay.manual context n0 (box this.PremultiplyAlpha) (fun () -> this.PremultiplyAlpha.ToString ()))
+                "ColorSpaceConversion",
+                (fun () -> NativeDisplay.manual context n0 (box this.ColorSpaceConversion) (fun () -> this.ColorSpaceConversion.ToString ()))
+                "ResizeWidth", (fun () -> NativeDisplay.option context n0 3 (fun c d _ value -> NativeDisplay.int32 c d value) this.ResizeWidth)
+                "ResizeHeight", (fun () -> NativeDisplay.option context n0 3 (fun c d _ value -> NativeDisplay.int32 c d value) this.ResizeHeight)
+                "ResizeQuality", (fun () -> NativeDisplay.manual context n0 (box this.ResizeQuality) (fun () -> this.ResizeQuality.ToString ()))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
     /// <summary>The createImageBitmap defaults: the whole source, from-image, default, default, no resize and low.</summary>
     static member Default =

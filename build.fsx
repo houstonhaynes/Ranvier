@@ -588,7 +588,7 @@ module private Analyze =
         ]
 
     /// Builds the analyzers, then runs them over the projects of the chosen `Spec.analyzedGroups` with every RAN code an
-    /// error, writing a SARIF report per group to artifacts/analyzers. With `--build` the stage builds the analyzed
+    /// error, writing a SARIF report per project to artifacts/analyzers. With `--build` the stage builds the analyzed
     /// projects first; without it, the solution must be built already.
     let stage =
         input {
@@ -655,14 +655,28 @@ module private Analyze =
                                 System.IO.Directory.CreateDirectory "artifacts/analyzers"
                                 |> ignore)
 
-                            run (
-                                Cmd.ofList
-                                    "dotnet"
-                                    ([ "fsharp-analyzers"; "--project" ]
-                                     @ projects
-                                     @ [ "--exclude-files"; "**/Generated/**" ]
-                                     @ flags $"artifacts/analyzers/ranvier-{name}.sarif")
-                            )
+                            run (fun _ ->
+                                System.IO.File.Delete $"artifacts/analyzers/ranvier-{name}.sarif"
+
+                                System.IO.Directory.EnumerateFiles ("artifacts/analyzers", $"ranvier-{name}-*.sarif")
+                                |> Seq.iter System.IO.File.Delete)
+
+                            // A shared analyzer process can apply one project's compiler flags to another project.
+                            for project in projects do
+                                stage $"analyze {project}" {
+                                    run (
+                                        Cmd.ofList
+                                            "dotnet"
+                                            ([
+                                                "fsharp-analyzers"
+                                                "--project"
+                                                project
+                                                "--exclude-files"
+                                                "**/Generated/**"
+                                             ]
+                                             @ flags $"artifacts/analyzers/ranvier-{name}-{System.IO.Path.GetFileNameWithoutExtension project}.sarif")
+                                    )
+                                }
                         }
 
                         // Checks the library again with RanvierTrace=true, the configuration of the docs precompile:

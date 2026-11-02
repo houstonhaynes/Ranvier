@@ -5,16 +5,58 @@ open System
 /// <summary>A FormDataEntryValue: a string, or a File.</summary>
 /// <remarks><c>BinaryValueService.ReadBytes</c> reads the contents of a File.</remarks>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FormDataEntryValue =
     | String of value: string
     | File of file: File
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | FormDataEntryValue.String (caseValue0) -> "String", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ]
+            | FormDataEntryValue.File (caseValue0) ->
+                "File",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.File>" (box (caseValue0)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A FormData entry, in entry-list order.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FormDataEntry =
     {
         Name: string
         Value: FormDataEntryValue
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Name", (fun () -> NativeDisplay.text context nested (this.Name))
+                "Value",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Value) (fun (retained: FormDataEntryValue) ->
+                        retained.NativeDisplay (context, nested, 3)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Constructs FormData objects, SubmitEvents and FormDataEvents in one document, and reads FormData entries.</summary>
 /// <remarks>

@@ -2,34 +2,40 @@ namespace Ranvier.Dom
 
 open System
 
-/// <summary>An image encoding, shared by snapshots and canvas export.</summary>
-/// <remarks>
-/// <c>Rgba8</c> is unpremultiplied RGBA8 rows, <c>Width * 4</c> bytes each, in the image's color space. PNG ignores
-/// quality. JPEG and WEBP take a quality from 0 to 1; <c>None</c>, NaN or a value outside [0, 1] selects the encoder's
-/// default, as <c>toBlob</c> does, and WEBP at exactly 1 is lossless.
-/// </remarks>
-[<RequireQualifiedAccess>]
-type ImageEncoding =
-    | Rgba8
-    | Png
-    | Jpeg
-    | Webp
-
-/// <summary>The color space of a snapshot's pixels.</summary>
-[<RequireQualifiedAccess>]
-type SnapshotColorSpace =
-    | Srgb
-    | DisplayP3
 
 /// <summary>What a snapshot paints.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type SnapshotSubject =
     /// <summary>The viewport, as a frame paints it.</summary>
     | Viewport
     /// <summary>The element's subtree alone, over a transparent background.</summary>
     | Element of element: Element
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | SnapshotSubject.Viewport -> "Viewport", []
+            | SnapshotSubject.Element (caseValue0) ->
+                "Element",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue0)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>An area in CSS pixels from the subject's top left; width and height are positive.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type SnapshotCrop =
     {
         X: float
@@ -38,11 +44,31 @@ type SnapshotCrop =
         Height: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "X", (fun () -> NativeDisplay.float64 context nested (this.X))
+                "Y", (fun () -> NativeDisplay.float64 context nested (this.Y))
+                "Width", (fun () -> NativeDisplay.float64 context nested (this.Width))
+                "Height", (fun () -> NativeDisplay.float64 context nested (this.Height))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>How a snapshot is painted and encoded.</summary>
 /// <remarks>
 /// <c>Scale</c> is device pixels per CSS pixel from 0.25 to 8, or <c>None</c> for the host's device scale. A crop is
 /// expanded to whole CSS pixels and intersected with the subject.
 /// </remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type SnapshotOptions =
     {
         Scale: float option
@@ -52,15 +78,52 @@ type SnapshotOptions =
         Quality: float option
     }
 
-/// <summary>A captured image; the operation owns its data until it is disposed.</summary>
-type SnapshotImage =
-    {
-        PixelWidth: int
-        PixelHeight: int
-        Format: ImageEncoding
-        PixelColorSpace: SnapshotColorSpace
-        Data: byte array
-    }
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Scale",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c213 d213 p213 (item213: System.Double) -> NativeDisplay.float64 c213 d213 (item213))
+                        (this.Scale))
+                "Crop",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c215 d215 p215 (item215: SnapshotCrop) ->
+                            NativeDisplay.known c215 d215 (item215) (fun (retained: SnapshotCrop) -> retained.NativeDisplay (c215, d215, p215)))
+                        (this.Crop))
+                "ColorSpace",
+                (fun () ->
+                    NativeDisplay.known context nested (this.ColorSpace) (fun (retained: SnapshotColorSpace) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Encoding",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Encoding) (fun (retained: ImageEncoding) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Quality",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c219 d219 p219 (item219: System.Double) -> NativeDisplay.float64 c219 d219 (item219))
+                        (this.Quality))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 
 /// <summary>Snapshots of a host's viewport or elements (Ranvier.WebCore #98).</summary>
 /// <remarks>

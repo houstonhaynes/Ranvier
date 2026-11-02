@@ -13,6 +13,46 @@ type TimingDetail =
     | Array of TimingDetail array
     | Object of (string * TimingDetail) array
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | TimingDetail.Null -> "Null", []
+            | TimingDetail.Boolean (caseValue0) -> "Boolean", [ Some (fun _ -> NativeDisplay.boolean context nested (caseValue0)) ]
+            | TimingDetail.Number (caseValue0) -> "Number", [ Some (fun _ -> NativeDisplay.float64 context nested (caseValue0)) ]
+            | TimingDetail.Text (caseValue0) -> "Text", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ]
+            | TimingDetail.Array (caseValue0) ->
+                "Array",
+                [
+                    Some (fun _ ->
+                        NativeDisplay.array
+                            context
+                            nested
+                            (fun c237 d237 p237 (item237: TimingDetail) ->
+                                NativeDisplay.known c237 d237 (item237) (fun (retained: TimingDetail) -> retained.NativeDisplay (c237, d237, p237)))
+                            (caseValue0))
+                ]
+            | TimingDetail.Object (caseValue0) ->
+                "Object",
+                [
+                    Some (fun _ ->
+                        NativeDisplay.array
+                            context
+                            nested
+                            (fun c239 d239 p239 (item239: (System.String * TimingDetail)) ->
+                                NativeDisplay.known c239 d239 (item239) (fun (tuple240: (System.String * TimingDetail)) ->
+                                    let (v240_0, v240_1) = tuple240 in
+
+                                    NativeDisplay.tuple c239 d239 (box tuple240) (fun n240 ->
+                                        [
+                                            NativeDisplay.text c239 n240 (v240_0)
+                                            NativeDisplay.known c239 n240 (v240_1) (fun (retained: TimingDetail) ->
+                                                retained.NativeDisplay (c239, n240, 3))
+                                        ])))
+                            (caseValue0))
+                ])
+#endif
+
 /// <summary>The kind of a user-created performance entry.</summary>
 [<RequireQualifiedAccess>]
 type TimingEntryKind =

@@ -6,10 +6,34 @@ open System.Threading
 
 /// <summary>The reason a signal aborted: the default AbortError, a timeout's TimeoutError, or a copied portable payload.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type AbortReason =
     | Abort
     | Timeout
     | Custom of TimingDetail
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | AbortReason.Abort -> "Abort", []
+            | AbortReason.Timeout -> "Timeout", []
+            | AbortReason.Custom (caseValue0) ->
+                "Custom",
+                [
+                    Some (fun p ->
+                        NativeDisplay.known context nested (caseValue0) (fun (retained: TimingDetail) ->
+                            retained.NativeDisplay (context, nested, p)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Raised by <c>ThrowIfAborted</c>; carries the signal's reason.</summary>
 exception AbortedException of reason: AbortReason with

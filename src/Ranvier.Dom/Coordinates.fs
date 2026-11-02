@@ -11,6 +11,17 @@ type CoordinatePoint =
     }
 
 #if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        let value = this
+
+        NativeDisplay.record context depth (box value) (fun nested ->
+            [
+                "X", (fun () -> NativeDisplay.float64 context nested (value.X))
+                "Y", (fun () -> NativeDisplay.float64 context nested (value.Y))
+            ])
+#endif
+
+#if !FABLE_COMPILER
     /// <summary>Formats the coordinates in F# record syntax with invariant numeric text.</summary>
     override this.ToString() =
         let number (value: float) =
@@ -40,6 +51,9 @@ type CoordinatePoint =
 
 /// <summary>Four points in the order of <c>DOMQuad</c>'s p1 to p4: the top-left, top-right, bottom-right and bottom-left
 /// corners of the box they map.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CoordinateQuad =
     {
         P1: CoordinatePoint
@@ -48,8 +62,28 @@ type CoordinateQuad =
         P4: CoordinatePoint
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "P1", (fun () -> (this.P1).NativeDisplay(context, nested, 3))
+                "P2", (fun () -> (this.P2).NativeDisplay(context, nested, 3))
+                "P3", (fun () -> (this.P3).NativeDisplay(context, nested, 3))
+                "P4", (fun () -> (this.P4).NativeDisplay(context, nested, 3))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A named coordinate space of a document.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CoordinateSpace =
     /// <summary>The local space of the element's CSS box: the border box's top-left corner is 0, 0, before the element's
     /// own transform.</summary>
@@ -65,17 +99,60 @@ type CoordinateSpace =
     /// point plus the surface's origin, which the windowing system reports.</summary>
     | Device
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | CoordinateSpace.Element (caseValue0) ->
+                "Element",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue0)))
+                ]
+            | CoordinateSpace.Page -> "Page", []
+            | CoordinateSpace.Client -> "Client", []
+            | CoordinateSpace.Host -> "Host", []
+            | CoordinateSpace.Device -> "Device", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A CSS box of an element.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CoordinateBox =
     | Border
     | Padding
     | Content
     | Margin
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | CoordinateBox.Border -> "Border", []
+            | CoordinateBox.Padding -> "Padding", []
+            | CoordinateBox.Content -> "Content", []
+            | CoordinateBox.Margin -> "Margin", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 
 /// <summary>Why a conversion has no result.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CoordinateUnavailable =
     /// <summary>An element is outside the document the service shows: removed from it, or of a replaced document.</summary>
     | Detached
@@ -89,7 +166,27 @@ type CoordinateUnavailable =
     /// <summary>The provider cannot convert through these spaces, with the provider's reason.</summary>
     | Unsupported of reason: string
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | CoordinateUnavailable.Detached -> "Detached", []
+            | CoordinateUnavailable.WrongDocument -> "WrongDocument", []
+            | CoordinateUnavailable.NotRendered -> "NotRendered", []
+            | CoordinateUnavailable.NonInvertible -> "NonInvertible", []
+            | CoordinateUnavailable.Unsupported (caseValue0) -> "Unsupported", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The engine conversions behind a coordinate service.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CoordinateProvider =
     {
         /// <summary>Converts points from the first space to the second; the array is the provider's to replace.</summary>
@@ -97,6 +194,21 @@ type CoordinateProvider =
         /// <summary>The corners of an element's box in a space.</summary>
         BoxQuad: Element * CoordinateBox * CoordinateSpace -> Result<CoordinateQuad, CoordinateUnavailable>
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Convert", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Convert)))
+                "BoxQuad", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.BoxQuad)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Point and quad conversion between the coordinate spaces of one document.</summary>
 /// <remarks>

@@ -61,27 +61,96 @@ type CapabilityKey =
 
 /// <summary>An independently observed fact, with Unknown for unobservable or contradictory evidence.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityState =
     | Yes
     | No
     | Unknown
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | CapabilityState.Yes -> "Yes", []
+            | CapabilityState.No -> "No", []
+            | CapabilityState.Unknown -> "Unknown", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A fact and the reason supported by its provider's evidence.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityFact =
     {
         State: CapabilityState
         Reason: string
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "State",
+                (fun () ->
+                    NativeDisplay.known context nested (this.State) (fun (retained: CapabilityState) -> retained.NativeDisplay (context, nested, 3)))
+                "Reason", (fun () -> NativeDisplay.text context nested (this.Reason))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A current observed value; numbers must be finite and name arrays are copied.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityValue =
     | Boolean of bool
     | Number of float
     | Text of string
     | Names of string array
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | CapabilityValue.Boolean (caseValue0) -> "Boolean", [ Some (fun _ -> NativeDisplay.boolean context nested (caseValue0)) ]
+            | CapabilityValue.Number (caseValue0) -> "Number", [ Some (fun _ -> NativeDisplay.float64 context nested (caseValue0)) ]
+            | CapabilityValue.Text (caseValue0) -> "Text", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ]
+            | CapabilityValue.Names (caseValue0) ->
+                "Names",
+                [
+                    Some (fun _ ->
+                        NativeDisplay.array
+                            context
+                            nested
+                            (fun c33 d33 p33 (item33: System.String) -> NativeDisplay.text c33 d33 (item33))
+                            (caseValue0))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>Independent runtime facts with provider identity and observation mechanism.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityObservation =
     {
         Key: CapabilityKey
@@ -95,6 +164,54 @@ type CapabilityObservation =
         Mechanism: string
         Scope: string
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Key",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Key) (fun (retained: CapabilityKey) -> retained.NativeDisplay (context, nested, 3)))
+                "Exported",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Exported) (fun (retained: CapabilityFact) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Implemented",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Implemented) (fun (retained: CapabilityFact) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Enabled",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Enabled) (fun (retained: CapabilityFact) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Permitted",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Permitted) (fun (retained: CapabilityFact) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Available",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Available) (fun (retained: CapabilityFact) ->
+                        retained.NativeDisplay (context, nested, 3)))
+                "Value",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c21 d21 p21 (item21: CapabilityValue) ->
+                            NativeDisplay.known c21 d21 (item21) (fun (retained: CapabilityValue) -> retained.NativeDisplay (c21, d21, p21)))
+                        (this.Value))
+                "ProviderId", (fun () -> NativeDisplay.text context nested (this.ProviderId))
+                "Mechanism", (fun () -> NativeDisplay.text context nested (this.Mechanism))
+                "Scope", (fun () -> NativeDisplay.text context nested (this.Scope))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>A combined snapshot retaining every contribution, including conflicting and unknown facts.</summary>
 type CapabilityReport =
@@ -111,12 +228,38 @@ type CapabilityReport =
 
 /// <summary>A named provider; callbacks start on the caller's thread and may complete asynchronously.</summary>
 /// <remarks>Callbacks return None for unrecognized keys. Cancellation is cooperative; late results are discarded.</remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type CapabilityProvider =
     {
         Id: string
         KnownKeys: CapabilityKey array
         Observe: CapabilityKey -> CancellationToken -> Task<CapabilityObservation option>
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Id", (fun () -> NativeDisplay.text context nested (this.Id))
+                "KnownKeys",
+                (fun () ->
+                    NativeDisplay.array
+                        context
+                        nested
+                        (fun c27 d27 p27 (item27: CapabilityKey) ->
+                            NativeDisplay.known c27 d27 (item27) (fun (retained: CapabilityKey) -> retained.NativeDisplay (c27, d27, p27)))
+                        (this.KnownKeys))
+                "Observe", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Observe)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>A context or affinity failure that must propagate instead of becoming unknown provider evidence.</summary>
 exception CapabilityContextException of detail: string with

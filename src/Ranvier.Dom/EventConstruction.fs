@@ -12,12 +12,31 @@ type EventModifiers =
     | Meta = 8
 
 /// <summary>The EventInit fields shared by every constructed event.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type EventOptions =
     {
         Bubbles: bool
         Cancelable: bool
         Composed: bool
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Bubbles", (fun () -> NativeDisplay.boolean context nested (this.Bubbles))
+                "Cancelable", (fun () -> NativeDisplay.boolean context nested (this.Cancelable))
+                "Composed", (fun () -> NativeDisplay.boolean context nested (this.Composed))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
     /// <summary>A non-bubbling, non-cancelable, non-composed event.</summary>
     static member Default =

@@ -4,6 +4,9 @@ open System
 open System.Collections.Generic
 
 /// <summary>Window dimensions in CSS pixels and the device pixel ratio.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ViewportMetrics =
     {
         /// <summary><c>window.innerWidth</c>: the viewport width including scrollbars.</summary>
@@ -16,12 +19,33 @@ type ViewportMetrics =
         DevicePixelRatio: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "InnerWidth", (fun () -> NativeDisplay.int32 context nested (this.InnerWidth))
+                "InnerHeight", (fun () -> NativeDisplay.int32 context nested (this.InnerHeight))
+                "OuterWidth", (fun () -> NativeDisplay.int32 context nested (this.OuterWidth))
+                "OuterHeight", (fun () -> NativeDisplay.int32 context nested (this.OuterHeight))
+                "DevicePixelRatio", (fun () -> NativeDisplay.float64 context nested (this.DevicePixelRatio))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A viewport change, delivered once to each subscriber in the engine's dispatch order.</summary>
 /// <remarks>
 /// Within one rendering update the order is <c>Resized</c>, <c>Scrolled</c>, <c>ScrollEnded</c>, then
 /// <c>ScaleChanged</c>, as HTML's update-the-rendering steps run resize, scroll and media query evaluation.
 /// </remarks>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ViewportChange =
     /// <summary>A window <c>resize</c> event, with the metrics read when it fired.</summary>
     | Resized of metrics: ViewportMetrics
@@ -36,6 +60,31 @@ type ViewportChange =
     /// <summary>A <c>change</c> of the resolution media query for the previous ratio, with the new ratio.</summary>
     | ScaleChanged of devicePixelRatio: float
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | ViewportChange.Resized (caseValue0) ->
+                "Resized",
+                [
+                    Some (fun p ->
+                        NativeDisplay.known context nested (caseValue0) (fun (retained: ViewportMetrics) ->
+                            retained.NativeDisplay (context, nested, p)))
+                ]
+            | ViewportChange.Scrolled -> "Scrolled", []
+            | ViewportChange.ScrollEnded -> "ScrollEnded", []
+            | ViewportChange.VisibilityChanged (caseValue0) ->
+                "VisibilityChanged", [ Some (fun _ -> NativeDisplay.boolean context nested (caseValue0)) ]
+            | ViewportChange.Activation (caseValue0) -> "Activation", [ Some (fun _ -> NativeDisplay.boolean context nested (caseValue0)) ]
+            | ViewportChange.ScaleChanged (caseValue0) -> "ScaleChanged", [ Some (fun _ -> NativeDisplay.float64 context nested (caseValue0)) ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A <c>MediaQueryList</c> owned by its holder; disposing it releases the engine object.</summary>
 type ViewportMediaQuery =
     inherit IDisposable
@@ -45,6 +94,9 @@ type ViewportMediaQuery =
     abstract Target: EventTarget
 
 /// <summary>The window of one document and the reads the shared contract has no member for.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ViewportProvider =
     {
         Window: EventTarget
@@ -53,6 +105,23 @@ type ViewportProvider =
         /// <summary><c>window.matchMedia</c>.</summary>
         MatchMedia: string -> ViewportMediaQuery
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Window", (fun () -> NativeDisplay.opaque context nested "<Ranvier.Dom.EventTarget>" (box (this.Window)))
+                "Document", (fun () -> NativeDisplay.opaque context nested "<Ranvier.Dom.Document>" (box (this.Document)))
+                "Metrics", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Metrics)))
+                "MatchMedia", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.MatchMedia)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Viewport dimensions, visibility and change delivery of one document.</summary>
 /// <remarks>

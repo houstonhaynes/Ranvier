@@ -4,6 +4,9 @@ open System
 open System.Collections.Generic
 
 /// <summary>The <c>VisualViewport</c> members of one window, in CSS pixels.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type VisualViewportState =
     {
         /// <summary>The visual viewport's left edge relative to the layout viewport.</summary>
@@ -19,7 +22,30 @@ type VisualViewportState =
         Scale: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "OffsetLeft", (fun () -> NativeDisplay.float64 context nested (this.OffsetLeft))
+                "OffsetTop", (fun () -> NativeDisplay.float64 context nested (this.OffsetTop))
+                "PageLeft", (fun () -> NativeDisplay.float64 context nested (this.PageLeft))
+                "PageTop", (fun () -> NativeDisplay.float64 context nested (this.PageTop))
+                "Width", (fun () -> NativeDisplay.float64 context nested (this.Width))
+                "Height", (fun () -> NativeDisplay.float64 context nested (this.Height))
+                "Scale", (fun () -> NativeDisplay.float64 context nested (this.Scale))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The CSS pixel widths of the viewport's edges that host UI covers.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type VisualViewportInsets =
     {
         Top: float
@@ -28,23 +54,89 @@ type VisualViewportInsets =
         Left: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Top", (fun () -> NativeDisplay.float64 context nested (this.Top))
+                "Right", (fun () -> NativeDisplay.float64 context nested (this.Right))
+                "Bottom", (fun () -> NativeDisplay.float64 context nested (this.Bottom))
+                "Left", (fun () -> NativeDisplay.float64 context nested (this.Left))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>Why a visual viewport read or host input has no result.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type VisualViewportUnavailable =
     /// <summary>The window has no frame: its document was detached or its host destroyed.</summary>
     | Detached
     /// <summary>The provider has no such input, with the provider's reason.</summary>
     | Unsupported of reason: string
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | VisualViewportUnavailable.Detached -> "Detached", []
+            | VisualViewportUnavailable.Unsupported (caseValue0) -> "Unsupported", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A visual viewport event, with the members read when it fired.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type VisualViewportChange =
     /// <summary>A <c>resize</c> event: the size or the scale changed.</summary>
     | Resized of state: VisualViewportState
     /// <summary>A <c>scroll</c> event: the offsets changed.</summary>
     | Scrolled of state: VisualViewportState
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | VisualViewportChange.Resized (caseValue0) ->
+                "Resized",
+                [
+                    Some (fun p ->
+                        NativeDisplay.known context nested (caseValue0) (fun (retained: VisualViewportState) ->
+                            retained.NativeDisplay (context, nested, p)))
+                ]
+            | VisualViewportChange.Scrolled (caseValue0) ->
+                "Scrolled",
+                [
+                    Some (fun p ->
+                        NativeDisplay.known context nested (caseValue0) (fun (retained: VisualViewportState) ->
+                            retained.NativeDisplay (context, nested, p)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The visual viewport of one window and the host inputs that drive it.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type VisualViewportProvider =
     {
         /// <summary>The window's <c>visualViewport</c>.</summary>
@@ -56,6 +148,23 @@ type VisualViewportProvider =
         /// <summary>Sets the obscured insets.</summary>
         SetObscuredInsets: VisualViewportInsets -> Result<unit, VisualViewportUnavailable>
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Viewport", (fun () -> NativeDisplay.opaque context nested "<Ranvier.Dom.VisualViewport>" (box (this.Viewport)))
+                "Read", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.Read)))
+                "SetPageScale", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.SetPageScale)))
+                "SetObscuredInsets", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.SetObscuredInsets)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Visual viewport reads, host inputs and change delivery of one window.</summary>
 /// <remarks>

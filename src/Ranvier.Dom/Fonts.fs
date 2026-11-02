@@ -4,12 +4,32 @@ open System
 
 /// <summary>Whether a font set has faces loading.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FontSetStatus =
     | Loading
     | Loaded
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | FontSetStatus.Loading -> "Loading", []
+            | FontSetStatus.Loaded -> "Loaded", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A CSS Font Loading event of a document's font set.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FontSetEvent =
     /// <summary>A face started loading while none was loading.</summary>
     | Loading
@@ -18,15 +38,67 @@ type FontSetEvent =
     /// <summary>Follows <c>LoadingDone</c> when faces failed in the period; one family per failed face.</summary>
     | LoadingError of families: string list
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | FontSetEvent.Loading -> "Loading", []
+            | FontSetEvent.LoadingDone values ->
+                "LoadingDone",
+                [
+                    Some (fun _ -> NativeDisplay.list context nested (fun c d _ value -> NativeDisplay.text c d value) values)
+                ]
+            | FontSetEvent.LoadingError values ->
+                "LoadingError",
+                [
+                    Some (fun _ -> NativeDisplay.list context nested (fun c d _ value -> NativeDisplay.text c d value) values)
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The source of a constructed font face.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FontFaceSource =
     /// <summary>A CSS <c>src</c> descriptor value, such as <c>url(...) format(...)</c>; URLs resolve against the document.</summary>
     | Css of src: string
     /// <summary>Font bytes, copied when the face is constructed.</summary>
     | Bytes of data: byte array
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | FontFaceSource.Css (caseValue0) -> "Css", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ]
+            | FontFaceSource.Bytes (caseValue0) ->
+                "Bytes",
+                [
+                    Some (fun _ ->
+                        NativeDisplay.array
+                            context
+                            nested
+                            (fun c92 d92 p92 (item92: System.Byte) -> NativeDisplay.uint8 c92 d92 (item92))
+                            (caseValue0))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The <c>FontFaceDescriptors</c> of a constructed face, as CSS descriptor text; <c>null</c> keeps the IDL default.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type FontFaceDescriptors =
     {
         Style: string
@@ -37,6 +109,26 @@ type FontFaceDescriptors =
         Display: string
         SizeAdjust: string
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Style", (fun () -> NativeDisplay.text context nested (this.Style))
+                "Weight", (fun () -> NativeDisplay.text context nested (this.Weight))
+                "Stretch", (fun () -> NativeDisplay.text context nested (this.Stretch))
+                "UnicodeRange", (fun () -> NativeDisplay.text context nested (this.UnicodeRange))
+                "FeatureSettings", (fun () -> NativeDisplay.text context nested (this.FeatureSettings))
+                "Display", (fun () -> NativeDisplay.text context nested (this.Display))
+                "SizeAdjust", (fun () -> NativeDisplay.text context nested (this.SizeAdjust))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
     static member Default =
         {

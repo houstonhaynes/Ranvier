@@ -6,6 +6,9 @@ open System.Threading.Tasks
 
 /// <summary>A touch contact's size, rotation and force: <c>Touch.radiusX</c>, <c>radiusY</c>, <c>rotationAngle</c> and
 /// <c>force</c>, which WebKit spells with a <c>webkit</c> prefix.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type TouchGeometry =
     {
         /// <summary>CSS pixels.</summary>
@@ -18,7 +21,27 @@ type TouchGeometry =
         Force: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "RadiusX", (fun () -> NativeDisplay.float64 context nested (this.RadiusX))
+                "RadiusY", (fun () -> NativeDisplay.float64 context nested (this.RadiusY))
+                "RotationAngle", (fun () -> NativeDisplay.float64 context nested (this.RotationAngle))
+                "Force", (fun () -> NativeDisplay.float64 context nested (this.Force))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A snapshot of one <c>Touch</c> of a <c>TouchList</c>.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type TouchContact =
     {
         Identifier: int
@@ -33,16 +56,70 @@ type TouchContact =
         Geometry: TouchGeometry
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Identifier", (fun () -> NativeDisplay.int32 context nested (this.Identifier))
+                "ClientX", (fun () -> NativeDisplay.float64 context nested (this.ClientX))
+                "ClientY", (fun () -> NativeDisplay.float64 context nested (this.ClientY))
+                "PageX", (fun () -> NativeDisplay.float64 context nested (this.PageX))
+                "PageY", (fun () -> NativeDisplay.float64 context nested (this.PageY))
+                "ScreenX", (fun () -> NativeDisplay.float64 context nested (this.ScreenX))
+                "ScreenY", (fun () -> NativeDisplay.float64 context nested (this.ScreenY))
+                "Target", (fun () -> NativeDisplay.opaque context nested "<Ranvier.Dom.EventTarget>" (box (this.Target)))
+                "Geometry",
+                (fun () ->
+                    NativeDisplay.known context nested (this.Geometry) (fun (retained: TouchGeometry) ->
+                        retained.NativeDisplay (context, nested, 3)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The pointer-lock state of a document's page.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type PointerLockState =
     | Unlocked
     /// <summary>The element asked for the lock and the embedder has not answered.</summary>
     | Pending of element: Element
     | Locked of element: Element
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | PointerLockState.Unlocked -> "Unlocked", []
+            | PointerLockState.Pending (caseValue0) ->
+                "Pending",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue0)))
+                ]
+            | PointerLockState.Locked (caseValue0) ->
+                "Locked",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue0)))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>Why the engine refused a pointer-lock request before asking the embedder.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type PointerLockRefusal =
     /// <summary><c>NotAllowedError</c>: no user gesture, and no relock allowed after an exit.</summary>
     | NotAllowed
@@ -55,8 +132,28 @@ type PointerLockRefusal =
     /// <summary>A DOMException of another name, or a provider without pointer lock.</summary>
     | Other of name: string
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | PointerLockRefusal.NotAllowed -> "NotAllowed", []
+            | PointerLockRefusal.WrongDocument -> "WrongDocument", []
+            | PointerLockRefusal.NotSupported -> "NotSupported", []
+            | PointerLockRefusal.InvalidState -> "InvalidState", []
+            | PointerLockRefusal.Other (caseValue0) -> "Other", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A pointer-lock change, delivered once to each subscriber in the order the engine queued its event.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type PointerLockChange =
     /// <summary>A <c>pointerlockchange</c> event while an element holds the lock.</summary>
     | Locked of element: Element
@@ -65,7 +162,29 @@ type PointerLockChange =
     /// <summary>A <c>pointerlockerror</c> event: a refused or denied request.</summary>
     | Error
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | PointerLockChange.Locked (caseValue0) ->
+                "Locked",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Ranvier.Dom.Element>" (box (caseValue0)))
+                ]
+            | PointerLockChange.Unlocked -> "Unlocked", []
+            | PointerLockChange.Error -> "Error", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The engine operations behind pointer input services.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type PointerInputProvider =
     {
         /// <summary>The geometry of a <c>Touch</c>.</summary>
@@ -78,6 +197,23 @@ type PointerInputProvider =
         /// <summary>The page's lock state.</summary>
         LockState: unit -> PointerLockState
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "TouchGeometry", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.TouchGeometry)))
+                "RequestLock", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.RequestLock)))
+                "ExitLock", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.ExitLock)))
+                "LockState", (fun () -> NativeDisplay.opaque context nested "<function>" (box (this.LockState)))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Pointer lock of one document: requests, exit, state and changes.</summary>
 /// <remarks>

@@ -5,9 +5,34 @@ namespace Ranvier.Dom
 /// Browsers and the native engine keep whole-pixel offsets. The native engine truncates a fractional target toward
 /// zero, and Chromium rounds it to the nearest pixel.
 /// </remarks>
-type ScrollPosition = { X: float; Y: float }
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
+type ScrollPosition =
+    {
+        X: float
+        Y: float
+    }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "X", (fun () -> NativeDisplay.float64 context nested (this.X))
+                "Y", (fun () -> NativeDisplay.float64 context nested (this.Y))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>A scroll target or delta in CSS pixels, as <c>ScrollToOptions</c>.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ScrollRequest =
     {
         /// <summary>The horizontal coordinate; <c>None</c> keeps the current one.</summary>
@@ -16,6 +41,36 @@ type ScrollRequest =
         Top: float option
         Behavior: ScrollBehavior
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Left",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c198 d198 p198 (item198: System.Double) -> NativeDisplay.float64 c198 d198 (item198))
+                        (this.Left))
+                "Top",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c200 d200 p200 (item200: System.Double) -> NativeDisplay.float64 c200 d200 (item200))
+                        (this.Top))
+                "Behavior", (fun () -> NativeDisplay.manual context nested (box (this.Behavior)) (fun () -> (this.Behavior).ToString()))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>Scroll position reads and programmatic scrolling of one document's viewport.</summary>
 /// <remarks>

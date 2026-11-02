@@ -4,10 +4,28 @@ open System
 
 /// <summary>The promise whose settlement a same-document transition reports.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ViewTransitionPromise =
     | UpdateCallbackDone
     | Ready
     | Finished
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun _ ->
+            match this with
+            | ViewTransitionPromise.UpdateCallbackDone -> "UpdateCallbackDone", []
+            | ViewTransitionPromise.Ready -> "Ready", []
+            | ViewTransitionPromise.Finished -> "Finished", [])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>A transition promise's fulfillment, or its rejection's WebIDL exception name.</summary>
 type ViewTransitionSettlement =
@@ -15,6 +33,21 @@ type ViewTransitionSettlement =
         Promise: ViewTransitionPromise
         ErrorName: string option
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Promise", (fun () -> NativeDisplay.known context nested this.Promise (fun value -> value.NativeDisplay (context, nested, 3)))
+                "ErrorName", (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.text c d value) this.ErrorName)
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>The transition's mutable type names, in insertion order.</summary>
 #if FABLE_COMPILER

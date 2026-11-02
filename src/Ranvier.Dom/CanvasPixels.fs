@@ -23,6 +23,26 @@ type ImageDataLayout =
         ByteLength: int
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun n0 ->
+            [
+                "Width", (fun () -> NativeDisplay.int32 context n0 this.Width)
+                "Height", (fun () -> NativeDisplay.int32 context n0 this.Height)
+                "ColorSpace", (fun () -> NativeDisplay.manual context n0 (box this.ColorSpace) (fun () -> this.ColorSpace.ToString ()))
+                "PixelFormat", (fun () -> NativeDisplay.manual context n0 (box this.PixelFormat) (fun () -> this.PixelFormat.ToString ()))
+                "BytesPerPixel", (fun () -> NativeDisplay.int32 context n0 this.BytesPerPixel)
+                "RowBytes", (fun () -> NativeDisplay.int32 context n0 this.RowBytes)
+                "ByteLength", (fun () -> NativeDisplay.int32 context n0 this.ByteLength)
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>ImageData construction and pixel bytes for one document.</summary>
 /// <remarks>
 /// Every provider creates sRGB ImageData in the rgba-unorm8 format. Constructor and range errors raise the provider's DOM

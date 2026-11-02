@@ -10,6 +10,9 @@ type ScreenOrientationType =
     | LandscapeSecondary = 3
 
 /// <summary>The screen a document reports through Screen and ScreenOrientation, in CSS pixels.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ScreenInfo =
     {
         Width: int
@@ -24,12 +27,58 @@ type ScreenInfo =
         Angle: int
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Width", (fun () -> NativeDisplay.int32 context nested (this.Width))
+                "Height", (fun () -> NativeDisplay.int32 context nested (this.Height))
+                "AvailLeft", (fun () -> NativeDisplay.int32 context nested (this.AvailLeft))
+                "AvailTop", (fun () -> NativeDisplay.int32 context nested (this.AvailTop))
+                "AvailWidth", (fun () -> NativeDisplay.int32 context nested (this.AvailWidth))
+                "AvailHeight", (fun () -> NativeDisplay.int32 context nested (this.AvailHeight))
+                "ColorDepth", (fun () -> NativeDisplay.int32 context nested (this.ColorDepth))
+                "PixelDepth", (fun () -> NativeDisplay.int32 context nested (this.PixelDepth))
+                "Orientation", (fun () -> NativeDisplay.manual context nested (box (this.Orientation)) (fun () -> (this.Orientation).ToString()))
+                "Angle", (fun () -> NativeDisplay.int32 context nested (this.Angle))
+            ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The outcome of a ScreenOrientation lock request.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type ScreenLockOutcome =
     | Locked
     | Unsupported of reason: string
     | Failed of name: string * detail: string
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | ScreenLockOutcome.Locked -> "Locked", []
+            | ScreenLockOutcome.Unsupported (caseValue0) -> "Unsupported", [ Some (fun _ -> NativeDisplay.text context nested (caseValue0)) ]
+            | ScreenLockOutcome.Failed (caseValue0, caseValue1) ->
+                "Failed",
+                [
+                    Some (fun _ -> NativeDisplay.text context nested (caseValue0))
+                    Some (fun _ -> NativeDisplay.text context nested (caseValue1))
+                ])
+
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>The screen of one document: its values, their changes and orientation locking.</summary>
 /// <remarks>
