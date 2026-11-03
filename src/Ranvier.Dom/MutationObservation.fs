@@ -5,13 +5,37 @@ open System.Collections.Generic
 
 /// <summary>The category of a DOM mutation.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MutationType =
     | ChildList
     | Attributes
     | CharacterData
 
+#if !FABLE_COMPILER
+    /// <summary>Formats the mutation category with F# case precedence.</summary>
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun _ ->
+            match this with
+            | MutationType.ChildList -> "ChildList", []
+            | MutationType.Attributes -> "Attributes", []
+            | MutationType.CharacterData -> "CharacterData", [])
+
+    /// <summary>Returns structured diagnostic text; native compilation uses bounded typed formatting.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The categories, subtree and old values to observe on a node.</summary>
-/// <remarks>None omits an option. A present old-value option or filter can enable its omitted category.</remarks>
+/// <remarks>None omits an option. A present old-value option or filter can enable its omitted category.
+/// Without dynamic code, diagnostic attribute filters show at most 100 names.</remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MutationObserverOptions =
     {
         ChildList: bool
@@ -23,6 +47,38 @@ type MutationObserverOptions =
         /// <summary>Attribute local names; Some empty observes no attributes.</summary>
         AttributeFilter: string array option
     }
+
+#if !FABLE_COMPILER
+    /// <summary>Formats observer options with bounded attribute filters.</summary>
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                ("ChildList", (fun () -> NativeDisplay.boolean context nested this.ChildList))
+                ("Subtree", (fun () -> NativeDisplay.boolean context nested this.Subtree))
+                ("Attributes", (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.boolean c d value) this.Attributes))
+                ("CharacterData",
+                 (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.boolean c d value) this.CharacterData))
+                ("AttributeOldValue",
+                 (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.boolean c d value) this.AttributeOldValue))
+                ("CharacterDataOldValue",
+                 (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.boolean c d value) this.CharacterDataOldValue))
+                ("AttributeFilter",
+                 (fun () ->
+                     NativeDisplay.option
+                         context
+                         nested
+                         3
+                         (fun c d _ values -> NativeDisplay.array c d (fun c d _ value -> NativeDisplay.text c d value) values)
+                         this.AttributeFilter))
+            ])
+
+    /// <summary>Returns structured diagnostic text; native compilation uses bounded typed formatting.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
     /// <summary>All categories disabled; Observe requires enabling at least one category.</summary>
     static member Default =
@@ -37,7 +93,11 @@ type MutationObserverOptions =
         }
 
 /// <summary>A copied mutation record whose nodes retain their ordinary DOM identity and lifetime.</summary>
-/// <remarks>Strings and arrays remain readable after delivery or observer disposal. Nodes follow their host's lifetime.</remarks>
+/// <remarks>Strings and arrays remain readable after delivery or observer disposal. Nodes follow their host's lifetime.
+/// Without dynamic code, diagnostic text represents nodes as opaque references.</remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MutationRecord =
     {
         Type: MutationType
@@ -52,11 +112,47 @@ type MutationRecord =
         OldValue: string option
     }
 
+#if !FABLE_COMPILER
+    /// <summary>Formats copied values and opaque node references.</summary>
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                ("Type", (fun () -> this.Type.NativeDisplay (context, nested, 3)))
+                ("Target", (fun () -> NativeDisplay.opaque context nested "<Node>" (box this.Target)))
+                ("AddedNodes",
+                 (fun () -> NativeDisplay.array context nested (fun c d _ value -> NativeDisplay.opaque c d "<Node>" (box value)) this.AddedNodes))
+                ("RemovedNodes",
+                 (fun () -> NativeDisplay.array context nested (fun c d _ value -> NativeDisplay.opaque c d "<Node>" (box value)) this.RemovedNodes))
+                ("PreviousSibling",
+                 (fun () ->
+                     NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.opaque c d "<Node>" (box value)) this.PreviousSibling))
+                ("NextSibling",
+                 (fun () ->
+                     NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.opaque c d "<Node>" (box value)) this.NextSibling))
+                ("AttributeName",
+                 (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.text c d value) this.AttributeName))
+                ("AttributeNamespace",
+                 (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.text c d value) this.AttributeNamespace))
+                ("OldValue", (fun () -> NativeDisplay.option context nested 3 (fun c d _ value -> NativeDisplay.text c d value) this.OldValue))
+            ])
+
+    /// <summary>Returns structured diagnostic text; native compilation uses bounded typed formatting.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>An observation failure carrying its portable DOM error name.</summary>
 exception MutationObserverException of name: string * detail: string with
     override this.Message = this.name + ": " + this.detail
 
 /// <summary>The engine operations of a mutation observer.</summary>
+/// <remarks>Without dynamic code, diagnostic text represents callbacks as opaque slots.</remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MutationObserverHandle =
     {
         /// <summary>Observes an accessible node; the provider validates and copies the options before returning.</summary>
@@ -67,7 +163,30 @@ type MutationObserverHandle =
         Release: unit -> unit
     }
 
+#if !FABLE_COMPILER
+    /// <summary>Formats callback slots without invoking them.</summary>
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                ("Observe", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Observe)))
+                ("Disconnect", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Disconnect)))
+                ("TakeRecords", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.TakeRecords)))
+                ("Release", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Release)))
+            ])
+
+    /// <summary>Returns structured diagnostic text; native compilation uses bounded typed formatting.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>Creates engine mutation observers with copied records and preserved node identity.</summary>
+/// <remarks>Without dynamic code, diagnostic text represents the creation callback as an opaque slot.</remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type MutationObservationProvider =
     {
         /// <summary>Creates an observer delivering records at the engine's mutation notification checkpoint.</summary>
@@ -77,6 +196,22 @@ type MutationObservationProvider =
         /// </remarks>
         Create: (MutationRecord array -> unit) -> (unit -> unit) -> MutationObserverHandle
     }
+
+#if !FABLE_COMPILER
+    /// <summary>Formats the creation callback without invoking it.</summary>
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                ("Create", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Create)))
+            ])
+
+    /// <summary>Returns structured diagnostic text; native compilation uses bounded typed formatting.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>A DOM mutation observer; disposal disconnects it and releases its callback.</summary>
 /// <remarks>DOM operations follow the provider's owner-thread rules. Disposal may be requested off-thread;

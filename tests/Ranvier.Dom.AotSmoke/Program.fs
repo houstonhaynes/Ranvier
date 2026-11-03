@@ -88,5 +88,82 @@ let main _ =
     if not RuntimeFeature.IsDynamicCodeSupported then
         expect "unknown" "Succeeded <'T>" ((ResourceOutcome.Succeeded (Poison ())).ToString())
 
+    expect "child-list mutation" "ChildList" (MutationType.ChildList.ToString ())
+    expect "attribute mutation" "Attributes" (MutationType.Attributes.ToString ())
+    expect "character-data mutation" "CharacterData" (MutationType.CharacterData.ToString ())
+
+    let optionsText = MutationObserverOptions.Default.ToString ()
+
+    if
+        not (
+            optionsText.Contains "ChildList = false"
+            && optionsText.Contains "AttributeFilter = None"
+        )
+    then
+        raise (InvalidOperationException ("mutation options: " + optionsText))
+
+    let mutation: MutationRecord =
+        {
+            Type = MutationType.Attributes
+            Target = Unchecked.defaultof<Node>
+            AddedNodes = [||]
+            RemovedNodes = null
+            PreviousSibling = None
+            NextSibling = Some Unchecked.defaultof<Node>
+            AttributeName = Some "class"
+            AttributeNamespace = None
+            OldValue = Some ""
+        }
+
+    let mutationText = mutation.ToString ()
+
+    if
+        not (
+            mutationText.Contains "Type = Attributes"
+            && mutationText.Contains "Target = null"
+            && mutationText.Contains "OldValue = Some \"\""
+        )
+    then
+        raise (InvalidOperationException ("mutation record: " + mutationText))
+
+    let mutable callbackCalls = 0
+
+    let handle: MutationObserverHandle =
+        {
+            Observe = fun _ _ -> callbackCalls <- callbackCalls + 1
+            Disconnect = fun () -> callbackCalls <- callbackCalls + 1
+            TakeRecords =
+                fun () ->
+                    callbackCalls <- callbackCalls + 1
+                    [||]
+            Release = fun () -> callbackCalls <- callbackCalls + 1
+        }
+
+    let provider: MutationObservationProvider =
+        {
+            Create =
+                fun _ _ ->
+                    callbackCalls <- callbackCalls + 1
+                    handle
+        }
+
+    if
+        not (
+            handle.ToString().Contains "Observe ="
+            && provider.ToString().Contains "Create ="
+        )
+        || callbackCalls <> 0
+    then
+        raise (InvalidOperationException "mutation callback diagnostics invoked a callback")
+
+    let boundedOptions =
+        { MutationObserverOptions.Default with
+            AttributeFilter = Some (Array.create 150 "id")
+        }
+
+    if not (boundedOptions.ToString().Contains "...") then
+        raise (InvalidOperationException "mutation attribute-filter diagnostics were not bounded")
+
+    Console.WriteLine "mutation display checks passed"
     Console.WriteLine "resource display checks passed"
     0
