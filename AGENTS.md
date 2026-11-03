@@ -9,6 +9,11 @@ For `///` XML documentation comments, read the `fsharp-xml-docs` skill
 (`.claude/skills/fsharp-xml-docs/SKILL.md`) before writing, reviewing or fixing them. It covers the
 tag set and ships an audit script (`scripts/audit.fsx`) for FS3390 and convention checks.
 
+Use scoped structural XML checks and an FS3390-enabled project build for documentation
+validation. Do not run `audit.fsx --compiler`: even a four-file invocation has retained
+32 GB of managed memory on this solution, and earlier attempts exceeded 49 GB. Treat this
+as a tooling limitation; preserve the actual project build and analyzer gates.
+
 ## F# semantics — use `fslangmcp`, not grep
 
 The repo ships an `fslangmcp` MCP server (`.mcp.json`, FsLangMCP over FSAC +
