@@ -5,6 +5,9 @@ open System.Collections.Generic
 
 /// <summary><c>IntersectionObserverInit.root</c>: the box targets are intersected with.</summary>
 [<RequireQualifiedAccess>]
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObserverRoot =
     /// <summary>A null root: the viewport of the top-level document.</summary>
     | Implicit
@@ -13,7 +16,30 @@ type IntersectionObserverRoot =
     /// <summary>An element; targets outside its containing block chain never intersect.</summary>
     | Element of Element
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, precedence: int) =
+        NativeDisplay.union context depth precedence (box this) (fun nested ->
+            match this with
+            | IntersectionObserverRoot.Implicit -> "Implicit", []
+            | IntersectionObserverRoot.Document -> "Document", []
+            | IntersectionObserverRoot.Element element ->
+                "Element",
+                [
+                    Some (fun _ -> NativeDisplay.opaque context nested "<Element>" (box element))
+                ])
+
+    /// <summary>Returns diagnostic text; native compilation represents element references as opaque values.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary><c>IntersectionObserverInit</c>.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObserverInit =
     {
         Root: IntersectionObserverRoot
@@ -27,6 +53,24 @@ type IntersectionObserverInit =
         Threshold: float array
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Root", (fun () -> NativeDisplay.known context nested this.Root (fun value -> value.NativeDisplay (context, nested, 3)))
+                "RootMargin", (fun () -> NativeDisplay.text context nested this.RootMargin)
+                "ScrollMargin", (fun () -> NativeDisplay.text context nested this.ScrollMargin)
+                "Threshold", (fun () -> NativeDisplay.array context nested (fun c d _ value -> NativeDisplay.float64 c d value) this.Threshold)
+            ])
+
+    /// <summary>Returns diagnostic text; native compilation bounds the displayed thresholds.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
     /// <summary>The implicit root, no margins and the threshold 0.</summary>
     static member Default =
         {
@@ -37,6 +81,9 @@ type IntersectionObserverInit =
         }
 
 /// <summary>A rectangle of an <c>IntersectionObserverEntry</c> in CSS pixels of the viewport.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObserverRect =
     {
         X: float
@@ -45,11 +92,32 @@ type IntersectionObserverRect =
         Height: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "X", (fun () -> NativeDisplay.float64 context nested this.X)
+                "Y", (fun () -> NativeDisplay.float64 context nested this.Y)
+                "Width", (fun () -> NativeDisplay.float64 context nested this.Width)
+                "Height", (fun () -> NativeDisplay.float64 context nested this.Height)
+            ])
+
+    /// <summary>Returns structured rectangle diagnostics.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>A copied <c>IntersectionObserverEntry</c>, valid after its delivery returns.</summary>
 /// <remarks>
 /// A target outside the root's containing block chain, a disconnected target and a target of a disconnected root
 /// report every rectangle as 0, 0, 0, 0.
 /// </remarks>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObserverEntry =
     {
         Target: Element
@@ -64,12 +132,45 @@ type IntersectionObserverEntry =
         IntersectionRatio: float
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Target", (fun () -> NativeDisplay.opaque context nested "<Element>" (box this.Target))
+                "Time", (fun () -> NativeDisplay.float64 context nested this.Time)
+                "RootBounds",
+                (fun () ->
+                    NativeDisplay.option
+                        context
+                        nested
+                        3
+                        (fun c d p (value: IntersectionObserverRect) -> NativeDisplay.known c d value (fun rect -> rect.NativeDisplay (c, d, p)))
+                        this.RootBounds)
+                "BoundingClientRect",
+                (fun () -> NativeDisplay.known context nested this.BoundingClientRect (fun rect -> rect.NativeDisplay (context, nested, 3)))
+                "IntersectionRect",
+                (fun () -> NativeDisplay.known context nested this.IntersectionRect (fun rect -> rect.NativeDisplay (context, nested, 3)))
+                "IsIntersecting", (fun () -> NativeDisplay.boolean context nested this.IsIntersecting)
+                "IntersectionRatio", (fun () -> NativeDisplay.float64 context nested this.IntersectionRatio)
+            ])
+
+    /// <summary>Returns diagnostic text; native compilation represents the target as an opaque value.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>An invalid <c>IntersectionObserverInit</c>, with the engine's exception name: SyntaxError for a margin,
 /// RangeError for a threshold.</summary>
 exception IntersectionObserverException of name: string * detail: string with
     override this.Message = this.name + ": " + this.detail
 
 /// <summary>One engine observer of an <c>IntersectionObservationProvider</c>.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObserverHandle =
     {
         Observe: Element -> unit
@@ -81,7 +182,29 @@ type IntersectionObserverHandle =
         Release: unit -> unit
     }
 
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Observe", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Observe))
+                "Unobserve", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Unobserve))
+                "Disconnect", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Disconnect))
+                "TakeRecords", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.TakeRecords))
+                "Release", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Release))
+            ])
+
+    /// <summary>Returns diagnostic text; native compilation represents callbacks as opaque values.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
+
 /// <summary>The engine side of intersection observation for one document.</summary>
+#if !FABLE_COMPILER
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+#endif
 type IntersectionObservationProvider =
     {
         /// <summary>The document's <c>performance.now()</c>, the clock of entry times.</summary>
@@ -92,6 +215,22 @@ type IntersectionObservationProvider =
         /// delivering.</summary>
         Create: IntersectionObserverInit -> (IntersectionObserverEntry array -> unit) -> IntersectionObserverHandle
     }
+
+#if !FABLE_COMPILER
+    member internal this.NativeDisplay(context: NativeDisplay.Context, depth: int, _precedence: int) =
+        NativeDisplay.record context depth (box this) (fun nested ->
+            [
+                "Now", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Now))
+                "Create", (fun () -> NativeDisplay.opaque context nested "<fun>" (box this.Create))
+            ])
+
+    /// <summary>Returns diagnostic text; native compilation represents callbacks as opaque values.</summary>
+    override this.ToString() =
+        if System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported then
+            sprintf "%+A" this
+        else
+            NativeDisplay.format (fun context depth precedence -> this.NativeDisplay (context, depth, precedence))
+#endif
 
 /// <summary>An <c>IntersectionObserver</c>; disposing it disconnects and frees it.</summary>
 /// <remarks>

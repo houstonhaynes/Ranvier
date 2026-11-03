@@ -164,6 +164,90 @@ let main _ =
     if not (boundedOptions.ToString().Contains "...") then
         raise (InvalidOperationException "mutation attribute-filter diagnostics were not bounded")
 
+    expect "implicit intersection root" "Implicit" (IntersectionObserverRoot.Implicit.ToString ())
+    expect "document intersection root" "Document" (IntersectionObserverRoot.Document.ToString ())
+
+    expect "null intersection root" "Element null" ((IntersectionObserverRoot.Element Unchecked.defaultof<Element>).ToString())
+
+    let intersectionOptions =
+        { IntersectionObserverInit.Default with
+            Threshold = Array.create 150 0.5
+        }
+
+    let intersectionOptionsText = intersectionOptions.ToString ()
+
+    if
+        not (
+            intersectionOptionsText.Contains "Threshold ="
+            && intersectionOptionsText.Contains "..."
+        )
+    then
+        raise (InvalidOperationException "intersection threshold diagnostics were not bounded")
+
+    let rect: IntersectionObserverRect =
+        {
+            X = 1.25
+            Y = 2.0
+            Width = 3.0
+            Height = 4.0
+        }
+
+    let intersectionEntry: IntersectionObserverEntry =
+        {
+            Target = Unchecked.defaultof<Element>
+            Time = 5.0
+            RootBounds = Some rect
+            BoundingClientRect = rect
+            IntersectionRect = rect
+            IsIntersecting = true
+            IntersectionRatio = 0.5
+        }
+
+    if
+        not (
+            rect.ToString().Contains "X = 1.25"
+            && intersectionEntry.ToString().Contains "Target = null"
+            && intersectionEntry.ToString().Contains "IntersectionRatio = 0.5"
+        )
+    then
+        raise (InvalidOperationException "intersection entry diagnostics omitted values")
+
+    let mutable intersectionCalls = 0
+
+    let intersectionHandle: IntersectionObserverHandle =
+        {
+            Observe = fun _ -> intersectionCalls <- intersectionCalls + 1
+            Unobserve = fun _ -> intersectionCalls <- intersectionCalls + 1
+            Disconnect = fun () -> intersectionCalls <- intersectionCalls + 1
+            TakeRecords =
+                fun () ->
+                    intersectionCalls <- intersectionCalls + 1
+                    [||]
+            Release = fun () -> intersectionCalls <- intersectionCalls + 1
+        }
+
+    let intersectionProvider: IntersectionObservationProvider =
+        {
+            Now =
+                fun () ->
+                    intersectionCalls <- intersectionCalls + 1
+                    1.0
+            Create =
+                fun _ _ ->
+                    intersectionCalls <- intersectionCalls + 1
+                    intersectionHandle
+        }
+
+    if
+        not (
+            intersectionHandle.ToString().Contains "Observe ="
+            && intersectionProvider.ToString().Contains "Create ="
+        )
+        || intersectionCalls <> 0
+    then
+        raise (InvalidOperationException "intersection callback diagnostics invoked a callback")
+
+    Console.WriteLine "intersection display checks passed"
     Console.WriteLine "mutation display checks passed"
     Console.WriteLine "resource display checks passed"
     0
