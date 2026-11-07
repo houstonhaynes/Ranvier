@@ -33,6 +33,220 @@ let private onAnotherThread (work: unit -> unit) =
     thread.Join ()
 #endif
 
+/// <summary>The node a late reader links to: it reads an async memo that goes stale during the node's own run.</summary>
+/// <remarks>The boundary cases differ in the read the reader makes first, since each one pulls before it links.</remarks>
+type private LateMiddle =
+    | AsyncMiddle
+    | MemoMiddle
+    | StreamMiddle
+    | BoundaryValue
+    | BoundaryIsWaiting
+    | BoundaryCaught
+    | BoundaryCaughtFrom
+
+/// <summary>The computation that reads the middle node for the first time while that node is stale.</summary>
+type private LateReader =
+    | AsyncReader
+    | MemoReader
+    | EffectReader
+
+/// <summary>
+/// A reader that links a node for the first time, after the node was marked dirty during its own run, still wakes when
+/// the node's pending source settles, and runs no more often than the node's own notice requires.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The middle node reads <c>h</c>, then the async memo <c>a</c>. A write to <c>h</c> makes it dirty and a write
+/// upstream of <c>a</c> makes <c>a</c> <c>Check</c>. When the reader pulls the middle, the middle's run resolves
+/// <c>a</c>'s check, <c>a</c> starts a flight and marks the middle dirty while it is still running. That notice
+/// reaches only the observers the middle already has, and the reader links its edge after the pull returns.
+/// </para>
+/// <para>
+/// When the flight settles, <c>a</c> marks the middle dirty again. The middle is dirty already, so nothing reaches
+/// the reader, which waited on the old flight forever before the fix.
+/// </para>
+/// <para>
+/// The reader runs once to settle, once on the writes and once on the settle. A memo or boundary middle tells its
+/// readers <c>Check</c>, so an effect reader that re-checks it while the flight is out finds it unchanged and does not
+/// run. An async memo or stream middle tells them <c>Dirty</c>, which costs that effect one more run.
+/// </para>
+/// </remarks>
+let private lateLink (middle: LateMiddle) (reader: LateReader) =
+    testCaseAsync $"a reader that links a node dirtied during its own run still wakes: %A{middle}, %A{reader}"
+    <| async {
+        let g = new Graph ()
+        let upstream = Signal (g, 0)
+        let h = Signal (g, 0)
+        let wants = Signal (g, false)
+        let m = Make.Memo<int>(g, (fun _ -> upstream.Value))
+        let flights = ResizeArray<Flight<int>>()
+
+        let a =
+            Make.AsyncMemo<int>(
+                g,
+                fun _ _ ->
+                    m.Value |> ignore
+                    let f = Flight<int>()
+                    flights.Add f
+                    f.Task
+            )
+
+        let boundary () =
+            Boundary<int>.Catching(g, (fun () -> h.Value + a.Value), (fun _ -> -1), (fun _ _ -> -3))
+
+        let readMiddle: unit -> int =
+            match middle with
+            | AsyncMiddle ->
+                let b = Make.AsyncMemo<int>(g, (fun _ _ -> completed (h.Value + a.Value)))
+                fun () -> b.Value
+            | MemoMiddle ->
+                let b = Make.Memo<int>(g, (fun _ -> h.Value + a.Value))
+                fun () -> b.Value
+            | StreamMiddle ->
+                // The start reads the inputs, and the source publishes their sum before its run returns.
+                let b =
+                    g.Run (fun () ->
+                        Api.createStream (fun _ ->
+                            let sum = h.Value + a.Value
+
+                            { new StreamSource<int>() with
+                                member _.Run(sink, _) =
+                                    sink.Next sum
+                                    TaskCompletionSource<unit>().Task :> Task
+                            }))
+
+                fun () -> b.Value
+            | BoundaryValue ->
+                let b = boundary ()
+                fun () -> b.Value
+            | BoundaryIsWaiting ->
+                let b = boundary ()
+                fun () -> if b.IsWaiting then -1 else b.Value
+            // These two read nothing else, so the second flight fails and the reader waits to see the error.
+            | BoundaryCaught ->
+                let b = boundary ()
+                fun () -> if isNull b.Caught then -1 else 21
+            | BoundaryCaughtFrom ->
+                let b = boundary ()
+                fun () -> if isNull (box b.CaughtFrom) then -1 else 21
+
+        let errorOnly =
+            match middle with
+            | BoundaryCaught
+            | BoundaryCaughtFrom -> true
+            | _ -> false
+
+        let body () =
+            if wants.Value then readMiddle () else -2
+
+        let seen = ResizeArray<int>()
+
+        let struct (read: unit -> Reading<int>, runs: unit -> int) =
+            match reader with
+            | AsyncReader ->
+                let f = Make.AsyncMemo<int>(g, (fun _ _ -> completed (body ())))
+                struct ((fun () -> f.TryValue), (fun () -> f.Runs))
+            | MemoReader ->
+                let f = Make.Memo<int>(g, (fun _ -> body ()))
+                struct ((fun () -> f.TryValue), (fun () -> f.Runs))
+            | EffectReader ->
+                let e = new Effect (g, (fun () -> seen.Add (body ())))
+
+                let last () =
+                    if seen.Count = 0 then
+                        Pending
+                    else
+                        Ready seen[seen.Count - 1]
+
+                struct (last, (fun () -> e.Runs))
+
+        // Settle once with the reader not reading the middle. The untracked read links the middle to `a`.
+        let tryMiddle () =
+            try
+                readMiddle ()
+            with NotReadyException _ ->
+                -1
+
+        Expect.equal (tryMiddle ()) -1 "the middle waits on the first flight, or shows its fallback"
+        read () |> ignore
+        flights[0].Settle 10
+        do! drained ()
+        // Under promise delivery an async middle re-runs on this read and settles a microtask later.
+        tryMiddle () |> ignore
+        do! drained ()
+        Expect.equal (tryMiddle ()) (if errorOnly then -1 else 10) "the middle settled"
+        Expect.equal (read ()) (Ready -2) "the reader settled without the middle"
+
+        upstream.Value <- 1
+        h.Value <- 1
+        wants.Value <- true
+        read () |> ignore
+        Expect.equal flights.Count 2 "reading the middle started a second flight"
+
+        if errorOnly then
+            flights[1].Fail(InvalidOperationException "the second flight fails")
+        else
+            flights[1].Settle 20
+
+        do! drained ()
+
+        // Under promise delivery each lazy re-run of an async node settles a microtask after the read that starts it:
+        // the reader's, and before it an async middle's.
+        for _ in 1..2 do
+            read () |> ignore
+            do! drained ()
+
+        Expect.equal (read ()) (Ready 21) "the settle reached the reader"
+
+        // Under promise delivery an async middle's own completed task lands a microtask late, and the reader runs
+        // once more on that settle.
+        let baseRuns =
+            match middle, reader with
+            | (AsyncMiddle | StreamMiddle), EffectReader -> 4
+            | _ -> 3
+
+        let expectedRuns =
+            baseRuns
+            + (if promiseDelivered && middle = AsyncMiddle then 1 else 0)
+
+        Expect.equal (runs ()) expectedRuns "the reader ran no more often than the middle's notice requires"
+    }
+
+/// <summary>
+/// A middle whose run invalidates itself until it reaches a fixpoint, read for the first time by an effect: the effect
+/// is told each time the middle ends a run stale, and settles on the fixpoint rather than looping.
+/// </summary>
+let private lateLinkConverges =
+    test "a reader that links a node which invalidates itself settles on its fixpoint" {
+        let g = new Graph ()
+        let s = Signal (g, 0)
+        let wants = Signal (g, false)
+
+        let middle =
+            Make.Memo<int>(
+                g,
+                fun _ ->
+                    let v = s.Value
+
+                    if v < 3 then
+                        s.Value <- v + 1
+
+                    v
+            )
+
+        let seen = ResizeArray<int>()
+
+        let e =
+            new Effect (g, (fun () -> seen.Add (if wants.Value then middle.Value else -1)))
+
+        wants.Value <- true
+
+        // If this ever fails it will hang rather than assert, which is itself the finding.
+        Expect.equal s.Value 3 "the middle climbed to its fixpoint"
+        Expect.equal seen[seen.Count - 1] 3 "the effect saw the fixpoint"
+        Expect.isLessThan e.Runs 10 "and stopped there"
+    }
+
 /// <summary>
 /// <c>Async.fs</c> covers the happy shapes of each <c>FlightPolicy</c>. This is what
 /// happens at their edges: a flight that was already finished before anyone
@@ -757,6 +971,21 @@ let tests =
                 owner.Dispose ()
                 Expect.isTrue observed.Value.IsCancellationRequested "tearing down the owner cancelled the flight"
             }
+
+            for middle in
+                [
+                    AsyncMiddle
+                    MemoMiddle
+                    StreamMiddle
+                    BoundaryValue
+                    BoundaryIsWaiting
+                    BoundaryCaught
+                    BoundaryCaughtFrom
+                ] do
+                for reader in [ AsyncReader; MemoReader; EffectReader ] do
+                    lateLink middle reader
+
+            lateLinkConverges
         ]
 
 #if !FABLE_COMPILER

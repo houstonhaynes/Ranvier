@@ -27,6 +27,14 @@ let untracedOnly (test: Test) : Test =
 let private promiseDelivery: bool = Fable.Core.Util.jsNative
 #endif
 
+/// <summary>True under Fable's promise delivery, where a settle applies on a later microtask; false on .NET.</summary>
+let promiseDelivered: bool =
+#if FABLE_COMPILER
+    promiseDelivery
+#else
+    false
+#endif
+
 /// <summary>
 /// Runs <c>test</c> except under Fable's promise delivery, where each of its cases is reported as pending. The
 /// Fable report lists <c>reason</c> beside the test.

@@ -3409,6 +3409,28 @@ type Graph(options: GraphOptions) =
     member internal _.CurrentComputation = current
 
     /// <summary>
+    /// Marks the running computation dirty, if any. Called by a tracked read that has just linked a source still
+    /// stale after its pull.
+    /// </summary>
+    /// <remarks>
+    /// A source can be marked dirty during its own run, when a read in its body resolves a <c>Check</c> to
+    /// <c>Dirty</c>. That notice reaches only the observers linked at the time, and a reader pulling the source for
+    /// the first time links after the pull. Once dirty, the source's <c>MarkDirty</c> notifies no one, so without
+    /// this mark the reader is never told the value it read is stale, and waits forever on a settled flight.
+    /// </remarks>
+    member internal _.MarkReaderDirty() =
+        if not (obj.ReferenceEquals (current, null)) then
+            current.MarkDirty ()
+
+    /// <summary>
+    /// Marks the running computation <c>Check</c>, if any: <c>MarkReaderDirty</c> for a source that tells its readers
+    /// <c>Check</c> when it goes dirty, so a re-run to an equal value stops at the cutoff.
+    /// </summary>
+    member internal _.MarkReaderCheck() =
+        if not (obj.ReferenceEquals (current, null)) then
+            current.MarkCheck ()
+
+    /// <summary>
     /// Evaluates <c>body</c> with <c>host</c> as the tracking context and its scope as
     /// the owner of every node <c>body</c> creates. <c>host</c> implements <c>IScopeHost</c>.
     /// </summary>
@@ -4269,6 +4291,24 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
             if graph.Deferring then this.Refresh () else this.Pull ()
 
     /// <summary>
+    /// <c>EnsureCurrent</c>, then links this memo into the running reader. A memo still stale after the pull was
+    /// dirtied during its own run, before this edge existed: see <c>Graph.MarkReaderDirty</c>.
+    /// </summary>
+    /// <remarks>
+    /// <c>Check</c>, as <c>MarkDirty</c> tells readers. The second test sits on the stale path only, so a cached read
+    /// still costs the one comparison <c>EnsureCurrent</c> describes.
+    /// </remarks>
+    member private this.TrackCurrent() =
+        if freshness <> Freshness.Clean && not disposed then
+            if graph.Deferring then this.Refresh () else this.Pull ()
+            graph.Track (this :> ISource)
+
+            if freshness <> Freshness.Clean && not disposed then
+                graph.MarkReaderCheck ()
+        else
+            graph.Track (this :> ISource)
+
+    /// <summary>
     /// Brings a stale memo current when <c>Graph.Deferring</c> is false: outside
     /// every stale read and body, or inside <c>untrack</c> within a body.
     /// </summary>
@@ -4451,8 +4491,7 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
     /// suspended, which is how the pending channel propagates.
     /// </summary>
     member this.Value: 'T =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then
             raise (graph.NotReady (this :> INode))
@@ -4466,8 +4505,7 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
     /// Non-throwing, tracked read.
     /// </summary>
     member this.TryValue: Reading<'T> =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then Pending
         elif status.HasFlag Status.Error then Failed failure.Error
@@ -5724,6 +5762,20 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             this.Pull ()
 
     /// <summary>
+    /// <c>EnsureCurrent</c>, then links this memo into the running reader, as on <c>Memo</c>. <c>Dirty</c>, as
+    /// <c>MarkDirty</c> tells readers.
+    /// </summary>
+    member private this.TrackCurrent() =
+        if freshness <> Freshness.Clean && not disposed then
+            this.Pull ()
+            graph.Track (this :> ISource)
+
+            if freshness <> Freshness.Clean && not disposed then
+                graph.MarkReaderDirty ()
+        else
+            graph.Track (this :> ISource)
+
+    /// <summary>
     /// Brings a stale async memo current.
     /// </summary>
     member private this.Pull() =
@@ -5920,8 +5972,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// Pending while a flight is in progress, except under <c>Queue</c> once an earlier flight's outcome is applied.
     /// </remarks>
     member this.Value: 'T =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then
             raise (graph.NotReady (this :> INode))
@@ -5935,8 +5986,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     /// Non-throwing, tracked read.
     /// </summary>
     member this.TryValue: Reading<'T> =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then Pending
         elif status.HasFlag Status.Error then Failed failure.Error
@@ -6249,6 +6299,20 @@ type Boundary<'T>
             this.Pull ()
 
     /// <summary>
+    /// <c>EnsureCurrent</c>, then links this boundary into the running reader, as on <c>Memo</c>. <c>Check</c>, as
+    /// <c>MarkDirty</c> tells readers.
+    /// </summary>
+    member private this.TrackCurrent() =
+        if freshness <> Freshness.Clean && not disposed then
+            this.Pull ()
+            graph.Track (this :> ISource)
+
+            if freshness <> Freshness.Clean && not disposed then
+                graph.MarkReaderCheck ()
+        else
+            graph.Track (this :> ISource)
+
+    /// <summary>
     /// Brings a stale boundary current.
     /// </summary>
     member private this.Pull() =
@@ -6414,15 +6478,15 @@ type Boundary<'T>
     /// construction. A tracked read that brings the boundary current, as <c>TryValue</c> does.
     /// </remarks>
     member this.IsWaiting =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
+
         waiting
 
     /// <summary>The error the boundary recovered from on its current run, or null.</summary>
     /// <remarks>A tracked read that brings the boundary current, as <c>TryValue</c> does.</remarks>
     member this.Caught =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
+
         Failure.ErrorOf caught
 
     /// <summary>The node <c>Caught</c> originated in, or null when <c>Caught</c> is null.</summary>
@@ -6431,8 +6495,8 @@ type Boundary<'T>
     /// the exception; the upstream node when the body rethrew the exception of a failed read.
     /// </remarks>
     member this.CaughtFrom: INode =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
+
         Failure.OriginOf caught
 
     /// <summary>
@@ -6459,8 +6523,7 @@ type Boundary<'T>
     /// suspends or throws.
     /// </remarks>
     member this.Value: 'T =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then
             raise (graph.NotReady (this :> INode))
@@ -6474,8 +6537,7 @@ type Boundary<'T>
     /// Non-throwing, tracked read.
     /// </summary>
     member this.TryValue: Reading<'T> =
-        this.EnsureCurrent ()
-        graph.Track (this :> ISource)
+        this.TrackCurrent ()
 
         if status.HasFlag Status.Pending then Pending
         elif status.HasFlag Status.Error then Failed failure.Error
