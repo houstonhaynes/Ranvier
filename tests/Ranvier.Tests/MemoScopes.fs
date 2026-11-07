@@ -558,4 +558,51 @@ let tests =
                 upstream.Value <- 1
                 Expect.equal m.Value (1, 0) "the re-run created a fresh signal"
             }
+
+            test "tryGetOwner inside a createEffectOn compute is ValueNone and the effect still acts" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal 1
+                let owners = ResizeArray<bool>()
+                let acted = ResizeArray<int>()
+
+                createEffectOn
+                    (fun () ->
+                        owners.Add (tryGetOwner ()).IsSome
+                        s.Value)
+                    acted.Add
+
+                s.Value <- 2
+                Expect.sequenceEqual owners [ false; false ] "a compute has no owner"
+                Expect.sequenceEqual acted [ 1; 2 ] "both runs acted"
+            }
+
+            test "tryGetOwner inside a pure memo is ValueNone and the memo keeps its value" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                let s = createSignal 1
+
+                let m =
+                    createMemo (fun _ ->
+                        let owned = (tryGetOwner ()).IsSome
+                        s.Value, owned)
+
+                Expect.equal m.Value (1, false) "a pure memo has no owner"
+                s.Value <- 2
+                Expect.equal m.Value (2, false) "the re-run succeeded"
+            }
+
+            test "tryGetOwner returns the scope getOwner returns where a body can own" {
+                use g = new Graph ()
+                use _ = g.Activate ()
+                Expect.equal (tryGetOwner ()) (ValueSome (getOwner ())) "the root scope"
+                let mutable inEffect = ValueNone
+
+                createEffect (fun () -> inEffect <- ValueSome (tryGetOwner () = ValueSome (getOwner ())))
+
+                Expect.equal inEffect (ValueSome true) "an effect's scope"
+
+                let m = createMemoWith (fun _ -> (tryGetOwner ()).IsSome)
+                Expect.isTrue m.Value "an owning memo's scope"
+            }
         ]

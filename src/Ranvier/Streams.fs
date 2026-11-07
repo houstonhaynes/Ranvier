@@ -547,6 +547,8 @@ type StreamMemo<'S>
 #endif
 
     interface IScopeHost with
+        member _.CanOwn = false
+
         member _.Scope =
             violated <- true
             raise (InvalidOperationException (ScopeMessages.forMode ScopeMode.Pure))

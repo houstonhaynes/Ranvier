@@ -1394,6 +1394,9 @@ type internal IScopeHost =
     /// </summary>
     abstract Scope: Owner
 
+    /// <summary>True when <c>Scope</c> will return a scope rather than raise; reading it leaves the run intact.</summary>
+    abstract CanOwn: bool
+
 /// <summary>
 /// A <c>Graph.Activate</c> call: the graph, the activating thread, and whether the graph is ambient on other threads.
 /// </summary>
@@ -2529,6 +2532,25 @@ type Graph(options: GraphOptions) =
             currentOwner <- host.Scope
 
         currentOwner
+
+    /// <summary>
+    /// <c>CurrentOwner</c>, or <c>ValueNone</c> inside a pure body, where <c>CurrentOwner</c> raises and fails the run.
+    /// </summary>
+    member internal _.TryCurrentOwner: Owner voption =
+        if not (Platform.isNull (box currentOwner)) then
+            ValueSome currentOwner
+        else
+            let host =
+                if Platform.isNull (box current) then
+                    untrackedHost
+                else
+                    current :?> IScopeHost
+
+            if not (Platform.isNull (box host)) && host.CanOwn then
+                currentOwner <- host.Scope
+                ValueSome currentOwner
+            else
+                ValueNone
 
     /// <summary>
     /// Creates a nested scope, runs <c>body</c> inside it, and hands back the owner
@@ -4400,6 +4422,10 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
             this.Dispose ()
 
     interface IScopeHost with
+        member _.CanOwn =
+            not (Platform.isNull (box scope))
+            || mode = ScopeMode.Owning
+
         member _.Scope =
             if Platform.isNull (box scope) then
                 if mode = ScopeMode.Owning then
@@ -4862,6 +4888,8 @@ type Effect private (graph: Graph, body: unit -> unit, _unstarted: unit) =
             this.Dispose ()
 
     interface IScopeHost with
+        member _.CanOwn = true
+
         member _.Scope =
             if Platform.isNull (box scope) then
                 scope <- new Owner (graph.Root)
@@ -5152,6 +5180,8 @@ type internal EffectOn<'T> private (graph: Graph, compute: unit -> 'T, act: 'T -
                     this.Run ()
 
     interface IScopeHost with
+        member _.CanOwn = acting
+
         member _.Scope =
             if acting then
                 if Platform.isNull (box actionOwner) then
@@ -5808,6 +5838,10 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             this.Dispose ()
 
     interface IScopeHost with
+        member _.CanOwn =
+            not (Platform.isNull (box scope))
+            || mode = ScopeMode.Owning
+
         member _.Scope =
             if Platform.isNull (box scope) then
                 if mode = ScopeMode.Owning then
@@ -6413,6 +6447,8 @@ type Boundary<'T>
             this.Dispose ()
 
     interface IScopeHost with
+        member _.CanOwn = true
+
         member _.Scope =
             if Platform.isNull (box scope) then
                 scope <- new Owner (graph.Root)

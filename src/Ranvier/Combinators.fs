@@ -697,6 +697,8 @@ type internal FoldReads(graph: Graph, changed: unit -> unit) =
             changed ()
 
     interface IScopeHost with
+        member _.CanOwn = false
+
         member _.Scope =
             raise (
                 System.InvalidOperationException

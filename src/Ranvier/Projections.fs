@@ -1164,6 +1164,8 @@ type Projection<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             puller <- outer
 
     interface IScopeHost with
+        member _.CanOwn = true
+
         member _.Scope =
             scopeRequests <- scopeRequests + 1
 
@@ -3062,6 +3064,8 @@ type Lookup<'K, 'V when 'K: equality> internal (graph: Graph) as this =
             scope.Dispose ()
 
     interface IScopeHost with
+        member _.CanOwn = false
+
         member _.Scope =
             violated <- true
             raise (InvalidOperationException rule)

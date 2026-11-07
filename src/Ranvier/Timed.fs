@@ -339,6 +339,8 @@ type Timed<'T> internal (graph: Graph, options: TimedOptions<'T>, duration: Time
                         this.Arm ()
 
     interface IScopeHost with
+        member _.CanOwn = false
+
         member _.Scope =
             violated <- true
             raise (InvalidOperationException (ScopeMessages.forMode ScopeMode.Pure))

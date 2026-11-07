@@ -519,6 +519,13 @@ module Api =
         Graph.Current.CurrentOwner
 
     /// <summary>
+    /// The scope <c>getOwner</c> returns, or <c>ValueNone</c> inside a pure body. Inside a pure body the run continues
+    /// unaffected, where <c>getOwner</c> raises and fails it even when the exception is caught.
+    /// </summary>
+    let tryGetOwner () : Owner voption =
+        Graph.Current.TryCurrentOwner
+
+    /// <summary>
     /// Runs <c>body</c> with <c>owner</c> as the scope new nodes and cleanups attach to.
     /// Tracking is unchanged. A node created under a disposed owner is disposed
     /// as it attaches.
