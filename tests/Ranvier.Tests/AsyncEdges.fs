@@ -247,6 +247,141 @@ let private lateLinkConverges =
         Expect.isLessThan e.Runs 10 "and stopped there"
     }
 
+/// <summary>The computation between the stale middle and the effect that observes it.</summary>
+type private WakeReader =
+    | Direct
+    | ThroughMemo
+    | ThroughAsync
+
+/// <summary>
+/// Builds the middle over <c>body</c>, and an effect that reads it through <c>reader</c>. Returns the values the
+/// effect saw, -1 for a pending read.
+/// </summary>
+let private observeMiddle (g: Graph) (middle: LateMiddle) (reader: WakeReader) (body: unit -> int) =
+    let readMiddle: unit -> int =
+        match middle with
+        | AsyncMiddle ->
+            let b = Make.AsyncMemo<int>(g, (fun _ _ -> completed (body ())))
+            fun () -> b.Value
+        | MemoMiddle ->
+            let b = Make.Memo<int>(g, (fun _ -> body ()))
+            fun () -> b.Value
+        | StreamMiddle ->
+            let b =
+                g.Run (fun () ->
+                    Api.createStream (fun _ ->
+                        let v = body ()
+
+                        { new StreamSource<int>() with
+                            member _.Run(sink, _) =
+                                sink.Next v
+                                TaskCompletionSource<unit>().Task :> Task
+                        }))
+
+            fun () -> b.Value
+        | BoundaryValue
+        | BoundaryIsWaiting
+        | BoundaryCaught
+        | BoundaryCaughtFrom ->
+            let b = Boundary<int>.Catching(g, body, (fun _ -> -1), (fun _ _ -> -3))
+            fun () -> b.Value
+
+    let read: unit -> int =
+        match reader with
+        | Direct -> readMiddle
+        | ThroughMemo ->
+            let r = Make.Memo<int>(g, (fun _ -> readMiddle ()))
+            fun () -> r.Value
+        | ThroughAsync ->
+            let r = Make.AsyncMemo<int>(g, (fun _ _ -> completed (readMiddle ())))
+            fun () -> r.Value
+
+    let seen = ResizeArray<int>()
+
+    let effect =
+        new Effect (
+            g,
+            fun () ->
+                seen.Add (
+                    try
+                        read ()
+                    with NotReadyException _ ->
+                        -1
+                )
+        )
+
+    struct (seen, effect)
+
+/// <summary>Waits out the microtasks each async node in a chain adds under promise delivery.</summary>
+let private settledChain () =
+    async {
+        for _ in 1..4 do
+            do! drained ()
+    }
+
+/// <summary>
+/// The middle reads <c>c</c>, a memo over <c>a</c>, then <c>a</c>, which settles inline under it. Its value
+/// <c>a / 2</c> is unchanged by odd writes, so those runs end stale; each even write still reaches the effect (#302).
+/// </summary>
+let private markedByInlineSettle (middle: LateMiddle) (reader: WakeReader) =
+    testCaseAsync $"a node marked by an inline settle during its own run still wakes its reader: %A{middle}, %A{reader}"
+    <| async {
+        let g = new Graph ()
+        let s = Signal (g, 0)
+        let a = Make.AsyncMemo<int>(g, (fun _ _ -> completed s.Value))
+        let c = Make.Memo<int>(g, (fun _ -> a.Value))
+
+        let struct (seen, _) =
+            observeMiddle g middle reader (fun () ->
+                c.Value |> ignore
+                a.Value / 2)
+
+        do! settledChain ()
+
+        for i in 1..4 do
+            s.Value <- i
+            do! settledChain ()
+            Expect.equal seen[seen.Count - 1] (i / 2) $"the effect saw the middle after write %d{i}"
+    }
+
+/// <summary>
+/// The middle reads <c>h</c>, then <c>a</c>. A batch writes both, so <c>a</c> starts a flight and marks the middle
+/// during its run, and the middle ends pending and stale. The flight's settle still reaches the effect (#302).
+/// </summary>
+let private markedWhilePending (middle: LateMiddle) (reader: WakeReader) =
+    testCaseAsync $"a pending node marked during its own run wakes its reader when its source settles: %A{middle}, %A{reader}"
+    <| async {
+        let g = new Graph ()
+        let upstream = Signal (g, 0)
+        let h = Signal (g, 0)
+        let m = Make.Memo<int>(g, (fun _ -> upstream.Value))
+        let flights = ResizeArray<Flight<int>>()
+
+        let a =
+            Make.AsyncMemo<int>(
+                g,
+                fun _ _ ->
+                    m.Value |> ignore
+                    let f = Flight<int>()
+                    flights.Add f
+                    f.Task
+            )
+
+        let struct (seen, _) = observeMiddle g middle reader (fun () -> h.Value + a.Value)
+        do! settledChain ()
+        Expect.equal seen[seen.Count - 1] -1 "the effect waits on the first flight"
+
+        g.Batch (fun () ->
+            upstream.Value <- 1
+            h.Value <- 1)
+
+        do! settledChain ()
+        Expect.equal flights.Count 2 "the batch started a second flight"
+        flights[1].Settle 10
+        do! settledChain ()
+        Expect.equal seen[seen.Count - 1] 11 "the settle reached the effect"
+    }
+
 /// <summary>
 /// <c>Async.fs</c> covers the happy shapes of each <c>FlightPolicy</c>. This is what
 /// happens at their edges: a flight that was already finished before anyone
@@ -986,6 +1121,11 @@ let tests =
                     lateLink middle reader
 
             lateLinkConverges
+
+            for middle in [ AsyncMiddle; MemoMiddle; StreamMiddle; BoundaryValue ] do
+                for reader in [ Direct; ThroughMemo; ThroughAsync ] do
+                    markedByInlineSettle middle reader
+                    markedWhilePending middle reader
         ]
 
 #if !FABLE_COMPILER

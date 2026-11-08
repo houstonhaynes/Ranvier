@@ -4068,6 +4068,12 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
     let mutable disposed = false
 
     /// <summary>
+    /// Set when a run ends stale, from a mark received during the run. While set, the next <c>MarkDirty</c> or
+    /// <c>MarkCheck</c> notifies the observers, as the <c>Clean</c> transition does, and clears it.
+    /// </summary>
+    let mutable unannounced = false
+
+    /// <summary>
     /// Set by the first successful run. <c>value</c> is the argument to the next run while set.
     /// </summary>
     let mutable published = false
@@ -4199,6 +4205,7 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
         // serve a value the graph has already moved past. It also turns a memo
         // that reads itself from a stack overflow into a default value.
         freshness <- Freshness.Clean
+        unannounced <- false
         sources.BeginRun ()
 
         if
@@ -4279,6 +4286,9 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
         else
             Tracer.RunEnd (graph, id, status)
 
+        if freshness <> Freshness.Clean then
+            unannounced <- true
+
     /// <summary>
     /// Resolves <c>Check</c> into <c>Clean</c> or <c>Dirty</c> by asking each source, in read
     /// order, whether it actually moved.
@@ -4303,6 +4313,7 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
 
         if freshness = Freshness.Check then
             freshness <- Freshness.Clean
+            unannounced <- false
 
     member private this.EnsureCurrent() =
         // One comparison on the path a cached read takes. Testing `disposed`
@@ -4485,11 +4496,20 @@ type Memo<'T> private (graph: Graph, compute: 'T voption -> 'T, mode: ScopeMode,
                 // walks the whole fan-out to discover as much.
                 if wasClean then
                     observers.NotifyCheck ()
+                elif unannounced then
+                    unannounced <- false
+                    observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
+                observers.NotifyCheck ()
 
         member _.MarkCheck() =
             if freshness = Freshness.Clean then
                 freshness <- Freshness.Check
 
+                observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
                 observers.NotifyCheck ()
 
     member _.Status = status
@@ -5262,6 +5282,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
     let mutable disposed = false
     let mutable link: OwnerLink = null
 
+    /// <summary>Set when a run ends stale, as on <c>Memo</c>. The next mark notifies the observers and clears it.</summary>
+    let mutable unannounced = false
+
     /// <summary>
     /// Owner of the nodes an owning body creates, allocated by the first of
     /// them. Discharged before each flight starts and disposed with the
@@ -5651,6 +5674,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
 
     member private this.Launch() =
         freshness <- Freshness.Clean
+        unannounced <- false
         sources.BeginRun ()
 
         if
@@ -5786,6 +5810,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             retireIfQuiet ()
             Tracer.RunEnd (graph, id, status)
 
+        if freshness <> Freshness.Clean then
+            unannounced <- true
+
     member private this.EnsureCurrent() =
         // One comparison on the cached path, as on `Memo`.
         if freshness <> Freshness.Clean && not disposed then
@@ -5826,6 +5853,7 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
 
                 if freshness = Freshness.Check then
                     freshness <- Freshness.Clean
+                    unannounced <- false
 
             if freshness = Freshness.Dirty then
                 this.Start ()
@@ -5886,8 +5914,9 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
             sources.MovedIn (slot, handle)
 
         member _.MarkDirty() =
-            if freshness <> Freshness.Dirty then
+            if freshness <> Freshness.Dirty || unannounced then
                 freshness <- Freshness.Dirty
+                unannounced <- false
 
                 // `Dirty`, not `Check`, and unlike `Memo` this is not deferred
                 // to the recompute: re-running an async memo *always* changes
@@ -5901,7 +5930,11 @@ type AsyncMemo<'T> private (graph: Graph, compute: Previous<'T> -> CancellationT
         member _.MarkCheck() =
             if freshness = Freshness.Clean then
                 freshness <- Freshness.Check
+                unannounced <- false
 
+                observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
                 observers.NotifyCheck ()
 
     /// <summary>
@@ -6105,6 +6138,9 @@ type Boundary<'T>
     let mutable disposed = false
     let mutable link: OwnerLink = null
 
+    /// <summary>Set when a run ends stale, as on <c>Memo</c>. The next mark notifies the observers and clears it.</summary>
+    let mutable unannounced = false
+
     /// <summary>
     /// True once a run has produced a value: the body's, a fallback's or a recover's.
     /// </summary>
@@ -6170,6 +6206,7 @@ type Boundary<'T>
         // Clean before the body runs, for the reason given on Memo.Recompute:
         // an invalidation raised while the body is running has to survive it.
         freshness <- Freshness.Clean
+        unannounced <- false
         sources.BeginRun ()
 
         if
@@ -6324,6 +6361,9 @@ type Boundary<'T>
         else
             Tracer.RunEnd (graph, id, status)
 
+        if freshness <> Freshness.Clean then
+            unannounced <- true
+
     member private this.EnsureCurrent() =
         // One comparison on the path a cached read takes. Testing `disposed`
         // or `Check` first costs every clean read an extra comparison, which
@@ -6365,6 +6405,7 @@ type Boundary<'T>
 
                 if freshness = Freshness.Check then
                     freshness <- Freshness.Clean
+                    unannounced <- false
 
             if freshness = Freshness.Dirty then
                 this.Recompute ()
@@ -6499,11 +6540,20 @@ type Boundary<'T>
                 // moves — has published nothing new.
                 if wasClean then
                     observers.NotifyCheck ()
+                elif unannounced then
+                    unannounced <- false
+                    observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
+                observers.NotifyCheck ()
 
         member _.MarkCheck() =
             if freshness = Freshness.Clean then
                 freshness <- Freshness.Check
 
+                observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
                 observers.NotifyCheck ()
 
     member _.Status = status

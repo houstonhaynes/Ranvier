@@ -209,6 +209,9 @@ type StreamMemo<'S>
     let mutable failure: Failure = null
     let mutable runs = 0
     let mutable disposed = false
+
+    /// <summary>Set when a run ends stale, as on <c>Memo</c>. The next mark notifies the observers and clears it.</summary>
+    let mutable unannounced = false
     let mutable violated = false
     let mutable link: OwnerLink = null
     let mutable generation = 0
@@ -337,6 +340,7 @@ type StreamMemo<'S>
 
     member private this.Launch() =
         freshness <- Freshness.Clean
+        unannounced <- false
         this.Stop StreamEnd.Restarted
         generation <- generation + 1
         let gen = generation
@@ -404,6 +408,9 @@ type StreamMemo<'S>
         | error -> this.Fail error
 
         Tracer.RunEnd (graph, id, status)
+
+        if freshness <> Freshness.Clean then
+            unannounced <- true
 
     member private this.EnsureCurrent() =
         if freshness <> Freshness.Clean && not disposed then
@@ -495,13 +502,18 @@ type StreamMemo<'S>
             sources.MovedIn (slot, handle)
 
         member _.MarkDirty() =
-            if freshness <> Freshness.Dirty then
+            if freshness <> Freshness.Dirty || unannounced then
                 freshness <- Freshness.Dirty
+                unannounced <- false
                 observers.NotifyDirty ()
 
         member _.MarkCheck() =
             if freshness = Freshness.Clean then
                 freshness <- Freshness.Check
+                unannounced <- false
+                observers.NotifyCheck ()
+            elif unannounced then
+                unannounced <- false
                 observers.NotifyCheck ()
 
     interface IScheduled with
