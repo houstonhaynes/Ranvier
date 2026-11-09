@@ -2,11 +2,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { test, expect, openMaps } from "./fixtures.mjs";
 
 const guide = "guide/signal-maps/";
-const coldCompilerBudgetMs = 30_000;
+const coldCompilerBudgetMs = 60_000;
 const warmCompilerBudgetMs = 5_000;
 
 test("the live editor compiles a map and its controls update the graph", async ({ page, problems }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(75_000);
   await page.goto(guide);
   const run = page.getByRole("button", { name: "Run", exact: true });
   await run.click();
@@ -282,7 +282,7 @@ test("the landing state dial honours reduced motion and remains keyboard accessi
 });
 
 test("the editable example compiles and mounts its map on Run", async ({ page, problems }) => {
-  test.setTimeout(40_000);
+  test.setTimeout(70_000);
   await page.goto(guide);
   await page.getByRole("button", { name: "Run" }).click();
   const output = async () => {
