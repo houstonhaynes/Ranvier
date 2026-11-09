@@ -1,4 +1,13 @@
 version: 2
+# Declared so Dependabot's proxy allows these hosts: a feed named only in nuget.config is blocked.
+registries:
+  partas-build:
+    type: nuget-feed
+    url: https://nuget.cloudsmith.io/shayanhabibi/shayanhabibi-partas-build/v3/index.json
+  xantham-cloudsmith:
+    type: nuget-feed
+    url: https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json
+
 updates:
   - package-ecosystem: npm
     directories:
@@ -17,6 +26,9 @@ updates:
 
   - package-ecosystem: nuget
     directory: "/"
+    registries:
+      - partas-build
+      - xantham-cloudsmith
     schedule:
       interval: monthly
     open-pull-requests-limit: 2
