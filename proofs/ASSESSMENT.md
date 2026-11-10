@@ -31,18 +31,19 @@ they were established:
 No test suite was run, so no proposed fix below has been checked against the existing tests. The Rocq project was not
 built. The Fable build was not exercised.
 
-## Root cause 1: a check walk goes `Clean` over a source marked after the walk passed it
+## Root cause 1: missed invalidation during dependency revalidation
 
 **Entries:** `cmp_never_passes_source`, `walk_passed_source_marked`, `self_marking_wake_lost`, and as consequences
 `read_move_leaves_effect_queued` and `quiescent_read_answers_past_flush`.
 
 **Severity: high.**
 
-A node in `Check` walks its sources in read order and goes `Clean` if it reaches the end still in `Check`
-(`Effect.Execute`, Core.fs 4788-4799; `Memo.ResolveCheck`, 4304-4316). A source the walk has already passed can be marked
-again while a later source runs. The notice reaches a walker that is already `Check`, so `MarkCheck` does nothing
-(4757-4768), and the walker ends `Clean` over a stale source. When the stale source holds no `unannounced` flag, later
-writes to it wake nobody.
+A node in the `Check` state revalidates its dependencies in read order and sets itself `Clean` if none reported a
+change (`Effect.Execute`, Core.fs 4788-4799; `Memo.ResolveCheck`, 4304-4316). The loop does not detect a dependency that
+is invalidated after it has been revalidated. That happens when recomputing a later dependency invalidates an earlier
+one: `MarkCheck` is a no-op on a node already in `Check` (4757-4768), so the invalidation is dropped and the node is
+marked `Clean` with a stale dependency. If that dependency's `unannounced` flag is clear, later writes to it do not
+notify the node either.
 
 ### It is reachable from ordinary code (run)
 
@@ -96,7 +97,8 @@ not checked.
 
 ### Size of the fix
 
-`BUGS.md` names two walks. The same loop, with the same unconditional fall to `Clean`, exists in nine places (read):
+`BUGS.md` names two revalidation loops. The same loop, with the same unconditional transition to `Clean`, is duplicated
+in nine places (read):
 
 | Site | Lines |
 |---|---|
@@ -112,28 +114,30 @@ not checked.
 Core.fs 5492-5498 has a further `Check`-to-`Clean` resolution that was not traced. A fix at two sites leaves the loss in
 the other seven. Factoring the walk into one helper first would make the fix one change.
 
-A candidate, not built: a per-node flag set when a mark arrives at a node already in `Check`, cleared at walk start, and
-tested at walk end to restart the walk instead of going `Clean`. Two cautions from review. The flag will fire on most
-diamond walks, so the cost is an extra pass over the sources in the common case, on a path the source comments call
-nanosecond-sensitive (4319-4323). And a memo that dirties its own source every run would spin in the walk where today it
-stops stale, so restarts need a bound or a ruling.
+A candidate, not built: a per-node flag set when an invalidation arrives at a node already in `Check`, cleared when
+revalidation starts, and tested when it ends to repeat the loop instead of setting `Clean`. Two cautions from review. The
+flag will be set on most diamond-shaped graphs, so the cost is a second pass over the dependencies in the common case, on
+a path the source comments call nanosecond-sensitive (4319-4323). And a memo that invalidates its own dependency on every
+run would loop indefinitely where today it terminates with a stale value, so the repeat needs an iteration limit or a
+ruling.
 
 ### The two consequences
 
-- `read_move_leaves_effect_queued` is reachable only from the left-behind states above. It closes with the walk fix. Low.
-- `quiescent_read_answers_past_flush` is the walk bug combined with the open question in `read_settles_writer`. Its two
-  scenarios close with the walk fix. The behaviour does not: `read_settles_writer` reaches the same answer with no walk
+- `read_move_leaves_effect_queued` is reachable only from the stale states above. The revalidation fix resolves it. Low.
+- `quiescent_read_answers_past_flush` is this bug combined with the open question in `read_settles_writer`. The
+  revalidation fix resolves its two scenarios but not the behaviour: `read_settles_writer` reproduces it without this
   bug, so that ruling is needed regardless. Low.
 
-## Root cause 2: the running computation is skipped by a notice it needed
+## Root cause 2: self-notification suppression drops a required re-run
 
 **Entries:** `effect_resolves_over_moved_source`, `check_resolves_over_moved_source`.
 
 **Severity: medium for the effect form, low for the memo form.**
 
-`NotifyDirtyExcept` (Core.fs 395-410, called from `Memo.Run` at 4283) skips the computation that is running. When that
-computation read memo `a` earlier in the same run, wrote `a`'s signal, and then makes a read that refreshes `a`, it is
-skipped by the notice that would have re-run it.
+When a memo's value changes, `NotifyDirtyExcept` (Core.fs 395-410, called from `Memo.Run` at 4283) invalidates every
+dependent except the currently executing computation. The exclusion is wrong in one case: the executing computation read
+memo `a` earlier in the same run, then wrote `a`'s signal, then triggered a recompute of `a`. It holds a value of `a`
+from before the write, and the only invalidation that would schedule its re-run is suppressed.
 
 Run: an effect that reads `a`, writes `a`'s signal and reads a memo over `a` ends with its last run on the pre-write
 value, `Clean`, nothing queued. It stays that way until an independent write to that signal, which never comes if the
@@ -147,11 +151,11 @@ Core.fs 4667-4669). Those texts promise a re-run when an effect writes a signal 
 the written signal, so the failing case extends the documented contract and does not breach its literal wording. **Owner's
 ruling needed:** is a write to a signal read through a memo inside the contract? If yes, this is a medium defect.
 
-A candidate fix, not built: skip the running computation only when it has not already read this source in the current
-run, using the observer entry's slot against the reader's source-list cursor. It touches the Fable slot representation
+A candidate fix, not built: exclude the executing computation only when it has not yet read this dependency in the
+current run, by comparing the observer entry's slot index with the reader's source-list cursor. It touches the Fable slot representation
 (Core.fs 253-254) and about ten `NotifyDirtyExcept` call sites.
 
-## Root cause 3: a memo dependency cycle kills the process
+## Root cause 3: unbounded recursion on a cyclic memo dependency
 
 **Entry:** `self_read_check_overflow`. `nested_self_recompute_resets_cursor` shares the root and leaves behind the
 self-edge this one needs.
@@ -177,7 +181,7 @@ reachable from a supported pattern. Not established.
 `nested_self_recompute_resets_cursor` alone is low: it needs a self-read and a self-write together. The direct defect is
 that the outer run overwrites the nested run's newer value at 4240, not the cursor reset the title names.
 
-## Root cause 4: the contract on memo writes is undecided
+## Root cause 4: signal writes in memo bodies are specified inconsistently
 
 Not a defect. It decides how several entries read.
 
@@ -216,9 +220,9 @@ pure memo's restriction as creating owned nodes, not writing signals.
 `disposed_unread_memo_value` opens with "By the owner's ruling", sits under Awaiting ruling, and has no entry under
 `## Rulings`. Its status should be made unambiguous.
 
-## A hazard the ledger does not list
+## Unlisted issue: no re-run limit in the untraced build
 
-**An effect that keeps writing its own source spins forever in the shipped build.**
+**A non-converging self-writing effect is an infinite loop in the shipped build.**
 
 Found through `effect_restored_source_loop`. The traced build raises after 1000 self-requeues (`Trace.fs:1806-1823`). The
 untraced Release build, which is the NuGet package, has no bound: the write that starts the flush never returns, and the
@@ -286,8 +290,8 @@ state in `README.md` that they are advisory.
    `README.md` names the branch and commit that hold it.
 3. The walk entries name two sites of nine (see root cause 1).
 4. `self_marking_wake_lost` does not say in plain terms that the next value-changing write to the stale memo's sources
-   wakes the observer (4499-4504). That bounded recovery is what separates it from `walk_passed_source_marked`, whose
-   observer stays deaf.
+   notifies the observer (4499-4504). That recovery is what separates it from `walk_passed_source_marked`, whose observer
+   receives no further notifications.
 5. `self_marking_wake_lost` and `check_resolves_over_moved_source` cite the test comment as contrary evidence and omit
    `contracts.md:58-59`, which says the opposite.
 6. `quiescent_read_answers_past_flush` does not say the empty batch in its memo is necessary. Without it the read returns
@@ -328,7 +332,7 @@ state in `README.md` that they are advisory.
 
 ## Suggested order of work
 
-1. A failing Expecto test from the view-model program above, then the walk fix across all nine sites.
+1. A failing Expecto test from the view-model program above, then the revalidation fix across all nine sites.
 2. A re-entrancy guard for memo cycles.
 3. Rulings on memo-body writes and on writes to a signal read through a memo. These decide root cause 2.
 4. `failed_batch_leaves_queue`.
