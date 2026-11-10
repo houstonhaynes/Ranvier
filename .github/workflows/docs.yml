@@ -127,7 +127,11 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           run_id="$(gh run list --workflow proofs-site.yml --branch master --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
-          if [ -z "$run_id" ] || ! gh run download "$run_id" --name proofs-site --dir docs/output/proofs; then
+          name=""
+          if [ -n "$run_id" ]; then
+            name="$(gh api "repos/$GH_REPO/actions/runs/$run_id/artifacts" --jq '[.artifacts[].name | select(startswith("proofs-site"))][0] // empty')"
+          fi
+          if [ -z "$name" ] || ! gh run download "$run_id" --name "$name" --dir docs/output/proofs; then
             echo "::warning::This deployment has no proofs site: no Proofs site artifact from master was available."
           fi
       - uses: actions/upload-pages-artifact@v5
