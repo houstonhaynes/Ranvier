@@ -21,6 +21,7 @@ jobs:
       contents: write
     env:
       RanvierViewRoot: ${{ github.workspace }}/dependency-view
+      RanvierAnimeRoot: ${{ github.workspace }}/dependency-anime
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,8 +29,8 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - name: Prepare Ranvier.View inside the dependency scan
-        run: .github/scripts/view-sibling.sh "$RanvierViewRoot"
+      - name: Prepare Ranvier.View and Ranvier.Anime inside the dependency scan
+        run: .github/scripts/view-sibling.sh "$RanvierViewRoot" "$RanvierAnimeRoot"
       - name: Restore solution dependencies
         run: dotnet restore Ranvier.slnx
       - name: Submit dependency snapshot

@@ -80,7 +80,7 @@ jobs:
       # The trace log and its queries compile in only with RanvierTrace, and their tests with them.
       - name: Test Ranvier.Tests, traced
         run: dotnet test tests/Ranvier.Tests -c Release -p:RanvierTrace=true
-      # The signal maps compile the view projects of a Ranvier.View checkout against this core.
+      # The signal maps compile the view projects of a Ranvier.View checkout and the bindings of a Ranvier.Anime checkout against this core.
       - name: Check out Ranvier.View beside the repository
         run: .github/scripts/view-sibling.sh
       # The signal map model reads the trace log, so its tests compile only in a traced build.

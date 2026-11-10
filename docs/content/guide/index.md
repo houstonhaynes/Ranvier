@@ -96,7 +96,8 @@ The core packages are built here. The packages below build on them in their own 
 
 | Repository | Packages | Documentation |
 | --- | --- | --- |
-| [Ranvier.View](https://github.com/ranvier-org/Ranvier.View) | `Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime`, `Fable.Ranvier.Anime`, `Ranvier.Analyzers` | [Views, server rendering, motion and analyzers](https://ranvier-org.github.io/Ranvier.View/) |
+| [Ranvier.View](https://github.com/ranvier-org/Ranvier.View) | `Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime`, `Ranvier.Analyzers` | [Views, server rendering, motion and analyzers](https://ranvier-org.github.io/Ranvier.View/) |
+| [Ranvier.Anime](https://github.com/ranvier-org/Ranvier.Anime) | `Fable.Ranvier.Anime` | anime.js bindings |
 | [Ranvier.Css](https://github.com/ranvier-org/Ranvier.Css) | `Ranvier.Css`, `Ranvier.Css.Bindings`, `Ranvier.Css.View`, `Ranvier.Css.Build` | [Typed CSS](https://ranvier-org.github.io/Ranvier.Css/) |
 | [Ranvier.Persistence](https://github.com/ranvier-org/Ranvier.Persistence) | `Ranvier.Persistence`, `Ranvier.Persistence.Marten`, `Ranvier.Persistence.KurrentDB` | [Persisted inputs and stores](https://ranvier-org.github.io/Ranvier.Persistence/) |
 

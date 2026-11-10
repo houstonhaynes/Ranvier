@@ -106,11 +106,12 @@ For typed reactive queries and mutation reconciliation, install `Ranvier.Query` 
 
 ## Views
 
-The view packages, `Ranvier.View`, `Ranvier.View.Dom`, `Ranvier.View.Anime` and
-`Fable.Ranvier.Anime`, and the `Ranvier.Analyzers` package are built in
+The view packages, `Ranvier.View`, `Ranvier.View.Dom` and `Ranvier.View.Anime`, and the
+`Ranvier.Analyzers` package are built in
 [ranvier-org/Ranvier.View](https://github.com/ranvier-org/Ranvier.View). Their
 [documentation](https://ranvier-org.github.io/Ranvier.View/) covers installation, the additional
-`Xantham.*` package feed, templates, server rendering, motion and the analyzer rules.
+`Xantham.*` package feed, templates, server rendering, motion and the analyzer rules. `Fable.Ranvier.Anime`, the anime.js bindings, is built in
+[ranvier-org/Ranvier.Anime](https://github.com/ranvier-org/Ranvier.Anime).
 
 ## Typed CSS
 
