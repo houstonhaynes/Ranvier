@@ -30,6 +30,9 @@ module Packages =
     let css = "https://ranvier-org.github.io/Ranvier.Css/"
     let persistence = "https://ranvier-org.github.io/Ranvier.Persistence/"
 
+/// The Rocq/Iris proofs of the reactive core, deployed at /proofs/ of this site by the Docs workflow.
+let proofs = "https://ranvier-org.github.io/Ranvier/proofs/"
+
 let theme =
     Theme.theme (
         Theme.navbar
@@ -49,6 +52,7 @@ let theme =
                     [
                         NavbarSection ("API reference", "reference", "/reference/")
                         NavbarLink ("Analyzers", Packages.views + "analyzers/")
+                        NavbarLink ("Proofs", proofs)
                     ]
                 )
                 NavbarDropdown (
