@@ -1,0 +1,82 @@
+# Compiles and audits the proofs, then builds their Navigator site. The Docs workflow places the newest site from master at
+# /proofs/ of the Pages deployment, so the docs build needs no Rocq.
+name: Proofs site
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'proofs/**'
+      - 'src/Ranvier/**'
+      - 'global.json'
+      - '.github/workflows/proofs-site.yml'
+  pull_request:
+    paths:
+      - 'proofs/**'
+      - 'src/Ranvier/**'
+      - 'global.json'
+      - '.github/workflows/proofs-site.yml'
+  # An artifact expires after 90 days, and a monthly build keeps one available to Docs through a quiet period.
+  schedule:
+    - cron: '17 4 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install -y opam libgmp-dev pkg-config unzip bubblewrap
+      - id: opam-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.opam
+          key: rocq-toolchain-${{ runner.os }}-${{ hashFiles('proofs/VERSIONS.md', '.github/workflows/proofs-site.yml') }}
+      # The versions match the table in proofs/VERSIONS.md. build.sh selects the switch by this name.
+      - name: Install the Rocq toolchain
+        if: steps.opam-cache.outputs.cache-hit != 'true'
+        env:
+          OPAMYES: '1'
+        run: |
+          opam init --bare --disable-sandboxing --no-setup
+          opam switch create ranvier-proofs ocaml-base-compiler.4.14.2
+          eval "$(opam env --switch=ranvier-proofs --set-switch)"
+          opam repo add rocq-released https://rocq-prover.org/opam/released
+          opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+          opam update
+          opam install rocq-core.9.1.0 rocq-stdlib.9.2.0 rocq-stdpp.1.13.0 rocq-iris-heap-lang.4.5.0 zarith.1.14
+      - name: Audit the proofs
+        run: bash proofs/check.sh
+      - name: Build the site
+        env:
+          PROOFS_BASE_URL: /Ranvier/proofs/
+        run: bash proofs/site.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: proofs-site
+          path: proofs/site/output
+          retention-days: 90
+          if-no-files-found: error
+
+  publish:
+    needs: site
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Deploy the documentation with the new site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run docs.yml --ref master

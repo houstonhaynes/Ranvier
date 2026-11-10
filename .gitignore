@@ -39,3 +39,23 @@ node_modules/
 
 # Releases
 artifacts/
+
+# Rocq proofs
+*.vo
+*.vok
+*.vos
+*.glob
+.lia.cache
+.*.aux
+Makefile.rocq*
+.Makefile.rocq*
+proofs/engine.ml
+proofs/engine.mli
+
+# proofs/docs.sh output and its rocqnavi clone
+proofs/docs/html/
+proofs/docs/.rocqnavi/
+
+# proofs/site.sh output and its captured facts
+proofs/site/output/
+proofs/site/.work/

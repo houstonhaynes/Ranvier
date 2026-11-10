@@ -119,6 +119,17 @@ jobs:
         with:
           name: docs-browser-failure
           path: docs/maps/tests/browser/test-results
+      # A failure leaves the documentation deployable, without the proofs.
+      - name: Add the proofs site
+        if: inputs.compiler_diagnostic != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run_id="$(gh run list --workflow proofs-site.yml --branch master --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+          if [ -z "$run_id" ] || ! gh run download "$run_id" --name proofs-site --dir docs/output/proofs; then
+            echo "::warning::This deployment has no proofs site: no Proofs site artifact from master was available."
+          fi
       - uses: actions/upload-pages-artifact@v5
         if: inputs.compiler_diagnostic != true
         with:

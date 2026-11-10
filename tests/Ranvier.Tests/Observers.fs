@@ -484,6 +484,30 @@ let observerSetTests =
     testList
         "ObserverSet"
         [
+            // proofs/BUGS.md, walk_covers_duplicate_observer. The second add breaks "held at most once": the removal of
+            // position 0 moves c there, and a sits above the cursor at position 2.
+            test "a walk can miss an observer held at two positions" {
+                let set = ObserverSet ()
+                let a = Probe 1
+                let b = Probe 2
+                let c = Probe 3
+                link set a
+                link set b
+
+                b.OnDirty <-
+                    fun () ->
+                        set.Add (a, 1) |> ignore
+                        set.Add (c, 0) |> ignore
+                        set.RemoveAt (a, 0)
+
+                set.NotifyDirty ()
+
+                Expect.equal b.Dirty 1 "the walk starts at the last position"
+                Expect.equal c.Dirty 1 "the move puts c at the cursor"
+                Expect.equal a.Dirty 0 "a stayed in the set and was not visited"
+                Expect.equal set.Count 3 "the set holds a, b and c"
+            }
+
             for width in [ 3; 8; 9; 20; 100 ] do
                 test $"removal during notification among {width} skips no survivor" {
                     let set = ObserverSet ()
